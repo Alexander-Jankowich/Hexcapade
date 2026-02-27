@@ -1,0 +1,16 @@
+{
+  "textures": {
+    "enemy": {
+        "file": "textures/enemy.png"
+    },
+    "spell": {
+        "file": "textures/photon.png"
+    }
+  },
+  "fonts": {
+    "font": {
+      "file": "fonts/OpenSans-Regular.ttf",
+      "size": 24
+    }
+  }
+}
