@@ -189,55 +189,31 @@ void GameScene::addItem(int value) {
  * @param dt    The amount of time (in seconds) since the last frame
  */
 void GameScene::preUpdate(float dt) {
-    if (_playerLost || _playerWon) {
-#ifndef CU_TOUCH_SCREEN
-        Keyboard* keys = Input::get<Keyboard>();
-        if (keys && keys->keyPressed(KeyCode::R)) reset();
-#endif
+    _input.update();
+
+    if (_input.pressedReset()) {
+        reset();
+        _input.resolvedReset();
         return;
     }
-    _input.update();
-#ifndef CU_TOUCH_SCREEN
-    _input.readInput();
-    // need to change this math to be rotation
-    float ix = (_input.getRight()) + (-1 * _input.getLeft());
-    float iy = (_input.getUp())    + (-1 * _input.getDown());
-    cugl::Vec2 dir = cugl::Vec2(ix, iy);
 
-    // Normalize to avoid faster diagonals
-    const float speed = 12; // tune this: physics units per second
-    if (dir.lengthSquared() > 0.0f) {
-        dir.normalize();
-        dir *= speed;
-        _player->_shape->setLinearVelocity(dir);
-    } else {
-        _player->_shape->setLinearVelocity(cugl::Vec2::ZERO);
+    if (_playerLost || _playerWon) {
+        return;
     }
 
-    _enemy->update(_player->_shape->getPosition()*PHYSICS_SCALE);
-    
-
-#else
+    // Player movement
     cugl::Vec2 input = _input.getMove();
-
     const float speed = 12.0f;
-
     cugl::Vec2 velocity = input * speed;
-
     _player->_shape->setLinearVelocity(velocity);
-    
 
-    
-    
     auto ang = input.isZero() ? _player->_playerAngle : input.getAngle();
     _player->updateAngle(ang);
-    
-    //_enemy->update(_player->_shape->getPosition()*PHYSICS_SCALE);
-#endif // CU_TOUCH_SCREEN
+
     updateItemPickupState();
     tryPickupItem();
     // Spellcasting
-    switch (_input.lastGesture) {
+    switch (_input.getGesture()) {
         case InputController::Gesture::FREEZE:
         spells.spawnSpell(_player->_shape->getPosition() * PHYSICS_SCALE, _player->_shape->getLinearVelocity(), _player->_playerAngle, true);
         _input.resolvedGesture();
@@ -264,7 +240,7 @@ void GameScene::preUpdate(float dt) {
 
     // Check enemy spawning
     lastEnemySpawn += dt;
-    CULog("%.2f", lastEnemySpawn);
+    //CULog("%.2f", lastEnemySpawn);
     if (lastEnemySpawn > 7) {
         lastEnemySpawn -= 7;
         _enemy->spawnEnemy(getSize() / 2, 4);
@@ -491,33 +467,19 @@ void GameScene::updateItemPickupState() {
         if (_collisions.resolvePlayerItem(playerScreenPos, playerRadius, _items[ii].position, _items[ii].radius)) {
             _canPickupItem = true;
             _pickupIndex = (int)ii;
-            _pickupPrompt = CU_TOUCH_SCREEN ? "tap to pickup " + _items[ii].name : "press e to pickup " + _items[ii].name;
+            // Can't use CU_TOUCH_SCREEN in this manner, since it just isn't defined on PC
+            //_pickupPrompt = CU_TOUCH_SCREEN ? "tap to pickup " + _items[ii].name : "press e to pickup " + _items[ii].name;
             return;
         }
     }
 }
 
 void GameScene::tryPickupItem() {
-    if (!_canPickupItem || _pickupIndex < 0) return;
-#ifndef CU_TOUCH_SCREEN
-    // this only does anything if item is in range and e was newly pressed
-    if (!_input.didPickupPress()) {
-        return;
-    }
+    if (!_input.pressedPickup()) return;
+    _input.resolvedPickup();
 
-//    if (_pickupIndex < (int)_items.size()) {
-//        addItem(_items[_pickupIndex].value);
-//        _items.erase(_items.begin() + _pickupIndex);
-//        spawnReplacementItem();
-//
-//        // this refreshes prompt state right away after pickup
-//        updateItemPickupState();
-//    }
-#else
-    CULog("pressed: %d", _input.didPress());
-    if (!_input.didPress()) return;
-    
-#endif // !CU_TOUCH_SCREEN
+    if (!_canPickupItem || _pickupIndex < 0) return;
+
     if (_pickupIndex < (int)_items.size()) {
         addItem(_items[_pickupIndex].value);
         _items.erase(_items.begin() + _pickupIndex);
@@ -526,6 +488,7 @@ void GameScene::tryPickupItem() {
         // this refreshes prompt state right away after pickup
         updateItemPickupState();
     }
+
 }
 
 void GameScene::drawItems() {

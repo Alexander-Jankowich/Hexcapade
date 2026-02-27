@@ -33,7 +33,127 @@ public:
         FIREBALL
     };
 
-    Gesture lastGesture;
+#pragma mark Input Control
+    /**
+     * Creates a new input controller.
+     *
+     * This constructor DOES NOT attach any listeners, as we are not
+     * ready to do so until the scene is created. You should call
+     * the {@link #init} method to initialize the scene.
+     */
+    InputController();
+
+    /**
+     * Deletes this input controller, releasing all resources.
+     */
+    ~InputController() { dispose(); }
+
+    /**
+     * Initializes the control to support mouse or touch.
+     *
+     * This method attaches all of the listeners. It tests which
+     * platform we are on (mobile or desktop) to pick the right
+     * listeners.
+     *
+     * This method will fail (return false) if the listeners cannot
+     * be registered or if there is a second attempt to initialize
+     * this controller
+     *
+     * @return true if the initialization was successful
+     */
+    bool init(const cugl::Rect bounds);
+
+    /**
+     * Disposes this input controller, deactivating all listeners.
+     *
+     * As the listeners are deactived, the user will not be able to
+     * monitor input until the controller is reinitialized with the
+     * {@link #init} method.
+     */
+    void dispose();
+
+    /**
+     * Updates the input controller for the latest frame.
+     *
+     * It might seem weird to have this method given that everything
+     * is processed with call back functions.  But we need some way
+     * to synchronize the input with the animation frame.  Otherwise,
+     * how can we know what was the touch location *last frame*?
+     * Maybe there has been no callback function executed since the
+     * last frame. This method guarantees that everything is properly
+     * synchronized.
+     */
+    void update();
+
+#pragma mark Attributes
+    /**
+     * Returns true if this control is active.
+     *
+     * An active control is one where all of the listeners are attached
+     * and it is actively monitoring input. An input controller is only
+     * active if {@link #init} is called, and if {@link #dispose} is not.
+     *
+     * @return true if this control is active.
+     */
+    bool isActive() const { return _active; }
+
+    /**
+    * Returns the last gesture the user has done.
+    * 
+    * Should call {@link #resolvedGesture} once the gesture has been
+    * resolved to clear the gesture.
+    * 
+    * @return Last gesture user has done
+    */
+    Gesture getGesture() {
+        return _lastGesture;
+    }
+
+    /**
+    * Call this function after resolving a gesture
+    */
+    void resolvedGesture() { _lastGesture = Gesture::NONE; }
+
+    cugl::Vec2 getMove() const {
+        return _move;
+    }
+
+    /**
+    * Returns whether the user has attempted to pickup an item
+    */
+    bool pressedPickup() {
+        return _pickupPressed;
+    }
+
+    /**
+    * Call this function after resolving item pickup
+    */
+    void resolvedPickup() {
+        _pickupPressed = false;
+    }
+
+    bool pressedReset() {
+        return _resetPressed;
+    }
+
+    void resolvedReset() {
+        _resetPressed = false;
+    }
+
+    /** Returns normalized joystick vector in [-1,1] per axis (Vec2::ZERO if inactive) */
+    //cugl::Vec2 getJoystickVector() const;
+
+    /**
+     * Reads the input for this player and converts the result into game logic.
+     *
+     * This is an example of polling input.  Instead of registering a listener,
+     * we ask the controller about its current state.  When the game is running,
+     * it is typically best to poll input instead of using listeners.  Listeners
+     * are more appropriate for menus and buttons (like the loading screen).
+     */
+    void readInput();
+
+
 protected:
     /** Whether the input device was successfully initialized */
     bool _active;
@@ -45,9 +165,10 @@ protected:
     bool _currDown;
     /** Whether there was an active button/touch press last frame*/
     bool _prevDown;
-   
 
-protected:
+    /** The last gesture done */
+    Gesture _lastGesture;
+
 	/** The key for the mouse listeners */
 	Uint32 _mouseKey;
     /** The mouse position (for mice-based interfaces) */
@@ -56,33 +177,22 @@ protected:
     bool _mouseDown;
     /** Whether a finger is down*/
     bool _touchDown;
-    /** Where the finger touched*/
-    cugl::Vec2 _touchPos;
+    /** Where the finger touch began*/
+    cugl::Vec2 _touchStart;
     /**Current touchID**/
     cugl::TouchID _touchID;
-
-    /**Are we going up*/
-    float _up;
-    /**Are we going down?*/
-    float _down;
-    /**Are we going to the right**/
-    float _right;
-    /**Are we going to the left**/
-    float _left;
-    /**Did we press the keyboard*/
-    bool _pressed;
     
-    /**is e held right now*/
-    bool _pickupHeld;
-    /**did e go down this frame*/
+    /** Did player attempt to pickup item */
     bool _pickupPressed;
-    
-    
+
+    bool _resetPressed;
     
     /**Movement*/
-    cugl::Vec2 move;
+    cugl::Vec2 _move;
+
     /**A vector of points representing the gesture**/
     std::vector<cugl::Vec2> currentStroke;
+
     /**The gesture recognizer*/
     cugl::GestureRecognizer recognizer;
     
@@ -183,170 +293,6 @@ protected:
      * @param  pos  the current joystick position
      */
     void processJoystick(const cugl::Vec2 pos);
-    
-    
-	
-#pragma mark Input Control
-public:
-    /**
-     * Creates a new input controller.
-     *
-     * This constructor DOES NOT attach any listeners, as we are not
-     * ready to do so until the scene is created. You should call
-     * the {@link #init} method to initialize the scene.
-     */
-    InputController();
-
-    /**
-     * Deletes this input controller, releasing all resources.
-     */
-    ~InputController() { dispose(); }
-    
-    /**
-     * Initializes the control to support mouse or touch.
-     *
-     * This method attaches all of the listeners. It tests which
-     * platform we are on (mobile or desktop) to pick the right
-     * listeners.
-     *
-     * This method will fail (return false) if the listeners cannot
-     * be registered or if there is a second attempt to initialize
-     * this controller
-     *
-     * @return true if the initialization was successful
-     */
-    bool init(const cugl::Rect bounds);
-        
-    /**
-     * Disposes this input controller, deactivating all listeners.
-     *
-     * As the listeners are deactived, the user will not be able to
-     * monitor input until the controller is reinitialized with the
-     * {@link #init} method.
-     */
-    void dispose();
-    
-    /**
-     * Updates the input controller for the latest frame.
-     *
-     * It might seem weird to have this method given that everything
-     * is processed with call back functions.  But we need some way
-     * to synchronize the input with the animation frame.  Otherwise,
-     * how can we know what was the touch location *last frame*?
-     * Maybe there has been no callback function executed since the
-     * last frame. This method guarantees that everything is properly
-     * synchronized.
-     */
-    void update();
-    
-    void resolvedGesture() {lastGesture = Gesture::NONE;}
-
-#pragma mark Attributes
-    /**
-     * Returns true if this control is active.
-     *
-     * An active control is one where all of the listeners are attached
-     * and it is actively monitoring input. An input controller is only
-     * active if {@link #init} is called, and if {@link #dispose} is not.
-     *
-     * @return true if this control is active.
-     */
-    bool isActive() const { return _active; }
-    
-    /**
-     * Returns the current mouse/touch position
-     *
-     * @return the current mouse/touch position
-     */
-    const cugl::Vec2& getPosition() const {
-        return _currPos;
-    }
-
-    /**
-     * Returns the previous mouse/touch position
-     *
-     * @return the previous mouse/touch position
-     */
-    const cugl::Vec2& getPrevious() const {
-        return _prevPos;
-    }
-    
-    /**
-     * Return true if the user initiated a press this frame.
-     *
-     * A press means that the user is pressing (button/finger) this
-     * animation frame, but was not pressing during the last frame.
-     *
-     * @return true if the user initiated a press this frame.
-     */
-    bool didPress() const {
-        return (!_prevDown && _currDown) || _touchDown;
-    }
-
-    /**
-     * Return true if the user initiated a release this frame.
-     *
-     * A release means that the user was pressing (button/finger) last
-     * animation frame, but is not pressing during this frame.
-     *
-     * @return true if the user initiated a release this frame.
-     */
-    bool didRelease() const {
-        return !_currDown && _prevDown;
-    }
-
-    /**
-     * Return true if the user is actively pressing this frame.
-     *
-     * This method only checks that a press is active or ongoing.
-     * It does not care when the press was initiated.
-     *
-     * @return true if the user is actively pressing this frame.
-     */
-    bool isDown() const {
-        return _currDown;
-    }
-    
-    bool getUp() const{
-        return _up;
-    }
-    
-    bool getDown() const{
-        return _down;
-    }
-    
-    bool getLeft() const{
-        return _left;
-    }
-    
-    bool getRight() const{
-        return _right;
-    }
-    
-    bool getPressed() const{
-        return _pressed;
-    }
-    
-    bool didPickupPress() const {
-        return _pickupPressed;
-    }
-    
-    cugl::Vec2 getMove() const{
-        return move;
-    }
-    
-    /** Returns normalized joystick vector in [-1,1] per axis (Vec2::ZERO if inactive) */
-    cugl::Vec2 getJoystickVector() const;
-    
-    /**
-     * Reads the input for this player and converts the result into game logic.
-     *
-     * This is an example of polling input.  Instead of registering a listener,
-     * we ask the controller about its current state.  When the game is running,
-     * it is typically best to poll input instead of using listeners.  Listeners
-     * are more appropriate for menus and buttons (like the loading screen).
-     */
-    void readInput();
 
 #pragma mark Mouse Callbacks
 private:

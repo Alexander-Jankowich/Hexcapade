@@ -156,7 +156,6 @@ _touchDown(false),
 _touchID(-1),
 _mouseKey(0),
 _joystick(false),
-_pickupHeld(false),
 _pickupPressed(false)
 {
 }
@@ -228,11 +227,11 @@ bool InputController::init(const Rect bounds) {
  */
 void InputController::dispose() {
     #ifndef CU_TOUCH_SCREEN
-            Input::deactivate<Keyboard>();
+        Input::deactivate<Keyboard>();
     #else
-            Touchscreen* touch = Input::get<Touchscreen>();
-            touch->removeBeginListener(LISTENER_KEY);
-            touch->removeEndListener(LISTENER_KEY);
+        Touchscreen* touch = Input::get<Touchscreen>();
+        touch->removeBeginListener(LISTENER_KEY);
+        touch->removeEndListener(LISTENER_KEY);
     #endif
         _active = false;
     }
@@ -250,6 +249,7 @@ void InputController::dispose() {
  * synchronized.
  */
 void InputController::update() {
+    readInput();
 }
 
 /**
@@ -262,59 +262,81 @@ void InputController::update() {
  */
 void InputController::readInput(){
 #ifndef CU_TOUCH_SCREEN
-    _up = _down = _right = _left = 0;
-    _pressed = false;
     Keyboard* keys = Input::get<Keyboard>();
+
+    // Keyboard input for movement
     bool up = keys->keyDown(KeyCode::ARROW_UP) || keys->keyDown(KeyCode::W);
     bool down = keys->keyDown(KeyCode::ARROW_DOWN) || keys->keyDown(KeyCode::S);
     bool left = keys->keyDown(KeyCode::ARROW_LEFT) || keys->keyDown(KeyCode::A);
     bool right = keys->keyDown(KeyCode::ARROW_RIGHT) || keys->keyDown(KeyCode::D);
+    static bool upPressed = false;
+    static bool downPressed = false;
+    static bool leftPressed = false;
+    static bool rightPressed = false;
+
+    if (up && !upPressed) {
+        _move.y = 1;
+        upPressed = true;
+    }
+    if (down && !downPressed) {
+        _move.y = -1;
+        downPressed = true;
+    }
+    if (!up && !down) {
+        _move.y = 0;
+    }
+    upPressed = up;
+    downPressed = down;
+
+    if (left && !leftPressed) {
+        _move.x = -1;
+        leftPressed = true;
+    }
+    if (right && !rightPressed) {
+        _move.x = 1;
+        rightPressed = true;
+    }
+    if (!left && !right) {
+        _move.x = 0;
+    }
+    leftPressed = left;
+    rightPressed = right;
+
+    _move.normalize();
+
+
+    // Keyboard input for item pickup
     bool pickup = keys->keyDown(KeyCode::E);
+    static bool pickupDown = false;
 
-    // this is a rising edge check so pickup only triggers once per press
-    _pickupPressed = pickup && !_pickupHeld;
-    _pickupHeld = pickup;
+    _pickupPressed = pickup && !pickupDown;
+    pickupDown = pickup;
 
-    // Movement forward/backward
-    if (up && !down) {
-        _up = 12;
-        _pressed = true;
-    } else if (down && !up) {
-        _down = -12;
-        _pressed = true;
-    }
-    
-    // Movement left/right
-    if (left && !right) {
-        _left = -12;
-        _pressed = true;
-    } else if (right && !left) {
-        _right = 12;
-        _pressed = true;
-    }
 
+    // Keyboard inputs for spells
     bool space = keys->keyDown(KeyCode::SPACE);
     bool shift = keys->keyDown(KeyCode::LEFT_SHIFT);
     static bool spacePressed = false;
     static bool shiftPressed = false;
     if (space && !spacePressed) {
-        lastGesture = Gesture::FIREBALL;
-        spacePressed = true;
+        _lastGesture = Gesture::FIREBALL;
     }
-    else if (!space) {
-        spacePressed = false;
-    }
+    spacePressed = space;
 
     if (shift && !shiftPressed) {
-        lastGesture = Gesture::FREEZE;
-        shiftPressed = true;
+        _lastGesture = Gesture::FREEZE;
     }
-    else if (!shift) {
-        shiftPressed = false;
-    }
+    shiftPressed = shift;
+
+
+    // Keyboard input for reset
+    bool r = keys->keyDown(KeyCode::R);
+    static bool rPressed = false;
+
+    _resetPressed = r && !rPressed;
+    rPressed = r;
+
 #endif // !CU_TOUCH_SCREEN
-    
-    
 };
 
 
@@ -411,10 +433,10 @@ void InputController::processJoystick(const cugl::Vec2 pos) {
         x = clampf(x, -1.0f, 1.0f);
         y = clampf(y, -1.0f, 1.0f);
 
-        move = Vec2(x, y);
+        _move = Vec2(x, y);
     } else {
         _joystick = false;
-        move = Vec2(0,0);
+        _move = Vec2(0,0);
     }
     
     _joycenter = touch2Screen(_ltouch.position);
@@ -429,26 +451,31 @@ void InputController::processJoystick(const cugl::Vec2 pos) {
  * @param focus    Whether the listener currently has focus
  */
 void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
-    _touchDown=true;
+    _touchDown = true;
     //CULog("Touch began %lld", event.touch);
+
     Vec2 pos = event.position;
     pos = touch2Screen(pos);
     Zone zone = getZone(pos);
     switch (zone){
         case Zone::LEFT:
             // Only process if no touch in zone
-                if (_ltouch.touchids.empty()) {
-                    // Left is the floating joystick
-                    _ltouch.position = event.position;
-                    _ltouch.timestamp.mark();
-                    _ltouch.touchids.insert(event.touch);
+            if (_ltouch.touchids.empty()) {
+                // Left is the floating joystick
+                _ltouch.position = event.position;
+                _ltouch.timestamp.mark();
+                _ltouch.touchids.insert(event.touch);
 
-                    _joystick = true;
-                    _joycenter = touch2Screen(event.position);
-                    _joycenter.y += JSTICK_OFFSET;
+                _joystick = true;
+                _joycenter = touch2Screen(event.position);
+                _joycenter.y += JSTICK_OFFSET;
             }
             break;
         case Zone::RIGHT:
+            // For now if pressed on right side attempt pickup, need to change to button
+            _touchDown = true;
+            _touchStart = touch2Screen(event.position);
+
             currentStroke.clear();
             currentStroke.push_back(pos);
             _rtouch.touchids.insert(event.touch);
@@ -463,8 +490,6 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     
     }
 
-
-
 /**
  * Callback for the end of a touch event
  *
@@ -472,14 +497,14 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
  * @param focus    Whether the listener currently has focus
  */
 void InputController::touchEndCB(const TouchEvent& event, bool focus) {
-    _touchDown=false;
+    _touchDown = false;
     // Reset all keys that might have been set
-    Vec2 pos = event.position;
-    pos = touch2Screen(pos);
+    Vec2 pos = touch2Screen(event.position);
     Zone zone = getZone(pos);
+
     if (_ltouch.touchids.find(event.touch) != _ltouch.touchids.end()) {
         _ltouch.touchids.clear();
-        move = Vec2::ZERO;
+        _move = Vec2::ZERO;
     } else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
         _rtouch.touchids.clear();
         currentStroke.push_back(pos);
@@ -487,14 +512,20 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
             std::string gesture = recognizer.match(currentStroke);
 
             try {
-                lastGesture = _gesturemap[gesture];
+                _lastGesture = _gesturemap[gesture];
             }
             catch (std::out_of_range) {
                 // Not a recognized gesture... probably
-                lastGesture = Gesture::NONE;
+                _lastGesture = Gesture::NONE;
             }
 
-            CULog("%s", gesture.c_str());
+            //CULog("%s", gesture.c_str());
+        }
+        else {
+            // Check if finger has not moved much, register as tap
+            if (pos.distance(_touchStart) < 20) {
+                _pickupPressed = true;
+            }
         }
         //CULog("Stroke points:");
          //   for (const auto& p : currentStroke) {
@@ -514,12 +545,13 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
  */
 void InputController::touchMotionCB(const TouchEvent& event, const Vec2& previous, bool focus) {
     Vec2 pos = event.position;
-    //Left zone is all that matters rn. 
+    // Left zone is all that matters rn. 
     if (_ltouch.touchids.find(event.touch) != _ltouch.touchids.end()) {
         processJoystick(pos);
-    }else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
+    }
+    else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
         currentStroke.push_back(touch2Screen(pos));
-        }
+    }
 }
 
 
