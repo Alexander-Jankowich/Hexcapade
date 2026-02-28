@@ -18,8 +18,6 @@ using namespace cugl;
 
 #pragma mark Input Constants
 
-#define USE_MOUSE
-
 /** The key to use for reseting the game */
 #define RESET_KEY KeyCode::R
 /** The key for toggling the debug display */
@@ -35,9 +33,7 @@ using namespace cugl;
 /** This defines the joystick "deadzone" (how far we must move) */
 #define JSTICK_DEADZONE  15
 /** This defines the joystick radial size (for reseting the anchor) */
-#define JSTICK_RADIUS    25
-/** How far to display the virtual joystick above the finger */
-#define JSTICK_OFFSET    80
+//#define JSTICK_RADIUS    25
 /** How far we must swipe up for a jump gesture */
 #define SWIPE_LENGTH    50
 /** How fast a double click must be in milliseconds */
@@ -158,7 +154,8 @@ _touchDown(false),
 _touchID(-1),
 _mouseKey(0),
 _joystick(false),
-_pickupPressed(false)
+_pickupPressed(false),
+_joyradius(100)
 {
 }
 
@@ -215,7 +212,7 @@ bool InputController::init(const Rect bounds) {
 #else
     _active = Input::activate<Keyboard>();
     Mouse* mouse = Input::get<Mouse>();
-    if (mouse) {
+    if (_active && mouse) {
         mouse->setPointerAwareness(Mouse::PointerAwareness::DRAG);
         _mouseKey = mouse->acquireKey();
 
@@ -249,19 +246,19 @@ bool InputController::init(const Rect bounds) {
  * {@link #init} method.
  */
 void InputController::dispose() {
-    #ifndef CU_TOUCH_SCREEN
-        Input::deactivate<Keyboard>();
-        Mouse* mouse = Input::get<Mouse>();
-        mouse->removePressListener(LISTENER_KEY);
-        mouse->removeReleaseListener(LISTENER_KEY);
-        mouse->removeDragListener(LISTENER_KEY);
+#ifndef CU_TOUCH_SCREEN
+    Input::deactivate<Keyboard>();
+    Mouse* mouse = Input::get<Mouse>();
+    mouse->removePressListener(LISTENER_KEY);
+    mouse->removeReleaseListener(LISTENER_KEY);
+    mouse->removeDragListener(LISTENER_KEY);
 #else
-        Touchscreen* touch = Input::get<Touchscreen>();
-        touch->removeBeginListener(LISTENER_KEY);
-        touch->removeEndListener(LISTENER_KEY);
-    #endif
-        _active = false;
-    }
+    Touchscreen* touch = Input::get<Touchscreen>();
+    touch->removeBeginListener(LISTENER_KEY);
+    touch->removeEndListener(LISTENER_KEY);
+#endif
+    _active = false;
+}
 
 
 /**
@@ -290,78 +287,79 @@ void InputController::update() {
 void InputController::readInput(){
 #ifndef CU_TOUCH_SCREEN
     Keyboard* keys = Input::get<Keyboard>();
+    if (keys) {
+        // Keyboard input for movement
+        bool up = keys->keyDown(KeyCode::ARROW_UP) || keys->keyDown(KeyCode::W);
+        bool down = keys->keyDown(KeyCode::ARROW_DOWN) || keys->keyDown(KeyCode::S);
+        bool left = keys->keyDown(KeyCode::ARROW_LEFT) || keys->keyDown(KeyCode::A);
+        bool right = keys->keyDown(KeyCode::ARROW_RIGHT) || keys->keyDown(KeyCode::D);
+        static bool upPressed = false;
+        static bool downPressed = false;
+        static bool leftPressed = false;
+        static bool rightPressed = false;
 
-    // Keyboard input for movement
-    bool up = keys->keyDown(KeyCode::ARROW_UP) || keys->keyDown(KeyCode::W);
-    bool down = keys->keyDown(KeyCode::ARROW_DOWN) || keys->keyDown(KeyCode::S);
-    bool left = keys->keyDown(KeyCode::ARROW_LEFT) || keys->keyDown(KeyCode::A);
-    bool right = keys->keyDown(KeyCode::ARROW_RIGHT) || keys->keyDown(KeyCode::D);
-    static bool upPressed = false;
-    static bool downPressed = false;
-    static bool leftPressed = false;
-    static bool rightPressed = false;
+        if (up && !upPressed) {
+            _move.y = 1;
+            upPressed = true;
+        }
+        if (down && !downPressed) {
+            _move.y = -1;
+            downPressed = true;
+        }
+        if (!up && !down) {
+            _move.y = 0;
+        }
+        upPressed = up;
+        downPressed = down;
 
-    if (up && !upPressed) {
-        _move.y = 1;
-        upPressed = true;
+        if (left && !leftPressed) {
+            _move.x = -1;
+            leftPressed = true;
+        }
+        if (right && !rightPressed) {
+            _move.x = 1;
+            rightPressed = true;
+        }
+        if (!left && !right) {
+            _move.x = 0;
+        }
+        leftPressed = left;
+        rightPressed = right;
+
+        _move.normalize();
+
+
+        // Keyboard input for item pickup
+        bool pickup = keys->keyDown(KeyCode::E);
+        static bool pickupDown = false;
+
+        _pickupPressed = pickup && !pickupDown;
+        pickupDown = pickup;
+
+
+        // Keyboard inputs for spells
+        bool space = keys->keyDown(KeyCode::SPACE);
+        bool shift = keys->keyDown(KeyCode::LEFT_SHIFT);
+        static bool spacePressed = false;
+        static bool shiftPressed = false;
+        if (space && !spacePressed) {
+            _lastGesture = Gesture::FIREBALL;
+        }
+        spacePressed = space;
+
+        if (shift && !shiftPressed) {
+            _lastGesture = Gesture::FREEZE;
+        }
+        shiftPressed = shift;
+
+
+        // Keyboard input for reset
+        bool r = keys->keyDown(KeyCode::R);
+        static bool rPressed = false;
+
+        _resetPressed = r && !rPressed;
+        rPressed = r;
     }
-    if (down && !downPressed) {
-        _move.y = -1;
-        downPressed = true;
-    }
-    if (!up && !down) {
-        _move.y = 0;
-    }
-    upPressed = up;
-    downPressed = down;
-
-    if (left && !leftPressed) {
-        _move.x = -1;
-        leftPressed = true;
-    }
-    if (right && !rightPressed) {
-        _move.x = 1;
-        rightPressed = true;
-    }
-    if (!left && !right) {
-        _move.x = 0;
-    }
-    leftPressed = left;
-    rightPressed = right;
-
-    _move.normalize();
-
-
-    // Keyboard input for item pickup
-    bool pickup = keys->keyDown(KeyCode::E);
-    static bool pickupDown = false;
-
-    _pickupPressed = pickup && !pickupDown;
-    pickupDown = pickup;
-
-
-    // Keyboard inputs for spells
-    bool space = keys->keyDown(KeyCode::SPACE);
-    bool shift = keys->keyDown(KeyCode::LEFT_SHIFT);
-    static bool spacePressed = false;
-    static bool shiftPressed = false;
-    if (space && !spacePressed) {
-        _lastGesture = Gesture::FIREBALL;
-    }
-    spacePressed = space;
-
-    if (shift && !shiftPressed) {
-        _lastGesture = Gesture::FREEZE;
-    }
-    shiftPressed = shift;
-
-
-    // Keyboard input for reset
-    bool r = keys->keyDown(KeyCode::R);
-    static bool rPressed = false;
-
-    _resetPressed = r && !rPressed;
-    rPressed = r;
 
 #endif // !CU_TOUCH_SCREEN
 };
@@ -422,7 +420,14 @@ Vec2 InputController::touch2Screen(const Vec2 pos) const {
 
     Vec2 result;
     result.x = px;
-    result.y = py;
+    result.y = _sbounds.getMaxY() - py;
+    return result;
+}
+
+Vec2 InputController::mouse2Screen(const Vec2 pos) const {
+    Vec2 result;
+    result.x = pos.x;
+    result.y = _sbounds.getMaxY() - pos.y;
     return result;
 }
 
@@ -436,21 +441,26 @@ Vec2 InputController::touch2Screen(const Vec2 pos) const {
  * @param  pos  the current joystick position
  */
 void InputController::processJoystick(const cugl::Vec2 pos) {
-    Vec2 diff = pos - _ltouch.position;
-    diff.y = -diff.y;
+    _joystickpos = pos;
+    Vec2 diff = pos - _joycenter;
     float dist = diff.length();
 
     // Clamp to joystick radius
-    if (dist > JSTICK_RADIUS) {
+    if (dist > _joyradius) {
+        Vec2 excess = diff;
         diff.normalize();
-        diff *= JSTICK_RADIUS;
+        diff *= _joyradius;
+
+        excess -= diff;
+        // Move joystick in excess direction
+        _joycenter += excess;
     }
 
     if (dist > JSTICK_DEADZONE) {
         _joystick = true;
 
         // Scale to [-1,1] range without normalizing
-        float scale = 1.0f / JSTICK_RADIUS;
+        float scale = 1.0f / _joyradius;
 
         float x = diff.x * scale;
         float y = diff.y * scale;
@@ -465,9 +475,9 @@ void InputController::processJoystick(const cugl::Vec2 pos) {
         _move = Vec2(0,0);
     }
     
-    _joycenter = touch2Screen(_ltouch.position);
+    //_joycenter = touch2Screen(_ltouch.position);
     
-    _joycenter.y += JSTICK_OFFSET;
+    //_joycenter.y += JSTICK_OFFSET;
 }
 
 /**
@@ -492,9 +502,8 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
                 _ltouch.timestamp.mark();
                 _ltouch.touchids.insert(event.touch);
 
-                _joystick = true;
                 _joycenter = touch2Screen(event.position);
-                _joycenter.y += JSTICK_OFFSET;
+                //_joycenter.y += JSTICK_OFFSET;
             }
             break;
         case Zone::RIGHT:
@@ -528,6 +537,7 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
     Zone zone = getZone(pos);
 
     if (_ltouch.touchids.find(event.touch) != _ltouch.touchids.end()) {
+        _joystick = false;
         _ltouch.touchids.clear();
         _move = Vec2::ZERO;
     } else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
@@ -572,7 +582,7 @@ void InputController::touchMotionCB(const TouchEvent& event, const Vec2& previou
     Vec2 pos = event.position;
     // Left zone is all that matters rn. 
     if (_ltouch.touchids.find(event.touch) != _ltouch.touchids.end()) {
-        processJoystick(pos);
+        processJoystick(touch2Screen(pos));
     }
     else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
         currentStroke.push_back(touch2Screen(pos));
@@ -583,7 +593,7 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
     _touchDown = true;
     CULog("Mouse press");
 
-    Vec2 pos = event.position;
+    Vec2 pos = mouse2Screen(event.position);
     //CULog("%.2f, %.2f", pos.x, pos.y);
     Zone zone = getZone(pos);
     //CULog("%d %d", zone == Zone::LEFT, getZone(event.position) == Zone::LEFT);
@@ -591,14 +601,9 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
     case Zone::LEFT:
         CULog("In left zone");
         // Left is the floating joystick
-        _ltouch.position = event.position;
-        _ltouch.timestamp.mark();
-        //_ltouch.touchids.insert(event.touch);
         _mouseDownZone = Zone::LEFT;
 
-        _joystick = true;
         _joycenter = pos;
-        _joycenter.y += JSTICK_OFFSET;
         break;
     case Zone::RIGHT:
         CULog("In right zone");
@@ -625,12 +630,15 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
 void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
     _touchDown = false;
     // Reset all keys that might have been set
-    Vec2 pos = touch2Screen(event.position);
+    Vec2 pos = mouse2Screen(event.position);
     Zone zone = getZone(pos);
+    
 
     if (_mouseDownZone == Zone::LEFT) {
+        CULog("(%.2f, %.2f) (%.2f, %.2f)", _joycenter.x, _joycenter.y, pos.x, pos.y);
         _ltouch.touchids.clear();
         _move = Vec2::ZERO;
+        _joystick = false;
     }
     else if (_mouseDownZone == Zone::RIGHT) {
         _rtouch.touchids.clear();
@@ -646,7 +654,7 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
                 _lastGesture = Gesture::NONE;
             }
 
-            //CULog("%s", gesture.c_str());
+            CULog("%s", gesture.c_str());
         }
         else {
             // Check if finger has not moved much, register as tap
@@ -666,15 +674,15 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
 }
 
 void InputController::motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus) {
-    Vec2 pos = event.position;
-    CULog("Mouse drag");
+    Vec2 pos = mouse2Screen(event.position);
+    //CULog("Mouse drag");
 
     if (_mouseDownZone == Zone::LEFT) {
-        CULog("In left zone");
+        //CULog("In left zone");
         processJoystick(pos);
     }
     else if (_mouseDownZone == Zone::RIGHT) {
-        CULog("In right zone");
-        currentStroke.push_back(touch2Screen(pos));
+        //CULog("In right zone");
+        currentStroke.push_back(pos);
     }
 }

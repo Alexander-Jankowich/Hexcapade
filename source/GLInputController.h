@@ -153,10 +153,20 @@ public:
      */
     void readInput();
 
+#pragma mark Joystick Attributes
+
+    int getJoystickRadius() { return _joyradius; }
+
+    bool showJoystick() { return _joystick; }
+
+    cugl::Vec2 getJoystickCenter() { return _joycenter; }
+
+    cugl::Vec2 getJoystickPos() { return _joystickpos; }
 
 protected:
     /** Whether the input device was successfully initialized */
     bool _active;
+
     /** The current touch/mouse position */
     cugl::Vec2 _currPos;
     /** The previous touch/mouse position */
@@ -241,8 +251,9 @@ protected:
     bool _joystick;
     /** The position of the virtual joystick */
     cugl::Vec2 _joycenter;
-    /** Whether or not we have processed a jump for this swipe yet */
-    bool _hasJumped;
+    cugl::Vec2 _joystickpos;
+    int _joyradius;
+
     /** The timestamp for a double tap on the right */
     cugl::Timestamp _rtime;
     /** The timestamp for a double tap in the middle */
@@ -282,6 +293,16 @@ protected:
      * @return the scene location of a touch
      */
     cugl::Vec2 touch2Screen(const cugl::Vec2 pos) const;
+
+    /**
+     * Returns the scene location of the mouse
+     *
+     * Touch coordinates are inverted, with y origin in the top-left
+     * corner. This method corrects for this.
+     *
+     * @return the scene location of the mouse
+     */
+    cugl::Vec2 mouse2Screen(const cugl::Vec2 pos) const;
 
     /**
      * Processes movement for the floating joystick.

@@ -34,15 +34,6 @@ using namespace cugl::graphics;
 // Lock the screen size to fixed height regardless of aspect ratio
 #define SCENE_HEIGHT 720
 
-/** How big the handle should be */
-#define KNOB_RADIUS 15
-
-/** The extrustion width. */
-#define LINE_WIDTH 50
-
-/** The width of a handle. */
-#define HANDLE_WIDTH 3
-
 /** The ratio between the physics world and the screen. */
 #define PHYSICS_SCALE 50
 
@@ -84,6 +75,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     
     // Start up the input handler
     _input.init(cugl::Rect(0,0,getSize().width,getSize().height));
+    _inputDisplay = make_shared<InputDisplay>(&_input);
     
     // create the player
     _player = make_shared<Player>(getSize());
@@ -136,6 +128,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 void GameScene::dispose() {
     // NOTHING TO DO THIS TIME
     spells.dispose();
+    _inputDisplay->dispose();
     _assets->dispose();
     _assets = nullptr;
 }
@@ -190,6 +183,7 @@ void GameScene::addItem(int value) {
  */
 void GameScene::preUpdate(float dt) {
     _input.update();
+    _inputDisplay->update();
 
     if (_input.pressedReset()) {
         reset();
@@ -326,6 +320,8 @@ void GameScene::render() {
     drawItems();
 
     renderHUD();
+
+    _inputDisplay->draw(_batch);
 
     _batch->setColor(original);
     _batch->end();

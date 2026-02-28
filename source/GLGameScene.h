@@ -17,6 +17,7 @@
 #include <cugl/cugl.h>
 #include <vector>
 #include "GLInputController.h"
+#include "InputDisplay.h"
 #include <cstddef> 
 #include "EnemySet.h"
 #include "SpellSet.h"
@@ -35,6 +36,7 @@ protected:
     // CONTROLLERS are attached directly to the scene (no pointers)
     /** The controller to manage the ship */
     InputController _input;
+    std::shared_ptr<InputDisplay> _inputDisplay;
     
     // MODELS should be shared pointers or a data structure of shared pointers
     /** The spline for the exterior circle */
