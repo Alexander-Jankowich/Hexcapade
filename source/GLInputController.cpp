@@ -216,15 +216,18 @@ bool InputController::init(const Rect bounds) {
     _active = Input::activate<Keyboard>();
     Mouse* mouse = Input::get<Mouse>();
     if (mouse) {
-        mouse->addPressListener(LISTENER_KEY, [this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
+        mouse->setPointerAwareness(Mouse::PointerAwareness::DRAG);
+        _mouseKey = mouse->acquireKey();
+
+        mouse->addPressListener(_mouseKey, [=, this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
             this->buttonDownCB(event, clicks, focus);
-            });
-        mouse->addReleaseListener(LISTENER_KEY, [this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
+        });
+        mouse->addReleaseListener(_mouseKey, [=, this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
             this->buttonUpCB(event, clicks, focus);
-            });
-        mouse->addMotionListener(LISTENER_KEY, [this](const cugl::MouseEvent& event, const Vec2 previous, bool focus) {
+        });
+        mouse->addDragListener(_mouseKey, [=, this](const cugl::MouseEvent& event, const Vec2 previous, bool focus) {
             this->motionCB(event, previous, focus);
-            });
+        });
         _active = true;
 
         CULog("Added listeners!");
@@ -665,7 +668,7 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
 void InputController::motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus) {
     Vec2 pos = event.position;
     CULog("Mouse drag");
-    // Left zone is all that matters rn. 
+
     if (_mouseDownZone == Zone::LEFT) {
         CULog("In left zone");
         processJoystick(pos);
