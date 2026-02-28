@@ -340,6 +340,7 @@ private:
     
     void touchMotionCB(const cugl::TouchEvent& event, const cugl::Vec2& previous, bool focus);
     
+    Zone _mouseDownZone = Zone::UNDEFINED;
     
 };
 

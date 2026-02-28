@@ -239,12 +239,11 @@ void GameScene::preUpdate(float dt) {
     }
 
     // Check enemy spawning
-    lastEnemySpawn += dt;
-    //CULog("%.2f", lastEnemySpawn);
-    if (lastEnemySpawn > 7) {
-        lastEnemySpawn -= 7;
-        _enemy->spawnEnemy(getSize() / 2, 4);
-    }
+    //lastEnemySpawn += dt;
+    //if (lastEnemySpawn > 7) {
+    //    lastEnemySpawn -= 7;
+    //    _enemy->spawnEnemy(getSize() / 2, 4);
+    //}
 }
 
 /**

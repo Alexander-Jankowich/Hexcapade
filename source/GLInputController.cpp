@@ -18,6 +18,8 @@ using namespace cugl;
 
 #pragma mark Input Constants
 
+#define USE_MOUSE
+
 /** The key to use for reseting the game */
 #define RESET_KEY KeyCode::R
 /** The key for toggling the debug display */
@@ -212,6 +214,24 @@ bool InputController::init(const Rect bounds) {
     }
 #else
     _active = Input::activate<Keyboard>();
+    Mouse* mouse = Input::get<Mouse>();
+    if (mouse) {
+        mouse->addPressListener(LISTENER_KEY, [this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
+            this->buttonDownCB(event, clicks, focus);
+            });
+        mouse->addReleaseListener(LISTENER_KEY, [this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
+            this->buttonUpCB(event, clicks, focus);
+            });
+        mouse->addMotionListener(LISTENER_KEY, [this](const cugl::MouseEvent& event, const Vec2 previous, bool focus) {
+            this->motionCB(event, previous, focus);
+            });
+        _active = true;
+
+        CULog("Added listeners!");
+    }
+    else {
+        _active = false;
+    }
 #endif
     return _active;
 }
@@ -228,7 +248,11 @@ bool InputController::init(const Rect bounds) {
 void InputController::dispose() {
     #ifndef CU_TOUCH_SCREEN
         Input::deactivate<Keyboard>();
-    #else
+        Mouse* mouse = Input::get<Mouse>();
+        mouse->removePressListener(LISTENER_KEY);
+        mouse->removeReleaseListener(LISTENER_KEY);
+        mouse->removeDragListener(LISTENER_KEY);
+#else
         Touchscreen* touch = Input::get<Touchscreen>();
         touch->removeBeginListener(LISTENER_KEY);
         touch->removeEndListener(LISTENER_KEY);
@@ -338,7 +362,6 @@ void InputController::readInput(){
 
 #endif // !CU_TOUCH_SCREEN
 };
-
 
 #pragma mark Touch Callbacks / Controls
 
@@ -484,11 +507,10 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
             //not possible hopefully lol
             break;
         default:
-            
             break;
     }
     
-    }
+}
 
 /**
  * Callback for the end of a touch event
@@ -554,5 +576,102 @@ void InputController::touchMotionCB(const TouchEvent& event, const Vec2& previou
     }
 }
 
+void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
+    _touchDown = true;
+    CULog("Mouse press");
 
+    Vec2 pos = event.position;
+    //CULog("%.2f, %.2f", pos.x, pos.y);
+    Zone zone = getZone(pos);
+    //CULog("%d %d", zone == Zone::LEFT, getZone(event.position) == Zone::LEFT);
+    switch (zone) {
+    case Zone::LEFT:
+        CULog("In left zone");
+        // Left is the floating joystick
+        _ltouch.position = event.position;
+        _ltouch.timestamp.mark();
+        //_ltouch.touchids.insert(event.touch);
+        _mouseDownZone = Zone::LEFT;
 
+        _joystick = true;
+        _joycenter = pos;
+        _joycenter.y += JSTICK_OFFSET;
+        break;
+    case Zone::RIGHT:
+        CULog("In right zone");
+        // For now if pressed on right side attempt pickup, need to change to button
+        _touchDown = true;
+        _touchStart = pos;
+
+        currentStroke.clear();
+        currentStroke.push_back(pos);
+        //_rtouch.touchids.insert(event.touch);
+        _mouseDownZone = Zone::RIGHT;
+        break;
+    case Zone::MAIN:
+        //not possible hopefully lol
+        _mouseDownZone = Zone::MAIN;
+
+        break;
+    default:
+        _mouseDownZone = Zone::UNDEFINED;
+        break;
+    }
+}
+
+void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
+    _touchDown = false;
+    // Reset all keys that might have been set
+    Vec2 pos = touch2Screen(event.position);
+    Zone zone = getZone(pos);
+
+    if (_mouseDownZone == Zone::LEFT) {
+        _ltouch.touchids.clear();
+        _move = Vec2::ZERO;
+    }
+    else if (_mouseDownZone == Zone::RIGHT) {
+        _rtouch.touchids.clear();
+        currentStroke.push_back(pos);
+        if (currentStroke.size() > 3) {
+            std::string gesture = recognizer.match(currentStroke);
+
+            try {
+                _lastGesture = _gesturemap[gesture];
+            }
+            catch (std::out_of_range) {
+                // Not a recognized gesture... probably
+                _lastGesture = Gesture::NONE;
+            }
+
+            //CULog("%s", gesture.c_str());
+        }
+        else {
+            // Check if finger has not moved much, register as tap
+            if (pos.distance(_touchStart) < 20) {
+                _pickupPressed = true;
+            }
+        }
+        CULog("Stroke points:");
+            for (const auto& p : currentStroke) {
+                CULog("{%f, %f},", p.x, p.y);
+            }
+
+    }
+    else if (zone == Zone::MAIN) {
+    }
+    _mouseDownZone = Zone::UNDEFINED;
+}
+
+void InputController::motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus) {
+    Vec2 pos = event.position;
+    CULog("Mouse drag");
+    // Left zone is all that matters rn. 
+    if (_mouseDownZone == Zone::LEFT) {
+        CULog("In left zone");
+        processJoystick(pos);
+    }
+    else if (_mouseDownZone == Zone::RIGHT) {
+        CULog("In right zone");
+        currentStroke.push_back(touch2Screen(pos));
+    }
+}
