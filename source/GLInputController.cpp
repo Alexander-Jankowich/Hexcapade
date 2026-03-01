@@ -189,6 +189,10 @@ bool InputController::init(const Rect bounds) {
     Size display = Application::get()->getDisplaySize();
     _tbounds = Rect(0,0,display.width,display.height);
     
+    CULog("tbounds x: %.2f, y: %.2f", _tbounds.getMaxX(), _tbounds.getMaxY());
+    CULog("sbounds x: %.2f, y: %.2f", _sbounds.getMaxX(), _sbounds.getMaxY());
+
+    
     createZones();
     clearTouchInstance(_ltouch);
     clearTouchInstance(_rtouch);
@@ -370,11 +374,11 @@ void InputController::readInput(){
  * Defines the zone boundaries, so we can quickly categorize touches.
  */
 void InputController::createZones() {
-    _lzone = _tbounds;
+    _lzone = _sbounds;
     _lzone.size.width *= LEFT_ZONE;
-    _rzone = _tbounds;
+    _rzone = _sbounds;
     _rzone.size.width *= RIGHT_ZONE;
-    _rzone.origin.x = _tbounds.origin.x+_tbounds.size.width-_rzone.size.width;
+    _rzone.origin.x = _sbounds.origin.x+_sbounds.size.width-_rzone.size.width;
 }
 
 /**
@@ -415,8 +419,8 @@ InputController::Zone InputController::getZone(const Vec2 pos) const {
  * @return the scene location of a touch
  */
 Vec2 InputController::touch2Screen(const Vec2 pos) const {
-    float px = pos.x / 3;
-    float py = pos.y / 3;
+    float px = pos.x * _tbounds.getMaxX() / _sbounds.getMaxX();
+    float py = pos.y *_tbounds.getMaxY() / _sbounds.getMaxY() ;
 
     Vec2 result;
     result.x = px;
