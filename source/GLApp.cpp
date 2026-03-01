@@ -37,27 +37,27 @@ CU_ROOTCLASS(GeometryApp)
  * the backend is initialized, and so much CUGL API calls will fail. Any
  * initialization that requires access to CUGL must happen in onStartup().
  */
-GeometryApp::GeometryApp() : Application(), 
-_loaded(false) {
+    GeometryApp::GeometryApp() : Application(),
+    _loaded(false), _scene(State::LOAD) {
     // Pre-launch configuration. Nothing here can be reassigned later.
-    setName("Geometry Lab");
+    setName("Hexcapade");
     setOrganization("GDIAC");
     setAppId("edu.cornell.gdiac.code2");
-    
+
     setHighDPI(true);
     setResizable(false);
     setVSync(true);
-    
+
     // This one can MAYBE reassigned after launch
     setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
-    
+
     // This one can be reset at any time
     setFPS(120.0f);
-    
+
     // Get rid of the cornflower blue
-    setClearColor(Color4(192,192,192));
+    setClearColor(Color4(192, 192, 192));
 }
-    
+
 /**
  * The method called after the backend is initialized, but before running the application.
  *
@@ -70,9 +70,9 @@ _loaded(false) {
  */
 void GeometryApp::onStartup() {
     _assets = AssetManager::alloc();
-    _batch  = SpriteBatch::alloc();
+    _batch = SpriteBatch::alloc();
     auto cam = OrthographicCamera::alloc(getDisplaySize());
-    
+
 #ifdef CU_MOBILE
     // Start-up basic input for loading screen (MOBILE ONLY)
     Input::activate<Touchscreen>();
@@ -81,21 +81,25 @@ void GeometryApp::onStartup() {
     Input::activate<Mouse>();
     Input::activate<Keyboard>();
 #endif
-    
+
     // Bare bones asset loading (textures only)
     _assets->attach<Texture>(TextureLoader::alloc()->getHook());
     _assets->attach<Font>(FontLoader::alloc()->getHook());
+    _assets->attach<JsonValue>(JsonLoader::alloc()->getHook());
     // Needed for loading screen
     _assets->attach<scene2::SceneNode>(Scene2Loader::alloc()->getHook());
     _assets->loadDirectory("json/loading.json");
 
     // Create a "loading" screen
     _loaded = false;
-    _loading.init(_assets,"json/assets.json");
+    _loading.init(_assets, "json/assets.json");
     _loading.setSpriteBatch(_batch);
-    
+
     // Queue up the other assets
-    _loading.start();   
+    _loading.start();
+
+    cugl::netcode::NetworkLayer::start(cugl::netcode::NetworkLayer::Log::INFO);
+
     Application::onStartup(); // YOU MUST END with call to parent
 }
 
@@ -111,15 +115,19 @@ void GeometryApp::onStartup() {
  * causing the application to be deleted.
  */
 void GeometryApp::onShutdown() {
+    _mainmenu.dispose();
+    _hostScene.dispose();
+    _clientScene.dispose();
     _loading.dispose();
     _gameplay.dispose();
     _endScene.dispose();
     _assets = nullptr;
     _batch = nullptr;
-
     // Shutdown input
     Input::deactivate<Mouse>();
     Input::deactivate<Keyboard>();
+
+    cugl::netcode::NetworkLayer::stop();
 
     Application::onShutdown();  // YOU MUST END with call to parent
 }
@@ -164,18 +172,9 @@ void GeometryApp::onResume() {
  * @param dt    The amount of time (in seconds) since the last frame
  */
 void GeometryApp::update(float dt) {
-    if (!_loaded && _loading.isActive()) {
-        _loading.update(dt);
-    }
-    else if (!_loaded) {
-        _loading.dispose(); // releases its mouse listeners first
-        _gameplay.init(_assets);
-        _gameplay.setSpriteBatch(_batch);
-        _endScene.init(_assets);         // safe to register listeners now
-        _endScene.setSpriteBatch(_batch);
-        _loaded = true;
-        setDeterministic(true);
-    }
+    // NOTE: In deterministic mode (after loading), this method is NOT called.
+    // All scene updates are handled in preUpdate() instead.
+    if (_scene == State::LOAD) updateLoadingScene(dt);
 }
 
 /**
@@ -199,6 +198,14 @@ void GeometryApp::update(float dt) {
  * @param dt    The amount of time (in seconds) since the last frame
  */
 void GeometryApp::preUpdate(float dt) {
+    // Handle non-game scenes here (update() is not called in deterministic mode)
+    switch (_scene) {
+    case State::LOAD:   updateLoadingScene(dt); return;
+    case State::MENU:   updateMenuScene(dt);    return;
+    case State::HOST:   updateHostScene(dt);    return;
+    case State::CLIENT: updateClientScene(dt);  return;
+    default: break;
+    }
     if (_endScene.isVisible()) {
         _endScene.update(dt);
         if (_endScene.didPressReplay()) {
@@ -242,6 +249,7 @@ void GeometryApp::preUpdate(float dt) {
  * @param step    The fixed timestep in microseconds
  */
 void GeometryApp::fixedUpdate(Uint64 step) {
+    if (_scene != State::GAME) return;
     _gameplay.fixedUpdate(step);
 }
 
@@ -269,8 +277,9 @@ void GeometryApp::fixedUpdate(Uint64 step) {
  * @param dt    The amount of time (in seconds) since the last frame
  */
 void GeometryApp::postUpdate(float dt) {
-	// Compute time to report to game scene version of postUpdate
-    float time = getFixedRemainder()/1000000.0f;
+    if (_scene != State::GAME) return;
+    // Compute time to report to game scene version of postUpdate
+    float time = getFixedRemainder() / 1000000.0f;
     _gameplay.postUpdate(time);
 }
 
@@ -284,13 +293,123 @@ void GeometryApp::postUpdate(float dt) {
  * at all. The default implmentation does nothing.
  */
 void GeometryApp::draw() {
-    if (!_loaded) {
+    switch (_scene) {
+    case State::LOAD:
         _loading.render();
+        break;
+    case State::MENU:
+        _mainmenu.render();
+        break;
+    case State::HOST:
+        _hostScene.render();
+        break;
+    case State::CLIENT:
+        _clientScene.render();
+        break;
+    case State::GAME:
+        if (_endScene.isVisible()) {
+            _endScene.render();
+        }
+        else {
+            _gameplay.render();
+        }
+        break;
     }
-    else if (_endScene.isVisible()) {
-        _endScene.render();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+#pragma mark Scene Transitions
+// ──────────────────────────────────────────────────────────────────────────────
+
+void GeometryApp::updateLoadingScene(float dt) {
+    if (_loading.isActive()) {
+        _loading.update(dt);
+        return;
     }
-    else {
-        _gameplay.render();
+
+    // Loading finished — initialize all scenes once
+    _loading.dispose();
+
+    _mainmenu.init(_assets);
+    _mainmenu.setSpriteBatch(_batch);
+
+    _gameplay.init(_assets);
+    _gameplay.setSpriteBatch(_batch);
+
+    _endScene.init(_assets);
+    _endScene.setSpriteBatch(_batch);
+
+    _loaded = true;
+    setDeterministic(true);
+    _scene = State::MENU;
+}
+
+void GeometryApp::updateMenuScene(float dt) {
+    _mainmenu.update(dt);
+
+    switch (_mainmenu.getChoice()) {
+    case MenuScene::Choice::HOST:
+        _mainmenu.resetChoice();
+        _hostScene.init(_assets);
+        _hostScene.setSpriteBatch(_batch);
+        _scene = State::HOST;
+        break;
+    case MenuScene::Choice::JOIN:
+        _mainmenu.resetChoice();
+        _clientScene.init(_assets);
+        _clientScene.setSpriteBatch(_batch);
+        _scene = State::CLIENT;
+        break;
+    case MenuScene::Choice::NONE:
+        break;
     }
+}
+
+void GeometryApp::updateHostScene(float dt) {
+    _hostScene.update(dt);
+
+    switch (_hostScene.getStatus()) {
+    case HostScene::Status::ABORT:
+        // Reinitialize so a fresh connection is made next time
+        _hostScene.dispose();
+        _hostScene.init(_assets);
+        _hostScene.setSpriteBatch(_batch);
+        _scene = State::MENU;
+        break;
+    case HostScene::Status::START:
+        _hostScene.disconnect();
+        _gameplay.reset();
+        _scene = State::GAME;
+        break;
+    case HostScene::Status::WAIT:
+    case HostScene::Status::IDLE:
+        break;
+    }
+}
+
+void GeometryApp::updateClientScene(float dt) {
+    _clientScene.update(dt);
+
+    switch (_clientScene.getStatus()) {
+    case ClientScene::Status::ABORT:
+        // Reinitialize so a fresh connection is made next time
+        _clientScene.dispose();
+        _clientScene.init(_assets);
+        _clientScene.setSpriteBatch(_batch);
+        _scene = State::MENU;
+        break;
+    case ClientScene::Status::START:
+        _clientScene.disconnect();
+        _gameplay.reset();
+        _scene = State::GAME;
+        break;
+    case ClientScene::Status::IDLE:
+    case ClientScene::Status::JOIN:
+    case ClientScene::Status::WAIT:
+        break;
+    }
+}
+
+void GeometryApp::updateGameScene(float dt) {
+    // Placeholder — gameplay logic lives in preUpdate/fixedUpdate/postUpdate
 }

@@ -1,0 +1,8 @@
+{
+  "lobby": {
+    "address": "46.101.187.102",
+    "port": 8080
+  },
+  "max players": 4,
+  "API version": 0
+}

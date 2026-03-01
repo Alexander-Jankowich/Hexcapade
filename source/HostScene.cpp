@@ -1,0 +1,237 @@
+//
+//  HostScene.cpp
+//  Hexcapade
+//
+#include "HostScene.h"
+
+using namespace cugl;
+using namespace cugl::netcode;
+using namespace cugl::graphics;
+
+#define SCENE_HEIGHT 720
+
+// ──────────────────────────────────────────────────────────────────────────────
+#pragma mark Helpers
+// ──────────────────────────────────────────────────────────────────────────────
+
+std::string HostScene::hex2dec(const std::string& hex) {
+    Uint32 value = strtool::stou32(hex, 0, 16);
+    std::string result = strtool::to_string(value);
+    // Pad to 5 digits so room codes always look the same length
+    if (result.size() < 5) {
+        std::string padded(5, '0');
+        size_t diff = 5 - result.size();
+        for (size_t i = 0; i < result.size(); i++) padded[diff + i] = result[i];
+        result = padded;
+    }
+    return result;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+#pragma mark Init / Dispose
+// ──────────────────────────────────────────────────────────────────────────────
+
+bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
+    if (!assets) return false;
+    if (!Scene2::initWithHint(Size(0, SCENE_HEIGHT))) return false;
+
+    _assets = assets;
+    _font = assets->get<Font>("font");
+    _status = Status::WAIT;
+    _playerCount = 1;
+    _roomCode = "-----";
+
+    Size s = getSize();
+    float bw = 300.0f, bh = 60.0f;
+    float cx = s.width / 2.0f;
+
+    _startRect = Rect(cx - bw / 2, s.height / 2.0f - 60.0f, bw, bh);
+    _backRect = Rect(cx - bw / 2, s.height / 2.0f - 140.0f, bw, bh);
+
+    // Load network config from the "server" JSON asset
+    auto json = _assets->get<JsonValue>("server");
+    if (!json) {
+        CULog("ERROR: server.json not found in assets!");
+        return false;
+    }
+    _config.set(json);
+
+    // Register mouse listener
+    Mouse* mouse = Input::get<Mouse>();
+    if (mouse) {
+        mouse->addPressListener(LISTENER_KEY,
+            [this](const MouseEvent& event, Uint8 clicks, bool focus) {
+                this->mousePressCB(event, clicks, focus);
+            });
+    }
+
+    // Immediately attempt to open a host connection
+    connect();
+    return true;
+}
+
+void HostScene::dispose() {
+    Mouse* mouse = Input::get<Mouse>();
+    if (mouse) mouse->removePressListener(LISTENER_KEY);
+    disconnect();
+    _assets = nullptr;
+    _font = nullptr;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+#pragma mark Networking
+// ──────────────────────────────────────────────────────────────────────────────
+
+bool HostScene::connect() {
+    _network = NetcodeConnection::alloc(_config);   // no room arg = host
+    _network->open();
+    checkConnection();
+    return true;
+}
+
+bool HostScene::checkConnection() {
+    if (!_network) return false;
+
+    NetcodeConnection::State state = _network->getState();
+    switch (state) {
+    case NetcodeConnection::State::NEGOTIATING:
+        _status = Status::WAIT;
+        break;
+
+    case NetcodeConnection::State::CONNECTED:
+        if (_status == Status::WAIT) {
+            _status = Status::IDLE;
+            _roomCode = hex2dec(_network->getRoom());
+        }
+        _playerCount = (int)_network->getNumPlayers();
+        break;
+
+    case NetcodeConnection::State::DENIED:
+    case NetcodeConnection::State::MISMATCHED:
+    case NetcodeConnection::State::INVALID:
+    case NetcodeConnection::State::FAILED:
+    case NetcodeConnection::State::DISCONNECTED:
+        _network->close();
+        _network = nullptr;
+        _status = Status::WAIT;
+        return false;
+
+    default:
+        break;
+    }
+    return true;
+}
+
+void HostScene::startGame() {
+    if (_network) {
+        _network->startSession();
+        std::vector<std::byte> msg = { std::byte(255) };
+        _network->broadcast(msg);
+    }
+    _status = Status::START;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+#pragma mark Input
+// ──────────────────────────────────────────────────────────────────────────────
+
+void HostScene::mousePressCB(const MouseEvent& event, Uint8 clicks, bool focus) {
+    Vec2 pos = event.position;
+    pos.y = getSize().height - pos.y;   // flip y to match scene coords
+
+    if (_backRect.contains(pos)) {
+        disconnect();
+        _status = Status::ABORT;
+        return;
+    }
+
+    // Start button is only active when we have a room code (IDLE state)
+    if (_status == Status::IDLE && _startRect.contains(pos)) {
+        startGame();
+    }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+#pragma mark Update / Render
+// ──────────────────────────────────────────────────────────────────────────────
+
+void HostScene::update(float dt) {
+    if (_network) {
+        _network->receive([](const std::string&, const std::vector<std::byte>&) {
+            // Hosts don't need to process incoming data during the lobby
+            });
+        checkConnection();
+    }
+}
+
+void HostScene::render() {
+    _batch->setPerspective(getCamera()->getCombined());
+    _batch->begin();
+
+    Size s = getSize();
+
+    // Dark background panel
+    _batch->setColor(Color4(20, 20, 40, 255));
+    _batch->fill(Rect(0, 0, s.width, s.height));
+
+    float cx = s.width / 2.0f;
+    float cy = s.height / 2.0f;
+    float pw = 520.0f, ph = 340.0f;
+    Rect panel(cx - pw / 2, cy - ph / 2, pw, ph);
+    _batch->setColor(Color4(40, 40, 80, 240));
+    _batch->fill(panel);
+
+    // Back button (always available)
+    _batch->setColor(Color4(100, 40, 40, 255));
+    _batch->fill(_backRect);
+
+    // Start button — greyed out while waiting for a room code
+    bool canStart = (_status == Status::IDLE);
+    _batch->setColor(canStart ? Color4(40, 140, 40, 255) : Color4(70, 70, 70, 255));
+    _batch->fill(_startRect);
+
+    if (_font) {
+        _batch->setColor(Color4::WHITE);
+
+        // Title
+        auto title = TextLayout::allocWithText("Host Lobby", _font);
+        title->layout();
+        Affine2 t;
+        t.translate(cx - title->getBounds().size.width / 2, cy + 120);
+        _batch->drawText(title, t);
+
+        // Room code
+        auto codeLabel = TextLayout::allocWithText("Room Code: " + _roomCode, _font);
+        codeLabel->layout();
+        Affine2 ct;
+        ct.translate(cx - codeLabel->getBounds().size.width / 2, cy + 60);
+        _batch->drawText(codeLabel, ct);
+
+        // Player count
+        auto playerLabel = TextLayout::allocWithText(
+            "Players: " + strtool::to_string(_playerCount), _font);
+        playerLabel->layout();
+        Affine2 pt;
+        pt.translate(cx - playerLabel->getBounds().size.width / 2, cy + 10);
+        _batch->drawText(playerLabel, pt);
+
+        // Back button label
+        auto backLabel = TextLayout::allocWithText("Back", _font);
+        backLabel->layout();
+        Affine2 bt;
+        bt.translate(_backRect.getMidX() - backLabel->getBounds().size.width / 2,
+            _backRect.getMidY() - backLabel->getBounds().size.height / 2);
+        _batch->drawText(backLabel, bt);
+
+        // Start button label
+        std::string startText = canStart ? "Start Game" : "Waiting for server...";
+        auto startLabel = TextLayout::allocWithText(startText, _font);
+        startLabel->layout();
+        Affine2 st;
+        st.translate(_startRect.getMidX() - startLabel->getBounds().size.width / 2,
+            _startRect.getMidY() - startLabel->getBounds().size.height / 2);
+        _batch->drawText(startLabel, st);
+    }
+
+    _batch->end();
+}

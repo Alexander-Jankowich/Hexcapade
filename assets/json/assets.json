@@ -1,10 +1,13 @@
 {
+  "jsons": {
+    "server": "json/server.json"
+  },
   "textures": {
     "enemy": {
-        "file": "textures/enemy.png"
+      "file": "textures/enemy.png"
     },
     "spell": {
-        "file": "textures/photon.png"
+      "file": "textures/photon.png"
     }
   },
   "fonts": {
