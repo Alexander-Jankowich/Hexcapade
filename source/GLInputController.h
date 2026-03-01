@@ -114,6 +114,8 @@ public:
     */
     void resolvedGesture() { _lastGesture = Gesture::NONE; }
 
+    std::vector<cugl::Vec2> getCurStroke() { return currentStroke; }
+
     cugl::Vec2 getMove() const {
         return _move;
     }
@@ -139,9 +141,6 @@ public:
     void resolvedReset() {
         _resetPressed = false;
     }
-
-    /** Returns normalized joystick vector in [-1,1] per axis (Vec2::ZERO if inactive) */
-    //cugl::Vec2 getJoystickVector() const;
 
     /**
      * Reads the input for this player and converts the result into game logic.
@@ -205,6 +204,9 @@ protected:
 
     /**The gesture recognizer*/
     cugl::GestureRecognizer recognizer;
+
+    /** Mapping of gesture strings to the correct Gesture */
+    std::unordered_map<std::string, Gesture> _gesturemap;
     
 	// ADD NEW ATTRIBUTES HERE FOR EXTRA CREDIT
     
@@ -259,8 +261,6 @@ protected:
     /** The timestamp for a double tap in the middle */
     cugl::Timestamp _mtime;
 
-    /** Mapping of gesture strings to the correct Gesture */
-    std::unordered_map<std::string, Gesture> _gesturemap;
 
     /**
      * Defines the zone boundaries, so we can quickly categorize touches.
@@ -314,6 +314,8 @@ protected:
      * @param  pos  the current joystick position
      */
     void processJoystick(const cugl::Vec2 pos);
+
+    void processGestureEnd(const cugl::Vec2 pos);
 
 #pragma mark Mouse Callbacks
 private:

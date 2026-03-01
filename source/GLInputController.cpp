@@ -480,6 +480,34 @@ void InputController::processJoystick(const cugl::Vec2 pos) {
     //_joycenter.y += JSTICK_OFFSET;
 }
 
+void InputController::processGestureEnd(const cugl::Vec2 pos) {
+    currentStroke.push_back(pos);
+    if (currentStroke.size() > 3) {
+        std::string gesture = recognizer.match(currentStroke);
+
+        try {
+            _lastGesture = _gesturemap[gesture];
+        }
+        catch (std::out_of_range) {
+            // Not a recognized gesture... probably
+            _lastGesture = Gesture::NONE;
+        }
+
+        //CULog("%s", gesture.c_str());
+    }
+    else {
+        // Register tap as pickup, to be changed using buttons?
+        _pickupPressed = true;
+    }
+    //CULog("Stroke points:");
+     //   for (const auto& p : currentStroke) {
+     //       CULog("{%f, %f},", p.x, p.y);
+     //   }
+
+    // Clear points
+    currentStroke.clear();
+}
+
 /**
  * Callback for the beginning of a touch event
  *
@@ -542,31 +570,7 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
         _move = Vec2::ZERO;
     } else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
         _rtouch.touchids.clear();
-        currentStroke.push_back(pos);
-        if(currentStroke.size() > 3){
-            std::string gesture = recognizer.match(currentStroke);
-
-            try {
-                _lastGesture = _gesturemap[gesture];
-            }
-            catch (std::out_of_range) {
-                // Not a recognized gesture... probably
-                _lastGesture = Gesture::NONE;
-            }
-
-            //CULog("%s", gesture.c_str());
-        }
-        else {
-            // Check if finger has not moved much, register as tap
-            if (pos.distance(_touchStart) < 20) {
-                _pickupPressed = true;
-            }
-        }
-        //CULog("Stroke points:");
-         //   for (const auto& p : currentStroke) {
-         //       CULog("{%f, %f},", p.x, p.y);
-         //   }
-        
+        processGestureEnd(pos);
     } else if (zone == Zone::MAIN) {
     }
 }
@@ -642,31 +646,7 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
     }
     else if (_mouseDownZone == Zone::RIGHT) {
         _rtouch.touchids.clear();
-        currentStroke.push_back(pos);
-        if (currentStroke.size() > 3) {
-            std::string gesture = recognizer.match(currentStroke);
-
-            try {
-                _lastGesture = _gesturemap[gesture];
-            }
-            catch (std::out_of_range) {
-                // Not a recognized gesture... probably
-                _lastGesture = Gesture::NONE;
-            }
-
-            CULog("%s", gesture.c_str());
-        }
-        else {
-            // Check if finger has not moved much, register as tap
-            if (pos.distance(_touchStart) < 20) {
-                _pickupPressed = true;
-            }
-        }
-        CULog("Stroke points:");
-            for (const auto& p : currentStroke) {
-                CULog("{%f, %f},", p.x, p.y);
-            }
-
+        processGestureEnd(pos);
     }
     else if (zone == Zone::MAIN) {
     }

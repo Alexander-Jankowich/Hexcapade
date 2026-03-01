@@ -26,6 +26,10 @@ private:
 	cugl::Affine2 _jstickTrans;
 	cugl::Poly2 _joybase;
 	cugl::Poly2 _joystick;
+
+	cugl::Path2 _gesture;
+	int _gestureWidth = 30;
+	cugl::Poly2 _gestureDisplay;
 };
 
 #endif

@@ -20,12 +20,19 @@ InputDisplay::InputDisplay(InputController* input) {
 }
 
 void InputDisplay::update() {
+	static SimpleExtruder extruder = SimpleExtruder();
+
 	_showJoystick = _input->showJoystick();
 	if (_showJoystick) {
 		// Update component locations
 		_jbaseTrans = Affine2::createTranslation(_input->getJoystickCenter());
 		_jstickTrans = Affine2::createTranslation(_input->getJoystickPos());
 	}
+
+	_gesture.set(_input->getCurStroke());
+	extruder.set(_gesture);
+	extruder.calculate(_gestureWidth);
+	_gestureDisplay = extruder.getPolygon();
 }
 
 void InputDisplay::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) {
@@ -37,6 +44,11 @@ void InputDisplay::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batc
 
 		batch->setColor(Color4(89, 89, 89, 240));
 		batch->fill(_joystick, Vec2(0, 0), _jstickTrans);
+	}
+
+	if (_gesture.size() > 3) {
+		batch->setColor(Color4(199, 140, 6, 150));
+		batch->fill(_gestureDisplay);
 	}
 }
 
