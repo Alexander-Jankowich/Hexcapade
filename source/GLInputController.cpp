@@ -155,7 +155,8 @@ _touchID(-1),
 _mouseKey(0),
 _joystick(false),
 _pickupPressed(false),
-_joyradius(100)
+_joyradius(100),
+_lastGesture(Gesture::NONE)
 {
 }
 
@@ -534,14 +535,14 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
                 _ltouch.timestamp.mark();
                 _ltouch.touchids.insert(event.touch);
 
-                _joycenter = touch2Screen(event.position);
+                _joycenter = pos;
                 //_joycenter.y += JSTICK_OFFSET;
             }
             break;
         case Zone::RIGHT:
             // For now if pressed on right side attempt pickup, need to change to button
             _touchDown = true;
-            _touchStart = touch2Screen(event.position);
+            _touchStart = pos;
 
             currentStroke.clear();
             currentStroke.push_back(pos);

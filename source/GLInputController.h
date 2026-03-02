@@ -114,14 +114,25 @@ public:
     */
     void resolvedGesture() { _lastGesture = Gesture::NONE; }
 
+    /**
+    * Returns a vector containing the current stroke
+    * @return current stroke
+    */
     std::vector<cugl::Vec2> getCurStroke() { return currentStroke; }
 
+    /**
+    * Returns the user input for movement
+    * @return movement input
+    */
     cugl::Vec2 getMove() const {
         return _move;
     }
 
     /**
     * Returns whether the user has attempted to pickup an item
+    * 
+    * Should call {@link #resolvedPickup} once the pickup has been
+    * resolved to clear this input.
     */
     bool pressedPickup() {
         return _pickupPressed;
@@ -134,10 +145,19 @@ public:
         _pickupPressed = false;
     }
 
+    /**
+    * Returns whether the user attempted to reset the game
+    * 
+    * Should call {@link #resolvedReset} once the reset has been
+    * resolved to clear this input.
+    */
     bool pressedReset() {
         return _resetPressed;
     }
 
+    /**
+    * Call this function after resolving game reset
+    */
     void resolvedReset() {
         _resetPressed = false;
     }
@@ -154,12 +174,28 @@ public:
 
 #pragma mark Joystick Attributes
 
+    /**
+    * Returns the radius of the joystick
+    * @return joystick radius
+    */
     int getJoystickRadius() { return _joyradius; }
 
+    /**
+    * Returns whether the joystick is being used/should be shown
+    * @return true if the joystick should be shown
+    */
     bool showJoystick() { return _joystick; }
 
+    /**
+    * Returns the position of the center of the joystick
+    * @return center of joystick position
+    */
     cugl::Vec2 getJoystickCenter() { return _joycenter; }
 
+    /**
+    * Returns the position of the joystick
+    * @return joystick position
+    */
     cugl::Vec2 getJoystickPos() { return _joystickpos; }
 
 protected:
@@ -194,6 +230,7 @@ protected:
     /** Did player attempt to pickup item */
     bool _pickupPressed;
 
+    /** Did player press reset */
     bool _resetPressed;
     
     /**Movement*/
@@ -207,8 +244,6 @@ protected:
 
     /** Mapping of gesture strings to the correct Gesture */
     std::unordered_map<std::string, Gesture> _gesturemap;
-    
-	// ADD NEW ATTRIBUTES HERE FOR EXTRA CREDIT
     
     /** Information representing a single "touch" (possibly multi-finger) */
     struct TouchInstance {
@@ -251,9 +286,11 @@ protected:
     
     /** Whether the virtual joystick is active */
     bool _joystick;
-    /** The position of the virtual joystick */
+    /** The position of the virtual joystick center*/
     cugl::Vec2 _joycenter;
+    /** The position of the virtual joystick */
     cugl::Vec2 _joystickpos;
+    /** Radius of joystick */
     int _joyradius;
 
     /** The timestamp for a double tap on the right */
@@ -315,10 +352,18 @@ protected:
      */
     void processJoystick(const cugl::Vec2 pos);
 
+    /**
+     * Processes a gesture. Should be called when a touch ends.
+     *
+     * This will update \ref _lastGesture to the correct gesture that
+     * was just done, or have no effect if the gesture is not recognized.
+     *
+     * @param pos the position of the touch end
+     */
     void processGestureEnd(const cugl::Vec2 pos);
 
-#pragma mark Mouse Callbacks
 private:
+#pragma mark Mouse Callbacks
     /**
      * Call back to execute when a mouse button is first pressed.
      *
@@ -354,17 +399,16 @@ private:
      * @param focus     Whether this device has focus (UNUSED)
      */
     void motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus);
-    
-	// ADD THE TOUCH CALLBACKS FOR EXTRA CREDIT
-    
+
+    /** The zone the mouse drag started in */
+    Zone _mouseDownZone = Zone::UNDEFINED;
+
+#pragma mark Touch Callbacks
     void touchBeganCB(const cugl::TouchEvent& event, bool focus);
     
     void touchEndCB(const cugl::TouchEvent& event, bool focus);
     
     void touchMotionCB(const cugl::TouchEvent& event, const cugl::Vec2& previous, bool focus);
-    
-    Zone _mouseDownZone = Zone::UNDEFINED;
-    
 };
 
 #endif /* __GL_INPUT_CONTROLLER_H__ */
