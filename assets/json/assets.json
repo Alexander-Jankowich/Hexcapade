@@ -5,6 +5,9 @@
     },
     "spell": {
         "file": "textures/photon.png"
+    },
+    "player": {
+        "file": "textures/character.png"
     }
   },
   "fonts": {

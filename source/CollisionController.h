@@ -31,8 +31,8 @@ public:
     /**
      * Checks collision between the player and an item at a given position.
     */
-    bool resolvePlayerItem(const cugl::Vec2& playerPos, float playerRadius,
-        const cugl::Vec2& itemPos, float itemRadius);
+    bool resolvePlayerItem(std::shared_ptr<Player>& player, const cugl::Vec2& itemPos,
+        float itemRadius);
 
     void resolvePlayerEnemies(std::shared_ptr<Player>& player, const cugl::Vec2& playerPos,
         float playerRadius, const std::shared_ptr<EnemySet>& enemy);
@@ -45,9 +45,9 @@ private:
      * Checks and resolves collision between the player and an enemy.
      */
     void resolvePlayerEnemy(std::shared_ptr<Player>& player, const cugl::Vec2& playerPos,
-        float playerRadius, std::shared_ptr<EnemySet::Enemy>& enemy, float enemyRadius);
+        float playerRadius, std::shared_ptr<Enemy>& enemy, float enemyRadius);
 
-    void resolveEnemySpell(SpellSet& spells, std::shared_ptr<EnemySet::Enemy>& enemy,
+    void resolveEnemySpell(SpellSet& spells, std::shared_ptr<Enemy>& enemy,
         cugl::Vec2 knockback, float enemyRadius);
     
 };

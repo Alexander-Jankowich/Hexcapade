@@ -155,8 +155,10 @@ _touchID(-1),
 _mouseKey(0),
 _joystick(false),
 _pickupPressed(false),
+_resetPressed(false),
 _joyradius(100),
-_lastGesture(Gesture::NONE)
+_lastGesture(Gesture::NONE),
+_isAiming(false)
 {
 }
 
@@ -276,9 +278,19 @@ void InputController::dispose() {
  * Maybe there has been no callback function executed since the
  * last frame. This method guarantees that everything is properly
  * synchronized.
+ * 
+ * @param dt the time (in seconds) since this was last called
  */
-void InputController::update() {
+void InputController::update(float dt) {
     readInput();
+
+    // Update _isAiming
+    _timeSinceCast += dt;
+    if (_timeSinceCast > 1 && _isAiming) {
+        _isAiming = false;
+        _releaseSpell = true;
+        CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
+    }
 }
 
 /**
@@ -349,11 +361,13 @@ void InputController::readInput(){
         static bool shiftPressed = false;
         if (space && !spacePressed) {
             _lastGesture = Gesture::FIREBALL;
+            _spellAngle.setZero();
         }
         spacePressed = space;
 
         if (shift && !shiftPressed) {
             _lastGesture = Gesture::FREEZE;
+            _spellAngle.setZero();
         }
         shiftPressed = shift;
 
@@ -486,12 +500,23 @@ void InputController::processJoystick(const cugl::Vec2 pos) {
 }
 
 void InputController::processGestureEnd(const cugl::Vec2 pos) {
+    if (_isAiming) {
+        _isAiming = false;
+        _releaseSpell = true;
+        _spellAngle = pos - _touchStart;
+        CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
+        return;
+    }
+
+    _spellAngle.setZero();
     currentStroke.push_back(pos);
     if (currentStroke.size() > 3) {
         std::string gesture = recognizer.match(currentStroke);
 
         try {
             _lastGesture = _gesturemap[gesture];
+            _timeSinceCast = 0;
+            _isAiming = true;
         }
         catch (std::out_of_range) {
             // Not a recognized gesture... probably
@@ -511,6 +536,15 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
 
     // Clear points
     currentStroke.clear();
+}
+
+void InputController::processDrag(const cugl::Vec2 pos) {
+    if (_isAiming) {
+        _spellAngle = pos - _touchStart;
+    }
+    else {
+        currentStroke.push_back(pos);
+    }
 }
 
 /**
@@ -588,13 +622,13 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
  * @param focus    Whether the listener currently has focus
  */
 void InputController::touchMotionCB(const TouchEvent& event, const Vec2& previous, bool focus) {
-    Vec2 pos = event.position;
+    Vec2 pos = touch2Screen(event.position);
     // Left zone is all that matters rn. 
     if (_ltouch.touchids.find(event.touch) != _ltouch.touchids.end()) {
-        processJoystick(touch2Screen(pos));
+        processJoystick(pos);
     }
     else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
-        currentStroke.push_back(touch2Screen(pos));
+        processDrag(pos);
     }
 }
 
@@ -603,19 +637,16 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
     CULog("Mouse press");
 
     Vec2 pos = mouse2Screen(event.position);
-    //CULog("%.2f, %.2f", pos.x, pos.y);
     Zone zone = getZone(pos);
-    //CULog("%d %d", zone == Zone::LEFT, getZone(event.position) == Zone::LEFT);
+
     switch (zone) {
     case Zone::LEFT:
-        CULog("In left zone");
         // Left is the floating joystick
         _mouseDownZone = Zone::LEFT;
 
         _joycenter = pos;
         break;
     case Zone::RIGHT:
-        CULog("In right zone");
         // For now if pressed on right side attempt pickup, need to change to button
         _touchDown = true;
         _touchStart = pos;
@@ -641,10 +672,9 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
     // Reset all keys that might have been set
     Vec2 pos = mouse2Screen(event.position);
     Zone zone = getZone(pos);
-    
 
     if (_mouseDownZone == Zone::LEFT) {
-        CULog("(%.2f, %.2f) (%.2f, %.2f)", _joycenter.x, _joycenter.y, pos.x, pos.y);
+        //CULog("(%.2f, %.2f) (%.2f, %.2f)", _joycenter.x, _joycenter.y, pos.x, pos.y);
         _ltouch.touchids.clear();
         _move = Vec2::ZERO;
         _joystick = false;
@@ -660,14 +690,11 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
 
 void InputController::motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus) {
     Vec2 pos = mouse2Screen(event.position);
-    //CULog("Mouse drag");
 
     if (_mouseDownZone == Zone::LEFT) {
-        //CULog("In left zone");
         processJoystick(pos);
     }
     else if (_mouseDownZone == Zone::RIGHT) {
-        //CULog("In right zone");
-        currentStroke.push_back(pos);
+        processDrag(pos);
     }
 }

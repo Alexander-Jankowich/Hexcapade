@@ -82,8 +82,10 @@ public:
      * Maybe there has been no callback function executed since the
      * last frame. This method guarantees that everything is properly
      * synchronized.
+     * 
+     * @param dt the time (in seconds) since this was last called
      */
-    void update();
+    void update(float dt);
 
 #pragma mark Attributes
     /**
@@ -198,6 +200,14 @@ public:
     */
     cugl::Vec2 getJoystickPos() { return _joystickpos; }
 
+    bool shouldReleaseSpell() { return _releaseSpell; }
+
+    void resolveSpell() { _releaseSpell = false; _lastGesture = Gesture::NONE; }
+
+    bool showAim() { return _isAiming; }
+
+    cugl::Vec2 getSpellAngle() { return _spellAngle; }
+
 protected:
     /** Whether the input device was successfully initialized */
     bool _active;
@@ -244,6 +254,11 @@ protected:
 
     /** Mapping of gesture strings to the correct Gesture */
     std::unordered_map<std::string, Gesture> _gesturemap;
+
+    bool _isAiming;
+    float _timeSinceCast;
+    bool _releaseSpell;
+    cugl::Vec2 _spellAngle;
     
     /** Information representing a single "touch" (possibly multi-finger) */
     struct TouchInstance {
@@ -351,6 +366,13 @@ protected:
      * @param  pos  the current joystick position
      */
     void processJoystick(const cugl::Vec2 pos);
+
+    /**
+    * Processes a drag movement on the right side of the screen.
+    * 
+    * @param pos the position of the touch
+    */
+    void processDrag(const cugl::Vec2 pos);
 
     /**
      * Processes a gesture. Should be called when a touch ends.
