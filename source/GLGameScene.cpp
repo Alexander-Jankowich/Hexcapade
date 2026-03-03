@@ -39,17 +39,6 @@ using namespace cugl::graphics;
 
 #define PI 3.14159265358979323
 
-/** The initial control points for the spline. */
-float CIRCLE[] = {    0,  200,  120,  200,
-        200,  120,  200,    0,  200, -120,
-        120, -200,    0, -200, -120, -200,
-       -200, -120, -200,    0, -200,  120,
-       -120,  200,    0,  200};
-
-
-/** The (CLOCKWISE) polygon for the star */
-float STAR[] = {     -15, 0, 0, 50, 15, 0};
-
 #pragma mark -
 #pragma mark Constructors
 /**
@@ -135,7 +124,7 @@ void GameScene::dispose() {
 
 void GameScene::reset() {
     _player->setHealth(100);
-    _player->setPosition(getSize() / (2 * PHYSICS_SCALE));
+    _player->setPosition(getSize() / 2);
     _player->setVelocity(Vec2::ZERO);
     _playerLost = false;
     _playerWon = false;
@@ -183,7 +172,6 @@ void GameScene::addItem(int value) {
  */
 void GameScene::preUpdate(float dt) {
     _input.update(dt);
-    _inputDisplay->update();
 
     if (_input.pressedReset()) {
         reset();
@@ -199,6 +187,7 @@ void GameScene::preUpdate(float dt) {
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
+    _player->setColor(_input.showAim() ? Color4::BLUE : Color4::WHITE);
     _player->update();
 
     cugl::Vec2 playerScreenPos = _player->getPosition();
@@ -222,6 +211,7 @@ void GameScene::preUpdate(float dt) {
         switch (_input.getGesture()) {
         case InputController::Gesture::FREEZE:
             spells.spawnSpell(playerScreenPos, 5, angle, true);
+            CULog("spawn freeze spell");
             //_input.resolvedGesture();
 
             break;
@@ -245,6 +235,8 @@ void GameScene::preUpdate(float dt) {
     if (_player->getHealth() <= 0) {
         _playerLost = true;
     }
+
+    _inputDisplay->update(playerScreenPos);
 
     // Check enemy spawning
     //lastEnemySpawn += dt;
@@ -467,9 +459,6 @@ void GameScene::updateItemPickupState() {
     _pickupPrompt = "";
 
     // this converts player center from physics units into screen units
-    Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
-    float playerRadius = 15.0f;
-
     for (size_t ii = 0; ii < _items.size(); ++ii) {
         if (_collisions.resolvePlayerItem(_player, _items[ii].position, _items[ii].radius)) {
             _canPickupItem = true;

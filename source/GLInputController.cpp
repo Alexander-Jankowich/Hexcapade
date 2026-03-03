@@ -289,6 +289,7 @@ void InputController::update(float dt) {
     if (_timeSinceCast > 1 && _isAiming) {
         _isAiming = false;
         _releaseSpell = true;
+        currentStroke.clear();
         CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
     }
 }
@@ -516,11 +517,14 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         try {
             _lastGesture = _gesturemap[gesture];
             _timeSinceCast = 0;
-            _isAiming = true;
         }
         catch (std::out_of_range) {
             // Not a recognized gesture... probably
             _lastGesture = Gesture::NONE;
+        }
+
+        if (_lastGesture != Gesture::NONE) {
+            _isAiming = true;
         }
 
         //CULog("%s", gesture.c_str());
