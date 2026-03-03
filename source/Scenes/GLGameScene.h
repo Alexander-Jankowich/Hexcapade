@@ -16,12 +16,12 @@
 #define __GL_GAME_SCENE_H__
 #include <cugl/cugl.h>
 #include <vector>
-#include "GLInputController.h"
+#include "../Controllers/GLInputController.h"
 #include "InputDisplay.h"
 #include <cstddef> 
 #include "EnemySet.h"
 #include "SpellSet.h"
-#include "CollisionController.h"
+#include "../Controllers/CollisionController.h"
 #include "Player.h"
 
 /**

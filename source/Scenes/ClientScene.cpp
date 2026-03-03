@@ -11,16 +11,6 @@ using namespace cugl::graphics;
 #define SCENE_HEIGHT 720
 
 // ──────────────────────────────────────────────────────────────────────────────
-#pragma mark Helpers
-// ──────────────────────────────────────────────────────────────────────────────
-
-std::string ClientScene::dec2hex(const std::string& dec) {
-    Uint32 value = strtool::stou32(dec);
-    if (value >= 65536) value = 0;
-    return strtool::to_hexstring(value, 4);
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
 #pragma mark Init / Dispose
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -31,7 +21,6 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _assets = assets;
     _font = assets->get<Font>("font");
     _status = Status::IDLE;
-    _playerCount = 1;
     _roomInput = "";
 
     Size s = getSize();
@@ -49,7 +38,7 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
         CULog("ERROR: server.json not found in assets!");
         return false;
     }
-    _config.set(json);
+    _networkCtrl.init(json);
 
     // Mouse listener for button clicks
     Mouse* mouse = Input::get<Mouse>();
@@ -79,7 +68,7 @@ void ClientScene::dispose() {
     Keyboard* kb = Input::get<Keyboard>();
     if (kb) kb->removeKeyDownListener(KB_LISTEN_KEY);
 
-    disconnect();
+    _networkCtrl.disconnect();
     _assets = nullptr;
     _font = nullptr;
 }
@@ -88,29 +77,17 @@ void ClientScene::dispose() {
 #pragma mark Networking
 // ──────────────────────────────────────────────────────────────────────────────
 
-bool ClientScene::connect(const std::string& roomCode) {
-    std::string hex = dec2hex(roomCode);
-    _network = NetcodeConnection::alloc(_config, hex);
-    _network->open();
-    _status = Status::JOIN;
-    checkConnection();
-    return true;
-}
-
 bool ClientScene::checkConnection() {
-    if (!_network) return false;
-
-    NetcodeConnection::State state = _network->getState();
+    auto state = _networkCtrl.checkConnection();
     switch (state) {
     case NetcodeConnection::State::NEGOTIATING:
-        _status = Status::JOIN;
-        break;
-
+        _status=Status::JOIN;
+            break;
     case NetcodeConnection::State::CONNECTED:
         if (_status != Status::START) {
             _status = Status::WAIT;
         }
-        _playerCount = (int)_network->getNumPlayers();
+        //_playerCount = (int)_network->getNumPlayers();
         break;
 
     case NetcodeConnection::State::DENIED:
@@ -118,8 +95,7 @@ bool ClientScene::checkConnection() {
     case NetcodeConnection::State::INVALID:
     case NetcodeConnection::State::FAILED:
     case NetcodeConnection::State::DISCONNECTED:
-        _network->close();
-        _network = nullptr;
+        _networkCtrl.disconnect();
         _status = Status::IDLE;
         return false;
 
@@ -159,7 +135,8 @@ void ClientScene::keyPressCB(const KeyEvent& event, bool focus) {
     // Enter key triggers join if we have 5 digits
     if ((key == KeyCode::RETURN || key == KeyCode::KEYPAD_ENTER)
         && _roomInput.size() == 5) {
-        connect(_roomInput);
+        _networkCtrl.connect(false, _roomInput);
+        checkConnection();
     }
 }
 
@@ -168,7 +145,7 @@ void ClientScene::mousePressCB(const MouseEvent& event, Uint8 clicks, bool focus
     pos.y = getSize().height - pos.y;
 
     if (_backRect.contains(pos)) {
-        disconnect();
+        _networkCtrl.disconnect();
         _roomInput = "";
         _status = Status::ABORT;
         return;
@@ -176,7 +153,8 @@ void ClientScene::mousePressCB(const MouseEvent& event, Uint8 clicks, bool focus
 
     // Join button: only works when IDLE and 5 digits entered
     if (_status == Status::IDLE && _joinRect.contains(pos) && _roomInput.size() == 5) {
-        connect(_roomInput);
+        _networkCtrl.connect(false, _roomInput);
+        checkConnection();
     }
 }
 
@@ -185,16 +163,17 @@ void ClientScene::mousePressCB(const MouseEvent& event, Uint8 clicks, bool focus
 // ──────────────────────────────────────────────────────────────────────────────
 
 void ClientScene::update(float dt) {
-    if (_network) {
-        _network->receive([this](const std::string& source,
-            const std::vector<std::byte>& data) {
-                // Any message from the host means the game is starting
-                if (!data.empty()) {
-                    _status = Status::START;
-                }
-            });
-        checkConnection();
-    }
+    // TODO outsource this to network controller
+//    if (_networkCtrl.getNetwork()) {
+//        _networkCtrl.getNetwork()->receive([this](const std::string& source,
+//            const std::vector<std::byte>& data) {
+//                // Any message from the host means the game is starting
+//                if (!data.empty()) {
+//                    _status = Status::START;
+//                }
+//            });
+//        checkConnection();
+//    }
 }
 
 void ClientScene::render() {
@@ -261,7 +240,7 @@ void ClientScene::render() {
         // Player count (visible once connected)
         if (_status == Status::WAIT || _status == Status::START) {
             auto playerLabel = TextLayout::allocWithText(
-                "Players: " + strtool::to_string(_playerCount), _font);
+                "Players: " + strtool::to_string(_networkCtrl.playerCount()), _font);
             playerLabel->layout();
             Affine2 pl;
             pl.translate(cx - playerLabel->getBounds().size.width / 2, cy - 20);
