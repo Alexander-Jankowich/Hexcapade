@@ -22,7 +22,11 @@ private:
 
     static constexpr Uint32 LISTENER_KEY = 6;
 
+#ifdef CU_TOUCH_SCREEN
+    void touchBeganCB(const cugl::TouchEvent& event, bool focus);
+#else
     void mousePressCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus);
+#endif
 
 public:
     MenuScene() : cugl::scene2::Scene2(), _choice(Choice::NONE) {}

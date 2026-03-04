@@ -10,10 +10,7 @@ using namespace cugl::graphics;
 
 #define SCENE_HEIGHT 720
 
-
-// ──────────────────────────────────────────────────────────────────────────────
 #pragma mark Init / Dispose
-// ──────────────────────────────────────────────────────────────────────────────
 
 bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     if (!assets) return false;
@@ -38,7 +35,15 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     }
     _networkCtrl.init(json, true);
 
-    // Register mouse listener
+#ifdef CU_TOUCH_SCREEN
+    Touchscreen* touch = Input::get<Touchscreen>();
+    if (touch) {
+        touch->addBeginListener(LISTENER_KEY,
+            [this](const cugl::TouchEvent& event, bool focus) {
+                this->touchBeganCB(event, focus);
+            });
+    }
+#else
     Mouse* mouse = Input::get<Mouse>();
     if (mouse) {
         mouse->addPressListener(LISTENER_KEY,
@@ -46,42 +51,58 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
                 this->mousePressCB(event, clicks, focus);
             });
     }
+#endif
 
-    // Immediately attempt to open a host connection
     _networkCtrl.connect(true);
     return true;
 }
 
 void HostScene::dispose() {
+#ifdef CU_TOUCH_SCREEN
+    Touchscreen* touch = Input::get<Touchscreen>();
+    if (touch) touch->removeBeginListener(LISTENER_KEY);
+#else
     Mouse* mouse = Input::get<Mouse>();
     if (mouse) mouse->removePressListener(LISTENER_KEY);
+#endif
     _networkCtrl.disconnect();
     _assets = nullptr;
     _font = nullptr;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
 #pragma mark Input
-// ──────────────────────────────────────────────────────────────────────────────
 
-void HostScene::mousePressCB(const MouseEvent& event, Uint8 clicks, bool focus) {
+#ifdef CU_TOUCH_SCREEN
+void HostScene::touchBeganCB(const cugl::TouchEvent& event, bool focus) {
     Vec2 pos = event.position;
-    pos.y = getSize().height - pos.y;   // flip y to match scene coords
+    pos.y = getSize().height - pos.y;
 
     if (_backRect.contains(pos)) {
         _networkCtrl.disconnect();
         return;
     }
 
-    // Start button is only active when we have a room code (IDLE state)
     if (_networkCtrl.getStatus() == NetworkController::Status::IDLE && _startRect.contains(pos)) {
         _networkCtrl.startGame();
     }
 }
+#else
+void HostScene::mousePressCB(const MouseEvent& event, Uint8 clicks, bool focus) {
+    Vec2 pos = event.position;
+    pos.y = getSize().height - pos.y;
 
-// ──────────────────────────────────────────────────────────────────────────────
+    if (_backRect.contains(pos)) {
+        _networkCtrl.disconnect();
+        return;
+    }
+
+    if (_networkCtrl.getStatus() == NetworkController::Status::IDLE && _startRect.contains(pos)) {
+        _networkCtrl.startGame();
+    }
+}
+#endif
+
 #pragma mark Update / Render
-// ──────────────────────────────────────────────────────────────────────────────
 
 void HostScene::update(float dt) {
     // TODO refactor

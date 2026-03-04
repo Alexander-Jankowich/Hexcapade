@@ -10,9 +10,7 @@ using namespace cugl::graphics;
 
 #define SCENE_HEIGHT 720
 
-// ──────────────────────────────────────────────────────────────────────────────
 #pragma mark Init / Dispose
-// ──────────────────────────────────────────────────────────────────────────────
 
 bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     if (!assets) return false;
@@ -39,7 +37,26 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     }
     _networkCtrl.init(json, false);
 
-    // Mouse listener for button clicks
+#ifdef CU_TOUCH_SCREEN
+    // Touch listener
+    Touchscreen* touch = Input::get<Touchscreen>();
+    if (touch) {
+        touch->addBeginListener(LISTENER_KEY,
+            [this](const cugl::TouchEvent& event, bool focus) {
+                this->touchBeganCB(event, focus);
+            });
+    }
+
+    // TextInput listener so the player can type the room code via on-screen keyboard
+    TextInput* textInput = Input::get<TextInput>();
+    if (textInput) {
+        textInput->addListener(KB_LISTEN_KEY,
+            [this](const TextInputEvent& event, bool focus) {
+                this->textInputCB(event, focus);
+            });
+    }
+#else
+    // Mouse listener
     Mouse* mouse = Input::get<Mouse>();
     if (mouse) {
         mouse->addPressListener(LISTENER_KEY,
@@ -48,7 +65,7 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
             });
     }
 
-    // Keyboard listener so the player can type the room code
+    // Keyboard listener
     Keyboard* kb = Input::get<Keyboard>();
     if (kb) {
         kb->addKeyDownListener(KB_LISTEN_KEY,
@@ -56,28 +73,78 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
                 this->keyPressCB(event, focus);
             });
     }
-
+#endif
     return true;
 }
 
 void ClientScene::dispose() {
+#ifdef CU_TOUCH_SCREEN
+    Touchscreen* touch = Input::get<Touchscreen>();
+    if (touch) touch->removeBeginListener(LISTENER_KEY);
+
+    TextInput* textInput = Input::get<TextInput>();
+    if (textInput) {
+        textInput->removeListener(KB_LISTEN_KEY);
+        textInput->deactivate();
+    }
+#else
     Mouse* mouse = Input::get<Mouse>();
     if (mouse) mouse->removePressListener(LISTENER_KEY);
 
     Keyboard* kb = Input::get<Keyboard>();
     if (kb) kb->removeKeyDownListener(KB_LISTEN_KEY);
+#endif
 
     _networkCtrl.disconnect();
     _assets = nullptr;
     _font = nullptr;
 }
 
-// ──────────────────────────────────────────────────────────────────────────────
 #pragma mark Input
-// ──────────────────────────────────────────────────────────────────────────────
 
+#ifdef CU_TOUCH_SCREEN
+void ClientScene::touchBeganCB(const cugl::TouchEvent& event, bool focus) {
+    Vec2 pos = event.position;
+    pos.y = getSize().height - pos.y;
+
+    if (_backRect.contains(pos)) {
+        _networkCtrl.disconnect();
+        _roomInput = "";
+        // Dismiss on-screen keyboard if it was up
+        TextInput* textInput = Input::get<TextInput>();
+        if (textInput) textInput->deactivate();
+        return;
+    }
+
+    // Tapping the input box opens the on-screen keyboard
+    if (_networkCtrl.getStatus() == NetworkController::Status::IDLE && _inputRect.contains(pos)) {
+        TextInput* textInput = Input::get<TextInput>();
+        if (textInput) textInput->activate();
+        return;
+    }
+
+    // Join button: only works when IDLE and 5 digits entered
+    if (_networkCtrl.getStatus() == NetworkController::Status::IDLE
+        && _joinRect.contains(pos) && _roomInput.size() == 5) {
+        TextInput* textInput = Input::get<TextInput>();
+        if (textInput) textInput->deactivate();
+        _networkCtrl.connect(false, _roomInput);
+    }
+}
+
+void ClientScene::textInputCB(const cugl::TextInputEvent& event, bool focus) {
+    if (_networkCtrl.getStatus() != NetworkController::Status::IDLE) return;
+
+    // TextInputEvent delivers the full updated string; filter to digits only
+    const std::string& input = event.added;
+    for (char c : input) {
+        if (_roomInput.size() >= 5) break;
+        if (c >= '0' && c <= '9') _roomInput += c;
+    }
+}
+#else
 void ClientScene::keyPressCB(const KeyEvent& event, bool focus) {
-    // Only accept typing when idle (not yet connected)
+    // Only accept typing when idle
     if (_networkCtrl.getStatus() != NetworkController::Status::IDLE) return;
 
     KeyCode key = event.keycode;
@@ -121,10 +188,9 @@ void ClientScene::mousePressCB(const MouseEvent& event, Uint8 clicks, bool focus
         _networkCtrl.connect(false, _roomInput);
     }
 }
+#endif
 
-// ──────────────────────────────────────────────────────────────────────────────
 #pragma mark Update / Render
-// ──────────────────────────────────────────────────────────────────────────────
 
 void ClientScene::update(float dt) {
     // TODO outsource this to network controller

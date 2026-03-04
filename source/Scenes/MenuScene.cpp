@@ -18,6 +18,16 @@ bool MenuScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     float cy = s.height / 2.0f;
     _hostRect = Rect(cx - bw / 2, cy + 20.0f, bw, bh);
     _joinRect = Rect(cx - bw / 2, cy - 70.0f, bw, bh);
+
+#ifdef CU_TOUCH_SCREEN
+    Touchscreen* touch = Input::get<Touchscreen>();
+    if (touch) {
+        touch->addBeginListener(LISTENER_KEY,
+            [this](const cugl::TouchEvent& event, bool focus) {
+                this->touchBeganCB(event, focus);
+            });
+    }
+#else
     Mouse* mouse = Input::get<Mouse>();
     if (mouse) {
         mouse->addPressListener(LISTENER_KEY,
@@ -25,20 +35,36 @@ bool MenuScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
                 this->mousePressCB(event, clicks, focus);
             });
     }
+#endif
     return true;
 }
 void MenuScene::dispose() {
+#ifdef CU_TOUCH_SCREEN
+    Touchscreen* touch = Input::get<Touchscreen>();
+    if (touch) touch->removeBeginListener(LISTENER_KEY);
+#else
     Mouse* mouse = Input::get<Mouse>();
     if (mouse) mouse->removePressListener(LISTENER_KEY);
+#endif
     _assets = nullptr;
     _font = nullptr;
 }
+
+#ifdef CU_TOUCH_SCREEN
+void MenuScene::touchBeganCB(const cugl::TouchEvent& event, bool focus) {
+    Vec2 pos = event.position;
+    pos.y = getSize().height - pos.y;
+    if (_hostRect.contains(pos)) _choice = Choice::HOST;
+    else if (_joinRect.contains(pos)) _choice = Choice::JOIN;
+}
+#else
 void MenuScene::mousePressCB(const MouseEvent& event, Uint8 clicks, bool focus) {
     Vec2 pos = event.position;
     pos.y = getSize().height - pos.y;
     if (_hostRect.contains(pos)) _choice = Choice::HOST;
     else if (_joinRect.contains(pos)) _choice = Choice::JOIN;
 }
+#endif
 void MenuScene::render() {
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();

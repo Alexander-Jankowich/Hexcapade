@@ -24,8 +24,13 @@ private:
     static constexpr Uint32 LISTENER_KEY = 4;
     static constexpr Uint32 KB_LISTEN_KEY = 5;
 
+#ifdef CU_TOUCH_SCREEN
+    void touchBeganCB(const cugl::TouchEvent& event, bool focus);
+    void textInputCB(const cugl::TextInputEvent& event, bool focus);
+#else
     void mousePressCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus);
     void keyPressCB(const cugl::KeyEvent& event, bool focus);
+#endif
 
 public:
     ClientScene() : cugl::scene2::Scene2() {}
@@ -38,10 +43,6 @@ public:
     void render() override;
     void disconnect() {_networkCtrl.disconnect();}
     NetworkController::Status getStatus(){return _networkCtrl.getStatus();}
-    
-    
-
-
 };
 
 #endif /* __CLIENT_SCENE_H__ */
