@@ -18,27 +18,43 @@ private:
     std::shared_ptr<cugl::netcode::NetcodeConnection> _network;
     cugl::netcode::NetcodeConfig _config;
     int _playerCount;
+    Status _status;
     
+#pragma mark Helpers
     static std::string dec2hex(const std::string& dec);
     static std::string hex2dec(const std::string& hex);
+    void dispatcher(const std::string source,
+                    const std::vector<std::byte>& message);
+    
+    bool checkHostConnection();
+    bool checkClientConnection();
 
     
 public:
-    void init(const std::shared_ptr<cugl::JsonValue> json) {_playerCount=1; _config.set(json);}
+    NetworkController() {}
+    ~NetworkController() {disconnect();}
+    
+    void init(const std::shared_ptr<cugl::JsonValue> json, bool isHost);
+    
     std::string connect(bool isHost, const std::string& roomCode="");
+    
+    Status getStatus(){return _status;}
     
 
     int playerCount() {return _playerCount;}
-    cugl::netcode::NetcodeConnection::State checkConnection() {return _network->getState();}
-    std::shared_ptr<cugl::netcode::NetcodeConnection> getConnection() { return _network; };
+
     std::string getRoomCode(){return hex2dec(_network->getRoom());}
+    
+    
     void disconnect() {
         if (_network) { _network->close(); }
         _network = nullptr;
+        _status = Status::ABORT;
     }
+        
+    void startGame();
     
-    void processData(std::vector<std::byte> data);
-    
+
 };
 #endif // !__NETWORK_CONTROLLER_H__
 

@@ -21,7 +21,6 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
     _assets = assets;
     _font = assets->get<Font>("font");
-    _status = Status::WAIT;
     _roomCode = "-----";
 
     Size s = getSize();
@@ -37,7 +36,7 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
         CULog("ERROR: server.json not found in assets!");
         return false;
     }
-    _networkCtrl.init(json);
+    _networkCtrl.init(json, true);
 
     // Register mouse listener
     Mouse* mouse = Input::get<Mouse>();
@@ -62,51 +61,6 @@ void HostScene::dispose() {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-#pragma mark Networking
-// ──────────────────────────────────────────────────────────────────────────────
-
-
-bool HostScene::checkConnection() {
-
-    NetcodeConnection::State state = _networkCtrl.checkConnection();
-    switch (state) {
-    case NetcodeConnection::State::NEGOTIATING:
-        _status = Status::WAIT;
-        break;
-
-    case NetcodeConnection::State::CONNECTED:
-        if (_status == Status::WAIT) {
-            _status = Status::IDLE;
-            _roomCode = _networkCtrl.getRoomCode();
-        }
-        break;
-
-    case NetcodeConnection::State::DENIED:
-    case NetcodeConnection::State::MISMATCHED:
-    case NetcodeConnection::State::INVALID:
-    case NetcodeConnection::State::FAILED:
-    case NetcodeConnection::State::DISCONNECTED:
-        _networkCtrl.disconnect();
-        _status = Status::WAIT;
-        return false;
-
-    default:
-        break;
-    }
-    return true;
-}
-
-void HostScene::startGame() {
-    // TODO refactor
-//    if (_network) {
-//        _network->startSession();
-//        std::vector<std::byte> msg = { std::byte(255) };
-//        _network->broadcast(msg);
-//    }
-//    _status = Status::START;
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
 #pragma mark Input
 // ──────────────────────────────────────────────────────────────────────────────
 
@@ -116,13 +70,12 @@ void HostScene::mousePressCB(const MouseEvent& event, Uint8 clicks, bool focus) 
 
     if (_backRect.contains(pos)) {
         _networkCtrl.disconnect();
-        _status = Status::ABORT;
         return;
     }
 
     // Start button is only active when we have a room code (IDLE state)
-    if (_status == Status::IDLE && _startRect.contains(pos)) {
-        startGame();
+    if (_networkCtrl.getStatus() == NetworkController::Status::IDLE && _startRect.contains(pos)) {
+        _networkCtrl.startGame();
     }
 }
 
@@ -162,7 +115,7 @@ void HostScene::render() {
     _batch->fill(_backRect);
 
     // Start button — greyed out while waiting for a room code
-    bool canStart = (_status == Status::IDLE);
+    bool canStart = (_networkCtrl.getStatus() == NetworkController::Status::IDLE);
     _batch->setColor(canStart ? Color4(40, 140, 40, 255) : Color4(70, 70, 70, 255));
     _batch->fill(_startRect);
 

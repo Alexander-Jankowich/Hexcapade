@@ -11,6 +11,7 @@
 #include "MenuScene.h"
 #include "HostScene.h"
 #include "ClientScene.h"
+#include "NetworkController.h"
 
 /**
  * This class represents the application root for Hexcapade.

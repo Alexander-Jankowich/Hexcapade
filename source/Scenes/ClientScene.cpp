@@ -20,7 +20,6 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
     _assets = assets;
     _font = assets->get<Font>("font");
-    _status = Status::IDLE;
     _roomInput = "";
 
     Size s = getSize();
@@ -38,7 +37,7 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
         CULog("ERROR: server.json not found in assets!");
         return false;
     }
-    _networkCtrl.init(json);
+    _networkCtrl.init(json, false);
 
     // Mouse listener for button clicks
     Mouse* mouse = Input::get<Mouse>();
@@ -74,44 +73,12 @@ void ClientScene::dispose() {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-#pragma mark Networking
-// ──────────────────────────────────────────────────────────────────────────────
-
-bool ClientScene::checkConnection() {
-    auto state = _networkCtrl.checkConnection();
-    switch (state) {
-    case NetcodeConnection::State::NEGOTIATING:
-        _status=Status::JOIN;
-            break;
-    case NetcodeConnection::State::CONNECTED:
-        if (_status != Status::START) {
-            _status = Status::WAIT;
-        }
-        //_playerCount = (int)_network->getNumPlayers();
-        break;
-
-    case NetcodeConnection::State::DENIED:
-    case NetcodeConnection::State::MISMATCHED:
-    case NetcodeConnection::State::INVALID:
-    case NetcodeConnection::State::FAILED:
-    case NetcodeConnection::State::DISCONNECTED:
-        _networkCtrl.disconnect();
-        _status = Status::IDLE;
-        return false;
-
-    default:
-        break;
-    }
-    return true;
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
 #pragma mark Input
 // ──────────────────────────────────────────────────────────────────────────────
 
 void ClientScene::keyPressCB(const KeyEvent& event, bool focus) {
     // Only accept typing when idle (not yet connected)
-    if (_status != Status::IDLE) return;
+    if (_networkCtrl.getStatus() != NetworkController::Status::IDLE) return;
 
     KeyCode key = event.keycode;
 
@@ -136,7 +103,6 @@ void ClientScene::keyPressCB(const KeyEvent& event, bool focus) {
     if ((key == KeyCode::RETURN || key == KeyCode::KEYPAD_ENTER)
         && _roomInput.size() == 5) {
         _networkCtrl.connect(false, _roomInput);
-        checkConnection();
     }
 }
 
@@ -147,14 +113,12 @@ void ClientScene::mousePressCB(const MouseEvent& event, Uint8 clicks, bool focus
     if (_backRect.contains(pos)) {
         _networkCtrl.disconnect();
         _roomInput = "";
-        _status = Status::ABORT;
         return;
     }
 
     // Join button: only works when IDLE and 5 digits entered
-    if (_status == Status::IDLE && _joinRect.contains(pos) && _roomInput.size() == 5) {
+    if (_networkCtrl.getStatus() == NetworkController::Status::IDLE && _joinRect.contains(pos) && _roomInput.size() == 5) {
         _networkCtrl.connect(false, _roomInput);
-        checkConnection();
     }
 }
 
@@ -202,9 +166,9 @@ void ClientScene::render() {
     _batch->fill(_backRect);
 
     // Join / status button
-    bool canJoin = (_status == Status::IDLE && _roomInput.size() == 5);
+    bool canJoin = (_networkCtrl.getStatus() == NetworkController::Status::IDLE && _roomInput.size() == 5);
     Color4 joinColor;
-    if (_status == Status::IDLE)  joinColor = canJoin ? Color4(40, 140, 40, 255) : Color4(70, 70, 70, 255);
+    if (_networkCtrl.getStatus() == NetworkController::Status::IDLE)  joinColor = canJoin ? Color4(40, 140, 40, 255) : Color4(70, 70, 70, 255);
     else                          joinColor = Color4(70, 70, 70, 255);
     _batch->setColor(joinColor);
     _batch->fill(_joinRect);
@@ -229,7 +193,7 @@ void ClientScene::render() {
         // Room code input text (show cursor placeholder when empty)
         std::string displayCode = _roomInput.empty() ? "_____" : _roomInput;
         // Pad with underscores to show remaining digits
-        while (displayCode.size() < 5 && _status == Status::IDLE) displayCode += '_';
+        while (displayCode.size() < 5 && _networkCtrl.getStatus() == NetworkController::Status::IDLE) displayCode += '_';
         auto codeText = TextLayout::allocWithText(displayCode, _font);
         codeText->layout();
         Affine2 ct;
@@ -238,7 +202,7 @@ void ClientScene::render() {
         _batch->drawText(codeText, ct);
 
         // Player count (visible once connected)
-        if (_status == Status::WAIT || _status == Status::START) {
+        if (_networkCtrl.getStatus() == NetworkController::Status::WAIT || _networkCtrl.getStatus() == NetworkController::Status::START) {
             auto playerLabel = TextLayout::allocWithText(
                 "Players: " + strtool::to_string(_networkCtrl.playerCount()), _font);
             playerLabel->layout();
@@ -257,9 +221,9 @@ void ClientScene::render() {
 
         // Join button label
         std::string joinText;
-        if (_status == Status::IDLE) joinText = "Join";
-        else if (_status == Status::JOIN) joinText = "Connecting...";
-        else                              joinText = "Waiting for host...";
+        if (_networkCtrl.getStatus() == NetworkController::Status::IDLE) joinText = "Join";
+        else if (_networkCtrl.getStatus() == NetworkController::Status::JOIN) joinText = "Connecting...";
+        else joinText = "Waiting for host...";
         auto joinLabel = TextLayout::allocWithText(joinText, _font);
         joinLabel->layout();
         Affine2 jl;

@@ -9,14 +9,9 @@
 #include "../Controllers/NetworkController.h"
 
 class ClientScene : public cugl::scene2::Scene2 {
-public:
-    enum class Status { IDLE, JOIN, WAIT, START, ABORT };
-
 private:
     std::shared_ptr<cugl::AssetManager> _assets;
     std::shared_ptr<cugl::graphics::Font> _font;
-
-    Status _status;
     
     NetworkController _networkCtrl;
 
@@ -32,19 +27,20 @@ private:
     void mousePressCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus);
     void keyPressCB(const cugl::KeyEvent& event, bool focus);
 
-    bool checkConnection();
-
 public:
-    ClientScene() : cugl::scene2::Scene2(), _status(Status::IDLE), _playerCount(1) {}
+    ClientScene() : cugl::scene2::Scene2() {}
     ~ClientScene() { dispose(); }
 
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
     void dispose() override;
 
-    void update(float dt);
+    void update(float dt) override;
     void render() override;
+    void disconnect() {_networkCtrl.disconnect();}
+    NetworkController::Status getStatus(){return _networkCtrl.getStatus();}
+    
+    
 
-    Status getStatus() const { return _status; }
 
 };
 

@@ -369,20 +369,21 @@ void GeometryApp::updateHostScene(float dt) {
     _hostScene.update(dt);
 
     switch (_hostScene.getStatus()) {
-    case HostScene::Status::ABORT:
+    case NetworkController::Status::ABORT:
         // Reinitialize so a fresh connection is made next time
         _hostScene.dispose();
         _hostScene.init(_assets);
         _hostScene.setSpriteBatch(_batch);
         _scene = State::MENU;
         break;
-    case HostScene::Status::START:
+    case NetworkController::Status::START:
         _hostScene.disconnect();
         _gameplay.reset();
         _scene = State::GAME;
         break;
-    case HostScene::Status::WAIT:
-    case HostScene::Status::IDLE:
+    case NetworkController::Status::WAIT:
+    case NetworkController::Status::IDLE:
+        case NetworkController::Status::JOIN: // should not happen but whatever
         break;
     }
 }
@@ -391,21 +392,21 @@ void GeometryApp::updateClientScene(float dt) {
     _clientScene.update(dt);
 
     switch (_clientScene.getStatus()) {
-    case ClientScene::Status::ABORT:
+    case NetworkController::Status::ABORT:
         // Reinitialize so a fresh connection is made next time
         _clientScene.dispose();
         _clientScene.init(_assets);
         _clientScene.setSpriteBatch(_batch);
         _scene = State::MENU;
         break;
-    case ClientScene::Status::START:
+    case NetworkController::Status::START:
         _clientScene.disconnect();
         _gameplay.reset();
         _scene = State::GAME;
         break;
-    case ClientScene::Status::IDLE:
-    case ClientScene::Status::JOIN:
-    case ClientScene::Status::WAIT:
+    case NetworkController::Status::IDLE:
+    case NetworkController::Status::JOIN:
+    case NetworkController::Status::WAIT:
         break;
     }
 }
