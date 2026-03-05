@@ -16,18 +16,15 @@ private:
 
     NetworkController _networkCtrl;
 
-    cugl::Rect _startRect;
-    cugl::Rect _backRect;
-
+    /** The menu button for starting a game */
+    std::shared_ptr<cugl::scene2::Button> _startgame;
+    /** The back button for the menu scene */
+    std::shared_ptr<cugl::scene2::Button> _backout;
+    /** The game id label (for updating) */
+    std::shared_ptr<cugl::scene2::Label> _gameid;
+    /** The players label (for updating) */
+    std::shared_ptr<cugl::scene2::Label> _player;
     std::string _roomCode;
-
-    static constexpr Uint32 LISTENER_KEY = 3;
-
-#ifdef CU_TOUCH_SCREEN
-    void touchBeganCB(const cugl::TouchEvent& event, bool focus);
-#else
-    void mousePressCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus);
-#endif
 
     bool checkConnection();
 
@@ -37,12 +34,18 @@ public:
 
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
     void dispose() override;
+    virtual void setActive(bool value) override;
+
 
     void update(float dt);
-    void render() override;
     
     void disconnect() {_networkCtrl.disconnect();}
     NetworkController::Status getStatus(){return _networkCtrl.getStatus();}
+    
+private:
+    void updateText(const std::shared_ptr<cugl::scene2::Button>& button, const std::string text);
+    void configureStartButton();
+
 
 };
 

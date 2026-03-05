@@ -87,6 +87,7 @@ void GeometryApp::onStartup() {
     _assets->attach<Font>(FontLoader::alloc()->getHook());
     _assets->attach<JsonValue>(JsonLoader::alloc()->getHook());
     // Needed for loading screen
+    _assets->attach<WidgetValue>(WidgetLoader::alloc()->getHook());
     _assets->attach<scene2::SceneNode>(Scene2Loader::alloc()->getHook());
     _assets->loadDirectory("json/loading.json");
 

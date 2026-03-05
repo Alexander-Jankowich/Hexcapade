@@ -17,16 +17,12 @@ private:
 
     Choice _choice;
 
-    cugl::Rect _hostRect;
-    cugl::Rect _joinRect;
+    /** The menu button for hosting a game */
+    std::shared_ptr<cugl::scene2::Button> _hostbutton;
+    /** The menu button for joining a game */
+    std::shared_ptr<cugl::scene2::Button> _joinbutton;
+    
 
-    static constexpr Uint32 LISTENER_KEY = 6;
-
-#ifdef CU_TOUCH_SCREEN
-    void touchBeganCB(const cugl::TouchEvent& event, bool focus);
-#else
-    void mousePressCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus);
-#endif
 
 public:
     MenuScene() : cugl::scene2::Scene2(), _choice(Choice::NONE) {}
@@ -34,9 +30,10 @@ public:
 
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
     void dispose() override;
+    virtual void setActive(bool value) override;
+
 
     void update(float dt) {}
-    void render() override;
 
     Choice getChoice() const { return _choice; }
     void resetChoice() { _choice = Choice::NONE; }
