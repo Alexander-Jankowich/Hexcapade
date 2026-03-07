@@ -38,6 +38,14 @@ public:
     NetworkController::Status getStatus(){return _networkCtrl.getStatus();}
     NetworkController getConnection(){return _networkCtrl;}
 
+    void resetStatus() { _networkCtrl.resetStatus(); }
+
+    void reset() {
+        _networkCtrl.disconnect();
+        _gameid->setText("");
+        _player->setText("1");
+    }
+
     
     /**
      * Sets whether the scene is currently active

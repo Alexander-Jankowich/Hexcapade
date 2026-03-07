@@ -383,6 +383,8 @@ void GeometryApp::updateHostScene(float dt) {
     case NetworkController::Status::ABORT:
         
         _hostScene.setActive(false);
+        _hostScene.reset();
+        _hostScene.resetStatus();
         _mainmenu.setActive(true);
         _scene = State::MENU;
         break;
@@ -408,8 +410,10 @@ void GeometryApp::updateClientScene(float dt) {
     switch (_clientScene.getStatus()) {
     case NetworkController::Status::ABORT:
         // Reinitialize so a fresh connection is made next time
-            _hostScene.setActive(false);
-            _mainmenu.setActive(true);
+        _clientScene.setActive(false);
+        _clientScene.reset();
+        _clientScene.resetStatus();
+        _mainmenu.setActive(true);
         _scene = State::MENU;
         break;
     case NetworkController::Status::START:
@@ -420,7 +424,6 @@ void GeometryApp::updateClientScene(float dt) {
             _gameplay.setConnection(_clientScene.getConnection());
             _clientScene.disconnect();
             _gameplay.setHost(false);
-        _scene = State::GAME;
         break;
     case NetworkController::Status::IDLE:
     case NetworkController::Status::JOIN:

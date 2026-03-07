@@ -21,6 +21,7 @@ std::string NetworkController::dec2hex(const std::string& dec) {
 }
 
 bool NetworkController::checkClientConnection() {
+    if (!_network) return false;
     auto state = _network->getState();
     switch (state) {
     case NetcodeConnection::State::NEGOTIATING:
@@ -64,6 +65,7 @@ std::string NetworkController::hex2dec(const std::string& hex) {
 }
 
 bool NetworkController::checkHostConnection() {
+    if (!_network) return false;
 
     NetcodeConnection::State state = _network->getState();
     

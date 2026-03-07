@@ -47,12 +47,25 @@ public:
     void connect(bool isHost, const std::string& roomCode="");
     
     Status getStatus(){return _status;}
-    
 
+    void resetStatus() { _status = Status::IDLE; }
+    
     int playerCount() {return _playerCount;}
 
-    std::string getRoomCode(){return hex2dec(_network->getRoom());}
-    
+    bool hasNetwork() { return _network != nullptr; }
+
+    std::string getRoomCode() {
+        if (!_network) return "";
+        std::string room = _network->getRoom();
+        if (room.empty()) return "";
+        return hex2dec(room);
+    }
+
+    void update() {
+        if (!_network) return;
+        if (_ishost) checkHostConnection();
+        else checkClientConnection();
+    }
     
     void disconnect() {
         if (_network) { _network->close(); }

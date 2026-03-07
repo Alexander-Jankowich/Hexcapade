@@ -48,7 +48,9 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     });
     
     _gameid->addExitListener([this](const std::string& name, const std::string& value) {
-        _networkCtrl.connect(false, value);
+        if (!value.empty()) {
+            _networkCtrl.connect(false, value);
+        }
     });
 
     // Create the server configuration

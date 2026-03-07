@@ -42,6 +42,14 @@ public:
     void disconnect() {_networkCtrl.disconnect();}
     NetworkController::Status getStatus(){return _networkCtrl.getStatus();}
     NetworkController getConnection(){return _networkCtrl;}
+
+    void resetStatus() { _networkCtrl.resetStatus(); }
+
+    void reset() {
+        _networkCtrl.disconnect();
+        _gameid->setText("");
+        _player->setText("1");
+    }
     
 private:
     void updateText(const std::shared_ptr<cugl::scene2::Button>& button, const std::string text);
