@@ -20,9 +20,6 @@
 
 
 #include "GLGameScene.h"
-#include "Enemy.h"
-#include "SpellSet.h"
-#include "Player.h"
 
 using namespace cugl;
 using namespace std;

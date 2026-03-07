@@ -80,6 +80,7 @@ void GeometryApp::onStartup() {
     // Start-up basic input for loading screen (DESKTOP ONLY)
     Input::activate<Mouse>();
     Input::activate<Keyboard>();
+    Input::activate<TextInput>();
 #endif
 
     // Bare bones asset loading (textures only)
@@ -127,6 +128,7 @@ void GeometryApp::onShutdown() {
     // Shutdown input
     Input::deactivate<Mouse>();
     Input::deactivate<Keyboard>();
+    Input::deactivate<TextInput>();
 
     cugl::netcode::NetworkLayer::stop();
 

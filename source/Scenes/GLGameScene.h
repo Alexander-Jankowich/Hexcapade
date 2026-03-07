@@ -18,12 +18,12 @@
 #include <vector>
 #include "../Controllers/GLInputController.h"
 #include "../Controllers/NetworkController.h"
-#include "InputDisplay.h"
+#include "../Models/InputDisplay.h"
 #include <cstddef> 
-#include "EnemySet.h"
-#include "SpellSet.h"
+#include "../Models/EnemySet.h"
+#include "../Models/SpellSet.h"
 #include "../Controllers/CollisionController.h"
-#include "Player.h"
+#include "../Models/Player.h"
 
 /**
  * This class is the primary gameplay constroller for the demo.

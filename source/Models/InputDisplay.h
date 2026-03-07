@@ -1,7 +1,7 @@
 #ifndef __INPUT_MODEL_H__
 #define __INPUT_MODEL_H__
 #include <cugl/cugl.h>
-#include "GLInputController.h"
+#include "../Controllers/GLInputController.h"
 
 class InputDisplay {
 public:

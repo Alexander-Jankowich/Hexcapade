@@ -8,9 +8,9 @@
 #define __COLLISION_CONTROLLER_H__
 
 #include <cugl/cugl.h>
-#include "EnemySet.h"
-#include "SpellSet.h"
-#include "Player.h"
+#include "../Models/EnemySet.h"
+#include "../Models/SpellSet.h"
+#include "../Models/Player.h"
 
 class CollisionController {
 private:

@@ -17,8 +17,8 @@ sources:                            # The list of the source code files
     - source/Controllers/*.h
     - source/Models/*.cpp
     - source/Models/*.h
-    - source/Views/*.cpp
-    - source/Views/*.h
+    - source/Scenes/*.cpp
+    - source/Scenes/*.h
 
 
 modules:

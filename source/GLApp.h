@@ -6,12 +6,12 @@
 #define __GL_APP_H__
 
 #include <cugl/cugl.h>
-#include "GLGameScene.h"
-#include "EndScene.h"
-#include "MenuScene.h"
-#include "HostScene.h"
-#include "ClientScene.h"
-#include "NetworkController.h"
+#include "Scenes/GLGameScene.h"
+#include "Scenes/EndScene.h"
+#include "Scenes/MenuScene.h"
+#include "Scenes/HostScene.h"
+#include "Scenes/ClientScene.h"
+#include "Controllers/NetworkController.h"
 
 /**
  * This class represents the application root for Hexcapade.
