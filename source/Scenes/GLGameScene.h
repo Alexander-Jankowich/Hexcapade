@@ -17,6 +17,7 @@
 #include <cugl/cugl.h>
 #include <vector>
 #include "../Controllers/GLInputController.h"
+#include "../Controllers/NetworkController.h"
 #include "InputDisplay.h"
 #include <cstddef> 
 #include "EnemySet.h"
@@ -34,6 +35,8 @@
 class GameScene : public cugl::scene2::Scene2 {
 protected:
     // CONTROLLERS are attached directly to the scene (no pointers)
+    NetworkController _networkCtrl;
+    bool _ishost;
     /** The controller to manage the ship */
     InputController _input;
     std::shared_ptr<InputDisplay> _inputDisplay;
@@ -163,6 +166,35 @@ public:
     int getQuota() const { return _quota; }
     bool hasWon() const { return _playerWon; }
     bool hasLost() const { return _playerLost; }
+    
+    /**
+     * Returns the network connection (as made by this scene)
+     *
+     * This value will be reset every time the scene is made active.
+     *
+     * @return the network connection (as made by this scene)
+     */
+    void setConnection(const NetworkController& network) {
+        _networkCtrl = network;
+    }
+    
+    /**
+     * Returns true if the player is host.
+     *
+     * We may need to have gameplay specific code for host.
+     *
+     * @return true if the player is host.
+     */
+    bool isHost() const { return _ishost; }
+
+    /**
+     * Sets whether the player is host.
+     *
+     * We may need to have gameplay specific code for host.
+     *
+     * @param host  Whether the player is host.
+     */
+    void setHost(bool host)  { _ishost = host; }
 
 
     
@@ -251,6 +283,8 @@ public:
      * SpriteBatch for drawing, but this is not required.
      */
     void render() override;
+    
+    void setActive(bool value);
 
 private:
     

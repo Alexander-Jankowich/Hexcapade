@@ -32,6 +32,7 @@ bool MenuScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     // Program the buttons
     _hostbutton->addListener([this](const std::string& name, bool down) {
         if (down) {
+            CULog("host pressed");
             _choice = Choice::HOST;
         }
     });

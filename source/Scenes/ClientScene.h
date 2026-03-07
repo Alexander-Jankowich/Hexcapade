@@ -36,6 +36,8 @@ public:
     void update(float dt) override;
     void disconnect() {_networkCtrl.disconnect();}
     NetworkController::Status getStatus(){return _networkCtrl.getStatus();}
+    NetworkController getConnection(){return _networkCtrl;}
+
     
     /**
      * Sets whether the scene is currently active

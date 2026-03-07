@@ -120,6 +120,8 @@ void NetworkController::init(const std::shared_ptr<cugl::JsonValue> json, bool i
     _status = isHost ? Status::WAIT : Status::IDLE;
 }
 
+
+
 std::string NetworkController::connect(bool isHost, const std::string& roomCode){
     if(isHost){
         _network = NetcodeConnection::alloc(_config);

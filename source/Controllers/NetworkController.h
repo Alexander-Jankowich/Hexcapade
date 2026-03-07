@@ -19,6 +19,7 @@ private:
     cugl::netcode::NetcodeConfig _config;
     int _playerCount;
     Status _status;
+    bool _ishost;
     
 #pragma mark Helpers
     static std::string dec2hex(const std::string& dec);
@@ -35,6 +36,13 @@ public:
     ~NetworkController() {disconnect();}
     
     void init(const std::shared_ptr<cugl::JsonValue> json, bool isHost);
+    
+    void initWithNetwork(const std::shared_ptr<cugl::netcode::NetcodeConnection> network, bool isHost) {
+        _ishost = isHost;
+        _network = network;
+        _playerCount = network->getNumPlayers();
+        // idk what to do about status
+    }
     
     std::string connect(bool isHost, const std::string& roomCode="");
     

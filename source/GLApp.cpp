@@ -333,6 +333,12 @@ void GeometryApp::updateLoadingScene(float dt) {
 
     _mainmenu.init(_assets);
     _mainmenu.setSpriteBatch(_batch);
+    
+    _hostScene.init(_assets);
+    _hostScene.setSpriteBatch(_batch);
+    
+    _clientScene.init(_assets);
+    _clientScene.setSpriteBatch(_batch);
 
     _gameplay.init(_assets);
     _gameplay.setSpriteBatch(_batch);
@@ -351,14 +357,14 @@ void GeometryApp::updateMenuScene(float dt) {
     switch (_mainmenu.getChoice()) {
     case MenuScene::Choice::HOST:
         _mainmenu.resetChoice();
-        _hostScene.init(_assets);
-        _hostScene.setSpriteBatch(_batch);
+            _mainmenu.setActive(false);
+            _hostScene.setActive(true);
         _scene = State::HOST;
         break;
     case MenuScene::Choice::JOIN:
         _mainmenu.resetChoice();
-        _clientScene.init(_assets);
-        _clientScene.setSpriteBatch(_batch);
+            _mainmenu.setActive(false);
+            _clientScene.setActive(true);
         _scene = State::CLIENT;
         break;
     case MenuScene::Choice::NONE:
@@ -371,16 +377,19 @@ void GeometryApp::updateHostScene(float dt) {
 
     switch (_hostScene.getStatus()) {
     case NetworkController::Status::ABORT:
-        // Reinitialize so a fresh connection is made next time
-        _hostScene.dispose();
-        _hostScene.init(_assets);
-        _hostScene.setSpriteBatch(_batch);
+        
+        _hostScene.setActive(false);
+        _mainmenu.setActive(true);
         _scene = State::MENU;
         break;
     case NetworkController::Status::START:
-        _hostScene.disconnect();
-        _gameplay.reset();
-        _scene = State::GAME;
+            _hostScene.setActive(false);
+            _gameplay.setActive(true);
+            _scene = State::GAME;
+            // Transfer connection ownership
+            _gameplay.setConnection(_hostScene.getConnection());
+            _hostScene.disconnect();
+            _gameplay.setHost(true);
         break;
     case NetworkController::Status::WAIT:
     case NetworkController::Status::IDLE:
@@ -395,14 +404,18 @@ void GeometryApp::updateClientScene(float dt) {
     switch (_clientScene.getStatus()) {
     case NetworkController::Status::ABORT:
         // Reinitialize so a fresh connection is made next time
-        _clientScene.dispose();
-        _clientScene.init(_assets);
-        _clientScene.setSpriteBatch(_batch);
+            _hostScene.setActive(false);
+            _mainmenu.setActive(true);
         _scene = State::MENU;
         break;
     case NetworkController::Status::START:
-        _clientScene.disconnect();
-        _gameplay.reset();
+            _clientScene.setActive(false);
+            _gameplay.setActive(true);
+            _scene = State::GAME;
+            // Transfer connection ownership
+            _gameplay.setConnection(_clientScene.getConnection());
+            _clientScene.disconnect();
+            _gameplay.setHost(false);
         _scene = State::GAME;
         break;
     case NetworkController::Status::IDLE:

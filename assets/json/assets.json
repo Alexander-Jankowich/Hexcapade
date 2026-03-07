@@ -8,10 +8,20 @@
         },
         "spell": {
             "file": "textures/photon.png"
+        },
+        "button": {
+            "file":  "textures/button.png"
+        },
+        "frame": {
+            "file":  "textures/frame.png"
+        },
+        "left": {
+            "file":  "textures/left_arrow.png"
         }
+        
     },
     "fonts": {
-        "font": {
+        "OpenSans": {
             "file": "fonts/OpenSans-Regular.ttf",
             "size": 24
         }
@@ -94,7 +104,7 @@
                             1.0
                         ],
                         "scale": 1.5,
-                        "font": "OpenSans-Regular",
+                        "font": "OpenSans",
                         "text": "Host View",
                         "padding": [
                             20,
@@ -180,7 +190,7 @@
                                             0.5,
                                             0.5
                                         ],
-                                        "font": "OpenSans-Regular",
+                                        "font": "OpenSans",
                                         "text": "Game ID:",
                                         "padding": [
                                             20,
@@ -250,7 +260,7 @@
                                             0.5,
                                             0.5
                                         ],
-                                        "font": "OpenSans-Regular",
+                                        "font": "OpenSans",
                                         "text": "Players:",
                                         "padding": [
                                             20,
@@ -339,7 +349,7 @@
                             1.0
                         ],
                         "scale": 1.5,
-                        "font": "OpenSans-Regular",
+                        "font": "OpenSans",
                         "text": "Client View",
                         "padding": [
                             20,
@@ -425,7 +435,7 @@
                                             0.5,
                                             0.5
                                         ],
-                                        "font": "OpenSans-Regular",
+                                        "font": "OpenSans",
                                         "text": "Game ID:",
                                         "padding": [
                                             20,
@@ -495,7 +505,7 @@
                                             0.5,
                                             0.5
                                         ],
-                                        "font": "OpenSans-Regular",
+                                        "font": "OpenSans",
                                         "text": "Players:",
                                         "padding": [
                                             20,

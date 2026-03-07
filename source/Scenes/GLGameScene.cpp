@@ -119,6 +119,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     
     
     buildGeometry();
+    setActive(false);
     return true;
 }
 
@@ -519,3 +520,15 @@ void GameScene::buildGeometry() {
     _world -> addObstacle(_player->_shape);
 }
 
+
+void GameScene::setActive(bool value) {
+    if (isActive() != value) {
+        Scene2::setActive(value);
+        if (value) {
+            
+            // 
+        } else {
+            
+        }
+    }
+}
