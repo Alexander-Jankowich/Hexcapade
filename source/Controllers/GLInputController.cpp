@@ -197,47 +197,47 @@ bool InputController::init(const Rect bounds) {
     clearTouchInstance(_ltouch);
     clearTouchInstance(_rtouch);
     clearTouchInstance(_mtouch);
-#ifdef CU_TOUCH_SCREEN
-    Touchscreen* touch = Input::get<Touchscreen>();
-    if (touch) {
-        touch->addBeginListener(LISTENER_KEY, [this](const cugl::TouchEvent& event, bool focus) {
-            this->touchBeganCB(event, focus);
-        });
-        touch->addEndListener(LISTENER_KEY, [this](const cugl::TouchEvent& event, bool focus) {
-            this->touchEndCB(event, focus);
-        });
-        touch->addMotionListener(LISTENER_KEY, [this](const cugl::TouchEvent& event,const Vec2 previous, bool focus) {
-            this->touchMotionCB(event,previous, focus);
-        });
-        _active = true;
-    } else {
-        _active = false;
-    }
-#else
-    _active = Input::activate<Keyboard>();
-    Mouse* mouse = Input::get<Mouse>();
-    if (_active && mouse) {
-        mouse->setPointerAwareness(Mouse::PointerAwareness::DRAG);
-        _mouseKey = mouse->acquireKey();
-
-        mouse->addPressListener(_mouseKey, [=, this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
-            this->buttonDownCB(event, clicks, focus);
-        });
-        mouse->addReleaseListener(_mouseKey, [=, this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
-            this->buttonUpCB(event, clicks, focus);
-        });
-        mouse->addDragListener(_mouseKey, [=, this](const cugl::MouseEvent& event, const Vec2 previous, bool focus) {
-            this->motionCB(event, previous, focus);
-        });
-        _active = true;
-
-        CULog("Added listeners!");
-    }
-    else {
-        _active = false;
-    }
-#endif
-    return _active;
+//#ifdef CU_TOUCH_SCREEN
+//    Touchscreen* touch = Input::get<Touchscreen>();
+//    if (touch) {
+//        touch->addBeginListener(LISTENER_KEY, [this](const cugl::TouchEvent& event, bool focus) {
+//            this->touchBeganCB(event, focus);
+//        });
+//        touch->addEndListener(LISTENER_KEY, [this](const cugl::TouchEvent& event, bool focus) {
+//            this->touchEndCB(event, focus);
+//        });
+//        touch->addMotionListener(LISTENER_KEY, [this](const cugl::TouchEvent& event,const Vec2 previous, bool focus) {
+//            this->touchMotionCB(event,previous, focus);
+//        });
+//        _active = true;
+//    } else {
+//        _active = false;
+//    }
+//#else
+//    _active = Input::activate<Keyboard>();
+//    Mouse* mouse = Input::get<Mouse>();
+//    if (_active && mouse) {
+//        mouse->setPointerAwareness(Mouse::PointerAwareness::DRAG);
+//        _mouseKey = mouse->acquireKey();
+//
+//        mouse->addPressListener(_mouseKey, [=, this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
+//            this->buttonDownCB(event, clicks, focus);
+//        });
+//        mouse->addReleaseListener(_mouseKey, [=, this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
+//            this->buttonUpCB(event, clicks, focus);
+//        });
+//        mouse->addDragListener(_mouseKey, [=, this](const cugl::MouseEvent& event, const Vec2 previous, bool focus) {
+//            this->motionCB(event, previous, focus);
+//        });
+//        _active = true;
+//
+//        CULog("Added listeners!");
+//    }
+//    else {
+//        _active = false;
+//    }
+//#endif
+    return true;
 }
 
 
@@ -669,4 +669,62 @@ void InputController::motionCB(const cugl::MouseEvent& event, const cugl::Vec2 p
         //CULog("In right zone");
         currentStroke.push_back(pos);
     }
+}
+
+
+void InputController::activate() {
+#ifdef CU_TOUCH_SCREEN
+    Touchscreen* touch = Input::get<Touchscreen>();
+    if (touch) {
+        touch->addBeginListener(LISTENER_KEY, [this](const cugl::TouchEvent& event, bool focus) {
+            this->touchBeganCB(event, focus);
+        });
+        touch->addEndListener(LISTENER_KEY, [this](const cugl::TouchEvent& event, bool focus) {
+            this->touchEndCB(event, focus);
+        });
+        touch->addMotionListener(LISTENER_KEY, [this](const cugl::TouchEvent& event,const Vec2 previous, bool focus) {
+            this->touchMotionCB(event,previous, focus);
+        });
+        _active = true;
+    } else {
+        _active = false;
+    }
+#else
+    _active = Input::activate<Keyboard>();
+    Mouse* mouse = Input::get<Mouse>();
+    if (_active && mouse) {
+        mouse->setPointerAwareness(Mouse::PointerAwareness::DRAG);
+        _mouseKey = mouse->acquireKey();
+
+        mouse->addPressListener(_mouseKey, [=, this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
+            this->buttonDownCB(event, clicks, focus);
+        });
+        mouse->addReleaseListener(_mouseKey, [=, this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
+            this->buttonUpCB(event, clicks, focus);
+        });
+        mouse->addDragListener(_mouseKey, [=, this](const cugl::MouseEvent& event, const Vec2 previous, bool focus) {
+            this->motionCB(event, previous, focus);
+        });
+        _active = true;
+
+        CULog("Added listeners!");
+    }
+    else {
+        _active = false;
+    }
+#endif
+}
+
+void InputController::deactivate() {
+#ifndef CU_TOUCH_SCREEN
+    Mouse* mouse = Input::get<Mouse>();
+    mouse->removePressListener(LISTENER_KEY);
+    mouse->removeReleaseListener(LISTENER_KEY);
+    mouse->removeDragListener(LISTENER_KEY);
+#else
+    Touchscreen* touch = Input::get<Touchscreen>();
+    touch->removeBeginListener(LISTENER_KEY);
+    touch->removeEndListener(LISTENER_KEY);
+#endif
+    _active = false;
 }

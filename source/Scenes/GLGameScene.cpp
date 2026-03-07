@@ -525,10 +525,10 @@ void GameScene::setActive(bool value) {
     if (isActive() != value) {
         Scene2::setActive(value);
         if (value) {
-            
-            // 
+            _input.activate();
+            //
         } else {
-            
+            _input.deactivate();
         }
     }
 }

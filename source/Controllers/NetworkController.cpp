@@ -122,7 +122,7 @@ void NetworkController::init(const std::shared_ptr<cugl::JsonValue> json, bool i
 
 
 
-std::string NetworkController::connect(bool isHost, const std::string& roomCode){
+void NetworkController::connect(bool isHost, const std::string& roomCode){
     if(isHost){
         _network = NetcodeConnection::alloc(_config);
         _network->open();
@@ -147,7 +147,6 @@ std::string NetworkController::connect(bool isHost, const std::string& roomCode)
         }
         
     }); // attach recieve listener when we start up
-    return hex2dec(_network->getRoom());
 }
 
 void NetworkController::startGame() {

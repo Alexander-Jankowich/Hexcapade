@@ -44,7 +44,7 @@ public:
         // idk what to do about status
     }
     
-    std::string connect(bool isHost, const std::string& roomCode="");
+    void connect(bool isHost, const std::string& roomCode="");
     
     Status getStatus(){return _status;}
     

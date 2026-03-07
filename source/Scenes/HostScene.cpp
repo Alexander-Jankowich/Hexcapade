@@ -84,6 +84,7 @@ void HostScene::setActive(bool value) {
             configureStartButton();
             _backout->activate();
             _networkCtrl.connect(true);
+            _gameid->setText(_networkCtrl.getRoomCode());
         } else {
             _startgame->deactivate();
             _backout->deactivate();

@@ -349,6 +349,7 @@ void GeometryApp::updateLoadingScene(float dt) {
     _loaded = true;
     setDeterministic(true);
     _scene = State::MENU;
+    _mainmenu.setActive(true);
 }
 
 void GeometryApp::updateMenuScene(float dt) {
@@ -356,13 +357,14 @@ void GeometryApp::updateMenuScene(float dt) {
 
     switch (_mainmenu.getChoice()) {
     case MenuScene::Choice::HOST:
-        _mainmenu.resetChoice();
+        //_mainmenu.resetChoice();
             _mainmenu.setActive(false);
             _hostScene.setActive(true);
+            CULog("set host scene active");
         _scene = State::HOST;
         break;
     case MenuScene::Choice::JOIN:
-        _mainmenu.resetChoice();
+        //_mainmenu.resetChoice();
             _mainmenu.setActive(false);
             _clientScene.setActive(true);
         _scene = State::CLIENT;

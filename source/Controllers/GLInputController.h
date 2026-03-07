@@ -316,6 +316,8 @@ protected:
     void processJoystick(const cugl::Vec2 pos);
 
     void processGestureEnd(const cugl::Vec2 pos);
+    
+
 
 #pragma mark Mouse Callbacks
 private:
@@ -364,6 +366,10 @@ private:
     void touchMotionCB(const cugl::TouchEvent& event, const cugl::Vec2& previous, bool focus);
     
     Zone _mouseDownZone = Zone::UNDEFINED;
+    
+public:
+    void deactivate();
+    void activate();
     
 };
 
