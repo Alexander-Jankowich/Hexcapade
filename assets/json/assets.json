@@ -19,7 +19,7 @@
             "file":  "textures/left_arrow.png"
         },
         "player": {
-        "file": "textures/character.png"
+            "file": "textures/character.png"
         }
         
     },
