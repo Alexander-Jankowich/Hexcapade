@@ -37,10 +37,11 @@ protected:
     // CONTROLLERS are attached directly to the scene (no pointers)
     NetworkController _networkCtrl;
     bool _ishost;
+    std::unordered_map<std::string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
     InputController _input;
     std::shared_ptr<InputDisplay> _inputDisplay;
-    
+
     // MODELS should be shared pointers or a data structure of shared pointers
     /** The spline for the exterior circle */
     cugl::Spline2 _spline;
@@ -49,7 +50,7 @@ protected:
     /** The outside "circle" */
     std::shared_ptr<cugl::physics2::PolygonObstacle> _center;
     /** The falling star */
-    
+
     std::shared_ptr<Player> _player;
 
     std::shared_ptr<EnemySet> _enemy;
@@ -76,9 +77,9 @@ protected:
     cugl::Path2 star_path;
     cugl::Poly2 poly_star;
     bool input_down = false;
-    
+
     SpellSet spells;
-    
+
     struct ItemData {
         enum class ItemType {
             ARTIFACT,
@@ -101,12 +102,12 @@ protected:
     int _pickupIndex;
     /** this stores the current prompt text for pickup */
     std::string _pickupPrompt;
-    
+
 
 
     // Index of the currently selected tangent handle -1 if none
     size_t _selectedTangent = (size_t)-1;
-    
+
 
     // Whether a control point is currently selected/being dragged can be inferred from _selectedTangent
 
@@ -122,7 +123,7 @@ protected:
      * should not be activated until the state is "stable".
      */
     void buildGeometry();
-    
+
 public:
 #pragma mark -
 #pragma mark Constructors
@@ -133,7 +134,7 @@ public:
      * This allows us to use the object without a heap pointer.
      */
     GameScene() : cugl::scene2::Scene2(), _inventoryValue(0), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1) {}
-    
+
     /**
      * Disposes of all (non-static) resources allocated to this mode.
      *
@@ -141,13 +142,13 @@ public:
      * static resources, like the input controller.
      */
     ~GameScene() { dispose(); }
-    
+
     /**
      * Disposes of all (non-static) resources allocated to this mode.
      */
     void dispose() override;
     void reset();
-    
+
     /**
      * Initializes the controller contents, and starts the game
      *
@@ -166,7 +167,7 @@ public:
     int getQuota() const { return _quota; }
     bool hasWon() const { return _playerWon; }
     bool hasLost() const { return _playerLost; }
-    
+
     /**
      * Returns the network connection (as made by this scene)
      *
@@ -177,7 +178,7 @@ public:
     void setConnection(const NetworkController& network) {
         _networkCtrl = network;
     }
-    
+
     /**
      * Returns true if the player is host.
      *
@@ -194,10 +195,10 @@ public:
      *
      * @param host  Whether the player is host.
      */
-    void setHost(bool host)  { _ishost = host; }
+    void setHost(bool host) { _ishost = host; }
 
 
-    
+
 #pragma mark -
 #pragma mark Gameplay Handling
     /**
@@ -221,7 +222,7 @@ public:
      * @param dt    The amount of time (in seconds) since the last frame
      */
     void preUpdate(float dt);
-    
+
     /**
      * The method called to provide a deterministic application loop.
      *
@@ -283,11 +284,11 @@ public:
      * SpriteBatch for drawing, but this is not required.
      */
     void render() override;
-    
+
     void setActive(bool value);
 
 private:
-    
+
     // this builds one random item and returns it
     ItemData createRandomItem(bool forceArtifact, bool forceSpell);
     // this respawns the map starter set of items
@@ -300,8 +301,8 @@ private:
     void tryPickupItem();
     // this draws all active items
     void drawItems();
-    
-    
+
+
     void renderHUD();
 };
 

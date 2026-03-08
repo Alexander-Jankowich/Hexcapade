@@ -37,15 +37,15 @@ using namespace cugl::graphics;
 #define PI 3.14159265358979323
 
 /** The initial control points for the spline. */
-float CIRCLE[] = {    0,  200,  120,  200,
+float CIRCLE[] = { 0,  200,  120,  200,
         200,  120,  200,    0,  200, -120,
         120, -200,    0, -200, -120, -200,
        -200, -120, -200,    0, -200,  120,
-       -120,  200,    0,  200};
+       -120,  200,    0,  200 };
 
 
 /** The (CLOCKWISE) polygon for the star */
-float STAR[] = {     -15, 0, 0, 50, 15, 0};
+float STAR[] = { -15, 0, 0, 50, 15, 0 };
 
 #pragma mark -
 #pragma mark Constructors
@@ -64,31 +64,32 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     // Initialize the scene to a locked width
     if (assets == nullptr) {
         return false;
-    } else if (!Scene2::initWithHint(Size(0,SCENE_HEIGHT))) {
+    }
+    else if (!Scene2::initWithHint(Size(0, SCENE_HEIGHT))) {
         return false;
     }
 
     _assets = assets;
-    
+
     // Start up the input handler
-    _input.init(cugl::Rect(0,0,getSize().width,getSize().height));
+    _input.init(cugl::Rect(0, 0, getSize().width, getSize().height));
     _inputDisplay = make_shared<InputDisplay>(&_input);
-    
+
     // create the player
-    _player = make_shared<Player>(getSize()/2, 12);
+    _player = make_shared<Player>(getSize() / 2, 12);
     _player->setTexture(assets->get<Texture>("player"));
-    
+
     // Create enemy with 10 health
     _enemy = make_shared<EnemySet>();
     _enemy->setTexture(assets->get<Texture>("enemy"));
     _enemy->spawnEnemy(getSize() / 4, 4);
     lastEnemySpawn = 0;
-    
+
     // Initialize inventory system
     _inventoryValue = 0;
     _quota = 100;
     _playerWon = false;
-    
+
     try {
         _font = assets->get<Font>("OpenSans");
     }
@@ -97,10 +98,10 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     }
 
     spells = SpellSet();
-    spells.setTexture(assets ->get<Texture>("spell"));
+    spells.setTexture(assets->get<Texture>("spell"));
     _collisions.init(getSize());
-    
-    
+
+
     // this resets pickup prompt state
     _canPickupItem = false;
     _pickupIndex = -1;
@@ -111,10 +112,10 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
 
     //Creation of the physics world and star translator
-    cugl::Rect bounds = Rect(0,0,getSize().width/PHYSICS_SCALE,getSize().height/PHYSICS_SCALE);
+    cugl::Rect bounds = Rect(0, 0, getSize().width / PHYSICS_SCALE, getSize().height / PHYSICS_SCALE);
     _world = cugl::physics2::ObstacleWorld::alloc(bounds, Vec2(0, 0));
-    
-    
+
+
     buildGeometry();
     setActive(false);
     return true;
@@ -237,12 +238,35 @@ void GameScene::preUpdate(float dt) {
     float playerRadius = 15.0f;
     _collisions.resolvePlayerEnemies(_player, playerScreenPos, playerRadius, _enemy);
     _collisions.resolveEnemiesSpell(spells, _enemy, playerScreenPos * -1.5);
-    
+
     _enemy->update(playerScreenPos);
 
     if (_player->getHealth() <= 0) {
         _playerLost = true;
     }
+
+    if (!_ishost && _networkCtrl.hasNetwork()) {
+        ClientInput ci;
+        ci.joystickAngle = _input.getMove().isZero() ? 0.0f
+            : _input.getMove().getAngle();
+        ci.pickupPressed = _input.pressedPickup();
+
+        switch (_input.getGesture()) {
+        case InputController::Gesture::FIREBALL:
+            ci.spellType = 1;
+            ci.spellAngle = _player->getAngle();
+            break;
+        case InputController::Gesture::FREEZE:
+            ci.spellType = 2;
+            ci.spellAngle = _player->getAngle();
+            break;
+        default:
+            ci.spellType = 0;
+            break;
+        }
+        _networkCtrl.sendInput(ci);
+    }
+
 
     // Check enemy spawning
     //lastEnemySpawn += dt;
@@ -436,7 +460,8 @@ GameScene::ItemData GameScene::createRandomItem(bool forceArtifact, bool forceSp
         data.name = "artifact";
         data.value = 40;
         data.color = Color4(255, 170, 60, 255);
-    } else {
+    }
+    else {
         data.type = ItemData::ItemType::SPELL;
         data.name = "spellbook";
         data.value = 25;
@@ -501,7 +526,7 @@ void GameScene::drawItems() {
     for (const auto& item : _items) {
         // this draws a small rectangle so we do not need extra textures yet
         Rect body(item.position.x - item.radius, item.position.y - item.radius,
-                  item.radius * 2.0f, item.radius * 2.0f);
+            item.radius * 2.0f, item.radius * 2.0f);
         _batch->setColor(item.color);
         _batch->setTexture(nullptr);
         _batch->fill(body);
@@ -524,7 +549,7 @@ void GameScene::drawItems() {
  */
 void GameScene::buildGeometry() {
     //_world -> clear();
-    
+
     //_player->addTo(_world);
 }
 
@@ -534,8 +559,16 @@ void GameScene::setActive(bool value) {
         Scene2::setActive(value);
         if (value) {
             _input.activate();
-            //
-        } else {
+            // Host registers callback to collect client inputs each frame
+            if (_ishost) {
+                _networkCtrl.setInputCallback(
+                    [this](const std::string& playerId, const ClientInput& input) {
+                        _clientInputs[playerId] = input;
+                    }
+                );
+            }
+        }
+        else {
             _input.deactivate();
         }
     }

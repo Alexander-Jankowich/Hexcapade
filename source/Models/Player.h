@@ -16,18 +16,18 @@ private:
 
 public:
 #pragma mark Constructors
-    
+
     /**
      * Creates a player
      */
     Player(const cugl::Vec2& pos, float speed);
-    
+
     /**
      * Disposes the ship, releasing all resources.
      */
     ~Player() {}
 
-    
+
 #pragma mark Properties
     /**
      * Returns the velocity of this ship.
@@ -54,8 +54,8 @@ public:
     float getAngle() { return _playerAngle; }
 
     cugl::Vec2 getDirection() { return cugl::Vec2(std::cos(_playerAngle), std::sin(_playerAngle)); }
-    
-private:
+
+protected:
     float _playerAngle;
 };
 
