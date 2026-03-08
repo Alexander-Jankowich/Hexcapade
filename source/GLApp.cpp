@@ -72,15 +72,17 @@ void GeometryApp::onStartup() {
     _assets = AssetManager::alloc();
     _batch = SpriteBatch::alloc();
     auto cam = OrthographicCamera::alloc(getDisplaySize());
+    Input::activate<TextInput>();
+    Input::activate<Keyboard>();
 
 #ifdef CU_MOBILE
     // Start-up basic input for loading screen (MOBILE ONLY)
     Input::activate<Touchscreen>();
+
 #else
     // Start-up basic input for loading screen (DESKTOP ONLY)
     Input::activate<Mouse>();
-    Input::activate<Keyboard>();
-    Input::activate<TextInput>();
+
 #endif
 
     // Bare bones asset loading (textures only)

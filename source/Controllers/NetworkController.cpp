@@ -68,6 +68,8 @@ bool NetworkController::checkHostConnection() {
     if (!_network) return false;
 
     NetcodeConnection::State state = _network->getState();
+    _playerCount = _network->getNumPlayers();
+
     
     switch (state) {
     case NetcodeConnection::State::NEGOTIATING:
@@ -119,6 +121,7 @@ void NetworkController::dispatcher(const std::string source, const std::vector<s
 void NetworkController::init(const std::shared_ptr<cugl::JsonValue> json, bool isHost){
     _playerCount=1;
     _config.set(json);
+    _ishost=isHost;
     _status = isHost ? Status::WAIT : Status::IDLE;
 }
 
@@ -133,6 +136,7 @@ void NetworkController::connect(bool isHost, const std::string& roomCode){
         std::string hex = dec2hex(roomCode);
         _network = NetcodeConnection::alloc(_config, hex);
         _network->open();
+        CULog("connecting client");
         checkClientConnection();
     }
     

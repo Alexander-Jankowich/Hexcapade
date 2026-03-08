@@ -81,6 +81,10 @@ void ClientScene::updateText(const std::shared_ptr<scene2::Button>& button, cons
 }
 
 void ClientScene::update(float dt) {
+    _networkCtrl.update();
+    _player->setText(std::to_string(_networkCtrl.playerCount()));
+    configureStartButton();
+
     // TODO outsource this to network controller
 //    if (_networkCtrl.getNetwork()) {
 //        _networkCtrl.getNetwork()->receive([this](const std::string& source,
@@ -99,6 +103,7 @@ void ClientScene::setActive(bool value) {
         Scene2::setActive(value);
         if (value) {
             _gameid->activate();
+            _startgame->activate();
             _backout->activate();
             _player->setText("1");
             configureStartButton();
@@ -123,7 +128,7 @@ void ClientScene::setActive(bool value) {
 void ClientScene::configureStartButton() {
     switch (_networkCtrl.getStatus()) {
         case NetworkController::Status::IDLE:
-            updateText(_startgame, "Start Game");
+            updateText(_startgame, "Join Game");
             break;
         case NetworkController::Status::JOIN:
             updateText(_startgame, "Connecting");

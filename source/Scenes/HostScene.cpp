@@ -69,14 +69,17 @@ void HostScene::dispose() {
 
 void HostScene::update(float dt) {
     _networkCtrl.update();
+    _player->setText(std::to_string(_networkCtrl.playerCount()));
+    CULog("num players: %d", _networkCtrl.playerCount());
     if (_networkCtrl.getStatus() == NetworkController::Status::IDLE && _networkCtrl.hasNetwork()) {
-        _gameid->setText(_networkCtrl.getRoomCode());
+        //_gameid->setText(_networkCtrl.getRoomCode());
         std::string code = _networkCtrl.getRoomCode();
         if (!code.empty()) {              // ← add this guard
             _gameid->setText(code);
-            configureStartButton();
         }
     }
+    configureStartButton();
+
     // TODO refactor
 //    if (_network) {
 //        _network->receive([](const std::string&, const std::vector<std::byte>&) {
@@ -92,6 +95,7 @@ void HostScene::setActive(bool value) {
         if (value) {
             configureStartButton();
             _backout->activate();
+            _startgame->activate();
             _networkCtrl.connect(true);
         } else {
             _startgame->deactivate();
