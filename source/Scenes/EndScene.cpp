@@ -12,7 +12,7 @@ bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     if (!Scene2::initWithHint(Size(0, SCENE_HEIGHT))) return false;
 
     _assets = assets;
-    _font = assets->get<Font>("font");
+    _font = assets->get<Font>("OpenSans");
     _state = State::NONE;
     _replayPressed = false;
 

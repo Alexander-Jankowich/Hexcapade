@@ -90,7 +90,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _playerWon = false;
     
     try {
-        _font = assets->get<Font>("font");
+        _font = assets->get<Font>("OpenSans");
     }
     catch (...) {
         _font = nullptr;
