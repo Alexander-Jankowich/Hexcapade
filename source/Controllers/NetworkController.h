@@ -20,6 +20,7 @@ private:
     int _playerCount;
     Status _status;
     bool _ishost;
+    std::string _currHost;
     
 #pragma mark Helpers
     static std::string dec2hex(const std::string& dec);

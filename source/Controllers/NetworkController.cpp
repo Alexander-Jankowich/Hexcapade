@@ -137,22 +137,19 @@ void NetworkController::connect(bool isHost, const std::string& roomCode){
         _network = NetcodeConnection::alloc(_config, hex);
         _network->open();
         CULog("connecting client");
+        _currHost = _network->getHost(); // this mayyyy have locking issues hopefully not
         checkClientConnection();
     }
-    
-    _network->onReceipt([this](const std::string& source,
-                               const std::vector<std::byte>& data){
-        if (source=="broadcast"){
-
-        // Any message from the host means the game is starting
-            if (!data.empty()) {
-                _status = Status::START;
-            }
-            checkClientConnection();
-                
+    NetcodeConnection::Dispatcher dispatcher = [this](const std::string& source,
+                                                     const std::vector<std::byte>& data){
+        CULog("source: %s", source.c_str());
+        if (!data.empty() && data[0]==std::byte(255)){
+            _status=Status::START;
         }
-        
-    }); // attach recieve listener when we start up
+                              
+    };
+    
+    _network->onReceipt(dispatcher); // attach recieve listener when we start up
 }
 
 void NetworkController::startGame() {
