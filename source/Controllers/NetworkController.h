@@ -5,6 +5,7 @@
 //  Created by Serena Duncan on 3/2/26.
 //
 #include <cugl/cugl.h>
+#include "MessageSerializer.h"
 
 #ifndef __NETWORK_CONTROLLER_H__
 #define __NETWORK_CONTROLLER_H__
@@ -12,6 +13,8 @@
 class NetworkController {
 public:
     enum class Status { IDLE, JOIN, WAIT, START, ABORT };
+
+    using InputCallback = std::function<void(const std::string& playerId, const ClientInput&)>;
 
 private:
 #pragma mark Attributes
@@ -21,37 +24,54 @@ private:
     Status _status;
     bool _ishost;
     std::string _currHost;
-    
+    InputCallback _inputCallback;
+    void attachReceiptHandler();
+
 #pragma mark Helpers
     static std::string dec2hex(const std::string& dec);
     static std::string hex2dec(const std::string& hex);
     void dispatcher(const std::string source,
-                    const std::vector<std::byte>& message);
-    
+        const std::vector<std::byte>& message);
+
     bool checkHostConnection();
     bool checkClientConnection();
 
-    
+
 public:
     NetworkController() {}
-    ~NetworkController() {disconnect();}
-    
+    ~NetworkController() { disconnect(); }
+
     void init(const std::shared_ptr<cugl::JsonValue> json, bool isHost);
-    
+
     void initWithNetwork(const std::shared_ptr<cugl::netcode::NetcodeConnection> network, bool isHost) {
         _ishost = isHost;
         _network = network;
         _playerCount = network->getNumPlayers();
         // idk what to do about status
     }
-    
-    void connect(bool isHost, const std::string& roomCode="");
-    
-    Status getStatus(){return _status;}
+
+    void setInputCallback(InputCallback cb) {
+        _inputCallback = cb;
+        if (_network) attachReceiptHandler();
+    }
+
+    void sendInput(const ClientInput& input) {
+        if (!_network || !_ishost == false) return;
+        auto bytes = MessageSerializer::encodeClientInput(input);
+        _network->sendToHost(bytes);
+    }
+
+    bool isHost() const {
+        return _ishost;
+    }
+
+    void connect(bool isHost, const std::string& roomCode = "");
+
+    Status getStatus() { return _status; }
 
     void resetStatus() { _status = Status::IDLE; }
-    
-    int playerCount() {return _playerCount;}
+
+    int playerCount() { return _playerCount; }
 
     bool hasNetwork() { return _network != nullptr; }
 
@@ -67,15 +87,15 @@ public:
         if (_ishost) checkHostConnection();
         else checkClientConnection();
     }
-    
+
     void disconnect() {
         if (_network) { _network->close(); }
         _network = nullptr;
         _status = Status::ABORT;
     }
-        
+
     void startGame();
-    
+
 
 };
 #endif // !__NETWORK_CONTROLLER_H__

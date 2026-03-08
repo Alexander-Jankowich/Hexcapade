@@ -128,6 +128,7 @@ void NetworkController::init(const std::shared_ptr<cugl::JsonValue> json, bool i
 
 
 void NetworkController::connect(bool isHost, const std::string& roomCode){
+    _ishost = isHost;
     if(isHost){
         _network = NetcodeConnection::alloc(_config);
         _network->open();
@@ -140,16 +141,7 @@ void NetworkController::connect(bool isHost, const std::string& roomCode){
         _currHost = _network->getHost(); // this mayyyy have locking issues hopefully not
         checkClientConnection();
     }
-    NetcodeConnection::Dispatcher dispatcher = [this](const std::string& source,
-                                                     const std::vector<std::byte>& data){
-        CULog("source: %s", source.c_str());
-        if (!data.empty() && data[0]==std::byte(255)){
-            _status=Status::START;
-        }
-                              
-    };
-    
-    _network->onReceipt(dispatcher); // attach recieve listener when we start up
+    attachReceiptHandler(); // attach recieve listener when we start up
 }
 
 void NetworkController::startGame() {
@@ -159,4 +151,24 @@ void NetworkController::startGame() {
             _network->broadcast(msg);
         }
         _status = Status::START;
+}
+
+void NetworkController::attachReceiptHandler() {
+    if (!_network) return;
+    _network->onReceipt([this](const std::string& source,
+        const std::vector<std::byte>& data) {
+            if (source == "broadcast") {
+                // Client path: broadcast from host = game starting
+                if (!data.empty()) _status = Status::START;
+                checkClientConnection();
+            }
+            else {
+                if (_inputCallback) {
+                    ClientInput input;
+                    if (MessageSerializer::decodeClientInput(data, input)) {
+                        _inputCallback(source, input);
+                    }
+                }
+            }
+        });
 }
