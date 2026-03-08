@@ -4,9 +4,10 @@
 #include "CollisionController.h"
 
 using namespace cugl;
+using namespace std;
 
 void CollisionController::resolvePlayerEnemy(std::shared_ptr<Player>& player,
-    const Vec2& playerPos, float playerRadius, std::shared_ptr<EnemySet::Enemy>& enemy,
+    const Vec2& playerPos, float playerRadius, std::shared_ptr<Enemy>& enemy,
     float enemyRadius) {
     Vec2 diff = playerPos - enemy->getPosition();
     float dist = diff.length();
@@ -22,20 +23,24 @@ void CollisionController::resolvePlayerEnemy(std::shared_ptr<Player>& player,
 void CollisionController::resolvePlayerEnemies(std::shared_ptr<Player>& player,
     const cugl::Vec2& playerPos, float playerRadius, const std::shared_ptr<EnemySet>& enemy) {
     for (auto it = enemy->current.begin(); it != enemy->current.end(); ++it) {
-        std::shared_ptr<EnemySet::Enemy> ptr = *it;
+        std::shared_ptr<Enemy> ptr = *it;
         resolvePlayerEnemy(player, playerPos, playerRadius, ptr, enemy->getRadius());
     }
 }
 
-bool CollisionController::resolvePlayerItem(const Vec2& playerPos, float playerRadius,
+bool CollisionController::resolvePlayerItem(std::shared_ptr<Player>& player,
     const Vec2& itemPos, float itemRadius) {
-    Vec2 diff = playerPos - itemPos;
-    float dist = diff.length();
+    Vec2 p1 = player->getPosition() - player->getSize() / 2;
+    Vec2 p2 = player->getPosition() + player->getSize() / 2;
+    Vec2 closest = Vec2(max(p1.x, min(itemPos.x, p2.x)),
+        max(p1.y, min(itemPos.y, p2.y)));
 
-    return dist < (playerRadius + itemRadius);
+    Vec2 dist = closest - itemPos;
+
+    return dist.length() < itemRadius;
 }
 
-void CollisionController::resolveEnemySpell(SpellSet& spells, std::shared_ptr<EnemySet::Enemy>& enemy,
+void CollisionController::resolveEnemySpell(SpellSet& spells, std::shared_ptr<Enemy>& enemy,
     Vec2 knockback, float enemyRadius) {
     auto sp_iter = spells.current.begin();
     while(sp_iter != spells.current.end()) {
@@ -60,7 +65,7 @@ void CollisionController::resolveEnemySpell(SpellSet& spells, std::shared_ptr<En
 void CollisionController::resolveEnemiesSpell(SpellSet& spells, std::shared_ptr<EnemySet>& enemy,
     cugl::Vec2 knockback) {
     for (auto it = enemy->current.begin(); it != enemy->current.end(); ++it) {
-        std::shared_ptr<EnemySet::Enemy> ptr = *it;
+        std::shared_ptr<Enemy> ptr = *it;
         resolveEnemySpell(spells, ptr, knockback, enemy->getRadius());
     }
 }

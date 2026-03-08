@@ -1,3 +1,14 @@
+//
+//  InputDisplay.h
+//  Hexcapade
+//
+//  This class takes data from InputController and draws it on screen
+//  to give the user feedback about what they're doing.
+//
+//  Author: Kaz Tam
+//  Version: 3/1/26
+//
+
 #ifndef __INPUT_MODEL_H__
 #define __INPUT_MODEL_H__
 #include <cugl/cugl.h>
@@ -9,24 +20,34 @@ public:
 
 	void setInputController(InputController* input) { _input = input; }
 
+	/**
+	* Updates values based on _input (should be called after _input is
+	* updated). Does not render the input.
+	*/
 	void update();
 
+	/**
+	* Draws the input using batch. Does not update the input, call update()
+	* before to do so.
+	*/
 	void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
-
-	//void setTextures();
 
 	void dispose();
 
 private:
+	/** The input controller */
 	InputController* _input;
 
+	/** Whether the joystick should be drawn */
 	bool _showJoystick;
 
+	/** Joystick attributes */
 	cugl::Affine2 _jbaseTrans;
 	cugl::Affine2 _jstickTrans;
 	cugl::Poly2 _joybase;
 	cugl::Poly2 _joystick;
 
+	/** Gesture attributes */
 	cugl::Path2 _gesture;
 	int _gestureWidth = 30;
 	cugl::Poly2 _gestureDisplay;

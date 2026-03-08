@@ -75,8 +75,8 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _inputDisplay = make_shared<InputDisplay>(&_input);
     
     // create the player
-    _player = make_shared<Player>(getSize());
-    
+    _player = make_shared<Player>(getSize()/2, 12);
+    _player->setTexture(assets->get<Texture>("player"));
     
     // Create enemy with 10 health
     _enemy = make_shared<EnemySet>();
@@ -133,8 +133,8 @@ void GameScene::dispose() {
 
 void GameScene::reset() {
     _player->setHealth(100);
-    _player->_shape->setPosition(getSize() / (2 * PHYSICS_SCALE));
-    _player->_shape->setLinearVelocity(Vec2::ZERO);
+    _player->setPosition(getSize() / (2 * PHYSICS_SCALE));
+    _player->setVelocity(Vec2::ZERO);
     _playerLost = false;
     _playerWon = false;
     _inventoryValue = 0;
@@ -180,7 +180,7 @@ void GameScene::addItem(int value) {
  * @param dt    The amount of time (in seconds) since the last frame
  */
 void GameScene::preUpdate(float dt) {
-    _input.update();
+    _input.update(dt);
     _inputDisplay->update();
 
     if (_input.pressedReset()) {
@@ -195,31 +195,45 @@ void GameScene::preUpdate(float dt) {
 
     // Player movement
     cugl::Vec2 input = _input.getMove();
-    const float speed = 12.0f;
-    cugl::Vec2 velocity = input * speed;
-    _player->_shape->setLinearVelocity(velocity);
+    cugl::Vec2 velocity = input * _player->getSpeed();
+    _player->setVelocity(velocity);
+    _player->update();
 
-    auto ang = input.isZero() ? _player->_playerAngle : input.getAngle();
-    _player->updateAngle(ang);
+    cugl::Vec2 playerScreenPos = _player->getPosition();
+
+    //auto ang = input.isZero() ? _player->getAngle() : input.getAngle();
+    //_player->updateAngle(ang);
 
     updateItemPickupState();
     tryPickupItem();
-    // Spellcasting
-    switch (_input.getGesture()) {
-        case InputController::Gesture::FREEZE:
-        spells.spawnSpell(_player->_shape->getPosition() * PHYSICS_SCALE, _player->_shape->getLinearVelocity(), _player->_playerAngle, true);
-        _input.resolvedGesture();
 
-        break;
-    case InputController::Gesture::FIREBALL:
-        spells.spawnSpell(_player->_shape->getPosition() * PHYSICS_SCALE, _player->_shape->getLinearVelocity(), _player->_playerAngle, false);
-        _input.resolvedGesture();
-        break;
+    // Spellcasting
+    if (_input.shouldReleaseSpell()) {
+        CULog("Release spell");
+        CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
+
+        Vec2 angle = _input.getSpellAngle();
+        if (angle.isZero()) {
+            angle = _player->getDirection();
+        }
+
+        switch (_input.getGesture()) {
+        case InputController::Gesture::FREEZE:
+            spells.spawnSpell(playerScreenPos, 5, angle, true);
+            //_input.resolvedGesture();
+
+            break;
+        case InputController::Gesture::FIREBALL:
+            spells.spawnSpell(playerScreenPos, 5, angle, false);
+            //_input.resolvedGesture();
+            break;
+        }
+        _input.resolveSpell();
+        CULog("Resolve spell");
     }
     spells.update();
 
     //collision update
-    cugl::Vec2 playerScreenPos = _player->_shape->getPosition() * PHYSICS_SCALE;
     float playerRadius = 15.0f;
     _collisions.resolvePlayerEnemies(_player, playerScreenPos, playerRadius, _enemy);
     _collisions.resolveEnemiesSpell(spells, _enemy, playerScreenPos * -1.5);
@@ -265,8 +279,8 @@ void GameScene::preUpdate(float dt) {
  * @param step    The fixed timestep in microseconds
  */
 void GameScene::fixedUpdate(Uint64 step) {
-    float dt = step / 1000000.0f;
-    _world->update(dt);
+    //float dt = step / 1000000.0f;
+    //_world->update(dt);
 }
 
 /**
@@ -292,7 +306,6 @@ void GameScene::fixedUpdate(Uint64 step) {
  * @param remain    The amount of time (in seconds) last fixedUpdate
  */
 void GameScene::postUpdate(float remain) {
-    _player->postUpdate(remain);
 }
 
 /**
@@ -310,12 +323,13 @@ void GameScene::render() {
 
     Color4 original = _batch->getColor();
 
+    drawItems();
+
     _player->draw(_batch);
 
     _enemy->draw(_batch);
 
     spells.draw(_batch);
-    drawItems();
 
     renderHUD();
 
@@ -323,8 +337,6 @@ void GameScene::render() {
 
     _batch->setColor(original);
     _batch->end();
-
-    _player->resetTrans();
 }
 
 void GameScene::renderHUD() {
@@ -453,11 +465,11 @@ void GameScene::updateItemPickupState() {
     _pickupPrompt = "";
 
     // this converts player center from physics units into screen units
-    Vec2 playerScreenPos = _player->_shape->getPosition() * PHYSICS_SCALE;
+    Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
     float playerRadius = 15.0f;
 
     for (size_t ii = 0; ii < _items.size(); ++ii) {
-        if (_collisions.resolvePlayerItem(playerScreenPos, playerRadius, _items[ii].position, _items[ii].radius)) {
+        if (_collisions.resolvePlayerItem(_player, _items[ii].position, _items[ii].radius)) {
             _canPickupItem = true;
             _pickupIndex = (int)ii;
             // Can't use CU_TOUCH_SCREEN in this manner, since it just isn't defined on PC
@@ -511,10 +523,9 @@ void GameScene::drawItems() {
  * should not be activated until the state is "stable".
  */
 void GameScene::buildGeometry() {
-    _world -> clear();
+    //_world -> clear();
     
-    
-    _world -> addObstacle(_player->_shape);
+    //_player->addTo(_world);
 }
 
 

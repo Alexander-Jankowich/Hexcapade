@@ -17,6 +17,9 @@
         },
         "left": {
             "file":  "textures/left_arrow.png"
+        },
+        "player": {
+        "file": "textures/character.png"
         }
         
     },

@@ -36,17 +36,20 @@ void SpellSet::setTexture(const std::shared_ptr<Texture>& value) {
 
 }
 
-void SpellSet::spawnSpell(cugl::Vec2 position, cugl::Vec2 velocity, float angle,bool freeze){
-
+void SpellSet::spawnSpell(Vec2 position, float speed, float angle, bool freeze) {
     cugl::Vec2 dir(std::cos(angle), std::sin(angle));
+    spawnSpell(position, speed, dir, freeze);
+}
 
-    cugl::Vec2 pvel =  dir * 5.0;
+void SpellSet::spawnSpell(Vec2 position, float speed, Vec2 angle,bool freeze) {
+    cugl::Vec2 pvel =  angle.getNormalization() * speed;
 
     std::shared_ptr<Spell> spell = std::make_shared<Spell>(position, pvel,freeze);
 
     pending.emplace(spell);
     
 }
+
 
 void SpellSet::update(){
     for (auto it = current.begin(); it != current.end(); ) {

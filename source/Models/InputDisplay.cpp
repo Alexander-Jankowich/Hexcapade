@@ -53,6 +53,5 @@ void InputDisplay::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batc
 }
 
 void InputDisplay::dispose() {
-	// Nothing for now
 	_input = nullptr;
 }
