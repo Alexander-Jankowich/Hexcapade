@@ -192,13 +192,14 @@ void GameScene::preUpdate(float dt) {
 
     cugl::Vec2 playerScreenPos = _player->getPosition();
 
-    //auto ang = input.isZero() ? _player->getAngle() : input.getAngle();
-    //_player->updateAngle(ang);
-
     updateItemPickupState();
     tryPickupItem();
 
     // Spellcasting
+    if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
+        _player->setSpell(_input.getGesture());
+    }
+
     if (_input.shouldReleaseSpell()) {
         CULog("Release spell");
         CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
@@ -208,19 +209,18 @@ void GameScene::preUpdate(float dt) {
             angle = _player->getDirection();
         }
 
-        switch (_input.getGesture()) {
-        case InputController::Gesture::FREEZE:
+        switch (_player->getSpell()) {
+        case SpellType::FREEZE:
             spells.spawnSpell(playerScreenPos, 5, angle, true);
             CULog("spawn freeze spell");
-            //_input.resolvedGesture();
 
             break;
-        case InputController::Gesture::FIREBALL:
+        case SpellType::FIREBALL:
             spells.spawnSpell(playerScreenPos, 5, angle, false);
-            //_input.resolvedGesture();
             break;
         }
         _input.resolveSpell();
+        _player->resolveSpell();
         CULog("Resolve spell");
     }
     spells.update();

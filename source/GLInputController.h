@@ -13,6 +13,7 @@
 //
 #ifndef __GL_INPUT_CONTROLLER_H__
 #define __GL_INPUT_CONTROLLER_H__
+#include "SpellSet.h"
 
 /**
  * Device-independent input manager.
@@ -26,13 +27,6 @@ class InputController {
 // Stylistically, I like common stuff protected, device specific private
     
 public:
-    /** Add more spells to this list later */
-    enum class Gesture {
-        NONE,
-        FREEZE,
-        FIREBALL
-    };
-
 #pragma mark Input Control
     /**
      * Creates a new input controller.
@@ -107,14 +101,14 @@ public:
     * 
     * @return Last gesture user has done
     */
-    Gesture getGesture() {
+    SpellType getGesture() {
         return _lastGesture;
     }
 
     /**
     * Call this function after resolving a gesture
     */
-    void resolvedGesture() { _lastGesture = Gesture::NONE; }
+    void resolvedGesture() { _lastGesture = SpellType::NONE; }
 
     /**
     * Returns a vector containing the current stroke
@@ -200,9 +194,11 @@ public:
     */
     cugl::Vec2 getJoystickPos() { return _joystickpos; }
 
+    void clearSpell() { _lastGesture = SpellType::NONE; }
+
     bool shouldReleaseSpell() { return _releaseSpell; }
 
-    void resolveSpell() { _releaseSpell = false; _lastGesture = Gesture::NONE; }
+    void resolveSpell() { _releaseSpell = false; _lastGesture = SpellType::NONE; _isAiming = false; }
 
     bool showAim() { return _isAiming; }
 
@@ -222,7 +218,7 @@ protected:
     bool _prevDown;
 
     /** The last gesture done */
-    Gesture _lastGesture;
+    SpellType _lastGesture;
 
 	/** The key for the mouse listeners */
 	Uint32 _mouseKey;
@@ -250,10 +246,10 @@ protected:
     std::vector<cugl::Vec2> currentStroke;
 
     /**The gesture recognizer*/
-    cugl::GestureRecognizer recognizer;
+    std::shared_ptr<cugl::GestureRecognizer> recognizer;
 
     /** Mapping of gesture strings to the correct Gesture */
-    std::unordered_map<std::string, Gesture> _gesturemap;
+    std::unordered_map<std::string, SpellType> _gesturemap;
 
     bool _isAiming;
     float _timeSinceCast;

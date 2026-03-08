@@ -9,10 +9,13 @@
 #define __GP_PLAYER_H__
 #include <cugl/cugl.h>
 #include "Entity.h"
+#include "SpellSet.h"
 
 class Player : public Entity {
 private:
     float _speed;
+    float _playerAngle;
+    SpellType _curSpell;
 
 public:
 #pragma mark Constructors
@@ -26,7 +29,6 @@ public:
      * Disposes the ship, releasing all resources.
      */
     ~Player() {}
-
     
 #pragma mark Properties
     /**
@@ -39,11 +41,9 @@ public:
     const int getSpeed() const { return _speed; }
 
     /**
-     * Sets the velocity of this ship.
+     * Sets the max speed of the player
      *
-     * This value is necessary to control momementum in ship movement.
-     *
-     * @param value the velocity of this ship
+     * @param value the max speed of this player
      */
     void setSpeed(int value) { _speed = value; }
 
@@ -54,9 +54,11 @@ public:
     float getAngle() { return _playerAngle; }
 
     cugl::Vec2 getDirection() { return cugl::Vec2(std::cos(_playerAngle), std::sin(_playerAngle)); }
-    
-private:
-    float _playerAngle;
+
+    void setSpell(SpellType spell) { _curSpell = spell; }
+    void resolveSpell() { _curSpell = SpellType::NONE; }
+
+    SpellType getSpell() { return _curSpell; }
 };
 
 #endif // !__GP_PLAYER_H__
