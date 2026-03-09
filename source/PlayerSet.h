@@ -32,4 +32,4 @@ public:
 
 };
 
-#endif
+#endif // !__PLAYER_SET_H__

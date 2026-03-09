@@ -9,7 +9,7 @@ using namespace cugl;
 using namespace cugl::graphics;
 
 
-#pragma markl Spell
+#pragma mark Spell
 
 SpellSet::Spell::Spell(const cugl::Vec2 pos,const cugl::Vec2 vel, bool f){
     damage = f ? 2 : 5;

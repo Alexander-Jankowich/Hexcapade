@@ -237,9 +237,10 @@ void GameScene::preUpdate(float dt) {
 
     if (!_ishost && _networkCtrl.hasNetwork()) {
         ClientInput ci;
-        ci.joystickAngle = _input.getMove().isZero() ? 0.0f
-            : _input.getMove().getAngle();
+        ci.joystickAngle = _input.getMove().isZero() ? 0.0f : _input.getMove().getAngle();
         ci.pickupPressed = _input.pressedPickup();
+        ci.posX = playerScreenPos.x;
+        ci.posY = playerScreenPos.y;
 
         switch (_input.getGesture()) {
         case  SpellType::FIREBALL:
@@ -556,6 +557,8 @@ void GameScene::setActive(bool value) {
                     }
                 );
             }
+            CULog("GameScene setActive: hasNetwork=%d isHost=%d",
+                _networkCtrl.hasNetwork(), _networkCtrl.isHost());
         }
         else {
             _input.deactivate();

@@ -175,8 +175,8 @@ public:
      *
      * @return the network connection (as made by this scene)
      */
-    void setConnection(const NetworkController& network) {
-        _networkCtrl = network;
+    void setConnection(std::shared_ptr<cugl::netcode::NetcodeConnection> network, bool isHost) {
+        _networkCtrl.initWithNetwork(network, isHost);
     }
 
     /**

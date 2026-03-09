@@ -84,18 +84,6 @@ void ClientScene::update(float dt) {
     _networkCtrl.update();
     _player->setText(std::to_string(_networkCtrl.playerCount()));
     configureStartButton();
-
-    // TODO outsource this to network controller
-//    if (_networkCtrl.getNetwork()) {
-//        _networkCtrl.getNetwork()->receive([this](const std::string& source,
-//            const std::vector<std::byte>& data) {
-//                // Any message from the host means the game is starting
-//                if (!data.empty()) {
-//                    _status = Status::START;
-//                }
-//            });
-//        checkConnection();
-//    }
 }
 
 void ClientScene::setActive(bool value) {
