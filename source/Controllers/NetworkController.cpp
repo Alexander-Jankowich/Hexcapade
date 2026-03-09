@@ -140,11 +140,13 @@ void NetworkController::attachReceiptHandler() {
     _network->onReceipt([this](const std::string& source,
         const std::vector<std::byte>& data) {
         if (data.empty()) return;
-            if (!_ishost && data[0]==std::byte(255)) {
-                // Client path: broadcast from host = game starting
+        if (!_ishost) { // Client
+            if (data[0]==std::byte(255)) { // start game
                 _status = Status::START;
                 checkClientConnection();
             }
+            // 
+        }
             else {
                 if (_inputCallback) {
                     ClientInput input;
