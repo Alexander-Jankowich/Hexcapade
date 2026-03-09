@@ -9,6 +9,16 @@
 using namespace cugl;
 using namespace cugl::graphics;
 
+float ARROW[] = {
+	0, 5,
+	0, -5,
+	70, -5,
+	70, -10,
+	75, 0,
+	70, 10,
+	70, 5
+};
+
 InputDisplay::InputDisplay(InputController* input) {
 	_input = input;
 
@@ -17,9 +27,16 @@ InputDisplay::InputDisplay(InputController* input) {
 	_joystick = factory.makeCircle(0, 0, _input->getJoystickRadius() / 2);
 
 	_showJoystick = false;
+
+	_showAim = false;
+	EarclipTriangulator triangulator = EarclipTriangulator();
+	Path2 arrow = Path2(reinterpret_cast<Vec2*>(ARROW), 7);
+    triangulator.set(arrow);
+    triangulator.calculate();
+	_arrow = triangulator.getPolygon();
 }
 
-void InputDisplay::update() {
+void InputDisplay::update(Vec2 playerPos) {
 	static SimpleExtruder extruder = SimpleExtruder();
 
 	_showJoystick = _input->showJoystick();
@@ -33,6 +50,12 @@ void InputDisplay::update() {
 	extruder.set(_gesture);
 	extruder.calculate(_gestureWidth);
 	_gestureDisplay = extruder.getPolygon();
+
+	_showAim = _input->showAim() && !_input->getSpellAngle().isZero();
+	if (_showAim) {
+		_arrowTrans = Affine2::createRotation(_input->getSpellAngle().getAngle());
+		_arrowTrans.translate(playerPos);
+	}
 }
 
 void InputDisplay::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) {
@@ -40,15 +63,20 @@ void InputDisplay::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batc
 
 	if (_showJoystick) {
 		batch->setColor(Color4(144, 144, 144, 150));
-		batch->fill(_joybase, Vec2(0, 0), _jbaseTrans);
+		batch->fill(_joybase, Vec2::ZERO, _jbaseTrans);
 
 		batch->setColor(Color4(89, 89, 89, 240));
-		batch->fill(_joystick, Vec2(0, 0), _jstickTrans);
+		batch->fill(_joystick, Vec2::ZERO, _jstickTrans);
 	}
 
 	if (_gesture.size() > 3) {
 		batch->setColor(Color4(199, 140, 6, 150));
 		batch->fill(_gestureDisplay);
+	}
+
+	if (_showAim) {
+		batch->setColor(Color4(199, 140, 6, 255));
+		batch->fill(_arrow, Vec2::ZERO, _arrowTrans);
 	}
 }
 

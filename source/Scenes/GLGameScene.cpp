@@ -36,17 +36,6 @@ using namespace cugl::graphics;
 
 #define PI 3.14159265358979323
 
-/** The initial control points for the spline. */
-float CIRCLE[] = { 0,  200,  120,  200,
-        200,  120,  200,    0,  200, -120,
-        120, -200,    0, -200, -120, -200,
-       -200, -120, -200,    0, -200,  120,
-       -120,  200,    0,  200 };
-
-
-/** The (CLOCKWISE) polygon for the star */
-float STAR[] = { -15, 0, 0, 50, 15, 0 };
-
 #pragma mark -
 #pragma mark Constructors
 /**
@@ -134,7 +123,7 @@ void GameScene::dispose() {
 
 void GameScene::reset() {
     _player->setHealth(100);
-    _player->setPosition(getSize() / (2 * PHYSICS_SCALE));
+    _player->setPosition(getSize() / 2);
     _player->setVelocity(Vec2::ZERO);
     _playerLost = false;
     _playerWon = false;
@@ -182,7 +171,6 @@ void GameScene::addItem(int value) {
  */
 void GameScene::preUpdate(float dt) {
     _input.update(dt);
-    _inputDisplay->update();
 
     if (_input.pressedReset()) {
         reset();
@@ -198,17 +186,19 @@ void GameScene::preUpdate(float dt) {
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
+    _player->setColor(_input.showAim() ? Color4::BLUE : Color4::WHITE);
     _player->update();
 
     cugl::Vec2 playerScreenPos = _player->getPosition();
-
-    //auto ang = input.isZero() ? _player->getAngle() : input.getAngle();
-    //_player->updateAngle(ang);
 
     updateItemPickupState();
     tryPickupItem();
 
     // Spellcasting
+    if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
+        _player->setSpell(_input.getGesture());
+    }
+
     if (_input.shouldReleaseSpell()) {
         CULog("Release spell");
         CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
@@ -218,18 +208,18 @@ void GameScene::preUpdate(float dt) {
             angle = _player->getDirection();
         }
 
-        switch (_input.getGesture()) {
-        case InputController::Gesture::FREEZE:
+        switch (_player->getSpell()) {
+        case SpellType::FREEZE:
             spells.spawnSpell(playerScreenPos, 5, angle, true);
-            //_input.resolvedGesture();
+            CULog("spawn freeze spell");
 
             break;
-        case InputController::Gesture::FIREBALL:
+        case SpellType::FIREBALL:
             spells.spawnSpell(playerScreenPos, 5, angle, false);
-            //_input.resolvedGesture();
             break;
         }
         _input.resolveSpell();
+        _player->resolveSpell();
         CULog("Resolve spell");
     }
     spells.update();
@@ -252,11 +242,11 @@ void GameScene::preUpdate(float dt) {
         ci.pickupPressed = _input.pressedPickup();
 
         switch (_input.getGesture()) {
-        case InputController::Gesture::FIREBALL:
+        case  SpellType::FIREBALL:
             ci.spellType = 1;
             ci.spellAngle = _player->getAngle();
             break;
-        case InputController::Gesture::FREEZE:
+        case SpellType::FREEZE:
             ci.spellType = 2;
             ci.spellAngle = _player->getAngle();
             break;
@@ -267,6 +257,8 @@ void GameScene::preUpdate(float dt) {
         _networkCtrl.sendInput(ci);
     }
 
+
+    _inputDisplay->update(playerScreenPos);
 
     // Check enemy spawning
     //lastEnemySpawn += dt;
@@ -490,9 +482,6 @@ void GameScene::updateItemPickupState() {
     _pickupPrompt = "";
 
     // this converts player center from physics units into screen units
-    Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
-    float playerRadius = 15.0f;
-
     for (size_t ii = 0; ii < _items.size(); ++ii) {
         if (_collisions.resolvePlayerItem(_player, _items[ii].position, _items[ii].radius)) {
             _canPickupItem = true;
