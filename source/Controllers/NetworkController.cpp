@@ -98,24 +98,6 @@ bool NetworkController::checkHostConnection() {
 }
 
 
-
-#pragma mark CallbackMethods
-
-void NetworkController::dispatcher(const std::string source, const std::vector<std::byte> &message){
-    // if source is broadcast, it is a message from the host
-    if (source=="broadcast"){
-
-    // Any message from the host means the game is starting
-        if (!message.empty()) {
-            _status = Status::START;
-        }
-        checkClientConnection();
-            
-    }
-    // if source is a uuid, it is from a client
-    
-}
-
 #pragma mark PublicMethods
 
 void NetworkController::init(const std::shared_ptr<cugl::JsonValue> json, bool isHost){
@@ -157,9 +139,10 @@ void NetworkController::attachReceiptHandler() {
     if (!_network) return;
     _network->onReceipt([this](const std::string& source,
         const std::vector<std::byte>& data) {
-            if (source == "broadcast") {
+        if (data.empty()) return;
+            if (!_ishost && data[0]==std::byte(255)) {
                 // Client path: broadcast from host = game starting
-                if (!data.empty()) _status = Status::START;
+                _status = Status::START;
                 checkClientConnection();
             }
             else {
