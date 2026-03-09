@@ -24,7 +24,7 @@ public:
 	* Updates values based on _input (should be called after _input is
 	* updated). Does not render the input.
 	*/
-	void update();
+	void update(cugl::Vec2 playerPos);
 
 	/**
 	* Draws the input using batch. Does not update the input, call update()
@@ -51,6 +51,10 @@ private:
 	cugl::Path2 _gesture;
 	int _gestureWidth = 30;
 	cugl::Poly2 _gestureDisplay;
+
+	bool _showAim;
+	cugl::Poly2 _arrow;
+	cugl::Affine2 _arrowTrans;
 };
 
 #endif

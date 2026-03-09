@@ -25,6 +25,7 @@ Entity::Entity(const cugl::Vec2& pos, int health) {
     _frozen_counter = 0;
 
     _size = Size::ZERO;
+    _color = Color4::WHITE;
 }
 
 /**
@@ -83,7 +84,7 @@ void Entity::setTexture(const std::shared_ptr<Texture>& value) {
 }
 
 void Entity::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) {
-    Affine2 trans;
-    trans.translate(_pos);
-    batch->draw(_texture, Color4::WHITE, _size/2, trans);
+    static Affine2 trans;
+    trans = Affine2::createTranslation(_pos);
+    batch->draw(_texture, _color, _size/2, trans);
 }

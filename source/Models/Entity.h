@@ -42,6 +42,8 @@ protected:
     int _knockback_counter;
 
     std::shared_ptr<cugl::graphics::Texture> _texture;
+    cugl::Color4 _color;
+
 public:
 #pragma mark Constructors
     /**
@@ -129,6 +131,8 @@ public:
      * @return the ship radius
      */
     cugl::Size getSize() { return _size; }
+
+    void setColor(cugl::Color4 c) { _color = c; }
 
     virtual void update();
 

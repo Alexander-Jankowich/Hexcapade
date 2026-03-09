@@ -10,6 +10,13 @@
 
 #pragma mark Spell
 
+/** Add more spells to this list later */
+enum class SpellType {
+    NONE,
+    FREEZE,
+    FIREBALL
+};
+
 class SpellSet {
 #pragma mark Spell
 public:

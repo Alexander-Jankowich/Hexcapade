@@ -157,7 +157,7 @@ _joystick(false),
 _pickupPressed(false),
 _resetPressed(false),
 _joyradius(100),
-_lastGesture(Gesture::NONE),
+_lastGesture(SpellType::NONE),
 _isAiming(false)
 {
 }
@@ -177,15 +177,14 @@ _isAiming(false)
  * @return true if the initialization was successful
  */
 bool InputController::init(const Rect bounds) {
-    recognizer = *cugl::GestureRecognizer::alloc();
-    recognizer.addGesture("V", V_GESTURE);
-    recognizer.addGesture("STAR",STAR_GESTURE);
-    recognizer.setSimilarityThreshold(0.6f);
-    recognizer.setAlgorithm(cugl::GestureRecognizer::Algorithm::ONEDOLLAR);
+    recognizer = cugl::GestureRecognizer::alloc();
+    recognizer->addGesture("V", V_GESTURE);
+    recognizer->addGesture("STAR", STAR_GESTURE);
+    recognizer->setSimilarityThreshold(0.6f);
     // Update the gesturemap with more spells later on
     _gesturemap = {
-        {"V", Gesture::FIREBALL},
-        {"STAR", Gesture::FREEZE}
+        {"V", SpellType::FIREBALL},
+        {"STAR", SpellType::FREEZE}
     };
 
     _sbounds = bounds;
@@ -289,6 +288,7 @@ void InputController::update(float dt) {
     if (_timeSinceCast > 1 && _isAiming) {
         _isAiming = false;
         _releaseSpell = true;
+        currentStroke.clear();
         CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
     }
 }
@@ -360,13 +360,13 @@ void InputController::readInput(){
         static bool spacePressed = false;
         static bool shiftPressed = false;
         if (space && !spacePressed) {
-            _lastGesture = Gesture::FIREBALL;
+            _lastGesture = SpellType::FIREBALL;
             _spellAngle.setZero();
         }
         spacePressed = space;
 
         if (shift && !shiftPressed) {
-            _lastGesture = Gesture::FREEZE;
+            _lastGesture = SpellType::FREEZE;
             _spellAngle.setZero();
         }
         shiftPressed = shift;
@@ -511,16 +511,19 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
     _spellAngle.setZero();
     currentStroke.push_back(pos);
     if (currentStroke.size() > 3) {
-        std::string gesture = recognizer.match(currentStroke);
+        std::string gesture = recognizer->match(currentStroke);
 
         try {
             _lastGesture = _gesturemap[gesture];
             _timeSinceCast = 0;
-            _isAiming = true;
         }
         catch (std::out_of_range) {
             // Not a recognized gesture... probably
-            _lastGesture = Gesture::NONE;
+            _lastGesture = SpellType::NONE;
+        }
+
+        if (_lastGesture != SpellType::NONE) {
+            _isAiming = true;
         }
 
         //CULog("%s", gesture.c_str());
