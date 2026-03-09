@@ -28,6 +28,7 @@ bool NetworkController::checkClientConnection() {
         _status=Status::JOIN;
             break;
     case NetcodeConnection::State::CONNECTED:
+        attachReceiptHandler();
         if (_status != Status::START) {
             _status = Status::WAIT;
         }
@@ -130,7 +131,7 @@ void NetworkController::init(const std::shared_ptr<cugl::JsonValue> json, bool i
 void NetworkController::connect(bool isHost, const std::string& roomCode){
     _ishost = isHost;
     if(isHost){
-        _network = NetcodeConnection::alloc(_config);
+        _network = NetcodeConnection::alloc(_config);;
         _network->open();
         checkHostConnection();
     } else {
@@ -141,7 +142,7 @@ void NetworkController::connect(bool isHost, const std::string& roomCode){
         _currHost = _network->getHost(); // this mayyyy have locking issues hopefully not
         checkClientConnection();
     }
-    attachReceiptHandler(); // attach recieve listener when we start up
+    //attachReceiptHandler(); // attach recieve listener when we start up
 }
 
 void NetworkController::startGame() {
@@ -154,10 +155,12 @@ void NetworkController::startGame() {
 }
 
 void NetworkController::attachReceiptHandler() {
-    if (!_network) return;
+    if (!_network || _handlerAttached) return;
+    _handlerAttached = true;
+    CULog("attachReceiptHandler called, network open=%d", _network->isOpen());
     _network->onReceipt([this](const std::string& source,
         const std::vector<std::byte>& data) {
-            if (source == "broadcast") {
+            if (!_ishost) {
                 // Client path: broadcast from host = game starting
                 if (!data.empty()) _status = Status::START;
                 checkClientConnection();
@@ -166,7 +169,8 @@ void NetworkController::attachReceiptHandler() {
                 if (_inputCallback) {
                     ClientInput input;
                     if (MessageSerializer::decodeClientInput(data, input)) {
-                        _inputCallback(source, input);
+                        CULog("HOST received input from %s: joystick=%.2f spellType=%d pickup=%d pos=(%.2f, %.2f)",
+                            source.c_str(), input.joystickAngle, input.spellType, input.pickupPressed, input.posX, input.posY);
                     }
                 }
             }

@@ -8,6 +8,8 @@ struct ClientInput {
     int     spellType = 0;      // 0=NONE,1=FIREBALL,2=FREEZE
     float   spellAngle = 0.0f;
     bool    pickupPressed = false;
+    float   posX = 0.0f;
+    float   posY = 0.0f;
 };
 
 class MessageSerializer {
@@ -18,6 +20,8 @@ public:
         s.writeSint32(input.spellType);
         s.writeFloat(input.spellAngle);
         s.writeBool(input.pickupPressed);
+        s.writeFloat(input.posX);
+        s.writeFloat(input.posY);
         return s.serialize();
     }
 
@@ -29,6 +33,8 @@ public:
         out.spellType = d.readSint32();
         out.spellAngle = d.readFloat();
         out.pickupPressed = d.readBool();
+        out.posX = d.readFloat();
+        out.posY = d.readFloat();
         return true;
     }
 };

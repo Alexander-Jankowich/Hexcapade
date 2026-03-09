@@ -25,6 +25,7 @@ private:
     bool _ishost;
     std::string _currHost;
     InputCallback _inputCallback;
+    bool _handlerAttached = false;
     void attachReceiptHandler();
 
 #pragma mark Helpers
@@ -38,8 +39,8 @@ private:
 
 
 public:
-    NetworkController() {}
-    ~NetworkController() { disconnect(); }
+    NetworkController() : _ishost(false), _playerCount(0), _status(Status::IDLE) {}
+    ~NetworkController() {}
 
     void init(const std::shared_ptr<cugl::JsonValue> json, bool isHost);
 
@@ -50,13 +51,19 @@ public:
         // idk what to do about status
     }
 
+    std::shared_ptr<cugl::netcode::NetcodeConnection> getNetwork() {
+        return _network;
+    }
+
     void setInputCallback(InputCallback cb) {
         _inputCallback = cb;
         if (_network) attachReceiptHandler();
     }
 
     void sendInput(const ClientInput& input) {
-        if (!_network || !_ishost == false) return;
+        if (!_network || _ishost) return;
+        CULog("CLIENT sending input: joystick=%.2f spellType=%d pickup=%d pos=(%.2f, %.2f)",
+            input.joystickAngle, input.spellType, input.pickupPressed, input.posX, input.posY);
         auto bytes = MessageSerializer::encodeClientInput(input);
         _network->sendToHost(bytes);
     }
@@ -94,8 +101,12 @@ public:
         _status = Status::ABORT;
     }
 
-    void startGame();
+    void release() {
+        _network = nullptr;
+        _status = Status::IDLE;
+    }
 
+    void startGame();
 
 };
 #endif // !__NETWORK_CONTROLLER_H__

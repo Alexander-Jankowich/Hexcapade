@@ -35,8 +35,12 @@ public:
 
     void update(float dt) override;
     void disconnect() {_networkCtrl.disconnect();}
+    void release() { _networkCtrl.release(); }
     NetworkController::Status getStatus(){return _networkCtrl.getStatus();}
     NetworkController getConnection(){return _networkCtrl;}
+    std::shared_ptr<cugl::netcode::NetcodeConnection> getNetworkPtr() {
+        return _networkCtrl.getNetwork();
+    }
 
     void resetStatus() { _networkCtrl.resetStatus(); }
 
