@@ -38,6 +38,7 @@ protected:
     // CONTROLLERS are attached directly to the scene (no pointers)
     std::shared_ptr<NetworkController> _networkCtrl;
     bool _ishost;
+    /** uuid to players most recent update*/
     std::unordered_map<std::string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
     InputController _input;
@@ -302,5 +303,5 @@ private:
     void renderHUD();
 };
 
-#endif /* __SG_GAME_SCENE_H__ */
+#endif // !__GL_GAME_SCENE_H__
 

@@ -74,7 +74,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     // Create enemy with 10 health
     _enemy = make_shared<EnemySet>();
     _enemy->setTexture(assets->get<Texture>("enemy"));
-    _enemy->spawnEnemy(getSize() / 4, 4);
+//    _enemy->spawnEnemy(getSize() / 4, 4);
     lastEnemySpawn = 0;
 
     // Initialize inventory system
@@ -188,6 +188,15 @@ void GameScene::preUpdate(float dt) {
     if (_playerLost || _playerWon) {
         return;
     }
+    // spawn an enemy if host and need to spawn
+    if (_ishost){
+        lastEnemySpawn += dt;
+        if (lastEnemySpawn > 15) {
+            lastEnemySpawn = 0;
+            _enemy->spawnEnemy(getSize() / 2, 4);
+        }
+    }
+    
 
     // Player movement
     cugl::Vec2 input = _input.getMove();
@@ -238,7 +247,6 @@ void GameScene::preUpdate(float dt) {
         _collisions.resolveEnemiesSpell(spells, _enemy, playerScreenPos * -1.5);
     }
 
-    //_enemy->update(playerScreenPos);
 
     if (_player->getHealth() <= 0) {
         _playerLost = true;
@@ -281,9 +289,8 @@ void GameScene::preUpdate(float dt) {
             }
         }
 
-        _enemy->reset();
         for (auto& ed : hi.enemies) {
-            _enemy->spawnEnemy(cugl::Vec2(ed.posX, ed.posY), ed.health);
+            _enemy->updateEnemyAsClient(ed.eid, cugl::Vec2(ed.posX, ed.posY), ed.health);
         }
 
         spells.current.clear();
@@ -313,9 +320,13 @@ void GameScene::preUpdate(float dt) {
         for (auto& [pid, input] : _clientInputs) {
             auto p = _players->getPlayerByPID(pid);
             if (p) {
+                
                 p->setPosition(cugl::Vec2(input.posX, input.posY));
             }
         }
+        // update enemy positions - just see if they target host atm
+        _enemy->update(playerScreenPos);
+
 
         HostInput hi;
         hi.dt = dt;
@@ -331,13 +342,15 @@ void GameScene::preUpdate(float dt) {
             hi.players.push_back(pd);
         }
 
-        for (auto e : _enemy->current) {
+        for (auto enem : _enemy->current) {
+            auto e = std::get<1>(enem);
             HostEnemyData ed;
             ed.posX = e->getPosition().x;
             ed.posY = e->getPosition().y;
             ed.speed = e->getVelocity().length();
             ed.velAngle = e->getVelocity().isZero() ? 0.0f : e->getVelocity().getAngle();
             ed.health = e->getHealth();
+            ed.eid = std::get<0>(enem);
             hi.enemies.push_back(ed);
         }
 
@@ -366,12 +379,7 @@ void GameScene::preUpdate(float dt) {
 
     _inputDisplay->update(playerScreenPos);
 
-    // Check enemy spawning
-    //lastEnemySpawn += dt;
-    //if (lastEnemySpawn > 7) {
-    //    lastEnemySpawn -= 7;
-    //    _enemy->spawnEnemy(getSize() / 2, 4);
-    //}
+
 }
 
 /**

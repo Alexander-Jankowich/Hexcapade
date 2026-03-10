@@ -171,8 +171,7 @@ void NetworkController::attachReceiptHandler() {
                 if (_inputCallback) {
                     ClientInput input;
                     if (MessageSerializer::decodeClientInput(data, input)) {
-                        //CULog("HOST received input from %s: joystick=%.2f spellType=%d pickup=%d pos=(%.2f, %.2f)",
-//                            source.c_str(), input.joystickAngle, input.spellType, input.pickupPressed, input.posX, input.posY);
+                        _inputCallback(source, input);
                     }
                 }
             }

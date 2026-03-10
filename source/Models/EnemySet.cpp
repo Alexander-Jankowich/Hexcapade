@@ -14,12 +14,17 @@ EnemySet::EnemySet() {
 }
 
 void EnemySet::spawnEnemy(const cugl::Vec2 position, int health){
-    current.emplace(std::make_shared<Enemy>(position, 2.5, health));
+    // this IS stupid but yolo - serena
+    current.insert(std::make_pair(current.size(), std::make_shared<Enemy>(position, 2.5, health)));
+}
+void EnemySet::clientSpawnEnemy(int eid, const cugl::Vec2 position, int health){
+    // this IS stupid but yolo - serena
+    current.insert(std::make_pair(eid, std::make_shared<Enemy>(position, 2.5, health)));
 }
 
 void EnemySet::update(Vec2 target){
     for (auto it = current.begin(); it != current.end(); ) {
-        if ((*it)->update(target)) {
+        if (std::get<1>(*it)->update(target)) {
             it++;
         }
         else {
@@ -28,11 +33,19 @@ void EnemySet::update(Vec2 target){
         }
     }
 }
+void EnemySet::updateEnemyAsClient(int eid, const cugl::Vec2 position, int health) {
+    if (!current.contains(eid)){
+        clientSpawnEnemy(eid, position, health);
+        return;
+    }
+    current.at(eid)->setPosition(position);
+    current.at(eid)->setHealth(health);
+}
 
 void EnemySet::draw(const std::shared_ptr<SpriteBatch>& batch) {
     if (_texture) {
         for (auto it = current.begin(); it != current.end(); ++it) {
-            Vec2 pos = (*it)->getPosition();
+            Vec2 pos = std::get<1>(*it)->getPosition();
             Vec2 origin(_radius, _radius);
 
             Affine2 trans;

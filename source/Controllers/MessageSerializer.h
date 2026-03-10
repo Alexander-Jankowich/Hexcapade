@@ -31,6 +31,7 @@ struct HostEnemyData
     float speed;
     float velAngle;
     int health;
+    int eid;
 };
 struct HostSpellData
 {
@@ -227,6 +228,7 @@ private:
         json->appendValue("speed", (double)data.speed);
         json->appendValue("vel_angle", (double)data.velAngle);
         json->appendValue("health", (long)data.health);
+        json->appendValue("eid", (long) data.eid);
         return json;
     }
 
@@ -238,6 +240,7 @@ private:
         res->speed = json->getFloat("speed");
         res->velAngle = json->getFloat("vel_angle");
         res->health = json->getInt("health");
+        res->eid = json->getInt("eid");
         return *res;
     }
 

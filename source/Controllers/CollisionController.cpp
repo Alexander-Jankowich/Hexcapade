@@ -23,7 +23,7 @@ void CollisionController::resolvePlayerEnemy(std::shared_ptr<Player>& player,
 void CollisionController::resolvePlayerEnemies(std::shared_ptr<Player>& player,
     const cugl::Vec2& playerPos, float playerRadius, const std::shared_ptr<EnemySet>& enemy) {
     for (auto it = enemy->current.begin(); it != enemy->current.end(); ++it) {
-        std::shared_ptr<Enemy> ptr = *it;
+        std::shared_ptr<Enemy> ptr = std::get<1>(*it);
         resolvePlayerEnemy(player, playerPos, playerRadius, ptr, enemy->getRadius());
     }
 }
@@ -65,7 +65,7 @@ void CollisionController::resolveEnemySpell(SpellSet& spells, std::shared_ptr<En
 void CollisionController::resolveEnemiesSpell(SpellSet& spells, std::shared_ptr<EnemySet>& enemy,
     cugl::Vec2 knockback) {
     for (auto it = enemy->current.begin(); it != enemy->current.end(); ++it) {
-        std::shared_ptr<Enemy> ptr = *it;
+        std::shared_ptr<Enemy> ptr = std::get<1>(*it);
         resolveEnemySpell(spells, ptr, knockback, enemy->getRadius());
     }
 }
