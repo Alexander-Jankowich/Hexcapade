@@ -12,10 +12,18 @@ using namespace cugl::graphics;
 
 #define PI 3.14159265358979323
 
-Player::Player(const cugl::Vec2& pos, float speed, std::string pid) : Entity(pos, 100) {
+Player::Player(const cugl::Vec2& pos, float speed, std::string pid, const std::shared_ptr<cugl::graphics::Texture>& t) : Entity(pos, 100) {
     _playerAngle = -PI/2; // initialize to point right
     _speed = speed;
     _playerId = pid;
+    if (t) {
+        _size = t->getSize();
+        _texture = t;
+    }
+    else {
+        _size = Size::ZERO;
+        _texture = nullptr;
+    }
 }
 
 Player::Player(const cugl::Vec2& pos, float speed) : Entity(pos, 100) {

@@ -71,7 +71,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _players = make_shared<PlayerSet>();
     _players->addPlayer(_player);
     
-    
     // Create enemy with 10 health
     _enemy = make_shared<EnemySet>();
     _enemy->setTexture(assets->get<Texture>("enemy"));
@@ -567,7 +566,7 @@ void GameScene::setActive(bool value) {
             for (auto p : _networkCtrl->getPlayers()) {
                 if (p!=_networkCtrl->getPID()) {
                     CULog("adding ANOTHER player");
-                    _players->addPlayer(make_shared<Player>(cugl::Vec2(2 + getSize().width/2, 2 + getSize().height/2), 12, p ));
+                    _players->addPlayer(make_shared<Player>(cugl::Vec2(2 + getSize().width/2, 2 + getSize().height/2), 12, p,  _assets->get<Texture>("player")));
                 }
             }
             CULog("num players in set: %d", _players->numPlayers() );
