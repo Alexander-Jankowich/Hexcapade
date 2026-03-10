@@ -434,20 +434,18 @@ InputController::Zone InputController::getZone(const Vec2 pos) const {
  * @return the scene location of a touch
  */
 Vec2 InputController::touch2Screen(const Vec2 pos) const {
-    float px = pos.x * _tbounds.getMaxX() / _sbounds.getMaxX();
-    float py = pos.y *_tbounds.getMaxY() / _sbounds.getMaxY() ;
+    //float px = pos.x * _tbounds.getMaxX() / _sbounds.getMaxX();
+    //float py = pos.y *_tbounds.getMaxY() / _sbounds.getMaxY() ;
 
-    Vec2 result;
-    result.x = px;
-    result.y = _sbounds.getMaxY() - py;
-    return result;
+    //Vec2 result;
+    //result.x = px;
+    //result.y = _sbounds.getMaxY() - py;
+    //return result;
+    return Display::get()->getTouchWindowPosition(pos.x, pos.y);
 }
 
 Vec2 InputController::mouse2Screen(const Vec2 pos) const {
-    Vec2 result;
-    result.x = pos.x;
-    result.y = _sbounds.getMaxY() - pos.y;
-    return result;
+    return Display::get()->getMouseWindowPosition(pos.x, pos.y);
 }
 
 /**
