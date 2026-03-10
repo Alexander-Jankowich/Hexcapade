@@ -13,14 +13,16 @@ struct ClientInput
     float posX = 0.0f;
     float posY = 0.0f;
 };
+
 struct HostPlayerData
 {
-    float posX;
-    float posY;
-    float speed;
-    float velAngle;
-    int inventoryVal;
-    int health;
+    std::string uuid;
+    float posX=0.0f;
+    float posY=0.0f;
+    float speed=0.0f;
+    float velAngle=0.0f;
+    int inventoryVal=0;
+    int health=12; // i think this is starting val?? will not be used tho
 };
 struct HostEnemyData
 {
@@ -66,7 +68,9 @@ public:
         s.writeBool(input.pickupPressed);
         s.writeFloat(input.posX);
         s.writeFloat(input.posY);
-        return s.serialize();
+        std::vector<std::byte> vec = s.serialize();
+        s.reset();
+        return vec;
     }
 
     static bool decodeClientInput(const std::vector<std::byte> &data, ClientInput &output)
@@ -82,6 +86,20 @@ public:
         output.posX = d.readFloat();
         output.posY = d.readFloat();
         return true;
+    }
+    
+    static std::vector<std::byte> encodeHostStartGame(const std::vector<HostPlayerData> &input) {
+        cugl::netcode::NetcodeSerializer s;
+        std::shared_ptr<cugl::JsonValue> json = cugl::JsonValue::allocObject();
+        json->appendArray("players");
+        for (auto p : input)
+        {
+            json->appendChild(playerDataToJson(p));
+        }
+        s.writeJson(json);
+        std::vector<std::byte> vec = s.serialize();
+        s.reset();
+        return vec;
     }
 
     static std::vector<std::byte> encodeHostInput(const HostInput &input)
@@ -116,7 +134,9 @@ public:
             json->appendChild(child); // have to make child for deserialization purposes i think
         }
         s.writeJson(json);
-        return s.serialize();
+        std::vector<std::byte> vec = s.serialize();
+        s.reset();
+        return vec;
     }
 
     static bool decodeHostInput(const std::vector<std::byte> &data, HostInput &output)
@@ -171,6 +191,7 @@ private:
     static std::shared_ptr<cugl::JsonValue> playerDataToJson(const HostPlayerData &data)
     {
         std::shared_ptr<cugl::JsonValue> json = cugl::JsonValue::allocObject();
+        json->appendValue("uuid", data.uuid);
         json->appendValue("pos_x", (double)data.posX);
         json->appendValue("pos_y", (double)data.posY);
         json->appendValue("speed", (double)data.speed);
@@ -189,6 +210,7 @@ private:
         res->velAngle = json->getFloat("vel_angle");
         res->inventoryVal = json->getInt("inventory_val");
         res->health = json->getInt("health");
+        res->uuid = json->getString("uuid");
         return *res;
     }
 

@@ -26,6 +26,7 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     Size dimen = getSize();
     // Acquire the scene built by the asset loader and resize it the scene
     std::shared_ptr<scene2::SceneNode> scene = _assets->get<scene2::SceneNode>("client");
+    _networkCtrl = std::make_shared<NetworkController>();
     scene->setContentSize(dimen);
     scene->doLayout(); // Repositions the HUD
     
@@ -49,13 +50,13 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     
     _gameid->addExitListener([this](const std::string& name, const std::string& value) {
         if (!value.empty()) {
-            _networkCtrl.connect(false, value);
+            _networkCtrl->connect(false, value);
         }
     });
 
     // Create the server configuration
     auto json = _assets->get<JsonValue>("server");
-    _networkCtrl.init(json, false);
+    _networkCtrl->init(json, false);
     
     addChild(scene);
     setActive(false);
@@ -66,7 +67,7 @@ void ClientScene::dispose() {
     if (_active) {
         removeAllChildren();
         _active = false;
-        _networkCtrl.disconnect();
+        _networkCtrl=nullptr;
         _assets = nullptr;
         _font = nullptr;
     }
@@ -81,8 +82,8 @@ void ClientScene::updateText(const std::shared_ptr<scene2::Button>& button, cons
 }
 
 void ClientScene::update(float dt) {
-    _networkCtrl.update();
-    _player->setText(std::to_string(_networkCtrl.playerCount()));
+    _networkCtrl->update();
+    _player->setText(std::to_string(_networkCtrl->playerCount()));
     configureStartButton();
 }
 
@@ -114,7 +115,7 @@ void ClientScene::setActive(bool value) {
  * networking.
  */
 void ClientScene::configureStartButton() {
-    switch (_networkCtrl.getStatus()) {
+    switch (_networkCtrl->getStatus()) {
         case NetworkController::Status::IDLE:
             updateText(_startgame, "Join Game");
             break;

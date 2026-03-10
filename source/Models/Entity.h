@@ -29,7 +29,6 @@ protected:
 
     /** The amount of health this entity has */
     int _health;
-
     // Asset references. These should be set by GameScene
     /** Reference to the ships sprite sheet */
     std::shared_ptr<cugl::graphics::SpriteSheet> _sprite;
@@ -135,6 +134,14 @@ public:
     void setColor(cugl::Color4 c) { _color = c; }
 
     virtual void update();
+    
+    /** Used for networking by clients, updates entity based on data from host. Ensure this works TODO
+     */
+    void updateFromHost(cugl::Vec2 pos, float sp, float angle, int health) {
+        setPosition(pos);
+        setVelocity(cugl::Vec2(sp*cos(angle), sp*sin(angle)));
+        setHealth(health);
+    }
 
 #pragma mark Graphics
     const std::shared_ptr<cugl::graphics::Texture>& getTexture() const {

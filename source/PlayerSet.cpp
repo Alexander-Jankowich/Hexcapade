@@ -11,7 +11,9 @@
 #include "PlayerSet.h"
 
 using namespace cugl;
-
+PlayerSet::PlayerSet(){
+    current.clear();
+}
 void PlayerSet::addPlayer(std::shared_ptr<Player> p) {
 	current.emplace(p);
 }

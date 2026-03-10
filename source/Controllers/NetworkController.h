@@ -23,6 +23,8 @@ private:
     int _playerCount;
     Status _status;
     bool _ishost;
+    std::string _uuid;
+    std::unordered_set<std::string> _players;
     std::string _currHost;
     InputCallback _inputCallback;
     bool _handlerAttached = false;
@@ -79,6 +81,10 @@ public:
     void resetStatus() { _status = Status::IDLE; }
 
     int playerCount() { return _playerCount; }
+    
+    std::unordered_set<std::string> getPlayers() {return _players;}
+    
+    std::string getPID() {return _uuid;}
 
     bool hasNetwork() { return _network != nullptr; }
 
@@ -101,10 +107,6 @@ public:
         _status = Status::ABORT;
     }
 
-    void release() {
-        _network = nullptr;
-        _status = Status::IDLE;
-    }
 
     void startGame();
 

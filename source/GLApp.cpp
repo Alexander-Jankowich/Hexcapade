@@ -392,10 +392,9 @@ void GeometryApp::updateHostScene(float dt) {
         break;
     case NetworkController::Status::START:
             _hostScene.setActive(false);
-            _gameplay.setConnection(_hostScene.getNetworkPtr(), true);
+            _gameplay.setConnection(_hostScene.getNetwork(), true);
             // Transfer connection ownership
             _hostScene.release();
-            _gameplay.setHost(true);
             _gameplay.setActive(true);
             _scene = State::GAME;
         break;
@@ -420,10 +419,9 @@ void GeometryApp::updateClientScene(float dt) {
         break;
     case NetworkController::Status::START:
             _clientScene.setActive(false);
-            _gameplay.setConnection(_clientScene.getNetworkPtr(), false);
+            _gameplay.setConnection(_clientScene.getNetwork(), false);
             // Transfer connection ownership
             _clientScene.release();
-            _gameplay.setHost(false);
             _gameplay.setActive(true);
             _scene = State::GAME;
         break;

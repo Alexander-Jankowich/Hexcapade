@@ -22,6 +22,7 @@
 #include <cstddef> 
 #include "../Models/EnemySet.h"
 #include "../Models/SpellSet.h"
+#include "../PlayerSet.h"
 #include "../Controllers/CollisionController.h"
 #include "../Models/Player.h"
 
@@ -35,7 +36,7 @@
 class GameScene : public cugl::scene2::Scene2 {
 protected:
     // CONTROLLERS are attached directly to the scene (no pointers)
-    NetworkController _networkCtrl;
+    std::shared_ptr<NetworkController> _networkCtrl;
     bool _ishost;
     std::unordered_map<std::string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
@@ -52,6 +53,8 @@ protected:
     /** The falling star */
 
     std::shared_ptr<Player> _player;
+    
+    std::shared_ptr<PlayerSet> _players;
 
     std::shared_ptr<EnemySet> _enemy;
     float lastEnemySpawn;
@@ -175,8 +178,9 @@ public:
      *
      * @return the network connection (as made by this scene)
      */
-    void setConnection(std::shared_ptr<cugl::netcode::NetcodeConnection> network, bool isHost) {
-        _networkCtrl.initWithNetwork(network, isHost);
+    void setConnection(std::shared_ptr<NetworkController> network, bool isHost) {
+        _networkCtrl = network;
+        isHost = isHost;
     }
 
     /**
@@ -188,14 +192,6 @@ public:
      */
     bool isHost() const { return _ishost; }
 
-    /**
-     * Sets whether the player is host.
-     *
-     * We may need to have gameplay specific code for host.
-     *
-     * @param host  Whether the player is host.
-     */
-    void setHost(bool host) { _ishost = host; }
 
 
 

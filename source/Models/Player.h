@@ -16,6 +16,7 @@ private:
     float _speed;
     float _playerAngle;
     SpellType _curSpell;
+    std::string _playerId; // player identifier, rn its the uuid
 
 public:
 #pragma mark Constructors
@@ -23,7 +24,10 @@ public:
     /**
      * Creates a player
      */
-    Player(const cugl::Vec2& pos, float speed);
+    Player(const cugl::Vec2& pos, float speed, std::string player_id);
+    
+    Player(const cugl::Vec2& pos, float speed); // need both
+
 
     /**
      * Disposes the ship, releasing all resources.
@@ -39,6 +43,9 @@ public:
      * @return the velocity of this ship
      */
     const int getSpeed() const { return _speed; }
+    
+    const std::string getPID() const {return _playerId;}
+    void setPID(std::string pid) {_playerId = pid;}
 
     /**
      * Sets the max speed of the player

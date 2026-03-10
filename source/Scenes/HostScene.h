@@ -14,7 +14,7 @@ private:
     std::shared_ptr<cugl::AssetManager> _assets;
     std::shared_ptr<cugl::graphics::Font> _font;
 
-    NetworkController _networkCtrl;
+    std::shared_ptr<NetworkController> _networkCtrl;
 
     /** The menu button for starting a game */
     std::shared_ptr<cugl::scene2::Button> _startgame;
@@ -39,18 +39,18 @@ public:
 
     void update(float dt);
     
-    void disconnect() {_networkCtrl.disconnect();}
-    void release() { _networkCtrl.release(); }
-    NetworkController::Status getStatus(){return _networkCtrl.getStatus();}
-    NetworkController getConnection(){return _networkCtrl;}
-    std::shared_ptr<cugl::netcode::NetcodeConnection> getNetworkPtr() {
-        return _networkCtrl.getNetwork();
+    void disconnect() {_networkCtrl->disconnect();}
+    void release() { _networkCtrl = nullptr; }
+    NetworkController::Status getStatus(){return _networkCtrl->getStatus();}
+    std::shared_ptr<NetworkController> getConnection(){return _networkCtrl;}
+    std::shared_ptr<NetworkController> getNetwork() {
+        return _networkCtrl;
     }
 
-    void resetStatus() { _networkCtrl.resetStatus(); }
+    void resetStatus() { _networkCtrl->resetStatus(); }
 
     void reset() {
-        _networkCtrl.disconnect();
+        _networkCtrl->disconnect();
         _gameid->setText("");
         _player->setText("1");
     }

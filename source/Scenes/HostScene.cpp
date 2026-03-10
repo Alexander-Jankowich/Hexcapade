@@ -27,6 +27,7 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     
     // Acquire the scene built by the asset loader and resize it the scene
     std::shared_ptr<scene2::SceneNode> scene = _assets->get<scene2::SceneNode>("host");
+    _networkCtrl = std::make_shared<NetworkController>();
     scene->setContentSize(dimen);
     scene->doLayout(); // Repositions the HUD
 
@@ -44,13 +45,13 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
     _startgame->addListener([this](const std::string& name, bool down) {
         if (down) {
-            _networkCtrl.startGame();
+            _networkCtrl->startGame();
         }
     });
     
     // Create the server configuration
     auto json = _assets->get<JsonValue>("server");
-    _networkCtrl.init(json, true);
+    _networkCtrl->init(json, true);
     
     addChild(scene);
     setActive(false);
@@ -60,7 +61,7 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 void HostScene::dispose() {
     if (_active) {
         removeAllChildren();
-        _networkCtrl.disconnect();
+        _networkCtrl=nullptr;
         _active = false;
     }
 }
@@ -68,11 +69,11 @@ void HostScene::dispose() {
 #pragma mark Update / Render
 
 void HostScene::update(float dt) {
-    _networkCtrl.update();
-    _player->setText(std::to_string(_networkCtrl.playerCount()));
-    if (_networkCtrl.getStatus() == NetworkController::Status::IDLE && _networkCtrl.hasNetwork()) {
+    _networkCtrl->update();
+    _player->setText(std::to_string(_networkCtrl->playerCount()));
+    if (_networkCtrl->getStatus() == NetworkController::Status::IDLE && _networkCtrl->hasNetwork()) {
         //_gameid->setText(_networkCtrl.getRoomCode());
-        std::string code = _networkCtrl.getRoomCode();
+        std::string code = _networkCtrl->getRoomCode();
         if (!code.empty()) {              // ← add this guard
             _gameid->setText(code);
         }
@@ -87,7 +88,7 @@ void HostScene::setActive(bool value) {
             configureStartButton();
             _backout->activate();
             _startgame->activate();
-            _networkCtrl.connect(true);
+            _networkCtrl->connect(true);
         } else {
             _startgame->deactivate();
             _backout->deactivate();
@@ -105,12 +106,12 @@ void HostScene::updateText(const std::shared_ptr<scene2::Button>& button, const 
 }
 
 void HostScene::configureStartButton() {
-    if(_networkCtrl.getStatus()==NetworkController::Status::WAIT) {
+    if(_networkCtrl->getStatus()==NetworkController::Status::WAIT) {
         updateText(_startgame,"Waiting");
         _startgame->deactivate();
 
     }
-    else if(_networkCtrl.getStatus()==NetworkController::Status::IDLE) {
+    else if(_networkCtrl->getStatus()==NetworkController::Status::IDLE) {
         updateText(_startgame, "Start Game");
         _startgame->activate();
     }

@@ -33,6 +33,8 @@ bool NetworkController::checkClientConnection() {
             _status = Status::WAIT;
         }
         _playerCount = (int)_network->getNumPlayers();
+        _players = _network->getPlayers();
+
         break;
 
     case NetcodeConnection::State::DENIED:
@@ -70,6 +72,7 @@ bool NetworkController::checkHostConnection() {
 
     NetcodeConnection::State state = _network->getState();
     _playerCount = _network->getNumPlayers();
+    _players = _network->getPlayers();
 
     
     switch (state) {
@@ -115,13 +118,16 @@ void NetworkController::connect(bool isHost, const std::string& roomCode){
     if(isHost){
         _network = NetcodeConnection::alloc(_config);;
         _network->open();
+        _uuid = _network->getUUID();
         checkHostConnection();
     } else {
         std::string hex = dec2hex(roomCode);
         _network = NetcodeConnection::alloc(_config, hex);
         _network->open();
         CULog("connecting client");
+        _uuid = _network->getUUID();
         _currHost = _network->getHost(); // this mayyyy have locking issues hopefully not
+        
         checkClientConnection();
     }
     //attachReceiptHandler(); // attach recieve listener when we start up
@@ -148,14 +154,23 @@ void NetworkController::attachReceiptHandler() {
                 _status = Status::START;
                 checkClientConnection();
             }
-            // 
+            else { // regular host message - hopefullyyyyy
+                HostInput *hi = new HostInput();
+                if (MessageSerializer::decodeHostInput(data, *hi)) {
+                    for (auto p : hi->players) {
+                    }
+                } else {
+                    CULog("CLIENT couldn't decode data");
+                }
+            }
+            
         }
             else { // host recieving
                 if (_inputCallback) {
                     ClientInput input;
                     if (MessageSerializer::decodeClientInput(data, input)) {
-                        CULog("HOST received input from %s: joystick=%.2f spellType=%d pickup=%d pos=(%.2f, %.2f)",
-                            source.c_str(), input.joystickAngle, input.spellType, input.pickupPressed, input.posX, input.posY);
+                        //CULog("HOST received input from %s: joystick=%.2f spellType=%d pickup=%d pos=(%.2f, %.2f)",
+//                            source.c_str(), input.joystickAngle, input.spellType, input.pickupPressed, input.posX, input.posY);
                     }
                 }
             }

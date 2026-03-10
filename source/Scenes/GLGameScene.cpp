@@ -67,7 +67,11 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     // create the player
     _player = make_shared<Player>(getSize() / 2, 12);
     _player->setTexture(assets->get<Texture>("player"));
-
+    
+    _players = make_shared<PlayerSet>();
+    _players->addPlayer(_player);
+    
+    
     // Create enemy with 10 health
     _enemy = make_shared<EnemySet>();
     _enemy->setTexture(assets->get<Texture>("enemy"));
@@ -229,13 +233,13 @@ void GameScene::preUpdate(float dt) {
     _collisions.resolvePlayerEnemies(_player, playerScreenPos, playerRadius, _enemy);
     _collisions.resolveEnemiesSpell(spells, _enemy, playerScreenPos * -1.5);
 
-    _enemy->update(playerScreenPos);
+    //_enemy->update(playerScreenPos);
 
     if (_player->getHealth() <= 0) {
         _playerLost = true;
     }
 
-    if (!_ishost && _networkCtrl.hasNetwork()) {
+    if (!_ishost && _networkCtrl->hasNetwork()) {
         ClientInput ci;
         ci.joystickAngle = _input.getMove().isZero() ? 0.0f : _input.getMove().getAngle();
         ci.pickupPressed = _input.pressedPickup();
@@ -255,7 +259,7 @@ void GameScene::preUpdate(float dt) {
             ci.spellType = 0;
             break;
         }
-        _networkCtrl.sendInput(ci);
+        _networkCtrl->sendInput(ci);
     }
 
 
@@ -342,7 +346,7 @@ void GameScene::render() {
 
     drawItems();
 
-    _player->draw(_batch);
+    _players->draw(_batch);
 
     _enemy->draw(_batch);
 
@@ -551,14 +555,24 @@ void GameScene::setActive(bool value) {
             _input.activate();
             // Host registers callback to collect client inputs each frame
             if (_ishost) {
-                _networkCtrl.setInputCallback(
+                _networkCtrl->setInputCallback(
                     [this](const std::string& playerId, const ClientInput& input) {
                         _clientInputs[playerId] = input;
                     }
                 );
             }
+            // create the OTHER players (both host n client do this) - must do once game scene takes over network handling
+            _player->setPID(_networkCtrl->getPID());
+            CULog("num players acc to game network: %d", _networkCtrl->getPlayers().size());
+            for (auto p : _networkCtrl->getPlayers()) {
+                if (p!=_networkCtrl->getPID()) {
+                    CULog("adding ANOTHER player");
+                    _players->addPlayer(make_shared<Player>(cugl::Vec2(2 + getSize().width/2, 2 + getSize().height/2), 12, p ));
+                }
+            }
+            CULog("num players in set: %d", _players->numPlayers() );
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
-                _networkCtrl.hasNetwork(), _networkCtrl.isHost());
+                _networkCtrl->hasNetwork(), _networkCtrl->isHost());
         }
         else {
             _input.deactivate();
