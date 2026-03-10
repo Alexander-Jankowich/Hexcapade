@@ -315,12 +315,7 @@ void GameScene::preUpdate(float dt) {
                 p->setPosition(cugl::Vec2(input.posX, input.posY));
                 if (input.spellType != SpellType::NONE) { // a spell WAS cast
                     spells.spawnSpell(cugl::Vec2(input.posX, input.posY), p->getAngle(), input.spellType==SpellType::FREEZE);
-                    HostSpellData sd;
-                    sd.posX = input.posX;
-                    sd.posY = input.posY;
-                    sd.velAngle = p->getAngle();
-                    sd.type = input.spellType==SpellType::FREEZE ? SpellType::FREEZE : SpellType::FIREBALL;
-                    hi.spells.push_back(sd);
+                    
                 }
             }
         }
@@ -351,6 +346,15 @@ void GameScene::preUpdate(float dt) {
             ed.health = e->getHealth();
             ed.eid = std::get<0>(enem);
             hi.enemies.push_back(ed);
+        }
+        
+        for (auto sp : spells.pending) {
+            HostSpellData sd;
+            sd.posX = sp->position.x;
+            sd.posY = sp->position.y;
+            sd.velAngle = sp->velocity.getAngle();
+            sd.type = sp->froze ? SpellType::FREEZE : SpellType::FIREBALL;
+            hi.spells.push_back(sd);
         }
 
         for (auto& item : _items) {
