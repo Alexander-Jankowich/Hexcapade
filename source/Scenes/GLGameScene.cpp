@@ -216,16 +216,14 @@ void GameScene::preUpdate(float dt) {
     }
     
     bool sendSpell = false;
-
+    Vec2 angle = _input.getSpellAngle();
+    if (angle.isZero()) {
+        angle = _player->getDirection();
+    }
     if (_input.shouldReleaseSpell()) {
         sendSpell = true;
         CULog("Release spell");
         CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
-
-        Vec2 angle = _input.getSpellAngle();
-        if (angle.isZero()) {
-            angle = _player->getDirection();
-        }
         if (_ishost) {
             switch (_player->getSpell()) {
             case SpellType::FREEZE:
@@ -258,7 +256,8 @@ void GameScene::preUpdate(float dt) {
         ci.posY = playerScreenPos.y;
         if (sendSpell) {
             ci.spellType = _input.getGesture();
-            ci.spellAngle = _player->getAngle();
+            ci.spellAngle = angle.getAngle();
+            CULog("Angle of spell: %f", angle.getAngle());
         }
         _networkCtrl->sendInput(ci);
     }
