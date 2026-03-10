@@ -11,6 +11,8 @@ public:
     /** Hash map of enemyIds to enemy objects*/
     std::unordered_map<int, std::shared_ptr<Enemy>> current;
     
+    int _totalCount;
+    
     EnemySet();
 
     void dispose();

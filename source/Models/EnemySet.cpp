@@ -11,11 +11,14 @@ using namespace cugl::graphics;
 EnemySet::EnemySet() {
     current.clear();
     _radius = 0;
+    _totalCount = 0;
+    
 }
 
 void EnemySet::spawnEnemy(const cugl::Vec2 position, int health){
     // this IS stupid but yolo - serena
-    current.insert(std::make_pair(current.size(), std::make_shared<Enemy>(position, 2.5, health)));
+    current.insert(std::make_pair(_totalCount, std::make_shared<Enemy>(position, 2.5, health)));
+    _totalCount++;
 }
 void EnemySet::clientSpawnEnemy(int eid, const cugl::Vec2 position, int health){
     // this IS stupid but yolo - serena
