@@ -47,8 +47,8 @@ public:
 
     void setTexture(const std::shared_ptr<cugl::graphics::Texture>& value);
 
-    void spawnSpell(cugl::Vec2 position, float speed, float angle, bool freeze);
-    void spawnSpell(cugl::Vec2 position, float speed, cugl::Vec2 angle, bool freeze);
+    void spawnSpell(cugl::Vec2 position, float angle, bool freeze);
+    void spawnSpell(cugl::Vec2 position, cugl::Vec2 angle, bool freeze);
 
     void update();
 

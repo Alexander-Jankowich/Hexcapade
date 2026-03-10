@@ -226,12 +226,12 @@ void GameScene::preUpdate(float dt) {
 
         switch (_player->getSpell()) {
         case SpellType::FREEZE:
-            spells.spawnSpell(playerScreenPos, 5, angle, true);
+            spells.spawnSpell(playerScreenPos, angle, true);
             CULog("spawn freeze spell");
 
             break;
         case SpellType::FIREBALL:
-            spells.spawnSpell(playerScreenPos, 5, angle, false);
+            spells.spawnSpell(playerScreenPos, angle, false);
             break;
         }
         _input.resolveSpell();
@@ -258,20 +258,8 @@ void GameScene::preUpdate(float dt) {
         ci.pickupPressed = _input.pressedPickup();
         ci.posX = playerScreenPos.x;
         ci.posY = playerScreenPos.y;
-
-        switch (_input.getGesture()) {
-        case  SpellType::FIREBALL:
-            ci.spellType = 1;
-            ci.spellAngle = _player->getAngle();
-            break;
-        case SpellType::FREEZE:
-            ci.spellType = 2;
-            ci.spellAngle = _player->getAngle();
-            break;
-        default:
-            ci.spellType = 0;
-            break;
-        }
+        ci.spellType = _input.getGesture();
+        ci.spellAngle = _player->getAngle();
         _networkCtrl->sendInput(ci);
     }
 
@@ -288,15 +276,16 @@ void GameScene::preUpdate(float dt) {
                 p->setHealth(pd.health);
             }
         }
-
+        _enemy->reset(); // clear all
         for (auto& ed : hi.enemies) {
             _enemy->updateEnemyAsClient(ed.eid, cugl::Vec2(ed.posX, ed.posY), ed.health);
         }
 
         spells.current.clear();
         for (auto& sd : hi.spells) {
-            spells.spawnSpell(cugl::Vec2(sd.posX, sd.posY), sd.speed, sd.velAngle, sd.type == SpellType::FREEZE);
+            spells.spawnSpell(cugl::Vec2(sd.posX, sd.posY), sd.velAngle, sd.type == SpellType::FREEZE);
         }
+        spells.update(); // MAYBE?????
 
         // needs to be changed in the future depending on how we're doing artifact
         if (!hi.added_items.empty()) {
@@ -322,6 +311,9 @@ void GameScene::preUpdate(float dt) {
             if (p) {
                 
                 p->setPosition(cugl::Vec2(input.posX, input.posY));
+                if (input.spellType != SpellType::NONE) { // a spell WAS cast
+                    spells.spawnSpell(cugl::Vec2(input.posX, input.posY), p->getAngle(), input.spellType==SpellType::FREEZE);
+                }
             }
         }
         // update enemy positions - just see if they target host atm
@@ -354,7 +346,7 @@ void GameScene::preUpdate(float dt) {
             hi.enemies.push_back(ed);
         }
 
-        for (auto s : spells.current) {
+        for (auto s : spells.current) { // i think we may need something different. maybe send set of pending??
             HostSpellData sd;
             sd.posX = s->position.x;
             sd.posY = s->position.y;

@@ -8,6 +8,7 @@
 using namespace cugl;
 using namespace cugl::graphics;
 
+#define SPELL_SPEED 5
 
 #pragma mark Spell
 
@@ -36,13 +37,13 @@ void SpellSet::setTexture(const std::shared_ptr<Texture>& value) {
 
 }
 
-void SpellSet::spawnSpell(Vec2 position, float speed, float angle, bool freeze) {
+void SpellSet::spawnSpell(Vec2 position,  float angle, bool freeze) {
     cugl::Vec2 dir(std::cos(angle), std::sin(angle));
-    spawnSpell(position, speed, dir, freeze);
+    spawnSpell(position, dir, freeze);
 }
 
-void SpellSet::spawnSpell(Vec2 position, float speed, Vec2 angle,bool freeze) {
-    cugl::Vec2 pvel =  angle.getNormalization() * speed;
+void SpellSet::spawnSpell(Vec2 position, Vec2 angle,bool freeze) {
+    cugl::Vec2 pvel =  angle.getNormalization() * SPELL_SPEED; // speed = 5
 
     std::shared_ptr<Spell> spell = std::make_shared<Spell>(position, pvel,freeze);
 

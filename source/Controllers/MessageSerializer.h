@@ -7,7 +7,7 @@
 struct ClientInput
 {
     float joystickAngle = 0.0f;
-    int spellType = 0; // 0=NONE,1=FIREBALL,2=FREEZE
+    SpellType spellType = SpellType::NONE; // 0=NONE,1=FIREBALL,2=FREEZE
     float spellAngle = 0.0f;
     bool pickupPressed = false;
     float posX = 0.0f;
@@ -64,7 +64,18 @@ public:
     {
         cugl::netcode::NetcodeSerializer s;
         s.writeFloat(input.joystickAngle);
-        s.writeSint32(input.spellType);
+        switch (input.spellType)
+        {
+        case SpellType::FIREBALL:
+            s.writeSint32(1);
+            break;
+        case SpellType::FREEZE:
+            s.writeSint32(2);
+            break;
+        case SpellType::NONE:
+            s.writeSint32(0);
+            break;
+        }
         s.writeFloat(input.spellAngle);
         s.writeBool(input.pickupPressed);
         s.writeFloat(input.posX);
@@ -81,7 +92,18 @@ public:
         cugl::netcode::NetcodeDeserializer d;
         d.receive(data);
         output.joystickAngle = d.readFloat();
-        output.spellType = d.readSint32();
+        int st = d.readSint32();
+        switch (st) {
+            case 1:
+                output.spellType=SpellType::FIREBALL;
+                break;
+            case 2:
+                output.spellType=SpellType::FREEZE;
+                break;
+            default:
+                output.spellType=SpellType::NONE;
+                break;
+        }
         output.spellAngle = d.readFloat();
         output.pickupPressed = d.readBool();
         output.posX = d.readFloat();
