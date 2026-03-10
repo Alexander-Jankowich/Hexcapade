@@ -107,31 +107,36 @@ public:
         cugl::netcode::NetcodeSerializer s;
         std::shared_ptr<cugl::JsonValue> json = cugl::JsonValue::allocObject();
         json->appendArray("players");
+        auto playersArr = json->get("players");
         for (auto p : input.players)
         {
-            json->appendChild(playerDataToJson(p));
+            playersArr->appendChild(playerDataToJson(p));
         }
         json->appendArray("enemies");
+        auto enemiesArr = json->get("enemies");
         for (auto e : input.enemies)
         {
-            json->appendChild(enemyDataToJson(e));
+            enemiesArr->appendChild(enemyDataToJson(e));
         }
         json->appendArray("spells");
+        auto spellsArr = json->get("spells");
         for (auto e : input.spells)
         {
-            json->appendChild(spellDataToJson(e));
+            spellsArr->appendChild(spellDataToJson(e));
         }
         json->appendArray("added_items");
+        auto addedArr = json->get("added_items");
         for (auto e : input.added_items)
         {
-            json->appendChild(itemDataToJson(e));
+            addedArr->appendChild(itemDataToJson(e));
         }
         json->appendArray("removed_items");
+        auto removedArr = json->get("removed_items");
         for (auto e : input.removed_items)
         {
             std::shared_ptr<cugl::JsonValue> child = cugl::JsonValue::allocObject();
             child->appendValue("item_id", (long)e);
-            json->appendChild(child); // have to make child for deserialization purposes i think
+            removedArr->appendChild(child); // have to make child for deserialization purposes i think
         }
         s.writeJson(json);
         std::vector<std::byte> vec = s.serialize();

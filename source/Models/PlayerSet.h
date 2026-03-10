@@ -18,11 +18,12 @@
  */
 class PlayerSet {
 protected:
-    std::unordered_set<std::shared_ptr<Player>> current;
 
 public:
 
 	PlayerSet();
+
+    std::unordered_set<std::shared_ptr<Player>> current;
 
 	void addPlayer(std::shared_ptr<Player>);
     

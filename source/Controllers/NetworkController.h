@@ -29,6 +29,8 @@ private:
     InputCallback _inputCallback;
     bool _handlerAttached = false;
     void attachReceiptHandler();
+    HostInput _latestHostInput;
+    bool _hasNewHostInput = false;
 
 #pragma mark Helpers
     static std::string dec2hex(const std::string& dec);
@@ -107,6 +109,9 @@ public:
         _status = Status::ABORT;
     }
 
+    HostInput getLatestHostInput() { return _latestHostInput; }
+    bool hasNewHostInput() { return _hasNewHostInput; }
+    void clearNewHostInput() { _hasNewHostInput = false; }
 
     void startGame();
 

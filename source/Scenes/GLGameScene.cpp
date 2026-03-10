@@ -175,6 +175,10 @@ void GameScene::addItem(int value) {
 void GameScene::preUpdate(float dt) {
     _input.update(dt);
 
+    if (_networkCtrl && _networkCtrl->hasNetwork()) {
+        _networkCtrl->update();
+    }
+
     if (_input.pressedReset()) {
         reset();
         _input.resolvedReset();
@@ -225,12 +229,14 @@ void GameScene::preUpdate(float dt) {
         _player->resolveSpell();
         CULog("Resolve spell");
     }
-    spells.update();
 
-    //collision update
-    float playerRadius = 15.0f;
-    _collisions.resolvePlayerEnemies(_player, playerScreenPos, playerRadius, _enemy);
-    _collisions.resolveEnemiesSpell(spells, _enemy, playerScreenPos * -1.5);
+    //collision update, only for host!
+    if (_ishost) {
+        spells.update();
+        float playerRadius = 15.0f;
+        _collisions.resolvePlayerEnemies(_player, playerScreenPos, playerRadius, _enemy);
+        _collisions.resolveEnemiesSpell(spells, _enemy, playerScreenPos * -1.5);
+    }
 
     //_enemy->update(playerScreenPos);
 
@@ -261,6 +267,102 @@ void GameScene::preUpdate(float dt) {
         _networkCtrl->sendInput(ci);
     }
 
+    // client recieve !!
+    if (!_ishost && _networkCtrl->hasNetwork() && _networkCtrl->hasNewHostInput()) {
+        HostInput hi = _networkCtrl->getLatestHostInput();
+        _networkCtrl->clearNewHostInput();
+
+        for (auto& pd : hi.players) {
+            if (pd.uuid == _player->getPID()) continue;
+            auto p = _players->getPlayerByPID(pd.uuid);
+            if (p) {
+                p->setPosition(cugl::Vec2(pd.posX, pd.posY));
+                p->setHealth(pd.health);
+            }
+        }
+
+        _enemy->reset();
+        for (auto& ed : hi.enemies) {
+            _enemy->spawnEnemy(cugl::Vec2(ed.posX, ed.posY), ed.health);
+        }
+
+        spells.current.clear();
+        for (auto& sd : hi.spells) {
+            spells.spawnSpell(cugl::Vec2(sd.posX, sd.posY), sd.speed, sd.velAngle, sd.type == SpellType::FREEZE);
+        }
+
+        // needs to be changed in the future depending on how we're doing artifact
+        if (!hi.added_items.empty()) {
+            _items.clear();
+            for (auto& id : hi.added_items) {
+                ItemData item;
+                item.position = cugl::Vec2(id.posX, id.posY);
+                item.name = id.item;
+                item.radius = 14.0f;
+                item.value = (id.item == "artifact") ? 40 : 25;
+                item.color = (id.item == "artifact") ? Color4(255, 170, 60, 255) : Color4(120, 180, 255, 255);
+                item.type = (id.item == "artifact") ? ItemData::ItemType::ARTIFACT : ItemData::ItemType::SPELL;
+                _items.push_back(item);
+            }
+        }
+    }
+
+    // HOST: broadcast game state to clients
+    if (_ishost && _networkCtrl && _networkCtrl->hasNetwork()) {
+        //updates player positions (based on position currently, should change)
+        for (auto& [pid, input] : _clientInputs) {
+            auto p = _players->getPlayerByPID(pid);
+            if (p) {
+                p->setPosition(cugl::Vec2(input.posX, input.posY));
+            }
+        }
+
+        HostInput hi;
+        hi.dt = dt;
+
+        for (auto p : _players->current) {
+            HostPlayerData pd;
+            pd.uuid = p->getPID();
+            pd.posX = p->getPosition().x;
+            pd.posY = p->getPosition().y;
+            pd.speed = p->getVelocity().length();
+            pd.velAngle = p->getVelocity().isZero() ? 0.0f : p->getVelocity().getAngle();
+            pd.health = p->getHealth();
+            hi.players.push_back(pd);
+        }
+
+        for (auto e : _enemy->current) {
+            HostEnemyData ed;
+            ed.posX = e->getPosition().x;
+            ed.posY = e->getPosition().y;
+            ed.speed = e->getVelocity().length();
+            ed.velAngle = e->getVelocity().isZero() ? 0.0f : e->getVelocity().getAngle();
+            ed.health = e->getHealth();
+            hi.enemies.push_back(ed);
+        }
+
+        for (auto s : spells.current) {
+            HostSpellData sd;
+            sd.posX = s->position.x;
+            sd.posY = s->position.y;
+            sd.speed = s->velocity.length();
+            sd.velAngle = s->velocity.isZero() ? 0.0f : s->velocity.getAngle();
+            sd.type = s->froze ? SpellType::FREEZE : SpellType::FIREBALL;
+            hi.spells.push_back(sd);
+        }
+
+        for (auto& item : _items) {
+            HostItemData id;
+            id.posX = item.position.x;
+            id.posY = item.position.y;
+            id.itemId = (int)(&item - &_items[0]); // the index is the id for now!
+            id.item = item.name;
+            hi.added_items.push_back(id);
+        }
+
+        auto bytes = MessageSerializer::encodeHostInput(hi);
+        _networkCtrl->getNetwork()->broadcast(bytes);
+    }
 
     _inputDisplay->update(playerScreenPos);
 

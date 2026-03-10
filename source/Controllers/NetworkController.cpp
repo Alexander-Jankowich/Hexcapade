@@ -155,13 +155,15 @@ void NetworkController::attachReceiptHandler() {
                 checkClientConnection();
             }
             else { // regular host message - hopefullyyyyy
-                HostInput *hi = new HostInput();
+                HostInput* hi = new HostInput();
                 if (MessageSerializer::decodeHostInput(data, *hi)) {
-                    for (auto p : hi->players) {
-                    }
-                } else {
+                    _latestHostInput = *hi;
+                    _hasNewHostInput = true;
+                }
+                else {
                     CULog("CLIENT couldn't decode data");
                 }
+                delete hi;
             }
             
         }
