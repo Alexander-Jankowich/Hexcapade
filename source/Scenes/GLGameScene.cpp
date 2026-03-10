@@ -214,8 +214,11 @@ void GameScene::preUpdate(float dt) {
     if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
         _player->setSpell(_input.getGesture());
     }
+    
+    bool sendSpell = false;
 
     if (_input.shouldReleaseSpell()) {
+        sendSpell = true;
         CULog("Release spell");
         CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
 
@@ -237,6 +240,7 @@ void GameScene::preUpdate(float dt) {
         _input.resolveSpell();
         _player->resolveSpell();
         CULog("Resolve spell");
+        
     }
 
     //collision update, only for host!
@@ -258,8 +262,10 @@ void GameScene::preUpdate(float dt) {
         ci.pickupPressed = _input.pressedPickup();
         ci.posX = playerScreenPos.x;
         ci.posY = playerScreenPos.y;
-        ci.spellType = _input.getGesture();
-        ci.spellAngle = _player->getAngle();
+        if (sendSpell) {
+            ci.spellType = _input.getGesture();
+            ci.spellAngle = _player->getAngle();
+        }
         _networkCtrl->sendInput(ci);
     }
 
