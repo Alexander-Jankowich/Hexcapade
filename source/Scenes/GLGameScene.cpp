@@ -226,17 +226,19 @@ void GameScene::preUpdate(float dt) {
         if (angle.isZero()) {
             angle = _player->getDirection();
         }
+        if (_ishost) {
+            switch (_player->getSpell()) {
+            case SpellType::FREEZE:
+                spells.spawnSpell(playerScreenPos, angle, true);
+                CULog("spawn freeze spell");
 
-        switch (_player->getSpell()) {
-        case SpellType::FREEZE:
-            spells.spawnSpell(playerScreenPos, angle, true);
-            CULog("spawn freeze spell");
-
-            break;
-        case SpellType::FIREBALL:
-            spells.spawnSpell(playerScreenPos, angle, false);
-            break;
+                break;
+            case SpellType::FIREBALL:
+                spells.spawnSpell(playerScreenPos, angle, false);
+                break;
+            }
         }
+        
         _input.resolveSpell();
         _player->resolveSpell();
         CULog("Resolve spell");
@@ -287,7 +289,7 @@ void GameScene::preUpdate(float dt) {
             _enemy->updateEnemyAsClient(ed.eid, cugl::Vec2(ed.posX, ed.posY), ed.health);
         }
 
-        spells.current.clear();
+        //spells.current.clear();
         for (auto& sd : hi.spells) {
             spells.spawnSpell(cugl::Vec2(sd.posX, sd.posY), sd.velAngle, sd.type == SpellType::FREEZE);
         }
@@ -352,7 +354,7 @@ void GameScene::preUpdate(float dt) {
             hi.enemies.push_back(ed);
         }
 
-        for (auto s : spells.current) { // i think we may need something different. maybe send set of pending??
+        for (auto s : spells.pending) { // i think we may need something different. maybe send set of pending??
             HostSpellData sd;
             sd.posX = s->position.x;
             sd.posY = s->position.y;
