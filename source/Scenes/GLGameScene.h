@@ -22,7 +22,7 @@
 #include <cstddef> 
 #include "../Models/EnemySet.h"
 #include "../Models/SpellSet.h"
-#include "../PlayerSet.h"
+#include "../Models/PlayerSet.h"
 #include "../Controllers/CollisionController.h"
 #include "../Models/Player.h"
 
@@ -180,7 +180,7 @@ public:
      */
     void setConnection(std::shared_ptr<NetworkController> network, bool isHost) {
         _networkCtrl = network;
-        isHost = isHost;
+        _ishost = isHost;
     }
 
     /**
