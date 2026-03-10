@@ -24,7 +24,7 @@ public:
     /**
      * Creates a player
      */
-    Player(const cugl::Vec2& pos, float speed, std::string player_id);
+    Player(const cugl::Vec2& pos, float speed, std::string player_id, const std::shared_ptr<cugl::graphics::Texture>& t);
     
     Player(const cugl::Vec2& pos, float speed); // need both
 
