@@ -239,24 +239,16 @@ void GameScene::preUpdate(float dt) {
             }
         }
         
-        _input.resolveSpell();
-        _player->resolveSpell();
         CULog("Resolve spell");
         
     }
-
     //collision update, only for host!
     if (_ishost) {
-        spells.update();
         float playerRadius = 15.0f;
         _collisions.resolvePlayerEnemies(_player, playerScreenPos, playerRadius, _enemy);
         _collisions.resolveEnemiesSpell(spells, _enemy, playerScreenPos * -1.5);
     }
 
-
-    if (_player->getHealth() <= 0) {
-        _playerLost = true;
-    }
 
     if (!_ishost && _networkCtrl->hasNetwork()) {
         ClientInput ci;
@@ -314,6 +306,8 @@ void GameScene::preUpdate(float dt) {
     // HOST: broadcast game state to clients
     if (_ishost && _networkCtrl && _networkCtrl->hasNetwork()) {
         //updates player positions (based on position currently, should change)
+        HostInput hi;
+
         for (auto& [pid, input] : _clientInputs) {
             auto p = _players->getPlayerByPID(pid);
             if (p) {
@@ -321,6 +315,12 @@ void GameScene::preUpdate(float dt) {
                 p->setPosition(cugl::Vec2(input.posX, input.posY));
                 if (input.spellType != SpellType::NONE) { // a spell WAS cast
                     spells.spawnSpell(cugl::Vec2(input.posX, input.posY), p->getAngle(), input.spellType==SpellType::FREEZE);
+                    HostSpellData sd;
+                    sd.posX = input.posX;
+                    sd.posY = input.posY;
+                    sd.velAngle = p->getAngle();
+                    sd.type = input.spellType==SpellType::FREEZE ? SpellType::FREEZE : SpellType::FIREBALL;
+                    hi.spells.push_back(sd);
                 }
             }
         }
@@ -328,7 +328,6 @@ void GameScene::preUpdate(float dt) {
         _enemy->update(playerScreenPos);
 
 
-        HostInput hi;
         hi.dt = dt;
 
         for (auto p : _players->current) {
@@ -354,16 +353,6 @@ void GameScene::preUpdate(float dt) {
             hi.enemies.push_back(ed);
         }
 
-        for (auto s : spells.pending) { // i think we may need something different. maybe send set of pending??
-            HostSpellData sd;
-            sd.posX = s->position.x;
-            sd.posY = s->position.y;
-            sd.speed = s->velocity.length();
-            sd.velAngle = s->velocity.isZero() ? 0.0f : s->velocity.getAngle();
-            sd.type = s->froze ? SpellType::FREEZE : SpellType::FIREBALL;
-            hi.spells.push_back(sd);
-        }
-
         for (auto& item : _items) {
             HostItemData id;
             id.posX = item.position.x;
@@ -378,7 +367,20 @@ void GameScene::preUpdate(float dt) {
     }
 
     _inputDisplay->update(playerScreenPos);
+    if (sendSpell) {
+        _input.resolveSpell();
+        _player->resolveSpell();
+    }
+    
+    //collision update, only for host!
+    if (_ishost) {
+        spells.update();
+    }
 
+
+    if (_player->getHealth() <= 0) {
+        _playerLost = true;
+    }
 
 }
 

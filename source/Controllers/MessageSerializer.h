@@ -37,7 +37,6 @@ struct HostSpellData
 {
     float posX;
     float posY;
-    float speed;
     float velAngle;
     SpellType type;
 };
@@ -271,7 +270,6 @@ private:
         std::shared_ptr<cugl::JsonValue> json = cugl::JsonValue::allocObject();
         json->appendValue("pos_x", (double)data.posX);
         json->appendValue("pos_y", (double)data.posY);
-        json->appendValue("speed", (double)data.speed);
         json->appendValue("vel_angle", (double)data.velAngle);
         switch (data.type)
         {
@@ -293,7 +291,6 @@ private:
         HostSpellData *res = new HostSpellData();
         res->posX = json->getFloat("pos_x");
         res->posY = json->getFloat("pos_y");
-        res->speed = json->getFloat("speed");
         res->velAngle = json->getFloat("vel_angle");
         switch (json->getInt("spell_type"))
         {
