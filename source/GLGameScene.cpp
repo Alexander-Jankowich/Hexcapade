@@ -32,7 +32,7 @@ using namespace cugl::graphics;
 #pragma mark Level Layout
 
 // Lock the screen size to fixed height regardless of aspect ratio
-#define SCENE_HEIGHT 720
+#define SCENE_HEIGHT 720EIGHT 720
 
 /** The ratio between the physics world and the screen. */
 #define PHYSICS_SCALE 50
@@ -63,6 +63,8 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _assets = assets;
     
     // Start up the input handler
+    //This is the size of scene! We want to screenToWorld and worldToScreen
+    //Factor out conversion with lambda gamescene -> input
     _input.init(cugl::Rect(0,0,getSize().width,getSize().height));
     _inputDisplay = make_shared<InputDisplay>(&_input);
     

@@ -188,6 +188,7 @@ bool InputController::init(const Rect bounds) {
     };
 
     _sbounds = bounds;
+    //
     Size display = Application::get()->getDisplaySize();
     _tbounds = Rect(0,0,display.width,display.height);
     
