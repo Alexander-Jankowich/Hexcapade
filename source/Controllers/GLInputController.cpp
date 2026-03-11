@@ -158,7 +158,9 @@ _pickupPressed(false),
 _resetPressed(false),
 _joyradius(100),
 _lastGesture(SpellType::NONE),
-_isAiming(false)
+_isAiming(false),
+_releaseSpell(false),
+_timeSinceCast(0)
 {
 }
 

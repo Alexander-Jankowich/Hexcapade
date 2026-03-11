@@ -18,6 +18,9 @@ private:
     SpellType _curSpell;
     std::string _playerId; // player identifier, rn its the uuid
 
+    // Counter for number of spells player has fired, used for spell id generation
+    unsigned int _curSpellNum;
+
 public:
 #pragma mark Constructors
 
@@ -62,10 +65,16 @@ public:
 
     cugl::Vec2 getDirection() { return cugl::Vec2(std::cos(_playerAngle), std::sin(_playerAngle)); }
 
-    void setSpell(SpellType spell) { _curSpell = spell; }
+    /**
+    * Sets the current spell of the player.
+    * Also increments _curSpellNum if this spell is different than the previous one.
+    */
+    void setSpell(SpellType spell);
     void resolveSpell() { _curSpell = SpellType::NONE; }
 
     SpellType getSpell() { return _curSpell; }
+
+    const std::string getSpellId() const;
 };
 
 #endif // !__GP_PLAYER_H__

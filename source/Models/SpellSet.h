@@ -33,8 +33,8 @@ public:
     };
     
 #pragma mark SpellSet
-    std::unordered_set<std::shared_ptr<Spell>> current;
-    std::unordered_set<std::shared_ptr<Spell>> pending;
+    std::unordered_map<std::string, std::shared_ptr<Spell>> current;
+    std::unordered_map<std::string, std::shared_ptr<Spell>> pending;
     
     SpellSet();
     
@@ -47,13 +47,15 @@ public:
 
     void setTexture(const std::shared_ptr<cugl::graphics::Texture>& value);
 
-    void spawnSpell(cugl::Vec2 position, float angle, bool freeze);
-    void spawnSpell(cugl::Vec2 position, cugl::Vec2 angle, bool freeze);
+    void spawnSpell(std::string sid, cugl::Vec2 position, float angle, bool freeze);
+    void spawnSpell(std::string sid, cugl::Vec2 position, cugl::Vec2 angle, bool freeze);
 
     void update();
 
     void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
 
     void dispose();
+
+    bool contains(std::string sid);
 };
 #endif // !__SPELL_SET_H__

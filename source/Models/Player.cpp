@@ -29,6 +29,8 @@ Player::Player(const cugl::Vec2& pos, float speed, std::string pid, const std::s
 Player::Player(const cugl::Vec2& pos, float speed) : Entity(pos, 100) {
     _playerAngle = -PI/2; // initialize to point right
     _speed = speed;
+    _curSpell = SpellType::NONE;
+    _curSpellNum = 0;
 }
 
 void Player::setVelocity(cugl::Vec2 value) {
@@ -41,4 +43,15 @@ void Player::setVelocity(cugl::Vec2 value) {
 void Player::updateAngle(float angle) {
     _playerAngle = angle;
     //_shape->setAngle(angle);
+}
+
+void Player::setSpell(SpellType spell) {
+    if (spell != _curSpell && spell != SpellType::NONE) {
+        _curSpellNum++;
+    }
+    _curSpell = spell;
+}
+
+const std::string Player::getSpellId() const {
+    return _playerId+":"+std::to_string(_curSpellNum);
 }

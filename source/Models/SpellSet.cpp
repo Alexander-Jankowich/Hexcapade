@@ -31,32 +31,31 @@ SpellSet::SpellSet(){
 }
 
 void SpellSet::setTexture(const std::shared_ptr<Texture>& value) {
-        Size size = value->getSize();
-        radius = std::max(size.width,size.height)/2;
-        texture = value;
-
+    Size size = value->getSize();
+    radius = std::max(size.width,size.height)/2;
+    texture = value;
 }
 
-void SpellSet::spawnSpell(Vec2 position,  float angle, bool freeze) {
+void SpellSet::spawnSpell(std::string sid, Vec2 position,  float angle, bool freeze) {
     cugl::Vec2 dir(std::cos(angle), std::sin(angle));
-    spawnSpell(position, dir, freeze);
+    spawnSpell(sid, position, dir, freeze);
 }
 
-void SpellSet::spawnSpell(Vec2 position, Vec2 angle,bool freeze) {
+void SpellSet::spawnSpell(std::string sid, Vec2 position, Vec2 angle,bool freeze) {
     cugl::Vec2 pvel =  angle.getNormalization() * SPELL_SPEED; // speed = 5
 
     std::shared_ptr<Spell> spell = std::make_shared<Spell>(position, pvel,freeze);
 
-    pending.emplace(spell);
-    
+    CULog("%s", sid.c_str());
+    pending.emplace(sid, spell);
 }
 
 
 void SpellSet::update(){
     for (auto it = current.begin(); it != current.end(); ) {
-        (*it)->update();
+        it->second->update();
         it++;
-        }
+    }
     
     for(auto it = pending.begin(); it != pending.end(); ++it) {
         current.emplace(*it);
@@ -67,18 +66,22 @@ void SpellSet::update(){
 
 void SpellSet::draw(const std::shared_ptr<SpriteBatch>& batch) {
     for(auto it = current.begin(); it != current.end(); ++it) {
-        Vec2 pos = (*it)->position;
+        Vec2 pos = it->second->position;
         Vec2 origin(radius,radius);
         
         Affine2 trans;
         trans.translate(pos);
-        if((*it) -> froze){
+        if(it->second-> froze){
             batch -> draw(texture,Color4::BLUE,origin,trans);
         }else{
             batch -> draw(texture,Color4::RED, origin, trans);
         }
         
     }
+}
+
+bool SpellSet::contains(std::string sid) {
+    return current.contains(sid) || pending.contains(sid);
 }
 
 void SpellSet::dispose() {

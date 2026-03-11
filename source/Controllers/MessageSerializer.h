@@ -9,7 +9,7 @@ struct ClientInput
     float joystickAngle = 0.0f;
     SpellType spellType = SpellType::NONE; // 0=NONE,1=FIREBALL,2=FREEZE
     float spellAngle = 0.0f;
-    bool releaseSpell = false;
+    std::string sid = "_";
     bool pickupPressed = false;
     float posX = 0.0f;
     float posY = 0.0f;
@@ -37,6 +37,7 @@ struct HostEnemyData
 };
 struct HostSpellData
 {
+    std::string id;
     float posX;
     float posY;
     float velAngle;
@@ -78,7 +79,7 @@ public:
             break;
         }
         s.writeFloat(input.spellAngle);
-        s.writeBool(input.releaseSpell);
+        s.writeString(input.sid);
         s.writeBool(input.pickupPressed);
         s.writeFloat(input.posX);
         s.writeFloat(input.posY);
@@ -107,7 +108,12 @@ public:
                 break;
         }
         output.spellAngle = d.readFloat();
-        output.releaseSpell = d.readBool();
+        try {
+            output.sid = d.readString();
+        }
+        catch (std::bad_variant_access) {
+            output.sid = "_";
+        }
         output.pickupPressed = d.readBool();
         output.posX = d.readFloat();
         output.posY = d.readFloat();
@@ -274,6 +280,7 @@ private:
     static std::shared_ptr<cugl::JsonValue> spellDataToJson(const HostSpellData &data)
     {
         std::shared_ptr<cugl::JsonValue> json = cugl::JsonValue::allocObject();
+        json->appendValue("id", data.id);
         json->appendValue("pos_x", (double)data.posX);
         json->appendValue("pos_y", (double)data.posY);
         json->appendValue("vel_angle", (double)data.velAngle);
@@ -295,6 +302,7 @@ private:
     static HostSpellData jsonToSpellData(const std::shared_ptr<cugl::JsonValue> json)
     {
         HostSpellData *res = new HostSpellData();
+        res->id = json->getString("id");
         res->posX = json->getFloat("pos_x");
         res->posY = json->getFloat("pos_y");
         res->velAngle = json->getFloat("vel_angle");
