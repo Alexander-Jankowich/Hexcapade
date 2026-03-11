@@ -102,7 +102,7 @@ void GeometryApp::onStartup() {
     // Queue up the other assets
     _loading.start();
 
-    cugl::netcode::NetworkLayer::start(cugl::netcode::NetworkLayer::Log::INFO);
+    cugl::netcode::NetworkLayer::start(cugl::netcode::NetworkLayer::Log::DEVELOPER);
 
     Application::onStartup(); // YOU MUST END with call to parent
 }

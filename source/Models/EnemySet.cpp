@@ -25,9 +25,22 @@ void EnemySet::clientSpawnEnemy(int eid, const cugl::Vec2 position, int health){
     current.insert(std::make_pair(eid, std::make_shared<Enemy>(position, 2.5, health)));
 }
 
-void EnemySet::update(Vec2 target){
+Vec2 getClosestPlayer(Vec2 enemPos, std::vector<Vec2> targs) {
+    float minDist = FLT_MAX;
+    Vec2 minPos = Vec2(0, 0); // default
+    for (auto t : targs) {
+        float d =enemPos.distance(t);
+        if (d < minDist) {
+            minDist = d;
+            minPos = t;
+        }
+    }
+    return minPos;
+}
+void EnemySet::update(std::vector<Vec2> targets){
     for (auto it = current.begin(); it != current.end(); ) {
-        if (std::get<1>(*it)->update(target)) {
+        Vec2 targ = getClosestPlayer(std::get<1>(*it)->getPosition(), targets);
+        if (std::get<1>(*it)->update(targ)) {
             it++;
         }
         else {

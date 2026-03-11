@@ -329,7 +329,11 @@ void GameScene::preUpdate(float dt) {
             }
         }
         // update enemy positions - just see if they target host atm
-        _enemy->update(playerScreenPos);
+        std::vector<cugl::Vec2> player_pos;
+        for (auto p : _players->current) {
+            player_pos.push_back(p->getPosition());
+        }
+        _enemy->update(player_pos);
 
 
         hi.dt = dt;

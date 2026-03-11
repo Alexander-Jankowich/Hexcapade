@@ -28,7 +28,7 @@ public:
     
     void updateEnemyAsClient(int eid, const cugl::Vec2 position, int health);
 
-    void update(cugl::Vec2 target);
+    void update(std::vector<cugl::Vec2> targets);
 
     void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
 
