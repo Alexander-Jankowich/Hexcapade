@@ -222,23 +222,18 @@ void GameScene::preUpdate(float dt) {
     }
     if (_input.shouldReleaseSpell()) {
         sendSpell = true;
-        CULog("Release spell");
-        CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
+        CULog("Release spell--------------------------------------------------------");
+        //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
         if (_ishost) {
             switch (_player->getSpell()) {
             case SpellType::FREEZE:
                 spells.spawnSpell(playerScreenPos, angle, true);
-                CULog("spawn freeze spell");
-
                 break;
             case SpellType::FIREBALL:
                 spells.spawnSpell(playerScreenPos, angle, false);
                 break;
             }
         }
-        
-        CULog("Resolve spell");
-        
     }
     //collision update, only for host!
     if (_ishost) {
@@ -255,7 +250,7 @@ void GameScene::preUpdate(float dt) {
         ci.posX = playerScreenPos.x;
         ci.posY = playerScreenPos.y;
         if (sendSpell) {
-            ci.spellType = _input.getGesture();
+            ci.spellType = _player->getSpell();
             ci.spellAngle = angle.getAngle();
             CULog("Angle of spell: %f", angle.getAngle());
         }
@@ -313,7 +308,8 @@ void GameScene::preUpdate(float dt) {
                 
                 p->setPosition(cugl::Vec2(input.posX, input.posY));
                 if (input.spellType != SpellType::NONE) { // a spell WAS cast
-                    spells.spawnSpell(cugl::Vec2(input.posX, input.posY), p->getAngle(), input.spellType==SpellType::FREEZE);
+                    CULog("Other Spawn-------------------------------------------------");
+                    spells.spawnSpell(cugl::Vec2(input.posX, input.posY), input.spellAngle, input.spellType==SpellType::FREEZE);
                     
                 }
             }

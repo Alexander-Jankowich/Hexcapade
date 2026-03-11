@@ -91,7 +91,7 @@ public:
         cugl::netcode::NetcodeDeserializer d;
         d.receive(data);
         output.joystickAngle = d.readFloat();
-        int st = d.readSint32();
+        int32_t st = d.readSint32();
         switch (st) {
             case 1:
                 output.spellType=SpellType::FIREBALL;
