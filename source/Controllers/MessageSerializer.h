@@ -9,6 +9,7 @@ struct ClientInput
     float joystickAngle = 0.0f;
     SpellType spellType = SpellType::NONE; // 0=NONE,1=FIREBALL,2=FREEZE
     float spellAngle = 0.0f;
+    bool releaseSpell = false;
     bool pickupPressed = false;
     float posX = 0.0f;
     float posY = 0.0f;
@@ -22,6 +23,7 @@ struct HostPlayerData
     float speed=0.0f;
     float velAngle=0.0f;
     int inventoryVal=0;
+    SpellType curSpell = SpellType::NONE;
     int health=12; // i think this is starting val?? will not be used tho
 };
 struct HostEnemyData
@@ -76,6 +78,7 @@ public:
             break;
         }
         s.writeFloat(input.spellAngle);
+        s.writeBool(input.releaseSpell);
         s.writeBool(input.pickupPressed);
         s.writeFloat(input.posX);
         s.writeFloat(input.posY);
@@ -104,6 +107,7 @@ public:
                 break;
         }
         output.spellAngle = d.readFloat();
+        output.releaseSpell = d.readBool();
         output.pickupPressed = d.readBool();
         output.posX = d.readFloat();
         output.posY = d.readFloat();
@@ -224,6 +228,7 @@ private:
         json->appendValue("speed", (double)data.speed);
         json->appendValue("vel_angle", (double)data.velAngle);
         json->appendValue("inventory_val", (long)data.inventoryVal);
+        json->appendValue("cur_spell", (long)data.curSpell);
         json->appendValue("health", (long)data.health);
         return json;
     }
@@ -236,6 +241,7 @@ private:
         res->speed = json->getFloat("speed");
         res->velAngle = json->getFloat("vel_angle");
         res->inventoryVal = json->getInt("inventory_val");
+        res->curSpell = (SpellType)json->getInt("cur_spell");
         res->health = json->getInt("health");
         res->uuid = json->getString("uuid");
         return *res;

@@ -233,6 +233,9 @@ void GameScene::preUpdate(float dt) {
                 spells.spawnSpell(playerScreenPos, angle, false);
                 break;
             }
+
+            _input.resolveSpell();
+            _player->resolveSpell();
         }
     }
     //collision update, only for host!
@@ -249,8 +252,9 @@ void GameScene::preUpdate(float dt) {
         ci.pickupPressed = _input.pressedPickup();
         ci.posX = playerScreenPos.x;
         ci.posY = playerScreenPos.y;
+        ci.spellType = _player->getSpell();
         if (sendSpell) {
-            ci.spellType = _player->getSpell();
+            ci.releaseSpell = true;
             ci.spellAngle = angle.getAngle();
             CULog("Angle of spell: %f", angle.getAngle());
         }
@@ -263,7 +267,13 @@ void GameScene::preUpdate(float dt) {
         _networkCtrl->clearNewHostInput();
 
         for (auto& pd : hi.players) {
-            if (pd.uuid == _player->getPID()) continue;
+            if (pd.uuid == _player->getPID()) {
+                if (pd.curSpell == SpellType::NONE) {
+                    _input.resolveSpell();
+                    _player->resolveSpell();
+                }
+                continue;
+            }
             auto p = _players->getPlayerByPID(pd.uuid);
             if (p) {
                 p->setPosition(cugl::Vec2(pd.posX, pd.posY));
@@ -305,12 +315,12 @@ void GameScene::preUpdate(float dt) {
         for (auto& [pid, input] : _clientInputs) {
             auto p = _players->getPlayerByPID(pid);
             if (p) {
-                
                 p->setPosition(cugl::Vec2(input.posX, input.posY));
-                if (input.spellType != SpellType::NONE) { // a spell WAS cast
+
+                if (input.releaseSpell) { // a spell WAS cast
                     CULog("Other Spawn-------------------------------------------------");
                     spells.spawnSpell(cugl::Vec2(input.posX, input.posY), input.spellAngle, input.spellType==SpellType::FREEZE);
-                    
+                    p->resolveSpell();
                 }
             }
         }
@@ -327,6 +337,7 @@ void GameScene::preUpdate(float dt) {
             pd.posY = p->getPosition().y;
             pd.speed = p->getVelocity().length();
             pd.velAngle = p->getVelocity().isZero() ? 0.0f : p->getVelocity().getAngle();
+            pd.curSpell = p->getSpell();
             pd.health = p->getHealth();
             hi.players.push_back(pd);
         }
@@ -367,8 +378,6 @@ void GameScene::preUpdate(float dt) {
 
     _inputDisplay->update(playerScreenPos);
     if (sendSpell) {
-        _input.resolveSpell();
-        _player->resolveSpell();
     }
     
     //collision update, only for host!
