@@ -268,10 +268,6 @@ void GameScene::preUpdate(float dt) {
 
         for (auto& pd : hi.players) {
             if (pd.uuid == _player->getPID()) {
-                if (pd.curSpell == SpellType::NONE) {
-                    _input.resolveSpell();
-                    _player->resolveSpell();
-                }
                 continue;
             }
             auto p = _players->getPlayerByPID(pd.uuid);
@@ -290,6 +286,11 @@ void GameScene::preUpdate(float dt) {
             spells.spawnSpell(sd.id, cugl::Vec2(sd.posX, sd.posY), sd.velAngle, sd.type == SpellType::FREEZE);
         }
         spells.update(); // MAYBE?????
+
+        if (spells.contains(_player->getSpellId())) {
+            _input.resolveSpell();
+            _player->resolveSpell();
+        }
 
         // needs to be changed in the future depending on how we're doing artifact
         if (!hi.added_items.empty()) {
