@@ -52,7 +52,7 @@ CU_ROOTCLASS(GeometryApp)
     setDisplaySize(GAME_WIDTH, GAME_HEIGHT);
 
     // This one can be reset at any time
-    setFPS(120.0f);
+    setFPS(60.0f);
 
     // Get rid of the cornflower blue
     setClearColor(Color4(192, 192, 192));

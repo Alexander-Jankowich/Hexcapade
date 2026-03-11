@@ -281,7 +281,7 @@ void GameScene::preUpdate(float dt) {
             _enemy->updateEnemyAsClient(ed.eid, cugl::Vec2(ed.posX, ed.posY), ed.health);
         }
 
-        //spells.current.clear();
+        spells.current.clear();
         for (auto& sd : hi.spells) {
             spells.spawnSpell(sd.id, cugl::Vec2(sd.posX, sd.posY), sd.velAngle, sd.type == SpellType::FREEZE);
         }
@@ -362,7 +362,7 @@ void GameScene::preUpdate(float dt) {
             hi.enemies.push_back(ed);
         }
         
-        for (auto [sid, sp] : spells.pending) {
+        for (auto [sid, sp] : spells.current) {
             HostSpellData sd;
             sd.id = sid;
             sd.posX = sp->position.x;
