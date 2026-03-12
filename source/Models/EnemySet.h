@@ -8,7 +8,10 @@
 
 class EnemySet {
 public:
-    std::unordered_set<std::shared_ptr<Enemy>> current;
+    /** Hash map of enemyIds to enemy objects*/
+    std::unordered_map<int, std::shared_ptr<Enemy>> current;
+    
+    int _totalCount;
     
     EnemySet();
 
@@ -20,8 +23,12 @@ public:
     void setTexture(const std::shared_ptr<cugl::graphics::Texture>& value);
 
     void spawnEnemy(const cugl::Vec2 position, int health);
+    
+    void clientSpawnEnemy(int eid, const cugl::Vec2 position, int health);
+    
+    void updateEnemyAsClient(int eid, const cugl::Vec2 position, int health);
 
-    void update(cugl::Vec2 target);
+    void update(std::vector<cugl::Vec2> targets);
 
     void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
 

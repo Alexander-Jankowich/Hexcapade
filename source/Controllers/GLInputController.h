@@ -13,7 +13,7 @@
 //
 #ifndef __GL_INPUT_CONTROLLER_H__
 #define __GL_INPUT_CONTROLLER_H__
-#include "SpellSet.h"
+#include "../Models/SpellSet.h"
 
 /**
  * Device-independent input manager.
@@ -55,7 +55,7 @@ public:
      *
      * @return true if the initialization was successful
      */
-    bool init(const cugl::Rect bounds);
+    bool init(std::shared_ptr<cugl::JsonValue> values, const cugl::Rect bounds);
 
     /**
      * Disposes this input controller, deactivating all listeners.
@@ -295,6 +295,8 @@ protected:
     /** The current touch location for the bottom zone */
     TouchInstance _mtouch;
     
+
+
     /** Whether the virtual joystick is active */
     bool _joystick;
     /** The position of the virtual joystick center*/
@@ -303,6 +305,7 @@ protected:
     cugl::Vec2 _joystickpos;
     /** Radius of joystick */
     int _joyradius;
+    int _deadzone;
 
     /** The timestamp for a double tap on the right */
     cugl::Timestamp _rtime;
@@ -427,6 +430,11 @@ private:
     void touchEndCB(const cugl::TouchEvent& event, bool focus);
     
     void touchMotionCB(const cugl::TouchEvent& event, const cugl::Vec2& previous, bool focus);
+        
+public:
+    void deactivate();
+    void activate();
+    
 };
 
 #endif /* __GL_INPUT_CONTROLLER_H__ */

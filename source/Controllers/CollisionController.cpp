@@ -23,7 +23,7 @@ void CollisionController::resolvePlayerEnemy(std::shared_ptr<Player>& player,
 void CollisionController::resolvePlayerEnemies(std::shared_ptr<Player>& player,
     const cugl::Vec2& playerPos, float playerRadius, const std::shared_ptr<EnemySet>& enemy) {
     for (auto it = enemy->current.begin(); it != enemy->current.end(); ++it) {
-        std::shared_ptr<Enemy> ptr = *it;
+        std::shared_ptr<Enemy> ptr = std::get<1>(*it);
         resolvePlayerEnemy(player, playerPos, playerRadius, ptr, enemy->getRadius());
     }
 }
@@ -44,16 +44,16 @@ void CollisionController::resolveEnemySpell(SpellSet& spells, std::shared_ptr<En
     Vec2 knockback, float enemyRadius) {
     auto sp_iter = spells.current.begin();
     while(sp_iter != spells.current.end()) {
-        float dist = (sp_iter->get()->position - enemy->getPosition()).length();
+        float dist = (sp_iter->second->position - enemy->getPosition()).length();
         if (dist <= enemyRadius + 10) { // hard coding a spell radius bc WHATEVER
             // handle collision
-            if(sp_iter->get()->froze){
+            if(sp_iter->second->froze){
                 enemy->setFrozen();
             }
             else {
                 enemy->setKnockback(knockback);
             }
-            enemy->setHealth(enemy->getHealth() - sp_iter->get()->damage);
+            enemy->setHealth(enemy->getHealth() - sp_iter->second->damage);
             
             sp_iter = spells.current.erase(sp_iter);
         }
@@ -65,7 +65,7 @@ void CollisionController::resolveEnemySpell(SpellSet& spells, std::shared_ptr<En
 void CollisionController::resolveEnemiesSpell(SpellSet& spells, std::shared_ptr<EnemySet>& enemy,
     cugl::Vec2 knockback) {
     for (auto it = enemy->current.begin(); it != enemy->current.end(); ++it) {
-        std::shared_ptr<Enemy> ptr = *it;
+        std::shared_ptr<Enemy> ptr = it->second;
         resolveEnemySpell(spells, ptr, knockback, enemy->getRadius());
     }
 }

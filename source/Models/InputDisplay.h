@@ -12,11 +12,11 @@
 #ifndef __INPUT_MODEL_H__
 #define __INPUT_MODEL_H__
 #include <cugl/cugl.h>
-#include "GLInputController.h"
+#include "../Controllers/GLInputController.h"
 
 class InputDisplay {
 public:
-	InputDisplay(InputController* input);
+	InputDisplay(InputController* input, std::shared_ptr<cugl::JsonValue> values);
 
 	void setInputController(InputController* input) { _input = input; }
 
@@ -46,15 +46,19 @@ private:
 	cugl::Affine2 _jstickTrans;
 	cugl::Poly2 _joybase;
 	cugl::Poly2 _joystick;
+	cugl::Color4 _baseColor;
+	cugl::Color4 _joystickColor;
 
 	/** Gesture attributes */
 	cugl::Path2 _gesture;
-	int _gestureWidth = 30;
 	cugl::Poly2 _gestureDisplay;
+	int _gestureWidth;
+	cugl::Color4 _gestureColor;
 
 	bool _showAim;
-	cugl::Poly2 _arrow;
 	cugl::Affine2 _arrowTrans;
+	cugl::Poly2 _arrow;
+	cugl::Color4 _arrowColor;
 };
 
 #endif

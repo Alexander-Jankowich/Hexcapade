@@ -20,16 +20,25 @@ class PlayerSet {
 protected:
 
 public:
-	std::unordered_set<std::shared_ptr<Player>> current;
 
 	PlayerSet();
 
+    std::unordered_set<std::shared_ptr<Player>> current;
+
 	void addPlayer(std::shared_ptr<Player>);
+    
+    int numPlayers() {return current.size();}
 
 	//void update();
+    std::shared_ptr<Player> getPlayerByPID(std::string pid) {
+        for (auto p : current) {
+            if (p->getPID()==pid) return p;
+        }
+        return nullptr; // should NOT get here
+    }
 
 	void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
 
 };
 
-#endif
+#endif // !__PLAYER_SET_H__

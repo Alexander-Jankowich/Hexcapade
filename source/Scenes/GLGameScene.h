@@ -16,13 +16,15 @@
 #define __GL_GAME_SCENE_H__
 #include <cugl/cugl.h>
 #include <vector>
-#include "GLInputController.h"
-#include "InputDisplay.h"
+#include "../Controllers/GLInputController.h"
+#include "../Controllers/NetworkController.h"
+#include "../Models/InputDisplay.h"
 #include <cstddef> 
-#include "EnemySet.h"
-#include "SpellSet.h"
-#include "CollisionController.h"
-#include "Player.h"
+#include "../Models/EnemySet.h"
+#include "../Models/SpellSet.h"
+#include "../Models/PlayerSet.h"
+#include "../Controllers/CollisionController.h"
+#include "../Models/Player.h"
 
 /**
  * This class is the primary gameplay constroller for the demo.
@@ -34,10 +36,14 @@
 class GameScene : public cugl::scene2::Scene2 {
 protected:
     // CONTROLLERS are attached directly to the scene (no pointers)
+    std::shared_ptr<NetworkController> _networkCtrl;
+    bool _ishost;
+    /** uuid to players most recent update*/
+    std::unordered_map<std::string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
     InputController _input;
     std::shared_ptr<InputDisplay> _inputDisplay;
-    
+
     // MODELS should be shared pointers or a data structure of shared pointers
     /** The spline for the exterior circle */
     cugl::Spline2 _spline;
@@ -46,36 +52,38 @@ protected:
     /** The outside "circle" */
     std::shared_ptr<cugl::physics2::PolygonObstacle> _center;
     /** The falling star */
-    
+
     std::shared_ptr<Player> _player;
+    
+    std::shared_ptr<PlayerSet> _players;
 
     std::shared_ptr<EnemySet> _enemy;
     float lastEnemySpawn;
 
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
     CollisionController _collisions;
-    /** The total value of items the player has collected */
-    int _inventoryValue;
+    /** The total value of items all players have collected */
+    int _currInventoryScore;
     /** The value the player needs to reach to win */
     int _quota;
     /** Whether the player has won */
     bool _playerWon;
     /** Whether the player has lost */
     bool _playerLost;
+
     std::shared_ptr<cugl::AssetManager> _assets;
     /** Font for rendering HUD text */
     std::shared_ptr<cugl::graphics::Font> _font;
-    cugl::Poly2 capsule;
-    cugl::Path2 path;
-    cugl::Poly2 circle;
-    std::vector<cugl::Poly2> handles;
-    std::vector<cugl::Poly2> knobs;
-    cugl::Path2 star_path;
-    cugl::Poly2 poly_star;
+
+    /** The constants json */
+    std::shared_ptr<cugl::JsonValue> _constants;
+    /** The gestures json */
+    std::shared_ptr<cugl::JsonValue> _gestures;
+
     bool input_down = false;
-    
+
     SpellSet spells;
-    
+
     struct ItemData {
         enum class ItemType {
             ARTIFACT,
@@ -98,12 +106,12 @@ protected:
     int _pickupIndex;
     /** this stores the current prompt text for pickup */
     std::string _pickupPrompt;
-    
+
 
 
     // Index of the currently selected tangent handle -1 if none
     size_t _selectedTangent = (size_t)-1;
-    
+
 
     // Whether a control point is currently selected/being dragged can be inferred from _selectedTangent
 
@@ -119,7 +127,7 @@ protected:
      * should not be activated until the state is "stable".
      */
     void buildGeometry();
-    
+
 public:
 #pragma mark -
 #pragma mark Constructors
@@ -129,8 +137,8 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _inventoryValue(0), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1) {}
-    
+    GameScene() : cugl::scene2::Scene2(), _currInventoryScore(0), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1) {}
+
     /**
      * Disposes of all (non-static) resources allocated to this mode.
      *
@@ -138,13 +146,13 @@ public:
      * static resources, like the input controller.
      */
     ~GameScene() { dispose(); }
-    
+
     /**
      * Disposes of all (non-static) resources allocated to this mode.
      */
     void dispose() override;
     void reset();
-    
+
     /**
      * Initializes the controller contents, and starts the game
      *
@@ -158,14 +166,36 @@ public:
      */
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
 
-    void addItem(int value);
-    int getInventoryValue() const { return _inventoryValue; }
+    //void addItem(int value);
+    int getInventoryValue() const { return _currInventoryScore; }
     int getQuota() const { return _quota; }
     bool hasWon() const { return _playerWon; }
     bool hasLost() const { return _playerLost; }
 
+    /**
+     * Returns the network connection (as made by this scene)
+     *
+     * This value will be reset every time the scene is made active.
+     *
+     * @return the network connection (as made by this scene)
+     */
+    void setConnection(std::shared_ptr<NetworkController> network, bool isHost) {
+        _networkCtrl = network;
+        _ishost = isHost;
+    }
 
-    
+    /**
+     * Returns true if the player is host.
+     *
+     * We may need to have gameplay specific code for host.
+     *
+     * @return true if the player is host.
+     */
+    bool isHost() const { return _ishost; }
+
+
+
+
 #pragma mark -
 #pragma mark Gameplay Handling
     /**
@@ -189,7 +219,7 @@ public:
      * @param dt    The amount of time (in seconds) since the last frame
      */
     void preUpdate(float dt);
-    
+
     /**
      * The method called to provide a deterministic application loop.
      *
@@ -252,8 +282,10 @@ public:
      */
     void render() override;
 
+    void setActive(bool value);
+
 private:
-    
+
     // this builds one random item and returns it
     ItemData createRandomItem(bool forceArtifact, bool forceSpell);
     // this respawns the map starter set of items
@@ -266,10 +298,10 @@ private:
     void tryPickupItem();
     // this draws all active items
     void drawItems();
-    
-    
+
+
     void renderHUD();
 };
 
-#endif /* __SG_GAME_SCENE_H__ */
+#endif // !__GL_GAME_SCENE_H__
 

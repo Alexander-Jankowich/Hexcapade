@@ -1,6 +1,6 @@
 ---
 name:   GP-Prototype             # The application display name
-short:  GP                  # A shortened name for reference
+short:  HexC                  # A shortened name for reference
 appid:  edu.cornell.gdiac.code2     # Application identifier for Mac, iOS, Android
 suffix: GDBFBEBF
 
@@ -13,10 +13,18 @@ orientation: landscape              # The orientation for mobile devices
 sources:                            # The list of the source code files
     - source/*.cpp
     - source/*.h
+    - source/Controllers/*.cpp
+    - source/Controllers/*.h
+    - source/Models/*.cpp
+    - source/Models/*.h
+    - source/Scenes/*.cpp
+    - source/Scenes/*.h
+
 
 modules:
     - physics2
     - scene2
+    - netcode
 
 # This must be one of portrait, landscape, portrait-flipped, landscape-flipped,
 targets:                        # The target platforms to build for

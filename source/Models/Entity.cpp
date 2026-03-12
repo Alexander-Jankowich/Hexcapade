@@ -54,6 +54,7 @@ void Entity::update() {
             _frozen = false;
             _frozen_counter = 0;
         }
+        return;
     }
     if (_knockback) {
         _knockback_counter++;
@@ -62,6 +63,7 @@ void Entity::update() {
             _knockback = false;
             _knockback_counter = 0;
         }
+        return;
     }
 
     _pos += _velocity;
