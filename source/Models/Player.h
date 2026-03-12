@@ -20,6 +20,9 @@ private:
 
     // Counter for number of spells player has fired, used for spell id generation
     unsigned int _curSpellNum;
+    
+    // temp for now
+    int _inventoryVal;
 
 public:
 #pragma mark Constructors
@@ -46,6 +49,9 @@ public:
      * @return the velocity of this ship
      */
     const int getSpeed() const { return _speed; }
+    
+    void addItem(int val) {_inventoryVal+=val;}
+    int getInventoryValue() {return _inventoryVal;}
     
     const std::string getPID() const {return _playerId;}
     void setPID(std::string pid) {_playerId = pid;}

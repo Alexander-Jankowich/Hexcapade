@@ -142,6 +142,16 @@ void NetworkController::startGame() {
         _status = Status::START;
 }
 
+void NetworkController::endGame(bool won) {
+        if (_network) {
+            CULog("broadcasting end game");
+            std::byte data = won ? std::byte(101) : std::byte(102);
+            std::vector<std::byte> msg =  { data };
+            _network->broadcast(msg);
+        }
+        _status = won ? Status::WON : Status::LOST;
+}
+
 void NetworkController::attachReceiptHandler() {
     if (!_network || _handlerAttached) return;
     _handlerAttached = true;
@@ -153,6 +163,16 @@ void NetworkController::attachReceiptHandler() {
             if (data[0]==std::byte(255)) { // start game
                 _status = Status::START;
                 checkClientConnection();
+            }
+            if (data[0]==std::byte(101)) { // end game
+                _status = Status::WON;
+                CULog("recieved end game");
+
+            }
+            if (data[0]==std::byte(102)) { // end game
+                _status = Status::LOST;
+                CULog("recieved end game");
+
             }
             else { // regular host message - hopefullyyyyy
                 HostInput* hi = new HostInput();
