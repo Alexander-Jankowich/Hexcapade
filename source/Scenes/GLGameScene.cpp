@@ -82,7 +82,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     lastEnemySpawn = 0;
 
     // Initialize inventory system
-    _inventoryValue = 0;
+    _currInventoryScore = 0;
     _quota = 100;
     _playerWon = false;
 
@@ -134,7 +134,7 @@ void GameScene::reset() {
     _player->setVelocity(Vec2::ZERO);
     _playerLost = false;
     _playerWon = false;
-    _inventoryValue = 0;
+    _currInventoryScore = 0;
     _enemy->reset();
     _enemy->spawnEnemy(getSize() / 4, 4);
     lastEnemySpawn = 0;
@@ -146,13 +146,13 @@ void GameScene::reset() {
 
 #pragma mark -
 #pragma mark Inventory
-
-void GameScene::addItem(int value) {
-    _inventoryValue += value;
-    if (_inventoryValue >= _quota) {
-        _playerWon = true;
-    }
-}
+// this has been bumped down to player model but keeping here just in case
+// void GameScene::addItem(int value) {
+//    _inventoryValue += value;
+//    if (_inventoryValue >= _quota) {
+//        _playerWon = true;
+//    }
+//}
 
 #pragma mark -
 #pragma mark Gameplay Handling
@@ -313,6 +313,9 @@ void GameScene::preUpdate(float dt) {
         for (auto& [pid, input] : _clientInputs) {
             auto p = _players->getPlayerByPID(pid);
             if (p) {
+                if (p->getHealth() <= 0) {
+                    _playerLost = true;
+                }
                 p->setPosition(cugl::Vec2(input.posX, input.posY));
 
                 if (input.sid.length() > 1) { // a spell WAS cast
@@ -393,6 +396,10 @@ void GameScene::preUpdate(float dt) {
 
     if (_player->getHealth() <= 0) {
         _playerLost = true;
+        
+    }
+    if ((_playerLost || _playerWon) && _ishost) {
+        _networkCtrl->endGame(_playerWon);
     }
 
 }
@@ -534,7 +541,7 @@ void GameScene::renderHUD() {
         _batch->setColor(Color4::WHITE);
 
         std::shared_ptr<TextLayout> invLabel = TextLayout::allocWithText(
-            "Inventory: $" + std::to_string(_inventoryValue), _font);
+            "Inventory: $" + std::to_string(_player->getInventoryValue()), _font);
         invLabel->layout();
         Affine2 invTrans;
         invTrans.translate(invX + 10, invY + 12);
@@ -629,7 +636,7 @@ void GameScene::tryPickupItem() {
     if (!_canPickupItem || _pickupIndex < 0) return;
 
     if (_pickupIndex < (int)_items.size()) {
-        addItem(_items[_pickupIndex].value);
+        _player->addItem(_items[_pickupIndex].value);
         _items.erase(_items.begin() + _pickupIndex);
         spawnReplacementItem();
 

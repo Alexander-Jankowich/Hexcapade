@@ -12,7 +12,7 @@
 
 class NetworkController {
 public:
-    enum class Status { IDLE, JOIN, WAIT, START, ABORT };
+    enum class Status { IDLE, JOIN, WAIT, START, ABORT, WON, LOST };
 
     using InputCallback = std::function<void(const std::string& playerId, const ClientInput&)>;
 
@@ -66,8 +66,8 @@ public:
 
     void sendInput(const ClientInput& input) {
         if (!_network || _ishost) return;
-        CULog("CLIENT sending input: joystick=%.2f spellType=%d pickup=%d pos=(%.2f, %.2f)",
-            input.joystickAngle, input.spellType, input.pickupPressed, input.posX, input.posY);
+        //CULog("CLIENT sending input: joystick=%.2f spellType=%d pickup=%d pos=(%.2f, %.2f)",
+            //input.joystickAngle, input.spellType, input.pickupPressed, input.posX, input.posY);
         auto bytes = MessageSerializer::encodeClientInput(input);
         _network->sendToHost(bytes);
     }
@@ -114,7 +114,8 @@ public:
     void clearNewHostInput() { _hasNewHostInput = false; }
 
     void startGame();
-
+    
+    void endGame(bool won);
 };
 #endif // !__NETWORK_CONTROLLER_H__
 

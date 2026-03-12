@@ -16,6 +16,7 @@ Player::Player(const cugl::Vec2& pos, float speed, std::string pid, const std::s
     _playerAngle = -PI/2; // initialize to point right
     _speed = speed;
     _playerId = pid;
+    _inventoryVal=0;
     if (t) {
         _size = t->getSize();
         _texture = t;
@@ -31,6 +32,7 @@ Player::Player(const cugl::Vec2& pos, float speed) : Entity(pos, 100) {
     _speed = speed;
     _curSpell = SpellType::NONE;
     _curSpellNum = 0;
+    _inventoryVal=0;
 }
 
 void Player::setVelocity(cugl::Vec2 value) {

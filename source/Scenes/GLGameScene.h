@@ -62,8 +62,8 @@ protected:
 
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
     CollisionController _collisions;
-    /** The total value of items the player has collected */
-    int _inventoryValue;
+    /** The total value of items all players have collected */
+    int _currInventoryScore;
     /** The value the player needs to reach to win */
     int _quota;
     /** Whether the player has won */
@@ -137,7 +137,7 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _inventoryValue(0), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1) {}
+    GameScene() : cugl::scene2::Scene2(), _currInventoryScore(0), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1) {}
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
@@ -166,8 +166,8 @@ public:
      */
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
 
-    void addItem(int value);
-    int getInventoryValue() const { return _inventoryValue; }
+    //void addItem(int value);
+    int getInventoryValue() const { return _currInventoryScore; }
     int getQuota() const { return _quota; }
     bool hasWon() const { return _playerWon; }
     bool hasLost() const { return _playerLost; }
