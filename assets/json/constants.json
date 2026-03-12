@@ -2,7 +2,7 @@
     "input": {
         "aim_time": 1,
         "joystick": {
-            "radius": 50,
+            "radius": 100,
             "dead_zone": 15,
             "base_color": [ 144, 144, 144, 150 ],
             "joystick_color": [ 89, 89, 89, 240 ]
@@ -12,16 +12,7 @@
             "color": [ 199, 140, 6, 150 ]
         },
         "aim": {
-            "color": [ 199, 140, 6, 255 ],
-            "geometry": [
-                0, 5,
-	            0, -5,
-	            70, -5,
-	            70, -10,
-	            75, 0,
-	            70, 10,
-	            70, 5
-            ]
+            "color": [ 199, 140, 6, 255 ]
         }
     },
     "spells": {
@@ -34,5 +25,11 @@
             "damage": 2,
             "freeze": true
         }
+    },
+    "enemies": {
+
+    },
+    "artifacts": {
+
     }
 }

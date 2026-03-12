@@ -30,8 +30,6 @@ using namespace cugl;
 /** The key for the event handlers */
 #define LISTENER_KEY      1
 
-/** This defines the joystick "deadzone" (how far we must move) */
-#define JSTICK_DEADZONE  15
 /** How fast a double click must be in milliseconds */
 #define DOUBLE_CLICK    400
 
@@ -152,7 +150,6 @@ _mouseKey(0),
 _joystick(false),
 _pickupPressed(false),
 _resetPressed(false),
-_joyradius(100),
 _lastGesture(SpellType::NONE),
 _isAiming(false),
 _releaseSpell(false),
@@ -174,69 +171,30 @@ _timeSinceCast(0)
  *
  * @return true if the initialization was successful
  */
-bool InputController::init(const Rect bounds) {
+bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds) {
     recognizer = cugl::GestureRecognizer::alloc();
     recognizer->addGesture("V", V_GESTURE);
     recognizer->addGesture("STAR", STAR_GESTURE);
     recognizer->setSimilarityThreshold(0.6f);
+
     // Update the gesturemap with more spells later on
     _gesturemap = {
         {"V", SpellType::FIREBALL},
         {"STAR", SpellType::FREEZE}
     };
 
+    _joyradius = values->get("joystick")->getInt("radius");
+    _deadzone = values->get("joystick")->getInt("dead_zone");
+
     _sbounds = bounds;
     Size display = Application::get()->getDisplaySize();
     _tbounds = Rect(0,0,display.width,display.height);
-    
-    CULog("tbounds x: %.2f, y: %.2f", _tbounds.getMaxX(), _tbounds.getMaxY());
-    CULog("sbounds x: %.2f, y: %.2f", _sbounds.getMaxX(), _sbounds.getMaxY());
-
     
     createZones();
     clearTouchInstance(_ltouch);
     clearTouchInstance(_rtouch);
     clearTouchInstance(_mtouch);
-//#ifdef CU_TOUCH_SCREEN
-//    Touchscreen* touch = Input::get<Touchscreen>();
-//    if (touch) {
-//        touch->addBeginListener(LISTENER_KEY, [this](const cugl::TouchEvent& event, bool focus) {
-//            this->touchBeganCB(event, focus);
-//        });
-//        touch->addEndListener(LISTENER_KEY, [this](const cugl::TouchEvent& event, bool focus) {
-//            this->touchEndCB(event, focus);
-//        });
-//        touch->addMotionListener(LISTENER_KEY, [this](const cugl::TouchEvent& event,const Vec2 previous, bool focus) {
-//            this->touchMotionCB(event,previous, focus);
-//        });
-//        _active = true;
-//    } else {
-//        _active = false;
-//    }
-//#else
-//    _active = Input::activate<Keyboard>();
-//    Mouse* mouse = Input::get<Mouse>();
-//    if (_active && mouse) {
-//        mouse->setPointerAwareness(Mouse::PointerAwareness::DRAG);
-//        _mouseKey = mouse->acquireKey();
-//
-//        mouse->addPressListener(_mouseKey, [=, this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
-//            this->buttonDownCB(event, clicks, focus);
-//        });
-//        mouse->addReleaseListener(_mouseKey, [=, this](const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
-//            this->buttonUpCB(event, clicks, focus);
-//        });
-//        mouse->addDragListener(_mouseKey, [=, this](const cugl::MouseEvent& event, const Vec2 previous, bool focus) {
-//            this->motionCB(event, previous, focus);
-//        });
-//        _active = true;
-//
-//        CULog("Added listeners!");
-//    }
-//    else {
-//        _active = false;
-//    }
-//#endif
+
     return true;
 }
 
@@ -478,7 +436,7 @@ void InputController::processJoystick(const cugl::Vec2 pos) {
         _joycenter += excess;
     }
 
-    if (dist > JSTICK_DEADZONE) {
+    if (dist > _deadzone) {
         _joystick = true;
 
         // Scale to [-1,1] range without normalizing
@@ -496,10 +454,6 @@ void InputController::processJoystick(const cugl::Vec2 pos) {
         _joystick = false;
         _move = Vec2(0,0);
     }
-    
-    //_joycenter = touch2Screen(_ltouch.position);
-    
-    //_joycenter.y += JSTICK_OFFSET;
 }
 
 void InputController::processGestureEnd(const cugl::Vec2 pos) {

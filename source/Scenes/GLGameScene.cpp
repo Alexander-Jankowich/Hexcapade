@@ -65,8 +65,8 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _gestures = assets->get<JsonValue>("gestures");
 
     // Start up the input handler
-    _input.init(cugl::Rect(0, 0, getSize().width, getSize().height));
-    _inputDisplay = make_shared<InputDisplay>(&_input);
+    _input.init(_constants->get("input"), cugl::Rect(0, 0, getSize().width, getSize().height));
+    _inputDisplay = make_shared<InputDisplay>(&_input, _constants->get("input"));
 
     // create the player
     _player = make_shared<Player>(getSize() / 2, 12);
