@@ -36,6 +36,10 @@ public:
     std::unordered_map<std::string, std::shared_ptr<Spell>> current;
     std::unordered_map<std::string, std::shared_ptr<Spell>> pending;
     
+    SpellSet() : _mass(0.0f), _radius(0.0f), _spellConsts(nullptr) {
+        current.clear();
+        pending.clear();
+    }
     SpellSet(std::shared_ptr<cugl::JsonValue>);
     
 #pragma mark Graphics
