@@ -32,10 +32,6 @@ using namespace cugl;
 
 /** This defines the joystick "deadzone" (how far we must move) */
 #define JSTICK_DEADZONE  15
-/** This defines the joystick radial size (for reseting the anchor) */
-//#define JSTICK_RADIUS    25
-/** How far we must swipe up for a jump gesture */
-#define SWIPE_LENGTH    50
 /** How fast a double click must be in milliseconds */
 #define DOUBLE_CLICK    400
 
