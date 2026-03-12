@@ -62,7 +62,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
     // Get constants
     _constants = assets->get<JsonValue>("constants");
-    _gestures = assets->get<JsonValue>("gestures")
+    _gestures = assets->get<JsonValue>("gestures");
 
     // Start up the input handler
     _input.init(cugl::Rect(0, 0, getSize().width, getSize().height));
@@ -93,7 +93,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
         _font = nullptr;
     }
 
-    spells = SpellSet();
+    spells = SpellSet(_constants->get("spells"));
     spells.setTexture(assets->get<Texture>("spell"));
     _collisions.init(getSize());
 

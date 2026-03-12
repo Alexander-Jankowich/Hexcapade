@@ -27,7 +27,7 @@ public:
         float damage;
         bool froze;
         
-        Spell(const cugl::Vec2 pos,cugl::Vec2 vel, bool freeze);
+        Spell(const cugl::Vec2 pos,cugl::Vec2 vel, int dmg, bool freeze);
         
         void update();
     };
@@ -36,14 +36,9 @@ public:
     std::unordered_map<std::string, std::shared_ptr<Spell>> current;
     std::unordered_map<std::string, std::shared_ptr<Spell>> pending;
     
-    SpellSet();
+    SpellSet(std::shared_ptr<cugl::JsonValue>);
     
-    float mass;
-    float radius;
-    
-    std::shared_ptr<cugl::graphics::Texture> texture;
 #pragma mark Graphics
-    
 
     void setTexture(const std::shared_ptr<cugl::graphics::Texture>& value);
 
@@ -57,5 +52,12 @@ public:
     void dispose();
 
     bool contains(std::string sid);
+
+private:
+    float _mass;
+    float _radius;
+
+    std::shared_ptr<cugl::graphics::Texture> _texture;
+    std::shared_ptr<cugl::JsonValue> _spellConsts;
 };
 #endif // !__SPELL_SET_H__
