@@ -36,17 +36,29 @@ void SpellSet::setTexture(const std::shared_ptr<Texture>& value) {
     texture = value;
 }
 
-void SpellSet::spawnSpell(std::string sid, Vec2 position,  float angle, bool freeze) {
+void SpellSet::spawnSpell(std::string sid, SpellType type, Vec2 position, float angle) {
     cugl::Vec2 dir(std::cos(angle), std::sin(angle));
-    spawnSpell(sid, position, dir, freeze);
+    spawnSpell(sid, type, position, dir);
 }
 
-void SpellSet::spawnSpell(std::string sid, Vec2 position, Vec2 angle,bool freeze) {
-    cugl::Vec2 pvel =  angle.getNormalization() * SPELL_SPEED; // speed = 5
+void SpellSet::spawnSpell(std::string sid, SpellType type, cugl::Vec2 position, cugl::Vec2 angle) {
+    cugl::Vec2 norm = angle.getNormalization();
+    std::shared_ptr<Spell> spell;
 
-    std::shared_ptr<Spell> spell = std::make_shared<Spell>(position, pvel,freeze);
+    switch (type) {
+    case SpellType::FIREBALL:
+        spell = std::make_shared<Spell>(position, norm * SPELL_SPEED, false);
+        break;
+    case SpellType::FREEZE:
+        spell = std::make_shared<Spell>(position, norm*SPELL_SPEED, true);
+        break;
+    case SpellType::NONE:
+        return;
+    default:
+        CULog("Spell not implemented!!!!");
+        return;
+    }
 
-    CULog("%s", sid.c_str());
     pending.emplace(sid, spell);
 }
 

@@ -225,14 +225,7 @@ void GameScene::preUpdate(float dt) {
         CULog("Release spell--------------------------------------------------------");
         //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
         if (_ishost) {
-            switch (_player->getSpell()) {
-            case SpellType::FREEZE:
-                spells.spawnSpell(_player->getSpellId(), playerScreenPos, angle, true);
-                break;
-            case SpellType::FIREBALL:
-                spells.spawnSpell(_player->getSpellId(), playerScreenPos, angle, false);
-                break;
-            }
+            spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
 
             _input.resolveSpell();
             _player->resolveSpell();
@@ -283,7 +276,7 @@ void GameScene::preUpdate(float dt) {
 
         spells.current.clear();
         for (auto& sd : hi.spells) {
-            spells.spawnSpell(sd.id, cugl::Vec2(sd.posX, sd.posY), sd.velAngle, sd.type == SpellType::FREEZE);
+            spells.spawnSpell(sd.id, sd.type, Vec2(sd.posX, sd.posY), sd.velAngle);
         }
         spells.update(); // MAYBE?????
 
@@ -321,8 +314,7 @@ void GameScene::preUpdate(float dt) {
                 if (input.sid.length() > 1) { // a spell WAS cast
                     if (!spells.contains(input.sid)) { // First time trying to spawn this spell
                         CULog("Other Spawn-------------------------------------------------");
-                        spells.spawnSpell(input.sid, cugl::Vec2(input.posX, input.posY),
-                            input.spellAngle, input.spellType == SpellType::FREEZE);
+                        spells.spawnSpell(input.sid, input.spellType, Vec2(input.posX, input.posY), input.spellAngle);
                     }
                     p->resolveSpell();
                 }
