@@ -187,6 +187,7 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds)
     _deadzone = values->get("joystick")->getInt("dead_zone");
 
     _sbounds = bounds;
+    //
     Size display = Application::get()->getDisplaySize();
     _tbounds = Rect(0,0,display.width,display.height);
     
