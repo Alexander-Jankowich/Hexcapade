@@ -23,6 +23,7 @@
 #include "../Models/EnemySet.h"
 #include "../Models/SpellSet.h"
 #include "../Models/PlayerSet.h"
+#include "../Models/ItemSet.h"
 #include "../Controllers/CollisionController.h"
 #include "../Models/Player.h"
 
@@ -62,7 +63,7 @@ protected:
 
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
     CollisionController _collisions;
-    /** The total value of items the player has collected */
+    /** GA: itemnet legacy scene-local inventory cache kept during the migration. */
     int _inventoryValue;
     /** The total value already deposited into the shared quota. */
     int _depositedValue;
@@ -86,6 +87,12 @@ protected:
 
     SpellSet spells;
 
+    /** Architecture-spec world-item owner for pickups, drops, and quota seeding. */
+    ItemSet _itemSet;
+
+    // GA: itemnet old scene-local item prototype kept for reference while
+    // ItemSet becomes the gameplay source of truth on this branch.
+#if 0
     struct ItemData {
         enum class ItemType {
             ARTIFACT,
@@ -102,6 +109,7 @@ protected:
 
     /** this stores all items currently on the map */
     std::vector<ItemData> _items;
+#endif
     /** this tracks if player is close enough to pickup an item */
     bool _canPickupItem;
     /** this stores the index for the current pickup target */
@@ -177,7 +185,7 @@ public:
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
 
     void addItem(int value);
-    int getInventoryValue() const { return _inventoryValue; }
+    int getInventoryValue() const;
     int getDepositedValue() const { return _depositedValue; }
     int getQuota() const { return _quota; }
     bool hasWon() const { return _playerWon; }
@@ -300,13 +308,20 @@ private:
     void handleMobileHUDInput();
     // this maps the last panel tap to an inventory row index for the upcoming item flow
     int getInventoryPanelIndexAt(const cugl::Vec2& tapPos) const;
+    // this executes pickup against ItemSet and the local player's Inventory
+    bool pickupNearbyItem();
+    // this deposits all currently carried items into the shared quota
+    bool depositAtDropoff();
+    // this drops a specific inventory slot back into world space
+    bool dropInventoryIndex(size_t index);
 
-    // this builds one random item and returns it
+    // GA: itemnet old scene-local item prototype kept for reference while
+    // ItemSet/Inventory replace the temporary vector-based path.
+#if 0
     ItemData createRandomItem(bool forceArtifact, bool forceSpell);
-    // this respawns the map starter set of items
     void spawnInitialItems();
-    // this spawns one replacement item after pickup
     void spawnReplacementItem();
+#endif
     // this updates nearest item + pickup prompt state
     void updateItemPickupState();
     // this updates whether the player can currently use the prototype deposit zone

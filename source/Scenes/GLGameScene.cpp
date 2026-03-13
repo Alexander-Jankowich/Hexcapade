@@ -14,17 +14,46 @@
 //
 #include <cugl/cugl.h>
 #include <cugl/core/math/polygon/CUPathFactory.h>  // Bug that this is not in <cugl/cugl.h>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <random> //itemssss
 
 
 #include "GLGameScene.h"
+#include "../Models/Artifact.h"
 #include "../Models/Inventory.h"
+#include "../Models/SpellBook.h"
 
 using namespace cugl;
 using namespace std;
 using namespace cugl::graphics;
+
+namespace {
+    constexpr size_t kPrototypeInventoryCapacity = 4;
+    constexpr int kGuaranteedArtifacts = 1;
+    constexpr int kGuaranteedSpellbooks = 1;
+    constexpr float kTargetWorldValueMultiplier = 1.35f;
+    constexpr int kMaxAdditionalPrototypeItems = 40;
+
+    std::shared_ptr<Item> makePrototypeNetItem(const std::string& itemName, int itemId) {
+        if (itemName == "artifact") {
+            return std::make_shared<Artifact>(
+                "net_artifact_" + std::to_string(itemId),
+                "artifact",
+                40,
+                Artifact::Effect::ARTIFACT_EFFECT
+            );
+        }
+
+        return std::make_shared<SpellBook>(
+            "net_spellbook_" + std::to_string(itemId),
+            "spellbook",
+            25,
+            SpellBook::Spell::SPELL_EFFECT
+        );
+    }
+}
 
 #pragma mark -
 #pragma mark Level Layout
@@ -69,7 +98,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     // create the player
     _player = make_shared<Player>(getSize() / 2, 12);
     _player->setTexture(assets->get<Texture>("player"));
-    _player->setInventory(std::make_shared<Inventory>(4));
+    _player->setInventory(std::make_shared<Inventory>(kPrototypeInventoryCapacity));
     
     _players = make_shared<PlayerSet>();
     _players->addPlayer(_player);
@@ -81,7 +110,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     lastEnemySpawn = 0;
 
     // Initialize inventory system
-    _inventoryValue = 0;
     _depositedValue = 0;
     _quota = 100;
     _playerWon = false;
@@ -98,6 +126,10 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     spells.setTexture(assets->get<Texture>("spell"));
     _collisions.init(getSize());
 
+    // GA: itemnet
+    // Until procgen room/item placement is merged, the host seeds a temporary
+    // screen-space spawn area so ItemSet can own world pickups.
+    _itemSet.setSpawnBounds(Rect(60, 80, getSize().width - 120, getSize().height - 170));
 
     // this resets pickup prompt state
     _canPickupItem = false;
@@ -108,8 +140,14 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _depositPosition = Vec2(getSize().width * 0.5f, getSize().height * 0.5f);
     _inventoryPanelOpen = false;
 
-    // this spawns one artifact and one spell for prototype startup
-    spawnInitialItems();
+    _itemSet.reset();
+    if (kGuaranteedArtifacts > 0 || kGuaranteedSpellbooks > 0) {
+        _itemSet.spawnInitialPrototypeItems();
+    }
+    _itemSet.spawnUntilTotalValueAtLeast(
+        (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
+        kMaxAdditionalPrototypeItems
+    );
 
 
     //Creation of the physics world and star translator
@@ -139,7 +177,6 @@ void GameScene::reset() {
     _player->setVelocity(Vec2::ZERO);
     _playerLost = false;
     _playerWon = false;
-    _inventoryValue = 0;
     _depositedValue = 0;
     _enemy->reset();
     _enemy->spawnEnemy(getSize() / 4, 4);
@@ -151,7 +188,13 @@ void GameScene::reset() {
 
     spells.current.clear();
     spells.pending.clear();
-    spawnInitialItems();
+    _itemSet.reset();
+    _itemSet.setSpawnBounds(Rect(60, 80, getSize().width - 120, getSize().height - 170));
+    _itemSet.spawnInitialPrototypeItems();
+    _itemSet.spawnUntilTotalValueAtLeast(
+        (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
+        kMaxAdditionalPrototypeItems
+    );
     _canPickupItem = false;
     _pickupIndex = -1;
     _pickupPrompt.clear();
@@ -164,10 +207,16 @@ void GameScene::reset() {
 #pragma mark Inventory
 
 void GameScene::addItem(int value) {
+    // GA: itemnet old scene-local carry-value path kept only as a migration
+    // bridge for any remaining call sites while Inventory becomes authoritative.
     _inventoryValue += value;
-    if (_inventoryValue >= _quota) {
-        _playerWon = true;
+}
+
+int GameScene::getInventoryValue() const {
+    if (!_player || !_player->getInventory()) {
+        return _inventoryValue;
     }
+    return _player->getInventory()->getCarriedValue();
 }
 
 #pragma mark -
@@ -310,19 +359,16 @@ void GameScene::preUpdate(float dt) {
             _player->resolveSpell();
         }
 
-        // needs to be changed in the future depending on how we're doing artifact
-        if (!hi.added_items.empty()) {
-            _items.clear();
-            for (auto& id : hi.added_items) {
-                ItemData item;
-                item.position = cugl::Vec2(id.posX, id.posY);
-                item.name = id.item;
-                item.radius = 14.0f;
-                item.value = (id.item == "artifact") ? 40 : 25;
-                item.color = (id.item == "artifact") ? Color4(255, 170, 60, 255) : Color4(120, 180, 255, 255);
-                item.type = (id.item == "artifact") ? ItemData::ItemType::ARTIFACT : ItemData::ItemType::SPELL;
-                _items.push_back(item);
-            }
+        // GA: itemnet old added_items path still acts as a temporary host snapshot
+        // until the explicit world-item snapshot structs land.
+        _itemSet.reset();
+        _itemSet.setSpawnBounds(Rect(60, 80, getSize().width - 120, getSize().height - 170));
+        for (auto& id : hi.added_items) {
+            _itemSet.addDroppedItem(
+                makePrototypeNetItem(id.item, id.itemId),
+                cugl::Vec2(id.posX, id.posY),
+                14.0f
+            );
         }
     }
 
@@ -362,6 +408,7 @@ void GameScene::preUpdate(float dt) {
             pd.posY = p->getPosition().y;
             pd.speed = p->getVelocity().length();
             pd.velAngle = p->getVelocity().isZero() ? 0.0f : p->getVelocity().getAngle();
+            pd.inventoryVal = p->getInventory() ? p->getInventory()->getCarriedValue() : 0;
             pd.curSpell = p->getSpell();
             pd.health = p->getHealth();
             hi.players.push_back(pd);
@@ -389,12 +436,13 @@ void GameScene::preUpdate(float dt) {
             hi.spells.push_back(sd);
         }
 
-        for (auto& item : _items) {
+        const std::vector<ItemSet::WorldItem>& worldItems = _itemSet.getItems();
+        for (size_t ii = 0; ii < worldItems.size(); ++ii) {
             HostItemData id;
-            id.posX = item.position.x;
-            id.posY = item.position.y;
-            id.itemId = (int)(&item - &_items[0]); // the index is the id for now!
-            id.item = item.name;
+            id.posX = worldItems[ii].position.x;
+            id.posY = worldItems[ii].position.y;
+            id.itemId = (int)ii;
+            id.item = worldItems[ii].item->getKind() == Item::Kind::ARTIFACT ? "artifact" : "spellbook";
             hi.added_items.push_back(id);
         }
 
@@ -555,14 +603,14 @@ void GameScene::renderHUD() {
 
         std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
         std::shared_ptr<TextLayout> invLabel = TextLayout::allocWithText(
-            "Inventory: $" + std::to_string(_inventoryValue), _font);
+            "Inventory: $" + std::to_string(getInventoryValue()), _font);
         invLabel->layout();
         Affine2 invTrans;
         invTrans.translate(inventoryHeader.origin.x + 10, inventoryHeader.origin.y + 12);
         _batch->drawText(invLabel, invTrans);
 
         std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
-            "Quota: $" + std::to_string(_quota), _font);
+            "Quota: $" + std::to_string(_depositedValue) + " / $" + std::to_string(_quota), _font);
         quotaLabel->layout();
         Affine2 quotaTrans;
         quotaTrans.translate(quotaX + 10, quotaY + 12);
@@ -578,15 +626,21 @@ void GameScene::renderHUD() {
         std::string pickupText = "move close to item";
 #ifdef CU_TOUCH_SCREEN
         if (_canPickupItem) {
-            pickupText = "pickup item";
-        } else if (_canDeposit) {
+            if (inventory && !inventory->canAddItem()) {
+                pickupText = "inventory full";
+            } else {
+                pickupText = "pickup item";
+            }
+        } else if (_canDeposit && inventory && !inventory->isEmpty()) {
             pickupText = "deposit at origin";
         }
 #else
         if (_canPickupItem) {
             pickupText = _pickupPrompt;
-        } else if (_canDeposit) {
-            pickupText = "press f to deposit";
+        } else if (_canDeposit && inventory && !inventory->isEmpty()) {
+            pickupText = "press f to deposit carried items";
+        } else if (inventory && !inventory->isEmpty()) {
+            pickupText = "e pickup  q drop  f deposit";
         }
 #endif
         std::shared_ptr<TextLayout> pickupLabel = TextLayout::allocWithText(pickupText, _font);
@@ -635,21 +689,21 @@ void GameScene::handleMobileHUDInput() {
     }
 
     if (_input.pressedInventoryPanel()) {
-        (void)getInventoryPanelIndexAt(_input.getLastUITap());
+        if (_inventoryPanelOpen) {
+            int index = getInventoryPanelIndexAt(_input.getLastUITap());
+            if (index >= 0) {
+                dropInventoryIndex((size_t)index);
+            }
+        }
         _input.resolvedInventoryPanel();
     }
 
     if (_input.pressedContextAction()) {
         _input.resolvedContextAction();
-
-        // Keep mobile pickup working while the scene still uses the temporary
-        // scene-local item prototype. Full Inventory/ItemSet mutations move in
-        // the next commit.
-        if (_canPickupItem && _pickupIndex >= 0 && _pickupIndex < (int)_items.size()) {
-            addItem(_items[_pickupIndex].value);
-            _items.erase(_items.begin() + _pickupIndex);
-            spawnReplacementItem();
-            updateItemPickupState();
+        if (_canPickupItem) {
+            pickupNearbyItem();
+        } else if (_canDeposit) {
+            depositAtDropoff();
         }
     }
 #else
@@ -658,6 +712,103 @@ void GameScene::handleMobileHUDInput() {
         _input.resolvedInventoryToggle();
     }
 #endif
+}
+
+bool GameScene::pickupNearbyItem() {
+    // GA: itemnet
+    // Until the explicit host-authoritative input pass lands, clients do not
+    // mutate item state locally. Host and single-player flows remain valid.
+    if (_networkCtrl && _networkCtrl->hasNetwork() && !_ishost) {
+        return false;
+    }
+
+    if (!_canPickupItem || _pickupIndex < 0) {
+        return false;
+    }
+
+    std::shared_ptr<Inventory> inventory = _player->getInventory();
+    if (!inventory) {
+        return false;
+    }
+
+    if (!inventory->canAddItem()) {
+#ifdef CU_TOUCH_SCREEN
+        _pickupPrompt = "inventory full";
+#else
+        _pickupPrompt = "inventory full, press q to drop";
+#endif
+        return false;
+    }
+
+    std::shared_ptr<Item> item = _itemSet.takeAt((size_t)_pickupIndex);
+    if (!item) {
+        return false;
+    }
+
+    if (!inventory->addItem(item)) {
+        _itemSet.addDroppedItem(item, _player->getPosition());
+        return false;
+    }
+
+    _inventoryValue = inventory->getCarriedValue();
+
+    updateItemPickupState();
+    updateDepositState();
+    return true;
+}
+
+bool GameScene::depositAtDropoff() {
+    // GA: itemnet
+    // Host/local only until the dedicated host-authoritative request flow lands.
+    if (_networkCtrl && _networkCtrl->hasNetwork() && !_ishost) {
+        return false;
+    }
+
+    if (!_canDeposit) {
+        return false;
+    }
+
+    std::shared_ptr<Inventory> inventory = _player->getInventory();
+    if (!inventory || inventory->isEmpty()) {
+        return false;
+    }
+
+    _depositedValue += inventory->depositAllItems();
+    _inventoryValue = inventory->getCarriedValue();
+    if (_depositedValue >= _quota) {
+        _playerWon = true;
+    }
+    return true;
+}
+
+bool GameScene::dropInventoryIndex(size_t index) {
+    // GA: itemnet
+    // Host/local only until the dedicated host-authoritative request flow lands.
+    if (_networkCtrl && _networkCtrl->hasNetwork() && !_ishost) {
+        return false;
+    }
+
+    std::shared_ptr<Inventory> inventory = _player->getInventory();
+    if (!inventory) {
+        return false;
+    }
+
+    std::shared_ptr<Item> dropped = inventory->dropItemAt(index);
+    if (!dropped) {
+        return false;
+    }
+
+    Vec2 dropDir = _player->getDirection();
+    if (dropDir.isZero()) {
+        dropDir = Vec2(1, 0);
+    }
+
+    Vec2 dropPos = _player->getPosition() + dropDir.getNormalization() * 26.0f;
+    _itemSet.addDroppedItem(dropped, dropPos);
+    _inventoryValue = inventory->getCarriedValue();
+    updateItemPickupState();
+    updateDepositState();
+    return true;
 }
 
 int GameScene::getInventoryPanelIndexAt(const Vec2& tapPos) const {
@@ -685,15 +836,25 @@ void GameScene::updateDepositState() {
 }
 
 void GameScene::tryDropItem() {
-    if (_input.pressedDrop()) {
-        _input.resolvedDrop();
+    if (!_input.pressedDrop()) {
+        return;
     }
+    _input.resolvedDrop();
+
+    std::shared_ptr<Inventory> inventory = _player->getInventory();
+    if (!inventory || inventory->isEmpty()) {
+        return;
+    }
+
+    dropInventoryIndex(inventory->getCount() - 1);
 }
 
 void GameScene::tryDepositItems() {
-    if (_input.pressedDeposit()) {
-        _input.resolvedDeposit();
+    if (!_input.pressedDeposit()) {
+        return;
     }
+    _input.resolvedDeposit();
+    depositAtDropoff();
 }
 
 void GameScene::drawDepositZone() {
@@ -707,89 +868,69 @@ void GameScene::drawDepositZone() {
     _batch->fill(zone);
 }
 
-
+// GA: itemnet old scene-local item prototype kept for reference while ItemSet
+// and Inventory replace it as the gameplay source of truth.
+#if 0
 GameScene::ItemData GameScene::createRandomItem(bool forceArtifact, bool forceSpell) {
-    static std::random_device rd;
-    static std::mt19937 rng(rd());
-
-    std::uniform_real_distribution<float> xdist(80.0f, getSize().width - 80.0f);
-    std::uniform_real_distribution<float> ydist(100.0f, getSize().height - 100.0f);
-    std::uniform_int_distribution<int> kindDist(0, 1);
-
-    ItemData data;
-    bool makeArtifact = forceArtifact || (!forceSpell && kindDist(rng) == 0);
-
-    // this sets item type + values for proto
-    if (makeArtifact) {
-        data.type = ItemData::ItemType::ARTIFACT;
-        data.name = "artifact";
-        data.value = 40;
-        data.color = Color4(255, 170, 60, 255);
-    }
-    else {
-        data.type = ItemData::ItemType::SPELL;
-        data.name = "spellbook";
-        data.value = 25;
-        data.color = Color4(120, 180, 255, 255);
-    }
-
-    // this chooses a random point on screen and sets a small pickup radius (can be smaller?)
-    data.position = Vec2(xdist(rng), ydist(rng));
-    data.radius = 14.0f;
-    return data;
+    ...
 }
 
 void GameScene::spawnInitialItems() {
-    _items.clear();
-    _items.push_back(createRandomItem(true, false));
-    _items.push_back(createRandomItem(false, true));
+    ...
 }
 
 void GameScene::spawnReplacementItem() {
-    _items.push_back(createRandomItem(false, false));
+    ...
 }
+#endif
 
 void GameScene::updateItemPickupState() {
     _canPickupItem = false;
     _pickupIndex = -1;
     _pickupPrompt = "";
 
-    // this converts player center from physics units into screen units
-    for (size_t ii = 0; ii < _items.size(); ++ii) {
-        if (_collisions.resolvePlayerItem(_player, _items[ii].position, _items[ii].radius)) {
-            _canPickupItem = true;
-            _pickupIndex = (int)ii;
-            // Can't use CU_TOUCH_SCREEN in this manner, since it just isn't defined on PC
-            //_pickupPrompt = CU_TOUCH_SCREEN ? "tap to pickup " + _items[ii].name : "press e to pickup " + _items[ii].name;
-            return;
-        }
+    _pickupIndex = _itemSet.findNearestPickupIndex(_player->getPosition(), _player->getSize());
+    if (_pickupIndex < 0) {
+        return;
+    }
+
+    const std::vector<ItemSet::WorldItem>& items = _itemSet.getItems();
+    if (_pickupIndex >= (int)items.size()) {
+        _pickupIndex = -1;
+        return;
+    }
+
+    _canPickupItem = true;
+    std::shared_ptr<Inventory> inventory = _player->getInventory();
+    if (inventory && !inventory->canAddItem()) {
+#ifdef CU_TOUCH_SCREEN
+        _pickupPrompt = "inventory full";
+#else
+        _pickupPrompt = "inventory full, press q to drop";
+#endif
+    } else {
+#ifdef CU_TOUCH_SCREEN
+        _pickupPrompt = "pickup item";
+#else
+        _pickupPrompt = "press e to pickup " + items[(size_t)_pickupIndex].item->getName();
+#endif
     }
 }
 
 void GameScene::tryPickupItem() {
-    if (!_input.pressedPickup()) return;
-    _input.resolvedPickup();
-
-    if (!_canPickupItem || _pickupIndex < 0) return;
-
-    if (_pickupIndex < (int)_items.size()) {
-        addItem(_items[_pickupIndex].value);
-        _items.erase(_items.begin() + _pickupIndex);
-        spawnReplacementItem();
-
-        // this refreshes prompt state right away after pickup
-        updateItemPickupState();
+    if (!_input.pressedPickup()) {
+        return;
     }
-
+    _input.resolvedPickup();
+    pickupNearbyItem();
 }
 
 void GameScene::drawItems() {
     _batch->setTexture(nullptr);
-    for (const auto& item : _items) {
-        // this draws a small rectangle so we do not need extra textures yet
-        Rect body(item.position.x - item.radius, item.position.y - item.radius,
-            item.radius * 2.0f, item.radius * 2.0f);
-        _batch->setColor(item.color);
+    for (const ItemSet::WorldItem& world : _itemSet.getItems()) {
+        Rect body(world.position.x - world.radius, world.position.y - world.radius,
+                  world.radius * 2.0f, world.radius * 2.0f);
+        _batch->setColor(world.item->getDebugColor());
         _batch->setTexture(nullptr);
         _batch->fill(body);
     }
@@ -838,7 +979,7 @@ void GameScene::setActive(bool value) {
                     std::shared_ptr<Player> remote = make_shared<Player>(
                         cugl::Vec2(2 + getSize().width/2, 2 + getSize().height/2), 12, p, _assets->get<Texture>("player")
                     );
-                    remote->setInventory(std::make_shared<Inventory>(4));
+                    remote->setInventory(std::make_shared<Inventory>(kPrototypeInventoryCapacity));
                     _players->addPlayer(remote);
                 }
             }

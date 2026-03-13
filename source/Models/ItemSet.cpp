@@ -37,6 +37,14 @@ void ItemSet::setSpawnBounds(const Rect& bounds) {
     _spawnBounds = bounds;
 }
 
+int ItemSet::getTotalWorldValue() const {
+    int total = 0;
+    for (const WorldItem& world : _items) {
+        total += world.item ? world.item->getValue() : 0;
+    }
+    return total;
+}
+
 void ItemSet::spawnInitialPrototypeItems() {
     _items.clear();
     _items.push_back(createRandomItem(true, false));
@@ -45,6 +53,14 @@ void ItemSet::spawnInitialPrototypeItems() {
 
 void ItemSet::spawnRandomItem() {
     _items.push_back(createRandomItem(false, false));
+}
+
+void ItemSet::spawnUntilTotalValueAtLeast(int targetTotalValue, int maxAdditionalItems) {
+    int added = 0;
+    while (getTotalWorldValue() < targetTotalValue && added < maxAdditionalItems) {
+        spawnRandomItem();
+        added++;
+    }
 }
 
 void ItemSet::addDroppedItem(const std::shared_ptr<Item>& item, const Vec2& position, float radius) {

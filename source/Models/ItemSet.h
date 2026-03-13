@@ -52,6 +52,8 @@ public:
 
     size_t size() const { return _items.size(); }
     const std::vector<WorldItem>& getItems() const { return _items; }
+    /** Returns the total deposit value currently available in world space. */
+    int getTotalWorldValue() const;
 
     /**
      * Spawns the initial prototype item set.
@@ -70,6 +72,15 @@ public:
      * the room/procgen pipeline is brought over.
      */
     void spawnRandomItem();
+
+    /**
+     * Spawns extra prototype items until the world reaches a target value.
+     *
+     * // GA: itemnet
+     * This helper exists only so the networking branch has enough temporary
+     * loot to test quota runs before procedural room spawn plans arrive.
+     */
+    void spawnUntilTotalValueAtLeast(int targetTotalValue, int maxAdditionalItems);
 
     /**
      * Inserts a dropped inventory item back into world space.
