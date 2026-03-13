@@ -66,8 +66,9 @@ public:
 
     void sendInput(const ClientInput& input) {
         if (!_network || _ishost) return;
-        CULog("CLIENT sending input: joystick=%.2f spellType=%d pickup=%d pos=(%.2f, %.2f)",
-            input.joystickAngle, input.spellType, input.pickupPressed, input.posX, input.posY);
+        CULog("CLIENT sending input: joystick=%.2f spellType=%d pickup=%d drop=%d deposit=%d dropIndex=%d pos=(%.2f, %.2f)",
+            input.joystickAngle, input.spellType, input.pickupPressed, input.dropPressed,
+            input.depositPressed, input.dropIndex, input.posX, input.posY);
         auto bytes = MessageSerializer::encodeClientInput(input);
         _network->sendToHost(bytes);
     }
@@ -117,4 +118,3 @@ public:
 
 };
 #endif // !__NETWORK_CONTROLLER_H__
-

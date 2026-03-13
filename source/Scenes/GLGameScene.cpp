@@ -279,10 +279,40 @@ void GameScene::preUpdate(float dt) {
     updateItemPickupState();
     updateDepositState();
     _input.setInventoryPanelOpen(_inventoryPanelOpen);
-    handleMobileHUDInput();
-    tryPickupItem();
-    tryDropItem();
-    tryDepositItems();
+
+    bool pickupRequested = false;
+    bool depositRequested = false;
+    int dropIndex = -1;
+
+    if (_input.pressedPickup()) {
+        pickupRequested = true;
+        _input.resolvedPickup();
+    }
+    if (_input.pressedDrop()) {
+        std::shared_ptr<Inventory> inventory = _player->getInventory();
+        if (inventory && !inventory->isEmpty()) {
+            dropIndex = (int)inventory->getCount() - 1;
+        }
+        _input.resolvedDrop();
+    }
+    if (_input.pressedDeposit()) {
+        depositRequested = true;
+        _input.resolvedDeposit();
+    }
+    handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
+
+    bool hasNetwork = _networkCtrl && _networkCtrl->hasNetwork();
+    if (!hasNetwork || _ishost) {
+        if (pickupRequested) {
+            pickupNearbyItem();
+        }
+        if (dropIndex >= 0) {
+            dropInventoryIndex((size_t)dropIndex);
+        }
+        if (depositRequested) {
+            depositAtDropoff();
+        }
+    }
 
     // Spellcasting
     if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
@@ -316,7 +346,10 @@ void GameScene::preUpdate(float dt) {
     if (!_ishost && _networkCtrl->hasNetwork()) {
         ClientInput ci;
         ci.joystickAngle = _input.getMove().isZero() ? 0.0f : _input.getMove().getAngle();
-        ci.pickupPressed = _input.pressedPickup();
+        ci.pickupPressed = pickupRequested;
+        ci.dropPressed = dropIndex >= 0;
+        ci.depositPressed = depositRequested;
+        ci.dropIndex = dropIndex;
         ci.posX = playerScreenPos.x;
         ci.posY = playerScreenPos.y;
         ci.spellType = _player->getSpell();
@@ -381,6 +414,16 @@ void GameScene::preUpdate(float dt) {
             auto p = _players->getPlayerByPID(pid);
             if (p) {
                 p->setPosition(cugl::Vec2(input.posX, input.posY));
+
+                if (input.pickupPressed) {
+                    hostPickupForPlayer(p);
+                }
+                if (input.dropPressed && input.dropIndex >= 0) {
+                    hostDropInventoryIndex(p, (size_t)input.dropIndex);
+                }
+                if (input.depositPressed) {
+                    hostDepositForPlayer(p);
+                }
 
                 if (input.sid.length() > 1) { // a spell WAS cast
                     if (!spells.contains(input.sid)) { // First time trying to spawn this spell
@@ -679,7 +722,7 @@ void GameScene::renderHUD() {
     }
 }
 
-void GameScene::handleMobileHUDInput() {
+void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex) {
 #ifdef CU_TOUCH_SCREEN
     if (_input.pressedInventoryToggle()) {
         _inventoryPanelOpen = !_inventoryPanelOpen;
@@ -692,7 +735,7 @@ void GameScene::handleMobileHUDInput() {
         if (_inventoryPanelOpen) {
             int index = getInventoryPanelIndexAt(_input.getLastUITap());
             if (index >= 0) {
-                dropInventoryIndex((size_t)index);
+                dropIndex = index;
             }
         }
         _input.resolvedInventoryPanel();
@@ -701,9 +744,9 @@ void GameScene::handleMobileHUDInput() {
     if (_input.pressedContextAction()) {
         _input.resolvedContextAction();
         if (_canPickupItem) {
-            pickupNearbyItem();
+            pickupRequested = true;
         } else if (_canDeposit) {
-            depositAtDropoff();
+            depositRequested = true;
         }
     }
 #else
@@ -715,80 +758,67 @@ void GameScene::handleMobileHUDInput() {
 }
 
 bool GameScene::pickupNearbyItem() {
-    // GA: itemnet
-    // Until the explicit host-authoritative input pass lands, clients do not
-    // mutate item state locally. Host and single-player flows remain valid.
-    if (_networkCtrl && _networkCtrl->hasNetwork() && !_ishost) {
+    return hostPickupForPlayer(_player);
+}
+
+bool GameScene::depositAtDropoff() {
+    return hostDepositForPlayer(_player);
+}
+
+bool GameScene::dropInventoryIndex(size_t index) {
+    return hostDropInventoryIndex(_player, index);
+}
+
+bool GameScene::hostPickupForPlayer(const std::shared_ptr<Player>& player) {
+    // Host-authoritative item pickup. The host validates overlap and capacity
+    // before moving an item from ItemSet into the player's Inventory.
+    if (!player) {
         return false;
     }
 
-    if (!_canPickupItem || _pickupIndex < 0) {
+    int pickupIndex = _itemSet.findNearestPickupIndex(player->getPosition(), player->getSize());
+    if (pickupIndex < 0) {
         return false;
     }
 
-    std::shared_ptr<Inventory> inventory = _player->getInventory();
-    if (!inventory) {
-        return false;
-    }
-
-    if (!inventory->canAddItem()) {
+    std::shared_ptr<Inventory> inventory = player->getInventory();
+    if (!inventory || !inventory->canAddItem()) {
+        if (player == _player) {
 #ifdef CU_TOUCH_SCREEN
-        _pickupPrompt = "inventory full";
+            _pickupPrompt = "inventory full";
 #else
-        _pickupPrompt = "inventory full, press q to drop";
+            _pickupPrompt = "inventory full, press q to drop";
 #endif
+        }
         return false;
     }
 
-    std::shared_ptr<Item> item = _itemSet.takeAt((size_t)_pickupIndex);
+    std::shared_ptr<Item> item = _itemSet.takeAt((size_t)pickupIndex);
     if (!item) {
         return false;
     }
 
     if (!inventory->addItem(item)) {
-        _itemSet.addDroppedItem(item, _player->getPosition());
+        _itemSet.addDroppedItem(item, player->getPosition());
         return false;
     }
 
-    _inventoryValue = inventory->getCarriedValue();
-
-    updateItemPickupState();
-    updateDepositState();
-    return true;
-}
-
-bool GameScene::depositAtDropoff() {
-    // GA: itemnet
-    // Host/local only until the dedicated host-authoritative request flow lands.
-    if (_networkCtrl && _networkCtrl->hasNetwork() && !_ishost) {
-        return false;
-    }
-
-    if (!_canDeposit) {
-        return false;
-    }
-
-    std::shared_ptr<Inventory> inventory = _player->getInventory();
-    if (!inventory || inventory->isEmpty()) {
-        return false;
-    }
-
-    _depositedValue += inventory->depositAllItems();
-    _inventoryValue = inventory->getCarriedValue();
-    if (_depositedValue >= _quota) {
-        _playerWon = true;
+    if (player == _player) {
+        _inventoryValue = inventory->getCarriedValue();
+        updateItemPickupState();
+        updateDepositState();
     }
     return true;
 }
 
-bool GameScene::dropInventoryIndex(size_t index) {
-    // GA: itemnet
-    // Host/local only until the dedicated host-authoritative request flow lands.
-    if (_networkCtrl && _networkCtrl->hasNetwork() && !_ishost) {
+bool GameScene::hostDropInventoryIndex(const std::shared_ptr<Player>& player, size_t index) {
+    // Host-authoritative drop. The host verifies slot ownership before putting
+    // the item back into ItemSet near the player.
+    if (!player) {
         return false;
     }
 
-    std::shared_ptr<Inventory> inventory = _player->getInventory();
+    std::shared_ptr<Inventory> inventory = player->getInventory();
     if (!inventory) {
         return false;
     }
@@ -798,16 +828,47 @@ bool GameScene::dropInventoryIndex(size_t index) {
         return false;
     }
 
-    Vec2 dropDir = _player->getDirection();
+    Vec2 dropDir = player->getDirection();
     if (dropDir.isZero()) {
         dropDir = Vec2(1, 0);
     }
 
-    Vec2 dropPos = _player->getPosition() + dropDir.getNormalization() * 26.0f;
+    Vec2 dropPos = player->getPosition() + dropDir.getNormalization() * 26.0f;
     _itemSet.addDroppedItem(dropped, dropPos);
-    _inventoryValue = inventory->getCarriedValue();
-    updateItemPickupState();
-    updateDepositState();
+
+    if (player == _player) {
+        _inventoryValue = inventory->getCarriedValue();
+        updateItemPickupState();
+        updateDepositState();
+    }
+    return true;
+}
+
+bool GameScene::hostDepositForPlayer(const std::shared_ptr<Player>& player) {
+    // Host-authoritative deposit. The host checks deposit-zone overlap and then
+    // moves carried value into the shared team quota total.
+    if (!player) {
+        return false;
+    }
+
+    if (!_collisions.resolvePlayerItem(player, _depositPosition, _depositRadius)) {
+        return false;
+    }
+
+    std::shared_ptr<Inventory> inventory = player->getInventory();
+    if (!inventory || inventory->isEmpty()) {
+        return false;
+    }
+
+    _depositedValue += inventory->depositAllItems();
+    if (_depositedValue >= _quota) {
+        _playerWon = true;
+    }
+
+    if (player == _player) {
+        _inventoryValue = inventory->getCarriedValue();
+        updateDepositState();
+    }
     return true;
 }
 

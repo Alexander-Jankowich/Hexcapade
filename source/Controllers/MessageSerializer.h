@@ -11,6 +11,9 @@ struct ClientInput
     float spellAngle = 0.0f;
     std::string sid = "_";
     bool pickupPressed = false;
+    bool dropPressed = false;
+    bool depositPressed = false;
+    int dropIndex = -1;
     float posX = 0.0f;
     float posY = 0.0f;
 };
@@ -81,6 +84,9 @@ public:
         s.writeFloat(input.spellAngle);
         s.writeString(input.sid);
         s.writeBool(input.pickupPressed);
+        s.writeBool(input.dropPressed);
+        s.writeBool(input.depositPressed);
+        s.writeSint32(input.dropIndex);
         s.writeFloat(input.posX);
         s.writeFloat(input.posY);
         std::vector<std::byte> vec = s.serialize();
@@ -115,6 +121,9 @@ public:
             output.sid = "_";
         }
         output.pickupPressed = d.readBool();
+        output.dropPressed = d.readBool();
+        output.depositPressed = d.readBool();
+        output.dropIndex = d.readSint32();
         output.posX = d.readFloat();
         output.posY = d.readFloat();
         return true;

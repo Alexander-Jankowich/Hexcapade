@@ -304,8 +304,8 @@ public:
     void setActive(bool value);
 
 private:
-    // this handles local-only inventory panel toggles and mobile button taps
-    void handleMobileHUDInput();
+    // this maps local HUD input into explicit pickup/drop/deposit requests
+    void handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex);
     // this maps the last panel tap to an inventory row index for the upcoming item flow
     int getInventoryPanelIndexAt(const cugl::Vec2& tapPos) const;
     // this executes pickup against ItemSet and the local player's Inventory
@@ -314,6 +314,12 @@ private:
     bool depositAtDropoff();
     // this drops a specific inventory slot back into world space
     bool dropInventoryIndex(size_t index);
+    // host-only helper that validates and applies a pickup for the given player
+    bool hostPickupForPlayer(const std::shared_ptr<Player>& player);
+    // host-only helper that validates and applies a drop for the given player
+    bool hostDropInventoryIndex(const std::shared_ptr<Player>& player, size_t index);
+    // host-only helper that validates and applies a deposit for the given player
+    bool hostDepositForPlayer(const std::shared_ptr<Player>& player);
 
     // GA: itemnet old scene-local item prototype kept for reference while
     // ItemSet/Inventory replace the temporary vector-based path.
