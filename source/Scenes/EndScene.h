@@ -5,6 +5,7 @@
 #ifndef __END_SCENE_H__
 #define __END_SCENE_H__
 #include <cugl/cugl.h>
+#include "../Controllers/NetworkController.h"
 
 class EndScene : public cugl::scene2::Scene2 {
 public:
@@ -13,9 +14,9 @@ public:
 private:
     std::shared_ptr<cugl::AssetManager> _assets;
     std::shared_ptr<cugl::graphics::Font> _font;
+    std::shared_ptr<NetworkController> _networkCtrl;
     State _state;
     bool  _replayPressed;
-
     /** Screen-space rect for the replay button */
     cugl::Rect _buttonRect;
 
@@ -33,12 +34,12 @@ public:
 
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
     void dispose() override;
-
+    void setNetwork(std::shared_ptr<NetworkController> n) {_networkCtrl=n;}
     void show(bool won);
     void hide() { _state = State::NONE; _replayPressed = false; }
 
     bool isVisible()      const { return _state != State::NONE; }
-    bool didPressReplay() const { return _replayPressed; }
+    bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->getStatus()==NetworkController::Status::START); }
 
     void update(float dt);
     void render() override;

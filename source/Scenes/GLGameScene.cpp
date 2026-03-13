@@ -141,12 +141,15 @@ void GameScene::reset()
     _playerWon = false;
     _currInventoryScore = 0;
     _enemy->reset();
-    _enemy->spawnEnemy(getSize() / 4, 4);
     lastEnemySpawn = 0;
 
     spells.current.clear();
     spells.pending.clear();
     spawnInitialItems();
+    
+    if (_ishost) { // broadcast to all in room
+        _networkCtrl->startGame();
+    }
 }
 
 #pragma mark -
@@ -188,6 +191,8 @@ void GameScene::preUpdate(float dt)
     if (_networkCtrl && _networkCtrl->hasNetwork())
     {
         _networkCtrl->update();
+        if(_networkCtrl->getStatus()==NetworkController::Status::WON) _playerWon=true;
+        if(_networkCtrl->getStatus()==NetworkController::Status::LOST) _playerLost=true;
     }
 
     if (_input.pressedReset())
@@ -253,7 +258,7 @@ void GameScene::preUpdate(float dt)
     if (_ishost)
     {
         float playerRadius = 15.0f;
-        _collisions.resolvePlayerEnemies(_player, playerScreenPos, playerRadius, _enemy);
+        _collisions.resolvePlayersEnemies(_players->current, playerRadius, _enemy);
         _collisions.resolveEnemiesSpell(spells, _enemy, playerScreenPos * -1.5);
     }
 
@@ -282,14 +287,14 @@ void GameScene::preUpdate(float dt)
 
         for (auto &pd : hi.players)
         {
-            if (pd.uuid == _player->getPID())
-            {
-                continue;
-            }
+//            we need our own data LOL if (pd.uuid == _player->getPID())
+//            {
+//                continue;
+//            }
             auto p = _players->getPlayerByPID(pd.uuid);
             if (p)
             {
-                p->setPosition(cugl::Vec2(pd.posX, pd.posY));
+                if (pd.uuid != _player->getPID()) p->setPosition(cugl::Vec2(pd.posX, pd.posY));
                 p->setHealth(pd.health);
             }
         }
@@ -356,6 +361,7 @@ void GameScene::preUpdate(float dt)
                     }
                     p->resolveSpell();
                 }
+
             }
         }
         // update enemy positions - just see if they target host atm

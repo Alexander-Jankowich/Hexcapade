@@ -165,6 +165,8 @@ public:
      * @return true if the controller is initialized properly, false otherwise.
      */
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
+    
+    std::shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
 
     //void addItem(int value);
     int getInventoryValue() const { return _currInventoryScore; }

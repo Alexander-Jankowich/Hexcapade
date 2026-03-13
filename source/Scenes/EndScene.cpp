@@ -20,7 +20,6 @@ bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     Size s = getSize();
     float bw = 300.0f, bh = 60.0f;
     _buttonRect = Rect(s.width / 2 - bw / 2, s.height / 2 - 80, bw, bh);
-
 #ifdef CU_TOUCH_SCREEN
     Touchscreen* touch = Input::get<Touchscreen>();
     if (touch) {
@@ -50,6 +49,7 @@ void EndScene::dispose() {
 #endif
     _assets = nullptr;
     _font = nullptr;
+    _networkCtrl = nullptr;
 }
 
 void EndScene::show(bool won) {
@@ -126,8 +126,8 @@ void EndScene::render() {
             s.height / 2 + 40);
         _batch->setColor(Color4::WHITE);
         _batch->drawText(label, msgTrans);
-
-        auto btnLabel = TextLayout::allocWithText("Play Again", _font);
+        std::string again_msg = _networkCtrl->isHost() ? "Play Again" : "Waiting for Host...";
+        auto btnLabel = TextLayout::allocWithText(again_msg, _font);
         btnLabel->layout();
         Affine2 btnTrans;
         btnTrans.translate(

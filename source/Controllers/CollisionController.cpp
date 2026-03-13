@@ -28,6 +28,16 @@ void CollisionController::resolvePlayerEnemies(std::shared_ptr<Player>& player,
     }
 }
 
+void CollisionController::resolvePlayersEnemies( std::unordered_set<std::shared_ptr<Player>> players,
+                           float playerRadius, const std::shared_ptr<EnemySet>& enemies) {
+    for (auto it = players.begin(); it != players.end(); ++it) {
+        std::shared_ptr<Player> ptr = (*it);
+        resolvePlayerEnemies(ptr, ptr->getPosition(), playerRadius, enemies);
+    }
+    
+}
+
+
 bool CollisionController::resolvePlayerItem(std::shared_ptr<Player>& player,
     const Vec2& itemPos, float itemRadius) {
     Vec2 p1 = player->getPosition() - player->getSize() / 2;
