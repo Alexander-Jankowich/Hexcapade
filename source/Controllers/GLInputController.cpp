@@ -155,12 +155,20 @@ _touchID(-1),
 _mouseKey(0),
 _joystick(false),
 _pickupPressed(false),
+_dropPressed(false),
+_depositPressed(false),
+_contextActionPressed(false),
+_inventoryTogglePressed(false),
+_inventoryPanelPressed(false),
+_inventoryPanelOpen(false),
+_lastUITap(Vec2::ZERO),
 _resetPressed(false),
 _joyradius(100),
 _lastGesture(SpellType::NONE),
 _isAiming(false),
 _releaseSpell(false),
-_timeSinceCast(0)
+_timeSinceCast(0),
+_spellAngle(Vec2::ZERO)
 {
 }
 
@@ -191,7 +199,12 @@ bool InputController::init(const Rect bounds) {
 
     _sbounds = bounds;
     Size display = Application::get()->getDisplaySize();
-    _tbounds = Rect(0,0,display.width,display.height);
+    Size drawable = Application::get()->getDrawableSize();
+    if (drawable.width > 0 && drawable.height > 0) {
+        _tbounds = Rect(0, 0, drawable.width, drawable.height);
+    } else {
+        _tbounds = Rect(0, 0, display.width, display.height);
+    }
     
     CULog("tbounds x: %.2f, y: %.2f", _tbounds.getMaxX(), _tbounds.getMaxY());
     CULog("sbounds x: %.2f, y: %.2f", _sbounds.getMaxX(), _sbounds.getMaxY());
@@ -201,6 +214,24 @@ bool InputController::init(const Rect bounds) {
     clearTouchInstance(_ltouch);
     clearTouchInstance(_rtouch);
     clearTouchInstance(_mtouch);
+
+    // The HUD touch bounds mirror the item/inventory overlay drawn in GameScene
+    // so mobile taps hit the same rectangles the player sees on screen.
+    float margin = 16.0f;
+    float barW = 320.0f;
+    float barH = 50.0f;
+    float panelGap = 8.0f;
+    float panelRowH = 36.0f;
+    float panelRows = 4.0f;
+
+    _actionButtonBounds = Rect(_sbounds.getMaxX() - barW - margin, margin, barW, barH);
+    _inventoryHeaderBounds = Rect(margin, _sbounds.getMaxY() - barH - margin, barW, barH);
+    _inventoryPanelBounds = Rect(
+        _inventoryHeaderBounds.origin.x,
+        _inventoryHeaderBounds.origin.y - panelGap - panelRowH * panelRows,
+        _inventoryHeaderBounds.size.width,
+        panelRowH * panelRows
+    );
 //#ifdef CU_TOUCH_SCREEN
 //    Touchscreen* touch = Input::get<Touchscreen>();
 //    if (touch) {
@@ -305,6 +336,14 @@ void InputController::update(float dt) {
  */
 void InputController::readInput(){
 #ifndef CU_TOUCH_SCREEN
+    _pickupPressed = false;
+    _dropPressed = false;
+    _depositPressed = false;
+    _contextActionPressed = false;
+    _inventoryTogglePressed = false;
+    _inventoryPanelPressed = false;
+    _resetPressed = false;
+
     Keyboard* keys = Input::get<Keyboard>();
     if (keys) {
         // Keyboard input for movement
@@ -354,6 +393,24 @@ void InputController::readInput(){
 
         _pickupPressed = pickup && !pickupDown;
         pickupDown = pickup;
+
+        // Keyboard input for dropping and depositing while we prototype items
+        // on the networking branch. These are scene-level requests; the scene
+        // decides whether the action is locally allowed this frame.
+        bool drop = keys->keyDown(KeyCode::Q);
+        bool deposit = keys->keyDown(KeyCode::F);
+        bool inventoryToggle = keys->keyDown(KeyCode::I);
+        static bool dropDown = false;
+        static bool depositDown = false;
+        static bool inventoryToggleDown = false;
+
+        _dropPressed = drop && !dropDown;
+        _depositPressed = deposit && !depositDown;
+        _inventoryTogglePressed = inventoryToggle && !inventoryToggleDown;
+
+        dropDown = drop;
+        depositDown = deposit;
+        inventoryToggleDown = inventoryToggle;
 
 
         // Keyboard inputs for spells
@@ -420,7 +477,7 @@ InputController::Zone InputController::getZone(const Vec2 pos) const {
         return Zone::LEFT;
     } else if (_rzone.contains(pos)) {
         return Zone::RIGHT;
-    } else if (_tbounds.contains(pos)) {
+    } else if (_sbounds.contains(pos)) {
         return Zone::MAIN;
     }
     return Zone::UNDEFINED;
@@ -436,14 +493,48 @@ InputController::Zone InputController::getZone(const Vec2 pos) const {
  * @return the scene location of a touch
  */
 Vec2 InputController::touch2Screen(const Vec2 pos) const {
-    float px = pos.x * _tbounds.getMaxX() / _sbounds.getMaxX();
-    float py = pos.y *_tbounds.getMaxY() / _sbounds.getMaxY() ;
+    float px = pos.x * _sbounds.getMaxX() / _tbounds.getMaxX();
+    float py = pos.y * _sbounds.getMaxY() / _tbounds.getMaxY();
 
     Vec2 result;
     result.x = px;
     result.y = _sbounds.getMaxY() - py;
     return result;
 //    return Display::get()->getTouchWindowPosition(pos.x, pos.y);
+}
+
+bool InputController::processMobileHUDTap(const Vec2 pos) {
+    struct TapTarget {
+        const char* tag;
+        const Rect* bounds;
+        bool active;
+    };
+
+    TapTarget targets[] = {
+        { "context_action", &_actionButtonBounds, true },
+        { "inventory_header", &_inventoryHeaderBounds, true },
+        { "inventory_panel", &_inventoryPanelBounds, _inventoryPanelOpen }
+    };
+
+    for (int ii = 0; ii < 3; ++ii) {
+        if (!targets[ii].active || !targets[ii].bounds->contains(pos)) {
+            continue;
+        }
+
+        _lastUITap = pos;
+        if (ii == 0) {
+            _contextActionPressed = true;
+        } else if (ii == 1) {
+            _inventoryTogglePressed = true;
+        } else {
+            _inventoryPanelPressed = true;
+        }
+
+        CULog("HUD tap consumed target=%s pos=(%.1f, %.1f)", targets[ii].tag, pos.x, pos.y);
+        return true;
+    }
+
+    return false;
 }
 
 Vec2 InputController::mouse2Screen(const Vec2 pos) const {
@@ -536,8 +627,9 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         //CULog("%s", gesture.c_str());
     }
     else {
-        // Register tap as pickup, to be changed using buttons?
-        _pickupPressed = true;
+        // Taps in the gesture zone no longer imply pickup now that mobile item
+        // actions live behind explicit HUD buttons.
+        _lastGesture = SpellType::NONE;
     }
     //CULog("Stroke points:");
      //   for (const auto& p : currentStroke) {
@@ -567,8 +659,11 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     _touchDown = true;
     //CULog("Touch began %lld", event.touch);
 
-    Vec2 pos = event.position;
-    pos = touch2Screen(pos);
+    Vec2 pos = touch2Screen(event.position);
+    if (processMobileHUDTap(pos)) {
+        return;
+    }
+
     Zone zone = getZone(pos);
     switch (zone){
         case Zone::LEFT:

@@ -64,6 +64,8 @@ protected:
     CollisionController _collisions;
     /** The total value of items the player has collected */
     int _inventoryValue;
+    /** The total value already deposited into the shared quota. */
+    int _depositedValue;
     /** The value the player needs to reach to win */
     int _quota;
     /** Whether the player has won */
@@ -106,6 +108,14 @@ protected:
     int _pickupIndex;
     /** this stores the current prompt text for pickup */
     std::string _pickupPrompt;
+    /** this tracks whether the player is currently inside the deposit zone */
+    bool _canDeposit;
+    /** this stores the prototype origin/deposit interaction position */
+    cugl::Vec2 _depositPosition;
+    /** this stores the prototype origin/deposit interaction radius */
+    float _depositRadius;
+    /** this tracks local-only inventory panel visibility */
+    bool _inventoryPanelOpen;
 
 
 
@@ -137,7 +147,7 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _inventoryValue(0), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1) {}
+    GameScene() : cugl::scene2::Scene2(), _inventoryValue(0), _depositedValue(0), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
@@ -168,6 +178,7 @@ public:
 
     void addItem(int value);
     int getInventoryValue() const { return _inventoryValue; }
+    int getDepositedValue() const { return _depositedValue; }
     int getQuota() const { return _quota; }
     bool hasWon() const { return _playerWon; }
     bool hasLost() const { return _playerLost; }
@@ -285,6 +296,10 @@ public:
     void setActive(bool value);
 
 private:
+    // this handles local-only inventory panel toggles and mobile button taps
+    void handleMobileHUDInput();
+    // this maps the last panel tap to an inventory row index for the upcoming item flow
+    int getInventoryPanelIndexAt(const cugl::Vec2& tapPos) const;
 
     // this builds one random item and returns it
     ItemData createRandomItem(bool forceArtifact, bool forceSpell);
@@ -294,14 +309,21 @@ private:
     void spawnReplacementItem();
     // this updates nearest item + pickup prompt state
     void updateItemPickupState();
+    // this updates whether the player can currently use the prototype deposit zone
+    void updateDepositState();
     // this handles desktop e key pickup action
     void tryPickupItem();
+    // this reserves the keyboard/mobile drop path for the inventory-backed item port
+    void tryDropItem();
+    // this reserves the keyboard/mobile deposit path for the inventory-backed item port
+    void tryDepositItems();
     // this draws all active items
     void drawItems();
+    // this draws the prototype deposit zone so desktop/mobile tests can target it
+    void drawDepositZone();
 
 
     void renderHUD();
 };
 
 #endif // !__GL_GAME_SCENE_H__
-

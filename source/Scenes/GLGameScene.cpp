@@ -20,6 +20,7 @@
 
 
 #include "GLGameScene.h"
+#include "../Models/Inventory.h"
 
 using namespace cugl;
 using namespace std;
@@ -62,11 +63,13 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
     // Start up the input handler
     _input.init(cugl::Rect(0, 0, getSize().width, getSize().height));
+    _input.setInventoryPanelOpen(false);
     _inputDisplay = make_shared<InputDisplay>(&_input);
 
     // create the player
     _player = make_shared<Player>(getSize() / 2, 12);
     _player->setTexture(assets->get<Texture>("player"));
+    _player->setInventory(std::make_shared<Inventory>(4));
     
     _players = make_shared<PlayerSet>();
     _players->addPlayer(_player);
@@ -79,8 +82,10 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
     // Initialize inventory system
     _inventoryValue = 0;
+    _depositedValue = 0;
     _quota = 100;
     _playerWon = false;
+    _playerLost = false;
 
     try {
         _font = assets->get<Font>("OpenSans");
@@ -98,6 +103,10 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _canPickupItem = false;
     _pickupIndex = -1;
     _pickupPrompt = "";
+    _canDeposit = false;
+    _depositRadius = 42.0f;
+    _depositPosition = Vec2(getSize().width * 0.5f, getSize().height * 0.5f);
+    _inventoryPanelOpen = false;
 
     // this spawns one artifact and one spell for prototype startup
     spawnInitialItems();
@@ -131,13 +140,24 @@ void GameScene::reset() {
     _playerLost = false;
     _playerWon = false;
     _inventoryValue = 0;
+    _depositedValue = 0;
     _enemy->reset();
     _enemy->spawnEnemy(getSize() / 4, 4);
     lastEnemySpawn = 0;
 
+    if (_player->getInventory()) {
+        _player->getInventory()->clear();
+    }
+
     spells.current.clear();
     spells.pending.clear();
     spawnInitialItems();
+    _canPickupItem = false;
+    _pickupIndex = -1;
+    _pickupPrompt.clear();
+    _canDeposit = false;
+    _inventoryPanelOpen = false;
+    _input.setInventoryPanelOpen(false);
 }
 
 #pragma mark -
@@ -208,7 +228,12 @@ void GameScene::preUpdate(float dt) {
     cugl::Vec2 playerScreenPos = _player->getPosition();
 
     updateItemPickupState();
+    updateDepositState();
+    _input.setInventoryPanelOpen(_inventoryPanelOpen);
+    handleMobileHUDInput();
     tryPickupItem();
+    tryDropItem();
+    tryDepositItems();
 
     // Spellcasting
     if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
@@ -464,6 +489,7 @@ void GameScene::render() {
 
     Color4 original = _batch->getColor();
 
+    drawDepositZone();
     drawItems();
 
     _players->draw(_batch);
@@ -483,7 +509,7 @@ void GameScene::render() {
 void GameScene::renderHUD() {
     Size screenSize = getSize();
 
-    float barW = 280;
+    float barW = 320;
     float barH = 50;
     float margin = 16;
 
@@ -505,10 +531,9 @@ void GameScene::renderHUD() {
 
     Color4 boxColor(30, 30, 30, 255);
 
-    // Inventory box - top left
-    float invX = margin;
-    float invY = screenSize.height - barH - margin;
-    drawBox(invX, invY, barW, barH, boxColor);
+    Rect inventoryHeader = _input.getInventoryHeaderBounds();
+    drawBox(inventoryHeader.origin.x, inventoryHeader.origin.y,
+            inventoryHeader.size.width, inventoryHeader.size.height, boxColor);
 
     // Quota box - top right
     float quotaX = screenSize.width - barW - margin;
@@ -521,19 +546,19 @@ void GameScene::renderHUD() {
     float healthY = screenSize.height - barH - margin;
     drawBox(healthX, healthY, healthW, barH, boxColor);
 
-    // Pickup prompt box - bottom right
-    float pickupX = screenSize.width - barW - margin;
-    float pickupY = margin;
-    drawBox(pickupX, pickupY, barW, barH, boxColor);
+    Rect actionButton = _input.getActionButtonBounds();
+    drawBox(actionButton.origin.x, actionButton.origin.y,
+            actionButton.size.width, actionButton.size.height, boxColor);
 
     if (_font) {
         _batch->setColor(Color4::WHITE);
 
+        std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
         std::shared_ptr<TextLayout> invLabel = TextLayout::allocWithText(
             "Inventory: $" + std::to_string(_inventoryValue), _font);
         invLabel->layout();
         Affine2 invTrans;
-        invTrans.translate(invX + 10, invY + 12);
+        invTrans.translate(inventoryHeader.origin.x + 10, inventoryHeader.origin.y + 12);
         _batch->drawText(invLabel, invTrans);
 
         std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
@@ -550,13 +575,136 @@ void GameScene::renderHUD() {
         healthTrans.translate(healthX + 10, healthY + 12);
         _batch->drawText(healthLabel, healthTrans);
 
-        std::string pickupText = _canPickupItem ? _pickupPrompt : "move close to item";
+        std::string pickupText = "move close to item";
+#ifdef CU_TOUCH_SCREEN
+        if (_canPickupItem) {
+            pickupText = "pickup item";
+        } else if (_canDeposit) {
+            pickupText = "deposit at origin";
+        }
+#else
+        if (_canPickupItem) {
+            pickupText = _pickupPrompt;
+        } else if (_canDeposit) {
+            pickupText = "press f to deposit";
+        }
+#endif
         std::shared_ptr<TextLayout> pickupLabel = TextLayout::allocWithText(pickupText, _font);
         pickupLabel->layout();
         Affine2 pickupTrans;
-        pickupTrans.translate(pickupX + 10, pickupY + 12);
+        pickupTrans.translate(actionButton.origin.x + 10, actionButton.origin.y + 12);
         _batch->drawText(pickupLabel, pickupTrans);
+
+#ifdef CU_TOUCH_SCREEN
+        if (_inventoryPanelOpen && inventory) {
+            Rect panelBounds = _input.getInventoryPanelBounds();
+            drawBox(panelBounds.origin.x, panelBounds.origin.y,
+                    panelBounds.size.width, panelBounds.size.height,
+                    Color4(20, 20, 20, 230));
+
+            float rowH = panelBounds.size.height / 4.0f;
+            for (int ii = 0; ii < 4; ++ii) {
+                float rowY = panelBounds.getMaxY() - rowH * (ii + 1);
+                drawBox(panelBounds.origin.x + 2.0f, rowY + 1.0f,
+                        panelBounds.size.width - 4.0f, rowH - 2.0f,
+                        Color4(40, 40, 40, 220));
+
+                std::string rowText = "-";
+                if ((size_t)ii < inventory->getCount()) {
+                    rowText = inventory->getItems()[(size_t)ii]->getName();
+                }
+
+                std::shared_ptr<TextLayout> rowLabel = TextLayout::allocWithText(rowText, _font);
+                rowLabel->layout();
+                Affine2 rowTrans;
+                rowTrans.translate(panelBounds.origin.x + 10.0f, rowY + 8.0f);
+                _batch->drawText(rowLabel, rowTrans);
+            }
+        }
+#endif
     }
+}
+
+void GameScene::handleMobileHUDInput() {
+#ifdef CU_TOUCH_SCREEN
+    if (_input.pressedInventoryToggle()) {
+        _inventoryPanelOpen = !_inventoryPanelOpen;
+        _input.setInventoryPanelOpen(_inventoryPanelOpen);
+        _input.resolvedInventoryToggle();
+        CULog("inventory panel toggled: %d", _inventoryPanelOpen ? 1 : 0);
+    }
+
+    if (_input.pressedInventoryPanel()) {
+        (void)getInventoryPanelIndexAt(_input.getLastUITap());
+        _input.resolvedInventoryPanel();
+    }
+
+    if (_input.pressedContextAction()) {
+        _input.resolvedContextAction();
+
+        // Keep mobile pickup working while the scene still uses the temporary
+        // scene-local item prototype. Full Inventory/ItemSet mutations move in
+        // the next commit.
+        if (_canPickupItem && _pickupIndex >= 0 && _pickupIndex < (int)_items.size()) {
+            addItem(_items[_pickupIndex].value);
+            _items.erase(_items.begin() + _pickupIndex);
+            spawnReplacementItem();
+            updateItemPickupState();
+        }
+    }
+#else
+    if (_input.pressedInventoryToggle()) {
+        _inventoryPanelOpen = !_inventoryPanelOpen;
+        _input.resolvedInventoryToggle();
+    }
+#endif
+}
+
+int GameScene::getInventoryPanelIndexAt(const Vec2& tapPos) const {
+    Rect panel = _input.getInventoryPanelBounds();
+    if (!panel.contains(tapPos)) {
+        return -1;
+    }
+
+    std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
+    if (!inventory || inventory->isEmpty()) {
+        return -1;
+    }
+
+    float rowH = panel.size.height / 4.0f;
+    float fromTop = panel.getMaxY() - tapPos.y;
+    int index = (int)(fromTop / rowH);
+    if (index < 0 || index >= (int)inventory->getCount()) {
+        return -1;
+    }
+    return index;
+}
+
+void GameScene::updateDepositState() {
+    _canDeposit = _collisions.resolvePlayerItem(_player, _depositPosition, _depositRadius);
+}
+
+void GameScene::tryDropItem() {
+    if (_input.pressedDrop()) {
+        _input.resolvedDrop();
+    }
+}
+
+void GameScene::tryDepositItems() {
+    if (_input.pressedDeposit()) {
+        _input.resolvedDeposit();
+    }
+}
+
+void GameScene::drawDepositZone() {
+    _batch->setTexture(nullptr);
+
+    Color4 color = _canDeposit ? Color4(70, 180, 95, 220) : Color4(60, 120, 70, 200);
+    Rect zone(_depositPosition.x - _depositRadius, _depositPosition.y - _depositRadius,
+              _depositRadius * 2.0f, _depositRadius * 2.0f);
+
+    _batch->setColor(color);
+    _batch->fill(zone);
 }
 
 
@@ -687,7 +835,11 @@ void GameScene::setActive(bool value) {
             for (auto p : _networkCtrl->getPlayers()) {
                 if (p!=_networkCtrl->getPID()) {
                     CULog("adding ANOTHER player");
-                    _players->addPlayer(make_shared<Player>(cugl::Vec2(2 + getSize().width/2, 2 + getSize().height/2), 12, p,  _assets->get<Texture>("player")));
+                    std::shared_ptr<Player> remote = make_shared<Player>(
+                        cugl::Vec2(2 + getSize().width/2, 2 + getSize().height/2), 12, p, _assets->get<Texture>("player")
+                    );
+                    remote->setInventory(std::make_shared<Inventory>(4));
+                    _players->addPlayer(remote);
                 }
             }
             CULog("num players in set: %d", _players->numPlayers() );
