@@ -9,7 +9,10 @@
 #define __GP_PLAYER_H__
 #include <cugl/cugl.h>
 #include "Entity.h"
+#include <memory>
 #include "SpellSet.h"
+
+class Inventory;
 
 class Player : public Entity {
 private:
@@ -17,6 +20,8 @@ private:
     float _playerAngle;
     SpellType _curSpell;
     std::string _playerId; // player identifier, rn its the uuid
+    /** Architecture-spec inventory owned by this player model. */
+    std::shared_ptr<Inventory> _inventory;
 
     // Counter for number of spells player has fired, used for spell id generation
     unsigned int _curSpellNum;
@@ -54,7 +59,7 @@ public:
      * Sets the max speed of the player
      *
      * @param value the max speed of this player
-     */
+    */
     void setSpeed(int value) { _speed = value; }
 
     void setVelocity(cugl::Vec2 value) override;
@@ -73,6 +78,22 @@ public:
     void resolveSpell() { _curSpell = SpellType::NONE; }
 
     SpellType getSpell() { return _curSpell; }
+
+    /**
+     * Assigns the inventory that tracks this player's carried items.
+     *
+     * The scene creates inventories explicitly so future game modes can vary
+     * inventory capacity without changing Player construction.
+     */
+    void setInventory(const std::shared_ptr<Inventory>& inventory) { _inventory = inventory; }
+
+    /**
+     * Returns the player's current inventory model.
+     *
+     * This stays on the Player so networking/gameplay systems can ask the
+     * player for carried state without storing a parallel inventory map.
+     */
+    const std::shared_ptr<Inventory>& getInventory() const { return _inventory; }
 
     const std::string getSpellId() const;
 };
