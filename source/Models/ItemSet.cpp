@@ -14,8 +14,50 @@
 using namespace cugl;
 
 namespace {
-    constexpr int GENERIC_ARTIFACT_VALUE = 40;
-    constexpr int GENERIC_SPELLBOOK_VALUE = 25;
+    struct PrototypeCatalogEntry {
+        const char* id;
+        const char* name;
+        int value;
+        float weight;
+    };
+
+    // temporary entries mirror item values from the procgen branch so
+    // quota tuning stays familiar while we keep testing non-procgen.
+    constexpr PrototypeCatalogEntry kPrototypeArtifacts[] = {
+        { "artifact1", "artifact1", 60, 1.0f },
+        { "artifact2", "artifact2", 80, 0.8f }
+    };
+
+    constexpr PrototypeCatalogEntry kPrototypeSpellbooks[] = {
+        { "spellbook1", "spellbook1", 25, 1.0f },
+        { "spellbook2", "spellbook2", 25, 1.0f }
+    };
+
+    const PrototypeCatalogEntry& choosePrototypeEntry(
+        std::mt19937& rng,
+        const PrototypeCatalogEntry* entries,
+        size_t count
+    ) {
+        float totalWeight = 0.0f;
+        for (size_t ii = 0; ii < count; ++ii) {
+            totalWeight += std::max(0.0f, entries[ii].weight);
+        }
+
+        if (totalWeight <= 0.0f) {
+            return entries[0];
+        }
+
+        std::uniform_real_distribution<float> weightDist(0.0f, totalWeight);
+        float pick = weightDist(rng);
+        for (size_t ii = 0; ii < count; ++ii) {
+            float weight = std::max(0.0f, entries[ii].weight);
+            if (pick <= weight) {
+                return entries[ii];
+            }
+            pick -= weight;
+        }
+        return entries[count - 1];
+    }
 }
 
 ItemSet::ItemSet() :
@@ -118,18 +160,28 @@ ItemSet::WorldItem ItemSet::createRandomItem(bool forceArtifact, bool forceSpell
     world.radius = _defaultRadius;
 
     if (createArtifact) {
-        std::string id = "artifact_" + std::to_string(_nextArtifactIndex);
-        std::string name = "artifact" + std::to_string(_nextArtifactIndex);
+        const PrototypeCatalogEntry& entry = choosePrototypeEntry(
+            _rng,
+            kPrototypeArtifacts,
+            sizeof(kPrototypeArtifacts) / sizeof(kPrototypeArtifacts[0])
+        );
+        std::string id = std::string(entry.id) + "_" + std::to_string(_nextArtifactIndex);
+        std::string name = entry.name;
         _nextArtifactIndex++;
         world.item = std::make_shared<Artifact>(
-            id, name, GENERIC_ARTIFACT_VALUE, Artifact::Effect::ARTIFACT_EFFECT
+            id, name, entry.value, Artifact::Effect::ARTIFACT_EFFECT
         );
     } else {
-        std::string id = "spellbook_" + std::to_string(_nextSpellbookIndex);
-        std::string name = "spellbook" + std::to_string(_nextSpellbookIndex);
+        const PrototypeCatalogEntry& entry = choosePrototypeEntry(
+            _rng,
+            kPrototypeSpellbooks,
+            sizeof(kPrototypeSpellbooks) / sizeof(kPrototypeSpellbooks[0])
+        );
+        std::string id = std::string(entry.id) + "_" + std::to_string(_nextSpellbookIndex);
+        std::string name = entry.name;
         _nextSpellbookIndex++;
         world.item = std::make_shared<SpellBook>(
-            id, name, GENERIC_SPELLBOOK_VALUE, SpellBook::Spell::SPELL_EFFECT
+            id, name, entry.value, SpellBook::Spell::SPELL_EFFECT
         );
     }
 

@@ -31,10 +31,12 @@ using namespace cugl::graphics;
 
 namespace {
     constexpr size_t kPrototypeInventoryCapacity = 4;
+    constexpr int kPrototypeQuota = 500;
     constexpr int kGuaranteedArtifacts = 1;
     constexpr int kGuaranteedSpellbooks = 1;
     constexpr float kTargetWorldValueMultiplier = 1.35f;
     constexpr int kMaxAdditionalPrototypeItems = 40;
+    constexpr float kEnemySpawnDelaySeconds = 15.0f;
 
     std::shared_ptr<Item> makePrototypeItem(const std::string& id, int kind,
                                             const std::string& name, int value) {
@@ -55,14 +57,16 @@ namespace {
         );
     }
 
+    // GA: itemnet old delta-path helper retained only as reference while the
+    // first networking item pass uses full host snapshots instead.
     std::shared_ptr<Item> makePrototypeNetItem(const std::string& itemName, int itemId) {
         if (itemName == "artifact") {
             return makePrototypeItem(
-                "net_artifact_" + std::to_string(itemId), 0, "artifact", 40
+                "net_artifact_" + std::to_string(itemId), 0, "artifact1", 60
             );
         }
         return makePrototypeItem(
-            "net_spellbook_" + std::to_string(itemId), 1, "spellbook", 25
+            "net_spellbook_" + std::to_string(itemId), 1, "spellbook1", 25
         );
     }
 }
@@ -123,7 +127,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
     // Initialize inventory system
     _depositedValue = 0;
-    _quota = 100;
+    _quota = kPrototypeQuota;
     _playerWon = false;
     _playerLost = false;
 
@@ -190,8 +194,10 @@ void GameScene::reset() {
     _playerLost = false;
     _playerWon = false;
     _depositedValue = 0;
+    _quota = kPrototypeQuota;
     _enemy->reset();
-    _enemy->spawnEnemy(getSize() / 4, 4);
+    // Match startup behavior on replay: reset clears active enemies and restarts
+    // the host spawn timer instead of forcing one immediate spawn.
     lastEnemySpawn = 0;
 
     if (_player->getInventory()) {
@@ -272,7 +278,7 @@ void GameScene::preUpdate(float dt) {
     // spawn an enemy if host and need to spawn
     if (_ishost){
         lastEnemySpawn += dt;
-        if (lastEnemySpawn > 15) {
+        if (lastEnemySpawn >= kEnemySpawnDelaySeconds) {
             lastEnemySpawn = 0;
             _enemy->spawnEnemy(getSize() / 2, 4);
         }
@@ -673,8 +679,10 @@ void GameScene::renderHUD() {
         _batch->setColor(Color4::WHITE);
 
         std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
+        size_t itemCount = inventory ? inventory->getCount() : 0;
+        size_t inventoryCapacity = inventory ? inventory->getCapacity() : kPrototypeInventoryCapacity;
         std::shared_ptr<TextLayout> invLabel = TextLayout::allocWithText(
-            "Inventory: $" + std::to_string(getInventoryValue()), _font);
+            "inventory: " + std::to_string(itemCount) + "/" + std::to_string(inventoryCapacity), _font);
         invLabel->layout();
         Affine2 invTrans;
         invTrans.translate(inventoryHeader.origin.x + 10, inventoryHeader.origin.y + 12);

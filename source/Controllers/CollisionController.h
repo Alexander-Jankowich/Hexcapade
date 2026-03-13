@@ -31,7 +31,7 @@ public:
     /**
      * Checks collision between the player and an item at a given position.
     */
-    bool resolvePlayerItem(std::shared_ptr<Player>& player, const cugl::Vec2& itemPos,
+    bool resolvePlayerItem(const std::shared_ptr<Player>& player, const cugl::Vec2& itemPos,
         float itemRadius);
 
     void resolvePlayerEnemies(std::shared_ptr<Player>& player, const cugl::Vec2& playerPos,

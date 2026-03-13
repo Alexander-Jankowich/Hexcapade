@@ -28,7 +28,7 @@ void CollisionController::resolvePlayerEnemies(std::shared_ptr<Player>& player,
     }
 }
 
-bool CollisionController::resolvePlayerItem(std::shared_ptr<Player>& player,
+bool CollisionController::resolvePlayerItem(const std::shared_ptr<Player>& player,
     const Vec2& itemPos, float itemRadius) {
     Vec2 p1 = player->getPosition() - player->getSize() / 2;
     Vec2 p2 = player->getPosition() + player->getSize() / 2;
