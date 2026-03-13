@@ -320,6 +320,10 @@ private:
     bool hostDropInventoryIndex(const std::shared_ptr<Player>& player, size_t index);
     // host-only helper that validates and applies a deposit for the given player
     bool hostDepositForPlayer(const std::shared_ptr<Player>& player);
+    // client-side mirror helper that replaces one player's inventory from a host snapshot
+    void applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player, const std::vector<HostInventoryItemData>& items);
+    // client-side mirror helper that replaces all world items from a host snapshot
+    void applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items);
 
     // GA: itemnet old scene-local item prototype kept for reference while
     // ItemSet/Inventory replace the temporary vector-based path.

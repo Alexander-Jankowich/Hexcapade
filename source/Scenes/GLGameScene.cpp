@@ -36,21 +36,33 @@ namespace {
     constexpr float kTargetWorldValueMultiplier = 1.35f;
     constexpr int kMaxAdditionalPrototypeItems = 40;
 
-    std::shared_ptr<Item> makePrototypeNetItem(const std::string& itemName, int itemId) {
-        if (itemName == "artifact") {
+    std::shared_ptr<Item> makePrototypeItem(const std::string& id, int kind,
+                                            const std::string& name, int value) {
+        if (kind == 0) {
             return std::make_shared<Artifact>(
-                "net_artifact_" + std::to_string(itemId),
-                "artifact",
-                40,
+                id,
+                name,
+                value,
                 Artifact::Effect::ARTIFACT_EFFECT
             );
         }
 
         return std::make_shared<SpellBook>(
-            "net_spellbook_" + std::to_string(itemId),
-            "spellbook",
-            25,
+            id,
+            name,
+            value,
             SpellBook::Spell::SPELL_EFFECT
+        );
+    }
+
+    std::shared_ptr<Item> makePrototypeNetItem(const std::string& itemName, int itemId) {
+        if (itemName == "artifact") {
+            return makePrototypeItem(
+                "net_artifact_" + std::to_string(itemId), 0, "artifact", 40
+            );
+        }
+        return makePrototypeItem(
+            "net_spellbook_" + std::to_string(itemId), 1, "spellbook", 25
         );
     }
 }
@@ -366,14 +378,18 @@ void GameScene::preUpdate(float dt) {
         HostInput hi = _networkCtrl->getLatestHostInput();
         _networkCtrl->clearNewHostInput();
 
+        _depositedValue = hi.depositedValue;
+        _quota = hi.quota;
+        _playerWon = _depositedValue >= _quota;
+
         for (auto& pd : hi.players) {
-            if (pd.uuid == _player->getPID()) {
-                continue;
-            }
-            auto p = _players->getPlayerByPID(pd.uuid);
+            std::shared_ptr<Player> p = (pd.uuid == _player->getPID()) ? _player : _players->getPlayerByPID(pd.uuid);
             if (p) {
-                p->setPosition(cugl::Vec2(pd.posX, pd.posY));
+                if (pd.uuid != _player->getPID()) {
+                    p->setPosition(cugl::Vec2(pd.posX, pd.posY));
+                }
                 p->setHealth(pd.health);
+                applyInventorySnapshotToPlayer(p, pd.inventoryItems);
             }
         }
         _enemy->reset(); // clear all
@@ -392,23 +408,20 @@ void GameScene::preUpdate(float dt) {
             _player->resolveSpell();
         }
 
-        // GA: itemnet old added_items path still acts as a temporary host snapshot
-        // until the explicit world-item snapshot structs land.
-        _itemSet.reset();
-        _itemSet.setSpawnBounds(Rect(60, 80, getSize().width - 120, getSize().height - 170));
-        for (auto& id : hi.added_items) {
-            _itemSet.addDroppedItem(
-                makePrototypeNetItem(id.item, id.itemId),
-                cugl::Vec2(id.posX, id.posY),
-                14.0f
-            );
-        }
+        // Client mirror apply: replace world-item state wholesale from the
+        // host snapshot so pickup/drop/deposit results stay identical.
+        applyWorldItemSnapshot(hi.worldItems);
+        _inventoryValue = getInventoryValue();
+        updateItemPickupState();
+        updateDepositState();
     }
 
     // HOST: broadcast game state to clients
     if (_ishost && _networkCtrl && _networkCtrl->hasNetwork()) {
         //updates player positions (based on position currently, should change)
         HostInput hi;
+        hi.depositedValue = _depositedValue;
+        hi.quota = _quota;
 
         for (auto& [pid, input] : _clientInputs) {
             auto p = _players->getPlayerByPID(pid);
@@ -454,6 +467,16 @@ void GameScene::preUpdate(float dt) {
             pd.inventoryVal = p->getInventory() ? p->getInventory()->getCarriedValue() : 0;
             pd.curSpell = p->getSpell();
             pd.health = p->getHealth();
+            if (p->getInventory()) {
+                for (const std::shared_ptr<Item>& item : p->getInventory()->getItems()) {
+                    HostInventoryItemData iid;
+                    iid.id = item->getId();
+                    iid.kind = item->getKind() == Item::Kind::ARTIFACT ? 0 : 1;
+                    iid.name = item->getName();
+                    iid.value = item->getValue();
+                    pd.inventoryItems.push_back(iid);
+                }
+            }
             hi.players.push_back(pd);
         }
 
@@ -479,14 +502,19 @@ void GameScene::preUpdate(float dt) {
             hi.spells.push_back(sd);
         }
 
+        // Host snapshot build: the host owns the authoritative item/inventory
+        // state and sends full mirrors to clients each update.
         const std::vector<ItemSet::WorldItem>& worldItems = _itemSet.getItems();
-        for (size_t ii = 0; ii < worldItems.size(); ++ii) {
-            HostItemData id;
-            id.posX = worldItems[ii].position.x;
-            id.posY = worldItems[ii].position.y;
-            id.itemId = (int)ii;
-            id.item = worldItems[ii].item->getKind() == Item::Kind::ARTIFACT ? "artifact" : "spellbook";
-            hi.added_items.push_back(id);
+        for (const ItemSet::WorldItem& world : worldItems) {
+            HostWorldItemData id;
+            id.id = world.item->getId();
+            id.kind = world.item->getKind() == Item::Kind::ARTIFACT ? 0 : 1;
+            id.name = world.item->getName();
+            id.value = world.item->getValue();
+            id.posX = world.position.x;
+            id.posY = world.position.y;
+            id.radius = world.radius;
+            hi.worldItems.push_back(id);
         }
 
         auto bytes = MessageSerializer::encodeHostInput(hi);
@@ -870,6 +898,35 @@ bool GameScene::hostDepositForPlayer(const std::shared_ptr<Player>& player) {
         updateDepositState();
     }
     return true;
+}
+
+void GameScene::applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player,
+                                               const std::vector<HostInventoryItemData>& items) {
+    if (!player) {
+        return;
+    }
+
+    if (!player->getInventory()) {
+        player->setInventory(std::make_shared<Inventory>(kPrototypeInventoryCapacity));
+    }
+
+    std::shared_ptr<Inventory> inventory = player->getInventory();
+    inventory->clear();
+    for (const HostInventoryItemData& item : items) {
+        inventory->addItem(makePrototypeItem(item.id, item.kind, item.name, item.value));
+    }
+}
+
+void GameScene::applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items) {
+    _itemSet.reset();
+    _itemSet.setSpawnBounds(Rect(60, 80, getSize().width - 120, getSize().height - 170));
+    for (const HostWorldItemData& item : items) {
+        _itemSet.addDroppedItem(
+            makePrototypeItem(item.id, item.kind, item.name, item.value),
+            Vec2(item.posX, item.posY),
+            item.radius
+        );
+    }
 }
 
 int GameScene::getInventoryPanelIndexAt(const Vec2& tapPos) const {
