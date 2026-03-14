@@ -14,7 +14,8 @@
 enum class SpellType {
     NONE,
     FREEZE,
-    FIREBALL
+    FIREBALL,
+    HEAL
 };
 
 class SpellSet {
@@ -26,8 +27,9 @@ public:
         cugl::Vec2 velocity;
         float damage;
         bool froze;
+        bool healed;
         
-        Spell(const cugl::Vec2 pos,cugl::Vec2 vel, int dmg, bool freeze);
+        Spell(const cugl::Vec2 pos,cugl::Vec2 vel, int dmg, bool freeze, bool healed);
         
         void update();
     };

@@ -12,9 +12,10 @@ using namespace cugl::graphics;
 
 #pragma mark Spell
 
-SpellSet::Spell::Spell(const cugl::Vec2 pos,const cugl::Vec2 vel, int dmg, bool f){
+SpellSet::Spell::Spell(const cugl::Vec2 pos,const cugl::Vec2 vel, int dmg, bool f, bool h){
     damage = dmg;
     froze = f;
+    healed = h;
     velocity = vel;
     position = pos;
 }
@@ -54,6 +55,9 @@ void SpellSet::spawnSpell(std::string sid, SpellType type, cugl::Vec2 position, 
     case SpellType::FREEZE:
         values = _spellConsts->get("freeze");
         break;
+    case SpellType::HEAL:
+        values = _spellConsts->get("heal");
+        break;
     case SpellType::NONE:
         return;
     default:
@@ -63,7 +67,8 @@ void SpellSet::spawnSpell(std::string sid, SpellType type, cugl::Vec2 position, 
 
     spell = std::make_shared<Spell>(position, norm * values->getFloat("speed"),
         values->getInt("damage"),
-        values->getBool("freeze", false));
+        values->getBool("freeze", false),
+        values->getBool("heal", false));
 
     pending.emplace(sid, spell);
 }
@@ -91,7 +96,11 @@ void SpellSet::draw(const std::shared_ptr<SpriteBatch>& batch) {
         trans.translate(pos);
         if(it->second-> froze){
             batch -> draw(_texture,Color4::BLUE,origin,trans);
-        }else{
+        }
+        else if (it->second->healed) {
+            batch->draw(_texture, Color4(0, 200, 0, 255), origin, trans);
+        }
+        else{
             batch -> draw(_texture,Color4::RED, origin, trans);
         }
         

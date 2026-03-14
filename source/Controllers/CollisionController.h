@@ -43,6 +43,11 @@ public:
     void resolveEnemiesSpell(SpellSet& spells, std::shared_ptr<EnemySet>& enemy,
         cugl::Vec2 knockback);
 
+    void resolvePlayersSpell(SpellSet& spells,
+        std::unordered_set<std::shared_ptr<Player>>& players,
+        int healAmount,
+        const std::string& casterPID);
+
 private:
     /**
      * Checks and resolves collision between the player and an enemy.

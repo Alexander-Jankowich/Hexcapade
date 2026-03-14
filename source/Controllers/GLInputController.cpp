@@ -116,6 +116,42 @@ std::vector<cugl::Vec2> STAR_GESTURE = {
 };
 
 
+std::vector<cugl::Vec2> Z_GESTURE = {
+    {1073.000000, 320.000000},
+    {1077.000000, 320.000000},
+    {1092.000000, 319.000000},
+    {1116.000000, 321.000000},
+    {1137.000000, 323.000000},
+    {1156.000000, 324.000000},
+    {1167.000000, 324.000000},
+    {1171.000000, 323.000000},
+    {1172.000000, 322.000000},
+    {1173.000000, 322.000000},
+    {1175.000000, 320.000000},
+    {1177.000000, 319.000000},
+    {1178.000000, 314.000000},
+    {1174.000000, 306.000000},
+    {1168.000000, 295.000000},
+    {1154.000000, 280.000000},
+    {1136.000000, 262.000000},
+    {1118.000000, 244.000000},
+    {1106.000000, 229.000000},
+    {1096.000000, 215.000000},
+    {1088.000000, 207.000000},
+    {1085.000000, 204.000000},
+    {1085.000000, 203.000000},
+    {1096.000000, 203.000000},
+    {1122.000000, 204.000000},
+    {1159.000000, 208.000000},
+    {1203.000000, 212.000000},
+    {1233.000000, 215.000000},
+    {1235.000000, 215.000000},
+    {1247.000000, 217.000000},
+    {1248.000000, 217.000000},
+    {1249.000000, 217.000000},
+    {1249.000000, 217.000000},
+};
+
 // The screen is divided into four zones: Left and Right
 //
 //   |---------------|
@@ -175,12 +211,14 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds)
     recognizer = cugl::GestureRecognizer::alloc();
     recognizer->addGesture("V", V_GESTURE);
     recognizer->addGesture("STAR", STAR_GESTURE);
+    recognizer->addGesture("Z", Z_GESTURE);
     recognizer->setSimilarityThreshold(0.6f);
 
     // Update the gesturemap with more spells later on
     _gesturemap = {
         {"V", SpellType::FIREBALL},
-        {"STAR", SpellType::FREEZE}
+        {"STAR", SpellType::FREEZE},
+        { "Z", SpellType::HEAL }
     };
 
     _joyradius = values->get("joystick")->getInt("radius");
@@ -490,10 +528,10 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         // Register tap as pickup, to be changed using buttons?
         _pickupPressed = true;
     }
-    //CULog("Stroke points:");
-     //   for (const auto& p : currentStroke) {
-     //       CULog("{%f, %f},", p.x, p.y);
-     //   }
+    CULog("Stroke points:");
+        for (const auto& p : currentStroke) {
+            CULog("{%f, %f},", p.x, p.y);
+        }
 
     // Clear points
     currentStroke.clear();

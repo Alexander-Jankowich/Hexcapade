@@ -260,6 +260,7 @@ void GameScene::preUpdate(float dt)
         float playerRadius = 15.0f;
         _collisions.resolvePlayersEnemies(_players->current, playerRadius, _enemy);
         _collisions.resolveEnemiesSpell(spells, _enemy, playerScreenPos * -1.5);
+        _collisions.resolvePlayersSpell(spells, _players->current, 20,_player->getPID());
     }
 
     if (!_ishost && _networkCtrl->hasNetwork())
