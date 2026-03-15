@@ -55,6 +55,12 @@ public:
     
     const std::string getPID() const {return _playerId;}
     void setPID(std::string pid) {_playerId = pid;}
+    
+    void reset() {
+        setHealth(100);
+        setPosition(getSize() / 2);
+        setVelocity(cugl::Vec2::ZERO);
+    }
 
     /**
      * Sets the max speed of the player

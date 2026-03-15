@@ -36,6 +36,12 @@ public:
         }
         return nullptr; // should NOT get here
     }
+    
+    void reset() {
+        for (auto p : current) {
+            p->reset();
+        }
+    }
 
 	void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
 

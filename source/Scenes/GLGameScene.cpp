@@ -134,9 +134,7 @@ void GameScene::dispose()
 
 void GameScene::reset()
 {
-    _player->setHealth(100);
-    _player->setPosition(getSize() / 2);
-    _player->setVelocity(Vec2::ZERO);
+    _players->reset();
     _playerLost = false;
     _playerWon = false;
     _currInventoryScore = 0;
@@ -210,7 +208,7 @@ void GameScene::preUpdate(float dt)
     if (_ishost)
     {
         lastEnemySpawn += dt;
-        if (lastEnemySpawn > 15)
+        if (lastEnemySpawn > 8)
         {
             lastEnemySpawn = 0;
             _enemy->spawnEnemy(getSize() / 2, 4);
