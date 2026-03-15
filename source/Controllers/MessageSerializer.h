@@ -74,6 +74,9 @@ public:
         case SpellType::FREEZE:
             s.writeSint32(2);
             break;
+        case SpellType::HEAL:
+            s.writeSint32(3);
+            break;
         case SpellType::NONE:
             s.writeSint32(0);
             break;
@@ -102,6 +105,9 @@ public:
                 break;
             case 2:
                 output.spellType=SpellType::FREEZE;
+                break;
+            case 3:
+                output.spellType = SpellType::HEAL;
                 break;
             default:
                 output.spellType=SpellType::NONE;
@@ -292,6 +298,9 @@ private:
         case SpellType::FREEZE:
             json->appendValue("spell_type", (long)2);
             break;
+        case SpellType::HEAL:
+            json->appendValue("spell_type", (long)3);
+            break;
         case SpellType::NONE:
             json->appendValue("spell_type", (long)-1);
             break;
@@ -313,6 +322,9 @@ private:
             break;
         case 2:
             res->type = SpellType::FREEZE;
+            break;
+        case 3:
+            res->type = SpellType::HEAL;
             break;
         case -1:
             res->type = SpellType::NONE;

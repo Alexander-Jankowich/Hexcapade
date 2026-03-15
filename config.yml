@@ -1,6 +1,6 @@
 ---
 name:   GP-Prototype             # The application display name
-short:  HexC                  # A shortened name for reference
+short:  tech_final             # A shortened name for reference
 appid:  edu.cornell.gdiac.code2     # Application identifier for Mac, iOS, Android
 suffix: GDBFBEBF
 
