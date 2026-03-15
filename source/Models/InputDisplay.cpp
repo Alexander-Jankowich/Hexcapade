@@ -25,6 +25,7 @@ Color4 colorFromVec(std::vector<int> vec) {
 
 InputDisplay::InputDisplay(InputController* input, std::shared_ptr<JsonValue> values) {
 	_input = input;
+	_uiOffset = Vec2::ZERO;
 
 	// Set joystick constants
 	PolyFactory factory = PolyFactory();
@@ -54,18 +55,22 @@ void InputDisplay::update(Vec2 playerPos) {
 
 	_showJoystick = _input->showJoystick();
 	if (_showJoystick) {
-		// Update component locations
-		_jbaseTrans = Affine2::createTranslation(_input->getJoystickCenter());
-		_jstickTrans = Affine2::createTranslation(_input->getJoystickPos());
+		// keep the on-screen joystick anchored to the camera-adjusted hud space
+		_jbaseTrans = Affine2::createTranslation(_input->getJoystickCenter() + _uiOffset);
+		_jstickTrans = Affine2::createTranslation(_input->getJoystickPos() + _uiOffset);
 	}
 
-	_gesture.set(_input->getCurStroke());
+	_gesture = _input->getCurStroke();
+	for (Vec2& vertex : _gesture.vertices) {
+		vertex += _uiOffset;
+	}
 	extruder.set(_gesture);
 	extruder.calculate(_gestureWidth);
 	_gestureDisplay = extruder.getPolygon();
 
 	_showAim = _input->showAim() && !_input->getSpellAngle().isZero();
 	if (_showAim) {
+		// keep the aim arrow in world space so it still follows the player
 		_arrowTrans = Affine2::createRotation(_input->getSpellAngle().getAngle());
 		_arrowTrans.translate(playerPos);
 	}

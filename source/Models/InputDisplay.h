@@ -20,6 +20,10 @@ public:
 
 	void setInputController(InputController* input) { _input = input; }
 
+	// this lets gamescene keep screen-space ui visuals anchored while the
+	// camera follows the world map
+	void setUIOffset(const cugl::Vec2& offset) { _uiOffset = offset; }
+
 	/**
 	* Updates values based on _input (should be called after _input is
 	* updated). Does not render the input.
@@ -54,6 +58,9 @@ private:
 	cugl::Poly2 _gestureDisplay;
 	int _gestureWidth;
 	cugl::Color4 _gestureColor;
+
+	// this stores the current camera offset for screen-space ui visuals
+	cugl::Vec2 _uiOffset;
 
 	bool _showAim;
 	cugl::Affine2 _arrowTrans;

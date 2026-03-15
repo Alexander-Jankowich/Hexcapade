@@ -731,6 +731,7 @@ void GameScene::preUpdate(float dt)
 
     playerScreenPos = _player->getPosition();
     updateCameraFollow();
+    _inputDisplay->setUIOffset(getHUDOffset());
     _inputDisplay->update(playerScreenPos);
     if (sendSpell)
     {
