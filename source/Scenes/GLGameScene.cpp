@@ -21,6 +21,7 @@
 
 #include "GLGameScene.h"
 #include "../Models/Artifact.h"
+#include "../Models/GameplayConfigLoader.h"
 #include "../Models/Inventory.h"
 #include "../Models/SpellBook.h"
 
@@ -36,6 +37,11 @@ namespace {
     constexpr float kTargetWorldValueMultiplier = 1.35f;
     constexpr int kMaxAdditionalPrototypeItems = 40;
     constexpr float kEnemySpawnDelaySeconds = 15.0f;
+
+    unsigned int chooseNonZeroSeed() {
+        unsigned int seed = (unsigned int)std::random_device{}();
+        return seed == 0 ? 1u : seed;
+    }
 
     std::shared_ptr<Item> makePrototypeItem(const std::string& id, int kind,
                                             const std::string& name, int value) {
@@ -132,9 +138,18 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     //    _enemy->spawnEnemy(getSize() / 4, 4);
     lastEnemySpawn = 0;
 
+    _map = std::make_shared<Map>();
+    _roomController.setMap(_map);
+    _cameraBottomLeft = Vec2::ZERO;
+    _runRevision = 0;
+    _appliedRunRevision = -1;
+    _mapSeed = 0;
+    _mapSceneSize = this->getSize();
+    loadGameplayConfig();
+
     // Initialize inventory system
     _depositedValue = 0;
-    _quota = kPrototypeQuota;
+    _quota = std::max(1, _runConfig.quota);
     _playerWon = false;
     _playerLost = false;
 
@@ -151,19 +166,18 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     spells.setTexture(assets->get<Texture>("spell"));
     _collisions.init(this->getSize());
 
-    // GA: itemnet
-    // Until procgen room/item placement is merged, the host seeds a temporary
-    // screen-space spawn area so ItemSet can own world pickups.
-    _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
     // this resets pickup prompt state
     _canPickupItem = false;
     _pickupIndex = -1;
     _pickupPrompt = "";
     _canDeposit = false;
     _depositRadius = 42.0f;
-    _depositPosition = Vec2(this->getSize().width * 0.5f, this->getSize().height * 0.5f);
+    _depositPosition = Vec2::ZERO;
     _inventoryPanelOpen = false;
 
+#if 0
+    // ga: procnet old screen-space bootstrap kept for reference while the map
+    // becomes the shared run layout source
     _itemSet.reset();
     if (kGuaranteedArtifacts > 0 || kGuaranteedSpellbooks > 0) {
         _itemSet.spawnInitialPrototypeItems();
@@ -172,6 +186,17 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
         (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
         kMaxAdditionalPrototypeItems
     );
+#endif
+
+    _itemSet.reset();
+    if (!_networkCtrl || !_networkCtrl->hasNetwork() || _ishost) {
+        _mapSceneSize = this->getSize();
+        _mapSeed = chooseNonZeroSeed();
+        _runRevision = 1;
+        rebuildMapForRun();
+    } else {
+        _roomController.setMap(nullptr);
+    }
 
     // Creation of the physics world and star translator
     cugl::Rect bounds = Rect(0, 0, this->getSize().width / PHYSICS_SCALE, this->getSize().height / PHYSICS_SCALE);
@@ -190,6 +215,7 @@ void GameScene::dispose()
     // NOTHING TO DO THIS TIME
     spells.dispose();
     _inputDisplay->dispose();
+    _map = nullptr;
     _assets->dispose();
     _assets = nullptr;
 }
@@ -197,10 +223,11 @@ void GameScene::dispose()
 void GameScene::reset()
 {
     _players->reset();
+    loadGameplayConfig();
     _playerLost = false;
     _playerWon = false;
     _depositedValue = 0;
-    _quota = kPrototypeQuota;
+    _quota = std::max(1, _runConfig.quota);
     _enemy->reset();
     // Match startup behavior on replay: reset clears active enemies and restarts
     // the host spawn timer instead of forcing one immediate spawn.
@@ -215,19 +242,17 @@ void GameScene::reset()
 
     spells.current.clear();
     spells.pending.clear();
-    _itemSet.reset();
-    _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
-    _itemSet.spawnInitialPrototypeItems();
-    _itemSet.spawnUntilTotalValueAtLeast(
-        (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
-        kMaxAdditionalPrototypeItems
-    );
     _canPickupItem = false;
     _pickupIndex = -1;
     _pickupPrompt.clear();
     _canDeposit = false;
     _inventoryPanelOpen = false;
     _input.setInventoryPanelOpen(false);
+
+    _mapSceneSize = this->getSize();
+    _mapSeed = chooseNonZeroSeed();
+    _runRevision = std::max(1, _runRevision + 1);
+    rebuildMapForRun();
 
     if (_ishost && _networkCtrl && _networkCtrl->hasNetwork()) {
         _networkCtrl->startGame();
@@ -248,6 +273,107 @@ int GameScene::getInventoryValue() const {
         return _inventoryValue;
     }
     return _player->getInventory()->getCarriedValue();
+}
+
+void GameScene::loadGameplayConfig() {
+    _runConfig = hexcapade::gameplayconfig::loadRunBalanceConfigFromAssets();
+}
+
+void GameScene::rebuildMapForRun() {
+    if (!_map) {
+        _map = std::make_shared<Map>();
+    }
+
+    Size buildSize = _mapSceneSize;
+    if (buildSize.width <= 0 || buildSize.height <= 0) {
+        buildSize = this->getSize();
+    }
+
+    if (!_map->generate(buildSize, _runConfig.map, _mapSeed)) {
+        CULog("map generation failed for run revision %d", _runRevision);
+        return;
+    }
+
+    _roomController.setMap(_map);
+    _appliedRunRevision = _runRevision;
+    _quota = std::max(1, _runConfig.quota);
+    _depositPosition = _map->getPlayerSpawn();
+    _player->setPosition(_map->getPlayerSpawn());
+
+#if 0
+    // ga: procnet old screen-space spawn bounds kept here as reference while
+    // the map now defines the world area
+    _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
+#endif
+    _itemSet.reset();
+    _itemSet.setSpawnBounds(_map->getWorldBounds());
+    if (kGuaranteedArtifacts > 0 || kGuaranteedSpellbooks > 0) {
+        _itemSet.spawnInitialPrototypeItems();
+    }
+    _itemSet.spawnUntilTotalValueAtLeast(
+        (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
+        kMaxAdditionalPrototypeItems
+    );
+
+    updateItemPickupState();
+    updateDepositState();
+    updateCameraFollow();
+}
+
+void GameScene::updateCameraFollow() {
+    std::shared_ptr<Camera> camera = this->getCamera();
+    if (!camera) {
+        _cameraBottomLeft = Vec2::ZERO;
+        return;
+    }
+
+    if (!_map) {
+        _cameraBottomLeft = Vec2::ZERO;
+        Vec3 cameraPos = camera->getPosition();
+        cameraPos.x = this->getSize().width * 0.5f;
+        cameraPos.y = this->getSize().height * 0.5f;
+        camera->setPosition(cameraPos);
+        camera->update();
+        return;
+    }
+
+    const Rect& world = _map->getWorldBounds();
+    Size view = this->getSize();
+    float halfW = view.width * 0.5f;
+    float halfH = view.height * 0.5f;
+
+    float minCenterX = world.origin.x + halfW;
+    float maxCenterX = world.getMaxX() - halfW;
+    float minCenterY = world.origin.y + halfH;
+    float maxCenterY = world.getMaxY() - halfH;
+
+    if (maxCenterX < minCenterX) {
+        minCenterX = maxCenterX = world.getMidX();
+    }
+    if (maxCenterY < minCenterY) {
+        minCenterY = maxCenterY = world.getMidY();
+    }
+
+    float cx = std::clamp(_player->getPosition().x, minCenterX, maxCenterX);
+    float cy = std::clamp(_player->getPosition().y, minCenterY, maxCenterY);
+    _cameraBottomLeft = Vec2(cx - halfW, cy - halfH);
+
+    Vec3 cameraPos = camera->getPosition();
+    cameraPos.x = cx;
+    cameraPos.y = cy;
+    camera->setPosition(cameraPos);
+    camera->update();
+}
+
+Vec2 GameScene::resolvePlayerMapMove(const Vec2& startPos, const Vec2& velocity) const {
+    if (!_map) {
+        return startPos + velocity;
+    }
+    return _map->resolveSlideMove(startPos, velocity, 14.0f);
+}
+
+Vec2 GameScene::getHUDOffset() const {
+    return _cameraBottomLeft;
 }
 
 #pragma mark -
@@ -285,7 +411,9 @@ void GameScene::preUpdate(float dt)
 
     if (_input.pressedReset())
     {
-        reset();
+        if (!_networkCtrl || !_networkCtrl->hasNetwork() || _ishost) {
+            reset();
+        }
         _input.resolvedReset();
         return;
     }
@@ -309,7 +437,9 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
     _player->setColor(_input.showAim() ? Color4::BLUE : Color4::WHITE);
+    Vec2 playerStartPos = _player->getPosition();
     _player->update();
+    _player->setPosition(resolvePlayerMapMove(playerStartPos, _player->getPosition() - playerStartPos));
 
     cugl::Vec2 playerScreenPos = _player->getPosition();
 
@@ -411,6 +541,21 @@ void GameScene::preUpdate(float dt)
         HostInput hi = _networkCtrl->getLatestHostInput();
         _networkCtrl->clearNewHostInput();
 
+        if (hi.runRevision > 0) {
+            bool needsRunRebuild = hi.runRevision != _appliedRunRevision ||
+                                   hi.mapSeed != _mapSeed ||
+                                   std::fabs(hi.mapSceneWidth - _mapSceneSize.width) > 0.01f ||
+                                   std::fabs(hi.mapSceneHeight - _mapSceneSize.height) > 0.01f;
+            _runRevision = hi.runRevision;
+            _mapSeed = hi.mapSeed;
+            if (hi.mapSceneWidth > 0.0f && hi.mapSceneHeight > 0.0f) {
+                _mapSceneSize = Size(hi.mapSceneWidth, hi.mapSceneHeight);
+            }
+            if (needsRunRebuild) {
+                rebuildMapForRun();
+            }
+        }
+
         _depositedValue = hi.depositedValue;
         _quota = hi.quota;
         _playerWon = _depositedValue >= _quota;
@@ -459,6 +604,10 @@ void GameScene::preUpdate(float dt)
         HostInput hi;
         hi.depositedValue = _depositedValue;
         hi.quota = _quota;
+        hi.runRevision = _runRevision;
+        hi.mapSeed = _mapSeed;
+        hi.mapSceneWidth = _mapSceneSize.width;
+        hi.mapSceneHeight = _mapSceneSize.height;
 
         for (auto &[pid, input] : _clientInputs)
         {
@@ -570,6 +719,8 @@ void GameScene::preUpdate(float dt)
         _networkCtrl->getNetwork()->broadcast(bytes);
     }
 
+    playerScreenPos = _player->getPosition();
+    updateCameraFollow();
     _inputDisplay->update(playerScreenPos);
     if (sendSpell)
     {
@@ -665,6 +816,9 @@ void GameScene::render()
 
     Color4 original = _batch->getColor();
 
+    if (_map) {
+        _map->draw(_batch);
+    }
     drawDepositZone();
     drawItems();
 
@@ -685,6 +839,7 @@ void GameScene::render()
 void GameScene::renderHUD()
 {
     Size screenSize = this->getSize();
+    Vec2 hudOffset = getHUDOffset();
 
     float barW = 320;
     float barH = 50;
@@ -709,22 +864,22 @@ void GameScene::renderHUD()
     Color4 boxColor(30, 30, 30, 255);
 
     Rect inventoryHeader = _input.getInventoryHeaderBounds();
-    drawBox(inventoryHeader.origin.x, inventoryHeader.origin.y,
+    drawBox(inventoryHeader.origin.x + hudOffset.x, inventoryHeader.origin.y + hudOffset.y,
             inventoryHeader.size.width, inventoryHeader.size.height, boxColor);
 
     // Quota box - top right
     float quotaX = screenSize.width - barW - margin;
     float quotaY = screenSize.height - barH - margin;
-    drawBox(quotaX, quotaY, barW, barH, boxColor);
+    drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
 
     // Health box - top center
     float healthW = 200;
     float healthX = screenSize.width / 2 - healthW / 2;
     float healthY = screenSize.height - barH - margin;
-    drawBox(healthX, healthY, healthW, barH, boxColor);
+    drawBox(healthX + hudOffset.x, healthY + hudOffset.y, healthW, barH, boxColor);
 
     Rect actionButton = _input.getActionButtonBounds();
-    drawBox(actionButton.origin.x, actionButton.origin.y,
+    drawBox(actionButton.origin.x + hudOffset.x, actionButton.origin.y + hudOffset.y,
             actionButton.size.width, actionButton.size.height, boxColor);
 
     if (_font)
@@ -738,21 +893,21 @@ void GameScene::renderHUD()
             "inventory: " + std::to_string(itemCount) + "/" + std::to_string(inventoryCapacity), _font);
         invLabel->layout();
         Affine2 invTrans;
-        invTrans.translate(inventoryHeader.origin.x + 10, inventoryHeader.origin.y + 12);
+        invTrans.translate(inventoryHeader.origin.x + 10 + hudOffset.x, inventoryHeader.origin.y + 12 + hudOffset.y);
         _batch->drawText(invLabel, invTrans);
 
         std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
             "Quota: $" + std::to_string(_depositedValue) + " / $" + std::to_string(_quota), _font);
         quotaLabel->layout();
         Affine2 quotaTrans;
-        quotaTrans.translate(quotaX + 10, quotaY + 12);
+        quotaTrans.translate(quotaX + 10 + hudOffset.x, quotaY + 12 + hudOffset.y);
         _batch->drawText(quotaLabel, quotaTrans);
 
         std::shared_ptr<TextLayout> healthLabel = TextLayout::allocWithText(
             "Health: " + std::to_string(_player->getHealth()), _font);
         healthLabel->layout();
         Affine2 healthTrans;
-        healthTrans.translate(healthX + 10, healthY + 12);
+        healthTrans.translate(healthX + 10 + hudOffset.x, healthY + 12 + hudOffset.y);
         _batch->drawText(healthLabel, healthTrans);
 
         std::string pickupText = "move close to item";
@@ -778,20 +933,20 @@ void GameScene::renderHUD()
         std::shared_ptr<TextLayout> pickupLabel = TextLayout::allocWithText(pickupText, _font);
         pickupLabel->layout();
         Affine2 pickupTrans;
-        pickupTrans.translate(actionButton.origin.x + 10, actionButton.origin.y + 12);
+        pickupTrans.translate(actionButton.origin.x + 10 + hudOffset.x, actionButton.origin.y + 12 + hudOffset.y);
         _batch->drawText(pickupLabel, pickupTrans);
 
 #ifdef CU_TOUCH_SCREEN
         if (_inventoryPanelOpen && inventory) {
             Rect panelBounds = _input.getInventoryPanelBounds();
-            drawBox(panelBounds.origin.x, panelBounds.origin.y,
+            drawBox(panelBounds.origin.x + hudOffset.x, panelBounds.origin.y + hudOffset.y,
                     panelBounds.size.width, panelBounds.size.height,
                     Color4(20, 20, 20, 230));
 
             float rowH = panelBounds.size.height / 4.0f;
             for (int ii = 0; ii < 4; ++ii) {
                 float rowY = panelBounds.getMaxY() - rowH * (ii + 1);
-                drawBox(panelBounds.origin.x + 2.0f, rowY + 1.0f,
+                drawBox(panelBounds.origin.x + 2.0f + hudOffset.x, rowY + 1.0f + hudOffset.y,
                         panelBounds.size.width - 4.0f, rowH - 2.0f,
                         Color4(40, 40, 40, 220));
 
@@ -803,7 +958,7 @@ void GameScene::renderHUD()
                 std::shared_ptr<TextLayout> rowLabel = TextLayout::allocWithText(rowText, _font);
                 rowLabel->layout();
                 Affine2 rowTrans;
-                rowTrans.translate(panelBounds.origin.x + 10.0f, rowY + 8.0f);
+                rowTrans.translate(panelBounds.origin.x + 10.0f + hudOffset.x, rowY + 8.0f + hudOffset.y);
                 _batch->drawText(rowLabel, rowTrans);
             }
         }
@@ -980,7 +1135,16 @@ void GameScene::applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& pl
 
 void GameScene::applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items) {
     _itemSet.reset();
+#if 0
+    // ga: procnet old screen-space item bounds kept as reference during the
+    // move to map-owned world bounds
     _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
+#endif
+    if (_map) {
+        _itemSet.setSpawnBounds(_map->getWorldBounds());
+    } else {
+        _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
+    }
     for (const HostWorldItemData& item : items) {
         _itemSet.addDroppedItem(
             makePrototypeItem(item.id, item.kind, item.name, item.value),
@@ -1037,6 +1201,10 @@ void GameScene::tryDepositItems() {
 }
 
 void GameScene::drawDepositZone() {
+    if (!_map || _appliedRunRevision <= 0) {
+        return;
+    }
+
     _batch->setTexture(nullptr);
 
     Color4 color = _canDeposit ? Color4(70, 180, 95, 220) : Color4(60, 120, 70, 200);
@@ -1160,8 +1328,10 @@ void GameScene::setActive(bool value)
                 if (p != _networkCtrl->getPID())
                 {
                     CULog("adding ANOTHER player");
+                    Vec2 spawnPos = _map ? _map->getPlayerSpawn()
+                                         : cugl::Vec2(2 + this->getSize().width/2, 2 + this->getSize().height/2);
                     std::shared_ptr<Player> remote = make_shared<Player>(
-                        cugl::Vec2(2 + this->getSize().width/2, 2 + this->getSize().height/2), 12, p, _assets->get<Texture>("player")
+                        spawnPos, 12, p, _assets->get<Texture>("player")
                     );
                     remote->setInventory(std::make_shared<Inventory>(kPrototypeInventoryCapacity));
                     _players->addPlayer(remote);

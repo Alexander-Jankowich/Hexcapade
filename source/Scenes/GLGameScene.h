@@ -18,9 +18,12 @@
 #include <vector>
 #include "../Controllers/GLInputController.h"
 #include "../Controllers/NetworkController.h"
+#include "../Controllers/RoomController.h"
 #include "../Models/InputDisplay.h"
 #include <cstddef> 
 #include "../Models/EnemySet.h"
+#include "../Models/GameplayConfig.h"
+#include "../Models/Map.h"
 #include "../Models/SpellSet.h"
 #include "../Models/PlayerSet.h"
 #include "../Models/ItemSet.h"
@@ -59,6 +62,14 @@ protected:
     std::shared_ptr<PlayerSet> _players;
 
     std::shared_ptr<EnemySet> _enemy;
+    std::shared_ptr<Map> _map;
+    RoomController _roomController;
+    RunBalanceConfig _runConfig;
+    cugl::Vec2 _cameraBottomLeft;
+    int _runRevision;
+    int _appliedRunRevision;
+    unsigned int _mapSeed;
+    cugl::Size _mapSceneSize;
     float lastEnemySpawn;
 
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
@@ -155,7 +166,7 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _inventoryValue(0), _depositedValue(0), _quota(500), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
+    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _inventoryValue(0), _depositedValue(0), _quota(500), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
@@ -326,6 +337,16 @@ private:
     void applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player, const std::vector<HostInventoryItemData>& items);
     // client-side mirror helper that replaces all world items from a host snapshot
     void applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items);
+    // this loads map/item quota tuning from json without changing the networking path
+    void loadGameplayConfig();
+    // this rebuilds the current map from host-owned run metadata
+    void rebuildMapForRun();
+    // this keeps the world camera centered on the local player inside map bounds
+    void updateCameraFollow();
+    // this resolves the local player move against generated room/hall walls
+    cugl::Vec2 resolvePlayerMapMove(const cugl::Vec2& startPos, const cugl::Vec2& velocity) const;
+    // this returns the camera offset used to keep hud elements screen-anchored
+    cugl::Vec2 getHUDOffset() const;
 
     // GA: itemnet old scene-local item prototype kept for reference while
     // ItemSet/Inventory replace the temporary vector-based path.
