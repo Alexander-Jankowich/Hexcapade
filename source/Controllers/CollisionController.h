@@ -36,9 +36,17 @@ public:
 
     void resolvePlayerEnemies(std::shared_ptr<Player>& player, const cugl::Vec2& playerPos,
         float playerRadius, const std::shared_ptr<EnemySet>& enemy);
+    
+    void resolvePlayersEnemies( std::unordered_set<std::shared_ptr<Player>> players,
+        float playerRadius, const std::shared_ptr<EnemySet>& enemy);
 
     void resolveEnemiesSpell(SpellSet& spells, std::shared_ptr<EnemySet>& enemy,
         cugl::Vec2 knockback);
+
+    void resolvePlayersSpell(SpellSet& spells,
+        std::unordered_set<std::shared_ptr<Player>>& players,
+        int healAmount,
+        const std::string& casterPID);
 
 private:
     /**

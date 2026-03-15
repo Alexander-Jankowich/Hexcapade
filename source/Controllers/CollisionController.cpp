@@ -28,6 +28,16 @@ void CollisionController::resolvePlayerEnemies(std::shared_ptr<Player>& player,
     }
 }
 
+void CollisionController::resolvePlayersEnemies( std::unordered_set<std::shared_ptr<Player>> players,
+                           float playerRadius, const std::shared_ptr<EnemySet>& enemies) {
+    for (auto it = players.begin(); it != players.end(); ++it) {
+        std::shared_ptr<Player> ptr = (*it);
+        resolvePlayerEnemies(ptr, ptr->getPosition(), playerRadius, enemies);
+    }
+    
+}
+
+
 bool CollisionController::resolvePlayerItem(const std::shared_ptr<Player>& player,
     const Vec2& itemPos, float itemRadius) {
     Vec2 p1 = player->getPosition() - player->getSize() / 2;
@@ -45,6 +55,10 @@ void CollisionController::resolveEnemySpell(SpellSet& spells, std::shared_ptr<En
     auto sp_iter = spells.current.begin();
     while(sp_iter != spells.current.end()) {
         float dist = (sp_iter->second->position - enemy->getPosition()).length();
+        if (sp_iter->second->healed) {
+            ++sp_iter;
+            continue;
+        }
         if (dist <= enemyRadius + 10) { // hard coding a spell radius bc WHATEVER
             // handle collision
             if(sp_iter->second->froze){
@@ -58,6 +72,31 @@ void CollisionController::resolveEnemySpell(SpellSet& spells, std::shared_ptr<En
             sp_iter = spells.current.erase(sp_iter);
         }
         
+        else ++sp_iter;
+    }
+}
+
+void CollisionController::resolvePlayersSpell(SpellSet& spells,
+    std::unordered_set<std::shared_ptr<Player>>& players,
+    int healAmount,
+    const std::string& casterPID) {
+    auto sp_iter = spells.current.begin();
+    while (sp_iter != spells.current.end()) {
+        if (!sp_iter->second->healed) { 
+            ++sp_iter; continue; 
+        }
+        bool consumed = false;
+        for (auto& p : players) {
+            if (p->getPID() == casterPID) continue;
+            Vec2 diff = sp_iter->second->position - p->getPosition();
+            if (diff.length() < 20.0f) { 
+                int newHealth = std::min(p->getHealth() + healAmount, 100);
+                p->setHealth(newHealth);
+                consumed = true;
+                break;
+            }
+        }
+        if (consumed) sp_iter = spells.current.erase(sp_iter);
         else ++sp_iter;
     }
 }

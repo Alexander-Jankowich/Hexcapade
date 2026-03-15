@@ -55,7 +55,7 @@ public:
      *
      * @return true if the initialization was successful
      */
-    bool init(const cugl::Rect bounds);
+    bool init(std::shared_ptr<cugl::JsonValue> values, const cugl::Rect bounds);
 
     /**
      * Disposes this input controller, deactivating all listeners.
@@ -406,6 +406,8 @@ protected:
     /** The current touch location for the bottom zone */
     TouchInstance _mtouch;
     
+
+
     /** Whether the virtual joystick is active */
     bool _joystick;
     /** The position of the virtual joystick center*/
@@ -414,6 +416,7 @@ protected:
     cugl::Vec2 _joystickpos;
     /** Radius of joystick */
     int _joyradius;
+    int _deadzone;
 
     /** The timestamp for a double tap on the right */
     cugl::Timestamp _rtime;

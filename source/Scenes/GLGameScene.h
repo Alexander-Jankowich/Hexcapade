@@ -73,16 +73,16 @@ protected:
     bool _playerWon;
     /** Whether the player has lost */
     bool _playerLost;
+
     std::shared_ptr<cugl::AssetManager> _assets;
     /** Font for rendering HUD text */
     std::shared_ptr<cugl::graphics::Font> _font;
-    cugl::Poly2 capsule;
-    cugl::Path2 path;
-    cugl::Poly2 circle;
-    std::vector<cugl::Poly2> handles;
-    std::vector<cugl::Poly2> knobs;
-    cugl::Path2 star_path;
-    cugl::Poly2 poly_star;
+
+    /** The constants json */
+    std::shared_ptr<cugl::JsonValue> _constants;
+    /** The gestures json */
+    std::shared_ptr<cugl::JsonValue> _gestures;
+
     bool input_down = false;
 
     SpellSet spells;
@@ -183,6 +183,8 @@ public:
      * @return true if the controller is initialized properly, false otherwise.
      */
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
+    
+    std::shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
 
     void addItem(int value);
     int getInventoryValue() const;

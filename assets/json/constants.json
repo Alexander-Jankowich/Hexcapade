@@ -1,0 +1,40 @@
+{
+    "input": {
+        "aim_time": 1,
+        "joystick": {
+            "radius": 100,
+            "dead_zone": 15,
+            "base_color": [ 144, 144, 144, 150 ],
+            "joystick_color": [ 89, 89, 89, 240 ]
+        },
+        "gesture_trail": {
+            "width": 30,
+            "color": [ 199, 140, 6, 150 ]
+        },
+        "aim": {
+            "color": [ 199, 140, 6, 255 ]
+        }
+    },
+  "spells": {
+    "fireball": {
+      "speed": 5,
+      "damage": 5
+    },
+    "freeze": {
+      "speed": 5,
+      "damage": 2,
+      "freeze": true
+    },
+    "heal": {
+      "speed": 5,
+      "damage": 0,
+      "heal": true
+    }
+  },
+    "enemies": {
+
+    },
+    "artifacts": {
+
+    }
+}

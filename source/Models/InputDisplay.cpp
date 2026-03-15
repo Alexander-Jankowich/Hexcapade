@@ -19,21 +19,34 @@ float ARROW[] = {
 	70, 5
 };
 
-InputDisplay::InputDisplay(InputController* input) {
+Color4 colorFromVec(std::vector<int> vec) {
+	return Color4(vec[0], vec[1], vec[2], vec[3]);
+}
+
+InputDisplay::InputDisplay(InputController* input, std::shared_ptr<JsonValue> values) {
 	_input = input;
 
+	// Set joystick constants
 	PolyFactory factory = PolyFactory();
-	_joybase = factory.makeCircle(0, 0, _input->getJoystickRadius());
-	_joystick = factory.makeCircle(0, 0, _input->getJoystickRadius() / 2);
+	_joybase = factory.makeCircle(0, 0, values->get("joystick")->getInt("radius"));
+	_joystick = factory.makeCircle(0, 0, values->get("joystick")->getInt("radius") / 2);
+	_baseColor = colorFromVec(values->get("joystick")->get("base_color")->asIntArray());
+	_joystickColor = colorFromVec(values->get("joystick")->get("joystick_color")->asIntArray());
 
 	_showJoystick = false;
 
+	// Set aim arrow constants
 	_showAim = false;
 	EarclipTriangulator triangulator = EarclipTriangulator();
 	Path2 arrow = Path2(reinterpret_cast<Vec2*>(ARROW), 7);
     triangulator.set(arrow);
     triangulator.calculate();
 	_arrow = triangulator.getPolygon();
+	_arrowColor = colorFromVec(values->get("aim")->get("color")->asIntArray());
+
+	// Set gesture constants
+	_gestureWidth = values->get("gesture_trail")->getInt("width");
+	_gestureColor = colorFromVec(values->get("gesture_trail")->get("color")->asIntArray());
 }
 
 void InputDisplay::update(Vec2 playerPos) {
@@ -62,20 +75,20 @@ void InputDisplay::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batc
 	batch->setTexture(nullptr);
 
 	if (_showJoystick) {
-		batch->setColor(Color4(144, 144, 144, 150));
+		batch->setColor(_baseColor);
 		batch->fill(_joybase, Vec2::ZERO, _jbaseTrans);
 
-		batch->setColor(Color4(89, 89, 89, 240));
+		batch->setColor(_joystickColor);
 		batch->fill(_joystick, Vec2::ZERO, _jstickTrans);
 	}
 
 	if (_gesture.size() > 3) {
-		batch->setColor(Color4(199, 140, 6, 150));
+		batch->setColor(_gestureColor);
 		batch->fill(_gestureDisplay);
 	}
 
 	if (_showAim) {
-		batch->setColor(Color4(199, 140, 6, 255));
+		batch->setColor(_arrowColor);
 		batch->fill(_arrow, Vec2::ZERO, _arrowTrans);
 	}
 }

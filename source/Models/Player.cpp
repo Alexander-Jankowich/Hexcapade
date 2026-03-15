@@ -19,6 +19,7 @@ Player::Player(const cugl::Vec2& pos, float speed, std::string pid, const std::s
     _curSpell = SpellType::NONE;
     _curSpellNum = 0;
     _inventory = nullptr;
+    _inventoryVal=0;
     if (t) {
         _size = t->getSize();
         _texture = t;
@@ -35,6 +36,7 @@ Player::Player(const cugl::Vec2& pos, float speed) : Entity(pos, 100) {
     _curSpell = SpellType::NONE;
     _curSpellNum = 0;
     _inventory = nullptr;
+    _inventoryVal=0;
 }
 
 void Player::setVelocity(cugl::Vec2 value) {

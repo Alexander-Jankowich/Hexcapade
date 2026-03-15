@@ -12,28 +12,30 @@ using namespace cugl::graphics;
 
 #pragma mark Spell
 
-SpellSet::Spell::Spell(const cugl::Vec2 pos,const cugl::Vec2 vel, bool f){
-    damage = f ? 2 : 5;
+SpellSet::Spell::Spell(const cugl::Vec2 pos,const cugl::Vec2 vel, int dmg, bool f, bool h){
+    damage = dmg;
     froze = f;
+    healed = h;
     velocity = vel;
     position = pos;
-    
 }
 
 void SpellSet::Spell::update(){
     position += velocity;
 };
 
-SpellSet::SpellSet(){
+SpellSet::SpellSet(std::shared_ptr<cugl::JsonValue> spellConsts){
+    _spellConsts = spellConsts;
+
     current.clear();
     pending.clear();
-    mass = 0.0;
+    _mass = 0.0;
 }
 
 void SpellSet::setTexture(const std::shared_ptr<Texture>& value) {
     Size size = value->getSize();
-    radius = std::max(size.width,size.height)/2;
-    texture = value;
+    _radius = std::max(size.width,size.height)/2;
+    _texture = value;
 }
 
 void SpellSet::spawnSpell(std::string sid, SpellType type, Vec2 position, float angle) {
@@ -44,13 +46,17 @@ void SpellSet::spawnSpell(std::string sid, SpellType type, Vec2 position, float 
 void SpellSet::spawnSpell(std::string sid, SpellType type, cugl::Vec2 position, cugl::Vec2 angle) {
     cugl::Vec2 norm = angle.getNormalization();
     std::shared_ptr<Spell> spell;
+    std::shared_ptr<JsonValue> values;
 
     switch (type) {
     case SpellType::FIREBALL:
-        spell = std::make_shared<Spell>(position, norm * SPELL_SPEED, false);
+        values = _spellConsts->get("fireball");
         break;
     case SpellType::FREEZE:
-        spell = std::make_shared<Spell>(position, norm*SPELL_SPEED, true);
+        values = _spellConsts->get("freeze");
+        break;
+    case SpellType::HEAL:
+        values = _spellConsts->get("heal");
         break;
     case SpellType::NONE:
         return;
@@ -58,6 +64,11 @@ void SpellSet::spawnSpell(std::string sid, SpellType type, cugl::Vec2 position, 
         CULog("Spell not implemented!!!!");
         return;
     }
+
+    spell = std::make_shared<Spell>(position, norm * values->getFloat("speed"),
+        values->getInt("damage"),
+        values->getBool("freeze", false),
+        values->getBool("heal", false));
 
     pending.emplace(sid, spell);
 }
@@ -79,14 +90,18 @@ void SpellSet::update(){
 void SpellSet::draw(const std::shared_ptr<SpriteBatch>& batch) {
     for(auto it = current.begin(); it != current.end(); ++it) {
         Vec2 pos = it->second->position;
-        Vec2 origin(radius,radius);
+        Vec2 origin(_radius,_radius);
         
         Affine2 trans;
         trans.translate(pos);
         if(it->second-> froze){
-            batch -> draw(texture,Color4::BLUE,origin,trans);
-        }else{
-            batch -> draw(texture,Color4::RED, origin, trans);
+            batch -> draw(_texture,Color4::BLUE,origin,trans);
+        }
+        else if (it->second->healed) {
+            batch->draw(_texture, Color4(0, 200, 0, 255), origin, trans);
+        }
+        else{
+            batch -> draw(_texture,Color4::RED, origin, trans);
         }
         
     }
@@ -97,5 +112,5 @@ bool SpellSet::contains(std::string sid) {
 }
 
 void SpellSet::dispose() {
-    texture = nullptr;
+    _texture = nullptr;
 }

@@ -246,6 +246,8 @@ private:
             return 1;
         case SpellType::FREEZE:
             return 2;
+        case SpellType::HEAL:
+            return 3;
         case SpellType::NONE:
         default:
             return 0;
@@ -260,6 +262,8 @@ private:
             return SpellType::FIREBALL;
         case 2:
             return SpellType::FREEZE;
+        case 3:
+            return SpellType::HEAL;
         default:
             return SpellType::NONE;
         }
