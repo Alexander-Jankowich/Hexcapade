@@ -12,6 +12,7 @@
 #include <memory>
 #include <random>
 #include <vector>
+#include "GameplayConfig.h"
 #include "Item.h"
 
 class ItemSet {
@@ -37,6 +38,12 @@ private:
     std::mt19937 _rng;
     /** Default pickup overlap radius for prototype item circles. */
     float _defaultRadius;
+    /** current item spawn config loaded from json */
+    ItemSpawnConfig _spawnConfig;
+    /** cached weighted artifact entries */
+    std::vector<ItemCatalogEntryConfig> _artifactCatalog;
+    /** cached weighted spellbook entries */
+    std::vector<ItemCatalogEntryConfig> _spellbookCatalog;
     /** Simple counters used to generate stable placeholder ids. */
     int _nextArtifactIndex;
     int _nextSpellbookIndex;
@@ -49,6 +56,8 @@ public:
 
     /** Defines the playable bounds used by spawn and drop helpers. */
     void setSpawnBounds(const cugl::Rect& bounds);
+    /** stores the item spawn json config used for room seeding */
+    void setSpawnConfig(const ItemSpawnConfig& config);
 
     size_t size() const { return _items.size(); }
     const std::vector<WorldItem>& getItems() const { return _items; }
@@ -74,6 +83,15 @@ public:
     void spawnRandomItem();
 
     /**
+     * Seeds the initial world items using room-generated spawn points.
+     *
+     * // ga: procnet
+     * this is the first room-aware item path. host snapshots still remain the
+     * multiplayer source of truth after these items are seeded.
+     */
+    void spawnFromRoomPositions(const std::vector<cugl::Vec2>& positions);
+
+    /**
      * Spawns extra prototype items until the world reaches a target value.
      *
      * // GA: itemnet
@@ -81,6 +99,9 @@ public:
      * loot to test quota runs before procedural room spawn plans arrive.
      */
     void spawnUntilTotalValueAtLeast(int targetTotalValue, int maxAdditionalItems);
+    int spawnUntilTotalValueAtLeast(const std::vector<cugl::Vec2>& positions,
+                                    int targetTotalValue,
+                                    int maxAdditionalItems);
 
     /**
      * Inserts a dropped inventory item back into world space.
@@ -112,6 +133,16 @@ public:
 private:
     /** Builds one temporary prototype item instance. */
     WorldItem createRandomItem(bool forceArtifact, bool forceSpellbook);
+    /** builds one temporary/procgen item at a chosen room spawn point */
+    WorldItem createItemAtPosition(const cugl::Vec2& position, bool forceArtifact, bool forceSpellbook);
+    /** chooses one weighted catalog entry from the loaded config */
+    const ItemCatalogEntryConfig* chooseCatalogEntry(const std::vector<ItemCatalogEntryConfig>& catalog);
+    /** rebuilds split artifact/spellbook caches after config changes */
+    void rebuildCatalogCaches();
+    /** spacing helper so room seeds do not stack items on top of each other */
+    bool overlapsExistingItems(const cugl::Vec2& position, float radius, float spacingPadding) const;
+    /** nudges a preferred room seed to a nearby open point inside bounds */
+    cugl::Vec2 findOpenSpawnPosition(const cugl::Vec2& preferred, float radius);
     /** Chooses a random point inside the current spawn bounds. */
     cugl::Vec2 createRandomPosition();
     /** Keeps a position inside the current spawn bounds. */

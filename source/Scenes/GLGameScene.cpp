@@ -277,6 +277,7 @@ int GameScene::getInventoryValue() const {
 
 void GameScene::loadGameplayConfig() {
     _runConfig = hexcapade::gameplayconfig::loadRunBalanceConfigFromAssets();
+    _itemSet.setSpawnConfig(_runConfig.item);
 }
 
 void GameScene::rebuildMapForRun() {
@@ -301,16 +302,25 @@ void GameScene::rebuildMapForRun() {
     _player->setPosition(_map->getPlayerSpawn());
 
 #if 0
-    // ga: procnet old screen-space spawn bounds kept here as reference while
-    // the map now defines the world area
-    _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
-#endif
+    // ga: procnet old random item seeding kept as reference while room spawn
+    // points become the temporary source for initial item placement
     _itemSet.reset();
     _itemSet.setSpawnBounds(_map->getWorldBounds());
     if (kGuaranteedArtifacts > 0 || kGuaranteedSpellbooks > 0) {
         _itemSet.spawnInitialPrototypeItems();
     }
     _itemSet.spawnUntilTotalValueAtLeast(
+        (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
+        kMaxAdditionalPrototypeItems
+    );
+#endif
+    _itemSet.reset();
+    _itemSet.setSpawnConfig(_runConfig.item);
+    _itemSet.setSpawnBounds(_map->getWorldBounds());
+    const std::vector<Vec2>& itemSpawnPoints = _roomController.getInitialItemSpawnPoints();
+    _itemSet.spawnFromRoomPositions(itemSpawnPoints);
+    _itemSet.spawnUntilTotalValueAtLeast(
+        itemSpawnPoints,
         (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
         kMaxAdditionalPrototypeItems
     );
