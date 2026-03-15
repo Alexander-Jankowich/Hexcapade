@@ -74,6 +74,12 @@ struct HostInput
     float dt = 0.0f;
     int depositedValue = 0;
     int quota = 0;
+    // ga: procnet
+    // host-chosen run metadata so every client can rebuild the same map
+    int runRevision = 0;
+    unsigned int mapSeed = 0;
+    float mapSceneWidth = 0.0f;
+    float mapSceneHeight = 0.0f;
     std::vector<HostPlayerData> players;
     std::vector<HostEnemyData> enemies;
     std::vector<HostSpellData> spells;
@@ -154,6 +160,10 @@ public:
         json->appendValue("dt", (double)input.dt);
         json->appendValue("deposited_value", (long)input.depositedValue);
         json->appendValue("quota", (long)input.quota);
+        json->appendValue("run_revision", (long)input.runRevision);
+        json->appendValue("map_seed", (long)input.mapSeed);
+        json->appendValue("map_scene_width", (double)input.mapSceneWidth);
+        json->appendValue("map_scene_height", (double)input.mapSceneHeight);
 
         json->appendArray("players");
         auto playersArr = json->get("players");
@@ -206,6 +216,10 @@ public:
         output.dt = json->getFloat("dt");
         output.depositedValue = json->getInt("deposited_value");
         output.quota = json->getInt("quota");
+        output.runRevision = json->getInt("run_revision", output.runRevision);
+        output.mapSeed = (unsigned int)json->getInt("map_seed", (int)output.mapSeed);
+        output.mapSceneWidth = json->getFloat("map_scene_width", output.mapSceneWidth);
+        output.mapSceneHeight = json->getFloat("map_scene_height", output.mapSceneHeight);
 
         std::vector<HostPlayerData> pdata;
         for (auto c : json->get("players")->children())
