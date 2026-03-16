@@ -43,7 +43,7 @@ public:
      * @param pos   The ship position
      * @param data  The data defining the physics constants
      */
-    Enemy(const cugl::Vec2& pos, float speed, int health);
+    Enemy(const cugl::Vec2& pos, float speed, int health, std::shared_ptr<cugl::graphics::Texture>& tex);
     
     /**
      * Disposes the ship, releasing all resources.

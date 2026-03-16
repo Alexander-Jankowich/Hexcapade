@@ -11,15 +11,14 @@
 #ifndef __ENTITY_H__
 #define __ENTITY_H__
 #include <cugl/cugl.h>
+using namespace cugl;
+using namespace cugl::scene2;
 
 /**
  * Model class representing an entity.
  */
-class Entity {
+class Entity : public SpriteNode {
 protected:
-    /** Position of entity */
-    cugl::Vec2 _pos;
-
     /** Velocity of entity */
     cugl::Vec2 _velocity;
 
@@ -29,9 +28,6 @@ protected:
 
     /** The amount of health this entity has */
     int _health;
-    // Asset references. These should be set by GameScene
-    /** Reference to the ships sprite sheet */
-    std::shared_ptr<cugl::graphics::SpriteSheet> _sprite;
 
     /** Radius of the ship in pixels (derived from sprite sheet) */
     cugl::Size _size;
@@ -40,7 +36,6 @@ protected:
     bool _knockback;
     int _knockback_counter;
 
-    std::shared_ptr<cugl::graphics::Texture> _texture;
     cugl::Color4 _color;
 
 public:
@@ -54,7 +49,7 @@ public:
      * @param pos   The ship position
      * @param data  The data defining the physics constants
      */
-    Entity(const cugl::Vec2& pos, int health);
+    Entity(const cugl::Vec2& pos, int health, std::shared_ptr<cugl::graphics::Texture> tex);
 
     /**
      * Disposes the ship, releasing all resources.
@@ -70,7 +65,7 @@ public:
      *
      * @return the position of this ship
      */
-    const cugl::Vec2& getPosition() const { return _pos; }
+    const cugl::Vec2& getPosition() const { return _position; }
 
     /**
      * Sets the position of this ship.
@@ -81,7 +76,7 @@ public:
      *
      * @param value the position of this ship
      */
-    void setPosition(cugl::Vec2 value) { _pos = value; }
+    void setPosition(cugl::Vec2 value) { _position = value; }
 
     /**
      * Returns the velocity of this ship.

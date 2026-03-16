@@ -17,12 +17,12 @@ EnemySet::EnemySet() {
 
 void EnemySet::spawnEnemy(const cugl::Vec2 position, int health){
     // this IS stupid but yolo - serena
-    current.insert(std::make_pair(_totalCount, std::make_shared<Enemy>(position, 2.5, health)));
+    current.insert(std::make_pair(_totalCount, std::make_shared<Enemy>(position, 2.5, health, _texture)));
     _totalCount++;
 }
 void EnemySet::clientSpawnEnemy(int eid, const cugl::Vec2 position, int health){
     // this IS stupid but yolo - serena
-    current.insert(std::make_pair(eid, std::make_shared<Enemy>(position, 2.5, health)));
+    current.insert(std::make_pair(eid, std::make_shared<Enemy>(position, 2.5, health, _texture)));
 }
 
 Vec2 getClosestPlayer(Vec2 enemPos, std::vector<Vec2> targs) {

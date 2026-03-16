@@ -12,16 +12,17 @@ using namespace cugl::graphics;
 
 #pragma mark Spell
 
-SpellSet::Spell::Spell(const cugl::Vec2 pos,const cugl::Vec2 vel, int dmg, bool f, bool h){
+SpellSet::Spell::Spell(const cugl::Vec2 pos,const cugl::Vec2 vel, int dmg, bool f, bool h, int rows, int cols, std::shared_ptr<cugl::graphics::Texture> tex){
+    initWithSheet(tex,rows,cols);
     damage = dmg;
     froze = f;
     healed = h;
     velocity = vel;
-    position = pos;
+    _position = pos;
 }
 
 void SpellSet::Spell::update(){
-    position += velocity;
+    _position += velocity;
 };
 
 SpellSet::SpellSet(std::shared_ptr<cugl::JsonValue> spellConsts){
@@ -68,7 +69,7 @@ void SpellSet::spawnSpell(std::string sid, SpellType type, cugl::Vec2 position, 
     spell = std::make_shared<Spell>(position, norm * values->getFloat("speed"),
         values->getInt("damage"),
         values->getBool("freeze", false),
-        values->getBool("heal", false));
+        values->getBool("heal", false),1,1,_texture);
 
     pending.emplace(sid, spell);
 }
@@ -89,19 +90,19 @@ void SpellSet::update(){
 
 void SpellSet::draw(const std::shared_ptr<SpriteBatch>& batch) {
     for(auto it = current.begin(); it != current.end(); ++it) {
-        Vec2 pos = it->second->position;
+        Vec2 pos = it->second->_position;
         Vec2 origin(_radius,_radius);
         
         Affine2 trans;
         trans.translate(pos);
         if(it->second-> froze){
-            batch -> draw(_texture,Color4::BLUE,origin,trans);
+            batch -> draw(it -> second -> getTexture() ,Color4::BLUE,origin,trans);
         }
         else if (it->second->healed) {
-            batch->draw(_texture, Color4(0, 200, 0, 255), origin, trans);
+            batch->draw(it -> second -> getTexture(), Color4(0, 200, 0, 255), origin, trans);
         }
         else{
-            batch -> draw(_texture,Color4::RED, origin, trans);
+            batch -> draw(it -> second -> getTexture(),Color4::RED, origin, trans);
         }
         
     }

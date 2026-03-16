@@ -11,14 +11,15 @@ using namespace cugl;
  * @param pos   The ship position
  * @param data  The data defining the physics constants
  */
-Enemy::Enemy(const cugl::Vec2& pos, float speed, int health) : Entity(pos, health) {
+Enemy::Enemy(const cugl::Vec2& pos, float speed, int health,
+             std::shared_ptr<cugl::graphics::Texture>& tex) : Entity(pos, health, tex) {
     _speed = speed;
 }
 
 #pragma mark Movement
 
 bool Enemy::update(Vec2 target) {
-    _velocity = target - _pos;
+    _velocity = target - _position;
     _velocity.normalize();
     _velocity *= _speed;
 

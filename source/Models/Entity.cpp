@@ -15,8 +15,9 @@ using namespace cugl::graphics;
  * @param pos   The ship position
  * @param data  The data defining the physics constants
  */
-Entity::Entity(const cugl::Vec2& pos, int health) {
-    _pos = pos;
+Entity::Entity(const cugl::Vec2& pos, int health, std::shared_ptr<cugl::graphics::Texture> tex) {
+    initWithSheet(tex, 1, 1);
+    _position = pos;
     _health = health;
 
     _knockback = false;
@@ -58,7 +59,7 @@ void Entity::update() {
     }
     if (_knockback) {
         _knockback_counter++;
-        _pos += _knockback_vel.normalize() * _velocity.length();
+        _position += _knockback_vel.normalize() * _velocity.length();
         if (_knockback_counter >= KNOCKBACK_FRAMES) {
             _knockback = false;
             _knockback_counter = 0;
@@ -66,7 +67,7 @@ void Entity::update() {
         return;
     }
 
-    _pos += _velocity;
+    _position += _velocity;
 }
 
 void Entity::setKnockback(Vec2 v) {
@@ -87,6 +88,6 @@ void Entity::setTexture(const std::shared_ptr<Texture>& value) {
 
 void Entity::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) {
     static Affine2 trans;
-    trans = Affine2::createTranslation(_pos);
+    trans = Affine2::createTranslation(_position);
     batch->draw(_texture, _color, _size/2, trans);
 }

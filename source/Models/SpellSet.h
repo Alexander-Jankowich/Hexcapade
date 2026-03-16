@@ -7,6 +7,8 @@
 #ifndef __SPELL_SET_H__
 #define __SPELL_SET_H__
 #include <cugl/cugl.h>
+using namespace cugl;
+using namespace cugl::scene2;
 
 #pragma mark Spell
 
@@ -21,15 +23,14 @@ enum class SpellType {
 class SpellSet {
 #pragma mark Spell
 public:
-    class Spell{
+    class Spell : public SpriteNode {
     public:
-        cugl::Vec2 position;
         cugl::Vec2 velocity;
         float damage;
         bool froze;
         bool healed;
         
-        Spell(const cugl::Vec2 pos,cugl::Vec2 vel, int dmg, bool freeze, bool healed);
+        Spell(const cugl::Vec2 pos,cugl::Vec2 vel, int dmg, bool freeze, bool healed, int rows, int cols, std::shared_ptr<cugl::graphics::Texture> texture);
         
         void update();
     };

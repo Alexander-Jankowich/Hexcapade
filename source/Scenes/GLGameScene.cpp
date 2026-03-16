@@ -73,8 +73,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _inputDisplay = make_shared<InputDisplay>(&_input, _constants->get("input"));
 
     // create the player
-    _player = make_shared<Player>(getSize() / 2, 12);
-    _player->setTexture(assets->get<Texture>("player"));
+    _player = make_shared<Player>(getSize() / 2, 12, assets->get<Texture>("player"));
 
     _players = make_shared<PlayerSet>();
     _players->addPlayer(_player);
@@ -403,8 +402,8 @@ void GameScene::preUpdate(float dt)
         {
             HostSpellData sd;
             sd.id = sid;
-            sd.posX = sp->position.x;
-            sd.posY = sp->position.y;
+            sd.posX = sp->_position.x;
+            sd.posY = sp->_position.y;
             sd.velAngle = sp->velocity.getAngle();
             sd.type = sp->froze ? SpellType::FREEZE : SpellType::FIREBALL;
             hi.spells.push_back(sd);

@@ -54,7 +54,7 @@ void CollisionController::resolveEnemySpell(SpellSet& spells, std::shared_ptr<En
     Vec2 knockback, float enemyRadius) {
     auto sp_iter = spells.current.begin();
     while(sp_iter != spells.current.end()) {
-        float dist = (sp_iter->second->position - enemy->getPosition()).length();
+        float dist = (sp_iter->second->_position - enemy->getPosition()).length();
         if (sp_iter->second->healed) {
             ++sp_iter;
             continue;
@@ -88,8 +88,8 @@ void CollisionController::resolvePlayersSpell(SpellSet& spells,
         bool consumed = false;
         for (auto& p : players) {
             if (p->getPID() == casterPID) continue;
-            Vec2 diff = sp_iter->second->position - p->getPosition();
-            if (diff.length() < 20.0f) { 
+            Vec2 diff = sp_iter->second->_position - p->getPosition();
+            if (diff.length() < 20.0f) {
                 int newHealth = std::min(p->getHealth() + healAmount, 100);
                 p->setHealth(newHealth);
                 consumed = true;
