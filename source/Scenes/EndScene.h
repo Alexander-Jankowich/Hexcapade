@@ -39,7 +39,7 @@ public:
     void hide() { _state = State::NONE; _replayPressed = false; }
 
     bool isVisible()      const { return _state != State::NONE; }
-    bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->getStatus()==NetworkController::Status::START); }
+    bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->getStatus()==NetworkController::Status::READY); }
 
     void update(float dt);
     void render() override;

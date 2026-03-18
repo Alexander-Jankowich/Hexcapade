@@ -145,15 +145,15 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
         this->linkSceneToObs(obs, node);
         };
 
-    _network->enablePhysics(_world, linkSceneToObsFunc);
+    _networkCtrl->enablePhysics(_world, linkSceneToObsFunc);
 
     //if (!isHost) {
     //    _network->getPhysController()->acquireObs(_cannon2, 0);
     //}
 
-    _spellFactId = _network->getPhysController()->attachFactory(_spellFact);
-    _playerFactId = _network->getPhysController()->attachFactory(_playerFact);
-    _enemyFactId = _network->getPhysController()->attachFactory(_enemyFact);
+    _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
+    _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
+    _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
 
     // Make player now
     //auto params = _playerFact->serializeParams(getSize() / 2, Vec2::ZERO, "???");
@@ -190,7 +190,7 @@ void GameScene::reset()
     spawnInitialItems();
     
     if (_ishost) { // broadcast to all in room
-        _networkCtrl.startGame();
+        _networkCtrl->startGame();
     }
 }
 
@@ -257,7 +257,7 @@ void GameScene::preUpdate(float dt)
             lastEnemySpawn = 0;
             //_enemy->spawnEnemy(getSize() / 2, 4);
             auto params = _enemyFact->serializeParams(getSize() / 2, Vec2::ZERO, 4);
-            auto pair = _network->getPhysController()->addSharedObstacle(_enemyFactId, params);
+            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
         }
     }
 
@@ -294,7 +294,7 @@ void GameScene::preUpdate(float dt)
         {
             //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
             auto params = _spellFact->serializeParams(playerScreenPos, angle*5, _player->getSpell());
-            auto pair = _network->getPhysController()->addSharedObstacle(_spellFactId, params);
+            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
 
             _input.resolveSpell();
             _player->resolveSpell();
@@ -309,7 +309,7 @@ void GameScene::preUpdate(float dt)
     }
     if ((_playerLost || _playerWon) && _ishost)
     {
-        _networkCtrl.endGame(_playerWon);
+        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
     }
 }
 
@@ -600,20 +600,12 @@ void GameScene::setActive(bool value)
         {
             _input.activate();
             // Host registers callback to collect client inputs each frame
-            if (_ishost)
-            {
-                _networkCtrl.setInputCallback(
-                    [this](const std::string &playerId, const ClientInput &input)
-                    {
-                        _clientInputs[playerId] = input;
-                    });
-            }
             // create the OTHER players (both host n client do this) - must do once game scene takes over network handling
-            _player->setPID(_networkCtrl.getPID());
-            CULog("num players acc to game network: %d", _networkCtrl.getPlayers().size());
-            for (auto p : _networkCtrl.getPlayers())
+            _player->setPID(_networkCtrl->getPID());
+            CULog("num players acc to game network: %d", _networkCtrl->getPlayers().size());
+            for (auto p : _networkCtrl->getPlayers())
             {
-                if (p != _networkCtrl.getPID())
+                if (p != _networkCtrl->getPID())
                 {
                     CULog("adding ANOTHER player");
                     _players->addPlayer(make_shared<Player>(cugl::Vec2(2 + getSize().width / 2, 2 + getSize().height / 2), 12, p, _assets->get<Texture>("player")));
@@ -621,7 +613,7 @@ void GameScene::setActive(bool value)
             }
             CULog("num players in set: %d", _players->numPlayers());
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
-                  _networkCtrl.hasNetwork(), _networkCtrl.isHost());
+                  _networkCtrl->hasNetwork(), _networkCtrl->isHost());
         }
         else
         {
@@ -633,7 +625,7 @@ void GameScene::setActive(bool value)
 void GameScene::addInitObstacle(const std::shared_ptr<physics2::Obstacle>& obj,
     const std::shared_ptr<scene2::SceneNode>& node) {
     _world->initObstacle(obj);
-    if (_network->isHost()) {
+    if (_networkCtrl->isHost()) {
         _world->getOwnedObstacles().insert({ obj,0 });
     }
     linkSceneToObs(obj, node);

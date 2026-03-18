@@ -384,7 +384,7 @@ void GeometryApp::updateHostScene(float dt) {
     _hostScene.update(dt);
 
     switch (_hostScene.getStatus()) {
-    case NetworkController::Status::ABORT:
+    case NetworkController::Status::NETERROR:
         
         _hostScene.setActive(false);
         _hostScene.reset();
@@ -392,7 +392,7 @@ void GeometryApp::updateHostScene(float dt) {
         _mainmenu.setActive(true);
         _scene = State::MENU;
         break;
-    case NetworkController::Status::START:
+    case NetworkController::Status::READY:
             _hostScene.setActive(false);
             _gameplay.setConnection(_hostScene.getNetwork(), true);
             // Transfer connection ownership
@@ -400,9 +400,7 @@ void GeometryApp::updateHostScene(float dt) {
             _gameplay.setActive(true);
             _scene = State::GAME;
         break;
-    case NetworkController::Status::WAIT:
-    case NetworkController::Status::IDLE:
-        case NetworkController::Status::JOIN: // should not happen but whatever
+    default: // should not happen but whatever
         break;
     }
 }
@@ -411,7 +409,7 @@ void GeometryApp::updateClientScene(float dt) {
     _clientScene.update(dt);
 
     switch (_clientScene.getStatus()) {
-    case NetworkController::Status::ABORT:
+    case NetworkController::Status::NETERROR:
         // Reinitialize so a fresh connection is made next time
         _clientScene.setActive(false);
         _clientScene.reset();
@@ -419,7 +417,7 @@ void GeometryApp::updateClientScene(float dt) {
         _mainmenu.setActive(true);
         _scene = State::MENU;
         break;
-    case NetworkController::Status::START:
+    case NetworkController::Status::READY:
             _clientScene.setActive(false);
             _gameplay.setConnection(_clientScene.getNetwork(), false);
             // Transfer connection ownership
@@ -427,9 +425,7 @@ void GeometryApp::updateClientScene(float dt) {
             _gameplay.setActive(true);
             _scene = State::GAME;
         break;
-    case NetworkController::Status::IDLE:
-    case NetworkController::Status::JOIN:
-    case NetworkController::Status::WAIT:
+    default:
         break;
     }
 }

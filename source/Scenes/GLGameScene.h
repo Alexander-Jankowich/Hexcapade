@@ -39,7 +39,7 @@
 class GameScene : public cugl::scene2::Scene2 {
 protected:
     // CONTROLLERS are attached directly to the scene (no pointers)
-    NetworkController _networkCtrl;
+    std::shared_ptr<NetworkController> _networkCtrl;
     bool _ishost;
     /** uuid to players most recent update*/
     std::unordered_map<std::string, ClientInput> _clientInputs;
@@ -52,8 +52,6 @@ protected:
 
     /** The Box2D world */
     std::shared_ptr<cugl::physics2::distrib::NetWorld> _world;
-
-    std::shared_ptr<cugl::physics2::distrib::NetEventController> _network;
 
     /** Factories */
     std::shared_ptr<SpellFactory> _spellFact;

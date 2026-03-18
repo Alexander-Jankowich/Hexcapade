@@ -20,14 +20,13 @@ using namespace cugl::physics2::distrib;
 */
 class PlayerObstacle : public physics2::CapsuleObstacle {
 protected:
-    string _pid;
+    std::string _pid;
 
     float _speed;
     float _playerAngle;
     SpellType _curSpell;
-    std::string _playerId; // player identifier, rn its the uuid
 public:
-    PlayerObstacle(Vec2 pos, std::string pid, cugl::Size s);
+    PlayerObstacle(Vec2 pos, string pid, cugl::Size s);
 
     static shared_ptr<PlayerObstacle> alloc(Vec2 pos, string pid, cugl::Size& s) {
         auto f = make_shared<PlayerObstacle>(pos, pid, s);
@@ -43,8 +42,8 @@ public:
 
     SpellType getSpell() { return _curSpell; }
 
-    const std::string getPID() const { return _playerId; }
-    void setPID(std::string pid) { _playerId = pid; }
+    const std::string getPID() const { return _pid; }
+    void setPID(std::string pid) { _pid = pid; }
 };
 
 /**

@@ -20,38 +20,6 @@ std::string NetworkController::dec2hex(const std::string& dec) {
     return strtool::to_hexstring(value, 4);
 }
 
-bool NetworkController::checkClientConnection() {
-    if (!_network) return false;
-    auto state = _network->getState();
-    switch (state) {
-    case NetcodeConnection::State::NEGOTIATING:
-        _status=Status::JOIN;
-            break;
-    case NetcodeConnection::State::CONNECTED:
-        attachReceiptHandler();
-        if (_status != Status::START) {
-            _status = Status::WAIT;
-        }
-        _playerCount = (int)_network->getNumPlayers();
-        _players = _network->getPlayers();
-
-        break;
-
-    case NetcodeConnection::State::DENIED:
-    case NetcodeConnection::State::MISMATCHED:
-    case NetcodeConnection::State::INVALID:
-    case NetcodeConnection::State::FAILED:
-    case NetcodeConnection::State::DISCONNECTED:
-        disconnect();
-        _status = Status::IDLE;
-        return false;
-
-    default:
-        break;
-    }
-    return true;
-}
-
 #pragma mark PrivateHostHelpers
 
 std::string NetworkController::hex2dec(const std::string& hex) {
@@ -67,133 +35,19 @@ std::string NetworkController::hex2dec(const std::string& hex) {
     return result;
 }
 
-bool NetworkController::checkHostConnection() {
-    if (!_network) return false;
-
-    NetcodeConnection::State state = _network->getState();
-    _playerCount = _network->getNumPlayers();
-    _players = _network->getPlayers();
-
-    
-    switch (state) {
-    case NetcodeConnection::State::NEGOTIATING:
-        _status = Status::WAIT;
-        break;
-
-    case NetcodeConnection::State::CONNECTED:
-        if (_status == Status::WAIT) {
-            _status = Status::IDLE;
-        }
-        break;
-
-    case NetcodeConnection::State::DENIED:
-    case NetcodeConnection::State::MISMATCHED:
-    case NetcodeConnection::State::INVALID:
-    case NetcodeConnection::State::FAILED:
-    case NetcodeConnection::State::DISCONNECTED:
-        disconnect();
-        _status = Status::WAIT;
-        return false;
-
-    default:
-        break;
-    }
-    return true;
-}
 
 
 #pragma mark PublicMethods
 
-void NetworkController::init(const std::shared_ptr<cugl::JsonValue> json, bool isHost){
-    _playerCount=1;
-    _config.set(json);
-    _ishost=isHost;
-    _status = isHost ? Status::WAIT : Status::IDLE;
-}
 
-
-
-void NetworkController::connect(bool isHost, const std::string& roomCode){
-    _ishost = isHost;
-    if(isHost){
-        _network = NetcodeConnection::alloc(_config);;
-        _network->open();
-        _uuid = _network->getUUID();
-        checkHostConnection();
-    } else {
-        std::string hex = dec2hex(roomCode);
-        _network = NetcodeConnection::alloc(_config, hex);
-        _network->open();
-        CULog("connecting client");
-        _uuid = _network->getUUID();
-        _currHost = _network->getHost(); // this mayyyy have locking issues hopefully not
-        
-        checkClientConnection();
-    }
-    //attachReceiptHandler(); // attach recieve listener when we start up
-}
-
-void NetworkController::startGame() {
-        if (_network) {
-            _network->startSession();
-            std::vector<std::byte> msg = { std::byte(255) };
-            _network->broadcast(msg);
-        }
-        _status = Status::START;
-}
 
 void NetworkController::endGame(bool won) {
-        if (_network) {
-            CULog("broadcasting end game");
-            std::byte data = won ? std::byte(101) : std::byte(102);
-            std::vector<std::byte> msg =  { data };
-            _network->broadcast(msg);
-        }
-        _status = won ? Status::WON : Status::LOST;
+//        if (_network) {
+//            CULog("broadcasting end game");
+//            std::byte data = won ? std::byte(101) : std::byte(102);
+//            std::vector<std::byte> msg =  { data };
+//            _network->broadcast(msg);
+//        }
+//        _status = won ? Status::WON : Status::LOST;
 }
 
-void NetworkController::attachReceiptHandler() {
-    if (!_network || _handlerAttached) return;
-    _handlerAttached = true;
-    CULog("attachReceiptHandler called, network open=%d", _network->isOpen());
-    _network->onReceipt([this](const std::string& source,
-        const std::vector<std::byte>& data) {
-        if (data.empty()) return;
-        if (!_ishost) { // Client
-            if (data[0]==std::byte(255)) { // start game
-                _status = Status::START;
-                checkClientConnection();
-            }
-            if (data[0]==std::byte(101)) { // end game
-                _status = Status::WON;
-                CULog("recieved end game");
-
-            }
-            if (data[0]==std::byte(102)) { // end game
-                _status = Status::LOST;
-                CULog("recieved end game");
-
-            }
-            else { // regular host message - hopefullyyyyy
-                HostInput* hi = new HostInput();
-                if (MessageSerializer::decodeHostInput(data, *hi)) {
-                    _latestHostInput = *hi;
-                    _hasNewHostInput = true;
-                }
-                else {
-                    CULog("CLIENT couldn't decode data");
-                }
-                delete hi;
-            }
-            
-        }
-            else { // host recieving
-                if (_inputCallback) {
-                    ClientInput input;
-                    if (MessageSerializer::decodeClientInput(data, input)) {
-                        _inputCallback(source, input);
-                    }
-                }
-            }
-        });
-}

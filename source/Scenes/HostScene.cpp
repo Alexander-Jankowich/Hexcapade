@@ -50,8 +50,7 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     });
     
     // Create the server configuration
-    auto json = _assets->get<JsonValue>("server");
-    _networkCtrl->init(json, true);
+    _networkCtrl->init(_assets);
     
     addChild(scene);
     setActive(false);
@@ -69,8 +68,8 @@ void HostScene::dispose() {
 #pragma mark Update / Render
 
 void HostScene::update(float dt) {
-    _networkCtrl->update();
-    _player->setText(std::to_string(_networkCtrl->playerCount()));
+    _networkCtrl->updateNet();
+    _player->setText(std::to_string(_networkCtrl->getNumPlayers()));
     if (_networkCtrl->getStatus() == NetworkController::Status::IDLE && _networkCtrl->hasNetwork()) {
         //_gameid->setText(_networkCtrl.getRoomCode());
         std::string code = _networkCtrl->getRoomCode();
@@ -88,7 +87,7 @@ void HostScene::setActive(bool value) {
             configureStartButton();
             _backout->activate();
             _startgame->activate();
-            _networkCtrl->connect(true);
+            _networkCtrl->connectAsHost();
         } else {
             _startgame->deactivate();
             _backout->deactivate();
@@ -106,7 +105,7 @@ void HostScene::updateText(const std::shared_ptr<scene2::Button>& button, const 
 }
 
 void HostScene::configureStartButton() {
-    if(_networkCtrl->getStatus()==NetworkController::Status::WAIT) {
+    if(_networkCtrl->getStatus()==NetworkController::Status::CONNECTED) {
         updateText(_startgame,"Waiting");
         _startgame->deactivate();
 
