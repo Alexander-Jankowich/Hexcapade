@@ -288,7 +288,7 @@ void GameScene::preUpdate(float dt)
             //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
             auto params = _spellFact->serializeParams(playerScreenPos, angle*5, _player->getSpell());
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-
+        }
         _input.resolveSpell();
         _player->resolveSpell();
     }
@@ -302,7 +302,7 @@ void GameScene::preUpdate(float dt)
             lastEnemySpawn = 0;
             //_enemy->spawnEnemy(getSize() / 2, 4);
             auto params = _enemyFact->serializeParams(getSize() / 2, Vec2::ZERO, 4);
-            auto pair = _network->getPhysController()->addSharedObstacle(_enemyFactId, params);
+            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
         }
 
         // Change to be all player positions
