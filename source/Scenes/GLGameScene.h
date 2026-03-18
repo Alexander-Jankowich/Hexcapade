@@ -25,6 +25,9 @@
 #include "../Models/PlayerSet.h"
 #include "../Controllers/CollisionController.h"
 #include "../Models/Player.h"
+#include "../Models/SpellFactory.h"
+#include "../Models/PlayerFactory.h"
+#include "../Models/EnemyFactory.h"
 
 /**
  * This class is the primary gameplay constroller for the demo.
@@ -36,7 +39,7 @@
 class GameScene : public cugl::scene2::Scene2 {
 protected:
     // CONTROLLERS are attached directly to the scene (no pointers)
-    std::shared_ptr<NetworkController> _networkCtrl;
+    NetworkController _networkCtrl;
     bool _ishost;
     /** uuid to players most recent update*/
     std::unordered_map<std::string, ClientInput> _clientInputs;
@@ -44,14 +47,21 @@ protected:
     InputController _input;
     std::shared_ptr<InputDisplay> _inputDisplay;
 
-    // MODELS should be shared pointers or a data structure of shared pointers
-    /** The spline for the exterior circle */
-    cugl::Spline2 _spline;
-    /** The physics world to animate the falling */
-    std::shared_ptr<cugl::physics2::ObstacleWorld> _world;
-    /** The outside "circle" */
-    std::shared_ptr<cugl::physics2::PolygonObstacle> _center;
-    /** The falling star */
+    /** Reference to the physics root of the scene graph */
+    std::shared_ptr<cugl::scene2::SceneNode> _worldnode;
+
+    /** The Box2D world */
+    std::shared_ptr<cugl::physics2::distrib::NetWorld> _world;
+
+    std::shared_ptr<cugl::physics2::distrib::NetEventController> _network;
+
+    /** Factories */
+    std::shared_ptr<SpellFactory> _spellFact;
+    Uint32 _spellFactId;
+    std::shared_ptr<PlayerFactory> _playerFact;
+    Uint32 _playerFactId;
+    std::shared_ptr<EnemyFactory> _enemyFact;
+    Uint32 _enemyFactId;
 
     std::shared_ptr<Player> _player;
     
@@ -106,27 +116,6 @@ protected:
     int _pickupIndex;
     /** this stores the current prompt text for pickup */
     std::string _pickupPrompt;
-
-
-
-    // Index of the currently selected tangent handle -1 if none
-    size_t _selectedTangent = (size_t)-1;
-
-
-    // Whether a control point is currently selected/being dragged can be inferred from _selectedTangent
-
-    /**
-     * Rebuilds the geometry.
-     *
-     * This method should recreate all the polygons for the spline, the handles
-     * and the falling star. It should also recreate all physics objects.
-     *
-     * However, to cut down on performance overhead, this method should NOT add
-     * those physics objects to the world inside this method (as this method is
-     * called repeatedly while the user moves a handle). Instead, those objects
-     * should not be activated until the state is "stable".
-     */
-    void buildGeometry();
 
 public:
 #pragma mark -
@@ -303,6 +292,31 @@ private:
 
 
     void renderHUD();
+
+    /**
+     * This method links a scene node to the obstacle.
+     *
+     * This method adds a listener so that the sceneNode will move along with the obstacle.
+     */
+    void linkSceneToObs(const std::shared_ptr<cugl::physics2::Obstacle>& obj,
+        const std::shared_ptr<cugl::scene2::SceneNode>& node);
+
+    /**
+     * Adds the physics object to the physics world and loosely couples it to the scene graph
+     *
+     * There are two ways to link a physics object to a scene graph node on the
+     * screen.  One way is to make a subclass of a physics object.
+     * The other is to use callback functions to loosely couple
+     * the two.  This function is an example of the latter.
+     * the two.  This function is an example of the latter.
+     *
+     * param obj    The physics object to add
+     * param node   The scene graph node to attach it to
+     */
+    void addInitObstacle(const std::shared_ptr<cugl::physics2::Obstacle>& obj,
+        const std::shared_ptr<cugl::scene2::SceneNode>& node);
+
+    void initPlayers();
 };
 
 #endif // !__GL_GAME_SCENE_H__

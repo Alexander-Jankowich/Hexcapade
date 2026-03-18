@@ -73,14 +73,14 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _inputDisplay = make_shared<InputDisplay>(&_input, _constants->get("input"));
 
     // create the player
-    _player = make_shared<Player>(getSize() / 2, 12, assets->get<Texture>("player"));
+    //_player = make_shared<Player>(getSize() / 2, 12, assets->get<Texture>("player"));
 
-    _players = make_shared<PlayerSet>();
-    _players->addPlayer(_player);
+    //_players = make_shared<PlayerSet>();
+    //_players->addPlayer(_player);
 
     // Create enemy with 10 health
-    _enemy = make_shared<EnemySet>();
-    _enemy->setTexture(assets->get<Texture>("enemy"));
+    //_enemy = make_shared<EnemySet>();
+    //_enemy->setTexture(assets->get<Texture>("enemy"));
     //    _enemy->spawnEnemy(getSize() / 4, 4);
     lastEnemySpawn = 0;
 
@@ -111,10 +111,55 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     spawnInitialItems();
 
     // Creation of the physics world and star translator
-    cugl::Rect bounds = Rect(0, 0, getSize().width / PHYSICS_SCALE, getSize().height / PHYSICS_SCALE);
-    _world = cugl::physics2::ObstacleWorld::alloc(bounds, Vec2(0, 0));
+    //cugl::Rect bounds = Rect(0, 0, getSize().width / PHYSICS_SCALE, getSize().height / PHYSICS_SCALE);
+    //_world = cugl::physics2::ObstacleWorld::alloc(bounds, Vec2(0, 0));
 
-    buildGeometry();
+    _spellFact = SpellFactory::alloc(_assets);
+    _playerFact = PlayerFactory::alloc(_assets);
+    _enemyFact = EnemyFactory::alloc(_assets);
+
+    // IMPORTANT: SCALING MUST BE UNIFORM
+    // This means that we cannot change the aspect ratio of the physics world
+    // Shift to center if a bad fit
+    Size dimen = getSize();
+    //_scale = dimen.width == SCENE_WIDTH ? dimen.width / rect.size.width : dimen.height / rect.size.height;
+    //Vec2 offset((dimen.width - SCENE_WIDTH) / 2.0f, (dimen.height - SCENE_HEIGHT) / 2.0f);
+    Vec2 offset = Vec2::ZERO;
+
+    // Create the scene graph
+    _worldnode = scene2::SceneNode::alloc();
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(offset);
+
+    addChild(_worldnode);
+
+    _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, dimen.width, SCENE_HEIGHT), Vec2::ZERO);
+    //_world->onBeginContact = [this](b2Contact* contact) {
+    //    beginContact(contact);
+    //    };
+    _world->update(0.02f);
+
+
+    //Make a std::function reference of the linkSceneToObs function in game scene for network controller
+    std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
+        this->linkSceneToObs(obs, node);
+        };
+
+    _network->enablePhysics(_world, linkSceneToObsFunc);
+
+    //if (!isHost) {
+    //    _network->getPhysController()->acquireObs(_cannon2, 0);
+    //}
+
+    _spellFactId = _network->getPhysController()->attachFactory(_spellFact);
+    _playerFactId = _network->getPhysController()->attachFactory(_playerFact);
+    _enemyFactId = _network->getPhysController()->attachFactory(_enemyFact);
+
+    // Make player now
+    //auto params = _playerFact->serializeParams(getSize() / 2, Vec2::ZERO, "???");
+    //auto pair = _network->getPhysController()->addSharedObstacle(_playerFactId, params);
+    //_player = (std::shared_ptr<Player>) pair.second;
+
     setActive(false);
     return true;
 }
@@ -145,7 +190,7 @@ void GameScene::reset()
     spawnInitialItems();
     
     if (_ishost) { // broadcast to all in room
-        _networkCtrl->startGame();
+        _networkCtrl.startGame();
     }
 }
 
@@ -185,12 +230,12 @@ void GameScene::preUpdate(float dt)
 {
     _input.update(dt);
 
-    if (_networkCtrl && _networkCtrl->hasNetwork())
-    {
-        _networkCtrl->update();
-        if(_networkCtrl->getStatus()==NetworkController::Status::WON) _playerWon=true;
-        if(_networkCtrl->getStatus()==NetworkController::Status::LOST) _playerLost=true;
-    }
+    //if (_networkCtrl && _networkCtrl->hasNetwork())
+    //{
+    //    _networkCtrl->update();
+    //    if(_networkCtrl->getStatus()==NetworkController::Status::WON) _playerWon=true;
+    //    if(_networkCtrl->getStatus()==NetworkController::Status::LOST) _playerLost=true;
+    //}
 
     if (_input.pressedReset())
     {
@@ -210,7 +255,9 @@ void GameScene::preUpdate(float dt)
         if (lastEnemySpawn > 8)
         {
             lastEnemySpawn = 0;
-            _enemy->spawnEnemy(getSize() / 2, 4);
+            //_enemy->spawnEnemy(getSize() / 2, 4);
+            auto params = _enemyFact->serializeParams(getSize() / 2, Vec2::ZERO, 4);
+            auto pair = _network->getPhysController()->addSharedObstacle(_enemyFactId, params);
         }
     }
 
@@ -245,194 +292,16 @@ void GameScene::preUpdate(float dt)
         // CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
         if (_ishost)
         {
-            spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
+            //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
+            auto params = _spellFact->serializeParams(playerScreenPos, angle*5, _player->getSpell());
+            auto pair = _network->getPhysController()->addSharedObstacle(_spellFactId, params);
 
             _input.resolveSpell();
             _player->resolveSpell();
         }
-    }
-    // collision update, only for host!
-    if (_ishost)
-    {
-        float playerRadius = 15.0f;
-        _collisions.resolvePlayersEnemies(_players->current, playerRadius, _enemy);
-        _collisions.resolveEnemiesSpell(spells, _enemy, playerScreenPos * -1.5);
-        _collisions.resolvePlayersSpell(spells, _players->current, 20,_player->getPID());
-    }
-
-    if (!_ishost && _networkCtrl->hasNetwork())
-    {
-        ClientInput ci;
-        ci.joystickAngle = _input.getMove().isZero() ? 0.0f : _input.getMove().getAngle();
-        ci.pickupPressed = _input.pressedPickup();
-        ci.posX = playerScreenPos.x;
-        ci.posY = playerScreenPos.y;
-        ci.spellType = _player->getSpell();
-        if (sendSpell)
-        {
-            ci.sid = _player->getSpellId();
-            ci.spellAngle = angle.getAngle();
-            // CULog("Angle of spell: %f", angle.getAngle());
-        }
-        _networkCtrl->sendInput(ci);
-    }
-
-    // client recieve !!
-    if (!_ishost && _networkCtrl->hasNetwork() && _networkCtrl->hasNewHostInput())
-    {
-        HostInput hi = _networkCtrl->getLatestHostInput();
-        _networkCtrl->clearNewHostInput();
-
-        for (auto &pd : hi.players)
-        {
-//            we need our own data LOL if (pd.uuid == _player->getPID())
-//            {
-//                continue;
-//            }
-            auto p = _players->getPlayerByPID(pd.uuid);
-            if (p)
-            {
-                if (pd.uuid != _player->getPID()) p->setPosition(cugl::Vec2(pd.posX, pd.posY));
-                p->setHealth(pd.health);
-            }
-        }
-        _enemy->reset(); // clear all
-        for (auto &ed : hi.enemies)
-        {
-            _enemy->updateEnemyAsClient(ed.eid, cugl::Vec2(ed.posX, ed.posY), ed.health);
-        }
-
-        spells.current.clear();
-        for (auto &sd : hi.spells)
-        {
-            spells.spawnSpell(sd.id, sd.type, Vec2(sd.posX, sd.posY), sd.velAngle);
-        }
-        spells.update(); // MAYBE?????
-
-        if (spells.contains(_player->getSpellId()))
-        {
-            _input.resolveSpell();
-            _player->resolveSpell();
-        }
-
-        // needs to be changed in the future depending on how we're doing artifact
-        if (!hi.added_items.empty())
-        {
-            _items.clear();
-            for (auto &id : hi.added_items)
-            {
-                ItemData item;
-                item.position = cugl::Vec2(id.posX, id.posY);
-                item.name = id.item;
-                item.radius = 14.0f;
-                item.value = (id.item == "artifact") ? 40 : 25;
-                item.color = (id.item == "artifact") ? Color4(255, 170, 60, 255) : Color4(120, 180, 255, 255);
-                item.type = (id.item == "artifact") ? ItemData::ItemType::ARTIFACT : ItemData::ItemType::SPELL;
-                _items.push_back(item);
-            }
-        }
-    }
-
-    // HOST: broadcast game state to clients
-    if (_ishost && _networkCtrl && _networkCtrl->hasNetwork())
-    {
-        // updates player positions (based on position currently, should change)
-        HostInput hi;
-
-        for (auto &[pid, input] : _clientInputs)
-        {
-            auto p = _players->getPlayerByPID(pid);
-            if (p)
-            {
-                if (p->getHealth() <= 0)
-                {
-                    _playerLost = true;
-                }
-                p->setPosition(cugl::Vec2(input.posX, input.posY));
-
-                if (input.sid.length() > 1)
-                { // a spell WAS cast
-                    if (!spells.contains(input.sid))
-                    { // First time trying to spawn this spell
-                        CULog("Other Spawn-------------------------------------------------");
-                        spells.spawnSpell(input.sid, input.spellType, Vec2(input.posX, input.posY), input.spellAngle);
-                    }
-                    p->resolveSpell();
-                }
-
-            }
-        }
-        // update enemy positions - just see if they target host atm
-        std::vector<cugl::Vec2> player_pos;
-        for (auto p : _players->current)
-        {
-            player_pos.push_back(p->getPosition());
-        }
-        _enemy->update(player_pos);
-
-        hi.dt = dt;
-
-        for (auto p : _players->current)
-        {
-            HostPlayerData pd;
-            pd.uuid = p->getPID();
-            pd.posX = p->getPosition().x;
-            pd.posY = p->getPosition().y;
-            pd.speed = p->getVelocity().length();
-            pd.velAngle = p->getVelocity().isZero() ? 0.0f : p->getVelocity().getAngle();
-            pd.curSpell = p->getSpell();
-            pd.health = p->getHealth();
-            hi.players.push_back(pd);
-        }
-
-        for (auto enem : _enemy->current)
-        {
-            auto e = std::get<1>(enem);
-            HostEnemyData ed;
-            ed.posX = e->getPosition().x;
-            ed.posY = e->getPosition().y;
-            ed.speed = e->getVelocity().length();
-            ed.velAngle = e->getVelocity().isZero() ? 0.0f : e->getVelocity().getAngle();
-            ed.health = e->getHealth();
-            ed.eid = std::get<0>(enem);
-            hi.enemies.push_back(ed);
-        }
-
-        for (auto [sid, sp] : spells.current)
-        {
-            HostSpellData sd;
-            sd.id = sid;
-            sd.posX = sp->_position.x;
-            sd.posY = sp->_position.y;
-            sd.velAngle = sp->velocity.getAngle();
-            sd.type = sp->froze ? SpellType::FREEZE : SpellType::FIREBALL;
-            hi.spells.push_back(sd);
-        }
-
-        for (auto &item : _items)
-        {
-            HostItemData id;
-            id.posX = item.position.x;
-            id.posY = item.position.y;
-            id.itemId = (int)(&item - &_items[0]); // the index is the id for now!
-            id.item = item.name;
-            hi.added_items.push_back(id);
-        }
-
-        auto bytes = MessageSerializer::encodeHostInput(hi);
-        _networkCtrl->getNetwork()->broadcast(bytes);
     }
 
     _inputDisplay->update(playerScreenPos);
-    if (sendSpell)
-    {
-    }
-
-    // collision update, only for host!
-    if (_ishost)
-    {
-        spells.update();
-    }
 
     if (_player->getHealth() <= 0)
     {
@@ -440,7 +309,7 @@ void GameScene::preUpdate(float dt)
     }
     if ((_playerLost || _playerWon) && _ishost)
     {
-        _networkCtrl->endGame(_playerWon);
+        _networkCtrl.endGame(_playerWon);
     }
 }
 
@@ -472,8 +341,9 @@ void GameScene::preUpdate(float dt)
  */
 void GameScene::fixedUpdate(Uint64 step)
 {
-    // float dt = step / 1000000.0f;
-    //_world->update(dt);
+    // First process incoming events
+
+    _world->update(step / 1000000.0f);
 }
 
 /**
@@ -513,24 +383,30 @@ void GameScene::postUpdate(float remain)
 void GameScene::render()
 {
     // DO NOT DO THIS IN YOUR FINAL GAME
+    //_batch->setPerspective(getCamera()->getCombined());
+    //_batch->begin();
+
+    //Color4 original = _batch->getColor();
+
+    //drawItems();
+
+    //_players->draw(_batch);
+
+    //_enemy->draw(_batch);
+
+    //spells.draw(_batch);
+
+    //renderHUD();
+
+    //_inputDisplay->draw(_batch);
+
+    //_batch->setColor(original);
+    //_batch->end();
+
+    Scene2::render();
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
-
-    Color4 original = _batch->getColor();
-
-    drawItems();
-
-    _players->draw(_batch);
-
-    _enemy->draw(_batch);
-
-    spells.draw(_batch);
-
     renderHUD();
-
-    _inputDisplay->draw(_batch);
-
-    _batch->setColor(original);
     _batch->end();
 }
 
@@ -715,24 +591,6 @@ void GameScene::drawItems()
     }
 }
 
-/**
- * Rebuilds the geometry.
- *
- * This method should recreate all the polygons for the spline, the handles
- * and the falling star. It should also recreate all physics objects.
- *
- * However, to cut down on performance overhead, this method should NOT add
- * those physics objects to the world inside this method (as this method is
- * called repeatedly while the user moves a handle). Instead, those objects
- * should not be activated until the state is "stable".
- */
-void GameScene::buildGeometry()
-{
-    //_world -> clear();
-
-    //_player->addTo(_world);
-}
-
 void GameScene::setActive(bool value)
 {
     if (isActive() != value)
@@ -744,18 +602,18 @@ void GameScene::setActive(bool value)
             // Host registers callback to collect client inputs each frame
             if (_ishost)
             {
-                _networkCtrl->setInputCallback(
+                _networkCtrl.setInputCallback(
                     [this](const std::string &playerId, const ClientInput &input)
                     {
                         _clientInputs[playerId] = input;
                     });
             }
             // create the OTHER players (both host n client do this) - must do once game scene takes over network handling
-            _player->setPID(_networkCtrl->getPID());
-            CULog("num players acc to game network: %d", _networkCtrl->getPlayers().size());
-            for (auto p : _networkCtrl->getPlayers())
+            _player->setPID(_networkCtrl.getPID());
+            CULog("num players acc to game network: %d", _networkCtrl.getPlayers().size());
+            for (auto p : _networkCtrl.getPlayers())
             {
-                if (p != _networkCtrl->getPID())
+                if (p != _networkCtrl.getPID())
                 {
                     CULog("adding ANOTHER player");
                     _players->addPlayer(make_shared<Player>(cugl::Vec2(2 + getSize().width / 2, 2 + getSize().height / 2), 12, p, _assets->get<Texture>("player")));
@@ -763,11 +621,51 @@ void GameScene::setActive(bool value)
             }
             CULog("num players in set: %d", _players->numPlayers());
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
-                  _networkCtrl->hasNetwork(), _networkCtrl->isHost());
+                  _networkCtrl.hasNetwork(), _networkCtrl.isHost());
         }
         else
         {
             _input.deactivate();
         }
     }
+}
+
+void GameScene::addInitObstacle(const std::shared_ptr<physics2::Obstacle>& obj,
+    const std::shared_ptr<scene2::SceneNode>& node) {
+    _world->initObstacle(obj);
+    if (_network->isHost()) {
+        _world->getOwnedObstacles().insert({ obj,0 });
+    }
+    linkSceneToObs(obj, node);
+}
+
+void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
+    const std::shared_ptr<scene2::SceneNode>& node) {
+
+    node->setPosition(obj->getPosition() * 1);
+    _worldnode->addChild(node);
+
+    // Dynamic objects need constant updating
+    if (obj->getBodyType() == b2_dynamicBody) {
+        scene2::SceneNode* weak = node.get(); // No need for smart pointer in callback
+        obj->setListener([=, this](physics2::Obstacle* obs) {
+            float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+            Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+            float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+            weak->setPosition(pos * 1);
+            weak->setAngle(angle);
+            });
+    }
+}
+
+void GameScene::initPlayers() {
+    //auto image = _assets->get<graphics::Texture>("player"); // TODO this will need to update with additional metadata (which asset to get)
+    //auto size = image->getSize();
+    //_player = std::make_shared<Player>(getSize() / 2, 12, image);
+
+    //Vec2 playerPos = (_player->getPosition());
+    //auto playerOb = PlayerObstacle::alloc(playerPos, "???", size);
+
+    //addInitObstacle(playerOb, _player);
+
 }

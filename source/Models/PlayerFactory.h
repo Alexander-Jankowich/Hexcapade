@@ -21,6 +21,11 @@ using namespace cugl::physics2::distrib;
 class PlayerObstacle : public physics2::CapsuleObstacle {
 protected:
     string _pid;
+
+    float _speed;
+    float _playerAngle;
+    SpellType _curSpell;
+    std::string _playerId; // player identifier, rn its the uuid
 public:
     PlayerObstacle(Vec2 pos, std::string pid, cugl::Size s);
 
@@ -29,6 +34,17 @@ public:
         return f;
     }
 
+    /**
+    * Sets the current spell of the player.
+    * Also increments _curSpellNum if this spell is different than the previous one.
+    */
+    void setSpell(SpellType spell);
+    void resolveSpell() { _curSpell = SpellType::NONE; }
+
+    SpellType getSpell() { return _curSpell; }
+
+    const std::string getPID() const { return _playerId; }
+    void setPID(std::string pid) { _playerId = pid; }
 };
 
 /**
@@ -50,11 +66,12 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, string pid);
+    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, string pid);
 
 
 public:
     PlayerFactory();
+
     /**
      * Allocates a new instance of the factory using the given AssetManager.
      */
@@ -74,12 +91,27 @@ public:
     /**
      * Helper method for converting normal parameters into byte vectors used for syncing.
      */
-    shared_ptr<vector<byte>> serializeParams(Vec2 pos, Vec2 velocity, string pid);
+    shared_ptr<vector<byte>> serializeParams(Vec2 pos, string pid);
 
     /**
      * Generate a pair of Obstacle and SceneNode using serialized parameters.
      */
     pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(const vector<byte>& params) override;
+
+    std::unordered_set<std::shared_ptr<PlayerObstacle>> current;
+
+    std::shared_ptr<PlayerObstacle> getPlayerByPID(std::string pid) {
+        for (auto p : current) {
+            if (p->getPID() == pid) return p;
+        }
+        return nullptr; // should NOT get here
+    }
+
+    //void reset() {
+    //    for (auto p : current) {
+    //        p->reset();
+    //    }
+    //}
 };
 
 #endif // !__PLAYER_FACTORY_H__
