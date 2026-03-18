@@ -36,7 +36,6 @@ protected:
     bool _knockback;
     int _knockback_counter;
 
-    cugl::Color4 _color;
 
 public:
 #pragma mark Constructors
@@ -126,8 +125,6 @@ public:
      */
     cugl::Size getSize() { return _size; }
 
-    void setColor(cugl::Color4 c) { _color = c; }
-
     virtual void update();
     
     /** Used for networking by clients, updates entity based on data from host. Ensure this works TODO
@@ -142,18 +139,6 @@ public:
     const std::shared_ptr<cugl::graphics::Texture>& getTexture() const {
         return _texture;
     }
-
-    /**
-     * Sets the texture for this ship.
-     *
-     * The texture should be formated as a sprite sheet, and the size and
-     * layout of the sprite sheet should already be specified in the
-     * initializing JSON. If so, this method will construct a sprite sheet
-     * from this texture. Otherwise, the texture will be ignored.
-     *
-     * @param texture   The texture for the sprite sheet
-     */
-    void setTexture(const std::shared_ptr<cugl::graphics::Texture>& texture);
 
     /**
      * Draws this ship to the sprite batch within the given bounds.
@@ -172,5 +157,5 @@ public:
     void setFrozen() { _frozen = true; }
 };
 
-#endif // !__GP_ENEMY_H__
+#endif // !__ENTITY_H__
 

@@ -89,4 +89,4 @@ public:
     std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(const std::vector<std::byte>& params) override;
 };
 
-#endif
+#endif // !__SPELL_FACTORY_H__

@@ -27,4 +27,4 @@ public:
 
 
 
-#endif /* __NP_CRATE_EVENT_H__ */
+#endif // !__SPELL_NODE_H__

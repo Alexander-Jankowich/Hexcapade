@@ -75,19 +75,19 @@ void Entity::setKnockback(Vec2 v) {
     _knockback_vel = v;
 }
 
-void Entity::setTexture(const std::shared_ptr<Texture>& value) {
-    if (value) {
-        _size = value->getSize();
-        _texture = value;
-    }
-    else {
-        _size = Size::ZERO;
-        _texture = nullptr;
-    }
-}
+//void Entity::setTexture(const std::shared_ptr<Texture>& value) {
+//    if (value) {
+//        _size = value->getSize();
+//        _texture = value;
+//    }
+//    else {
+//        _size = Size::ZERO;
+//        _texture = nullptr;
+//    }
+//}
 
-void Entity::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) {
-    static Affine2 trans;
-    trans = Affine2::createTranslation(_position);
-    batch->draw(_texture, _color, _size/2, trans);
-}
+//void Entity::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) {
+//    static Affine2 trans;
+//    trans = Affine2::createTranslation(_position);
+//    batch->draw(_texture, _color, _size/2, trans);
+//}
