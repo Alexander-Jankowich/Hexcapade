@@ -62,7 +62,8 @@ protected:
 
 
 public:
-    SpellFactory();
+    SpellFactory() {};
+
     /**
      * Allocates a new instance of the factory using the given AssetManager.
      */

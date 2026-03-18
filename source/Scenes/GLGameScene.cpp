@@ -145,6 +145,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
         this->linkSceneToObs(obs, node);
         };
 
+    _networkCtrl = NetworkController::alloc(_assets);
     _networkCtrl->enablePhysics(_world, linkSceneToObsFunc);
 
     //if (!isHost) {

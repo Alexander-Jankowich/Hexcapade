@@ -34,7 +34,7 @@ public:
     void dispose() override;
 
     void update(float dt) override;
-    void disconnect() {_networkCtrl->disconnect();}
+    void disconnect() { if (_networkCtrl) _networkCtrl->disconnect();}
     void release() { _networkCtrl = nullptr; }
     NetworkController::Status getStatus() { return _networkCtrl->getStatus(); }
     std::shared_ptr<NetworkController> getConnection(){return _networkCtrl;}

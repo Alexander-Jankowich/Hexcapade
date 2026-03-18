@@ -9,6 +9,7 @@
 
 using namespace cugl;
 using namespace cugl::netcode;
+using namespace std;
 
 
 #pragma mark PrivateClientHelpers
@@ -39,6 +40,9 @@ std::string NetworkController::hex2dec(const std::string& hex) {
 
 #pragma mark PublicMethods
 
+bool NetworkController::connectClient(string roomId) {
+    return connectAsClient(dec2hex(roomId)); // this will become custom translate fn later
+}
 
 
 void NetworkController::endGame(bool won) {

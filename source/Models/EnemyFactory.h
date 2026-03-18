@@ -79,7 +79,7 @@ protected:
     Vec2 getClosestPlayer(Vec2 enemPos, std::vector<Vec2> targs);
 
 public:
-    EnemyFactory();
+    EnemyFactory() {}
     /**
      * Allocates a new instance of the factory using the given AssetManager.
      */

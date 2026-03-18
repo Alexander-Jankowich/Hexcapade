@@ -27,7 +27,7 @@ public:
 
 	void addPlayer(std::shared_ptr<Player>);
     
-    int numPlayers() {return current.size();}
+    int numPlayers() { return (int) current.size(); }
 
 	//void update();
     std::shared_ptr<Player> getPlayerByPID(std::string pid) {

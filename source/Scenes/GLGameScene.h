@@ -42,7 +42,7 @@ protected:
     std::shared_ptr<NetworkController> _networkCtrl;
     bool _ishost;
     /** uuid to players most recent update*/
-    std::unordered_map<std::string, ClientInput> _clientInputs;
+    //std::unordered_map<std::string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
     InputController _input;
     std::shared_ptr<InputDisplay> _inputDisplay;
