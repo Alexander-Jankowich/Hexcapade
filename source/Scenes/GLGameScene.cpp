@@ -244,7 +244,7 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
     _player->setColor(_input.showAim() ? Color4::BLUE : Color4::WHITE);
-    _player->update();
+    _player->update(dt); // idk if this is right...
 
     cugl::Vec2 playerScreenPos = _player->getPosition();
 
@@ -455,7 +455,7 @@ void GameScene::renderHUD()
         _batch->setColor(Color4::WHITE);
 
         std::shared_ptr<TextLayout> invLabel = TextLayout::allocWithText(
-            "Inventory: $" + std::to_string(_player->getInventoryValue()), _font);
+            "Inventory: $" + std::to_string(_player->getInventoryVal()), _font);
         invLabel->layout();
         Affine2 invTrans;
         invTrans.translate(invX + 10, invY + 12);
