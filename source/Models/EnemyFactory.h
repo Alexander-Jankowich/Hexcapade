@@ -20,14 +20,39 @@ using namespace std;
 class EnemyObstacle : public physics2::CapsuleObstacle {
 protected:
     int _health;
+    float _speed;
 public:
-    EnemyObstacle(Vec2 pos, cugl::Size s, int h);
+    EnemyObstacle(const cugl::Vec2& pos, float speed, int health, cugl::Size s);
 
-    static shared_ptr<EnemyObstacle> alloc(Vec2 pos, cugl::Size s, int h) {
-        auto f = make_shared<EnemyObstacle>(pos, s, h);
+    static shared_ptr<EnemyObstacle> alloc(const cugl::Vec2& pos, float speed, int health, cugl::Size s) {
+        auto f = make_shared<EnemyObstacle>(pos, speed, health, s);
         return f;
     }
 
+    /**
+     * Returns the speed of this enemy.
+     *
+     * @return the speed of this enemy
+     */
+    const int getSpeed() const { return _speed; }
+
+    /**
+     * Returns the current ship health.
+     *
+     * When the health of the ship is 0, it is "dead"
+     *
+     * @return the current ship health.
+     */
+    int getHealth() const { return _health; }
+
+    /**
+     * Sets the current ship health.
+     *
+     * When the health of the ship is 0, it is "dead"
+     *
+     * @param value The current ship health.
+     */
+    void setHealth(int value);
 };
 
 /**
@@ -79,6 +104,16 @@ public:
      * Generate a pair of Obstacle and SceneNode using serialized parameters.
      */
     pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(const vector<byte>& params) override;
+
+    /** Set of all current enemies */
+    std::unordered_set<std::shared_ptr<EnemyObstacle>> current;
+
+    /**
+    * Updates all enemies to go to nearest target
+    * 
+    * TODO: change to a proper AI
+    */
+    void update(std::vector<cugl::Vec2> targets);
 };
 
 #endif // !__ENEMY_FACTORY_H__

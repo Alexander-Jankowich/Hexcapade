@@ -10,9 +10,27 @@
 using namespace std;
 using namespace cugl;
 
-EnemyObstacle::EnemyObstacle(Vec2 pos, Size s, int h) {
+EnemyObstacle::EnemyObstacle(const cugl::Vec2& pos, float speed, int health, cugl::Size s) {
     init(pos, s);
-    _health = h;
+    _health = health;
+    _speed = speed;
+}
+
+/**
+ * Sets the current ship health.
+ *
+ * When the health of the ship is 0, it is "dead"
+ *
+ * @param value The current ship health.
+ */
+void EnemyObstacle::setHealth(int value) {
+    if (value >= 0) {
+        // Do not allow health to go negative
+        _health = value;
+    }
+    else {
+        _health = 0;
+    }
 }
 
 /**
@@ -24,7 +42,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     Size size = image->getSize();
     
     // Create the SpellObstacle
-    auto en = EnemyObstacle::alloc(pos, size, h);
+    auto en = EnemyObstacle::alloc(pos, 2.5, h, size);
 
 //    pl->setAngleSnap(0); // Snap to the nearest degree
 //
@@ -77,4 +95,48 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     Vec2 velocity = Vec2(vx, vy);
     int health =  _deserializer.readUint32();
     return createObstacle(pos, velocity, health);
+}
+
+#pragma mark Enemy Behavior
+
+Vec2 getClosestPlayer(Vec2 enemPos, std::vector<Vec2> targs) {
+    float minDist = FLT_MAX;
+    Vec2 minPos = Vec2(0, 0); // default
+    for (auto t : targs) {
+        float d = enemPos.distance(t);
+        if (d < minDist) {
+            minDist = d;
+            minPos = t;
+        }
+    }
+    return minPos;
+}
+
+void EnemyFactory::update(std::vector<Vec2> targets) {
+    for (auto it = current.begin(); it != current.end(); ) {
+        // Remove from set if removed from scene
+        if ((*it)->isRemoved()) {
+            it = current.erase(it);
+            continue;
+        }
+
+        // Update individual enemies
+        Vec2 targ = getClosestPlayer((*it)->getPosition(), targets);
+
+        Vec2 vel = targ - (*it)->getPosition();
+        vel.normalize();
+        vel *= (*it)->getSpeed();
+        (*it)->setLinearVelocity(vel);
+
+
+        // delete enemies if they fall below 0 hp.
+        if ((*it)->getHealth() > 0) {
+            it++;
+        }
+        else {
+            (*it)->markRemoved(true);
+            it = current.erase(it);
+        }
+
+    }
 }
