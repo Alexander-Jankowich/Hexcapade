@@ -14,7 +14,7 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
     _pid = pid;
 }
 
-void Player::setSpell(SpellType spell) {
+void PlayerObstacle::setSpell(SpellType spell) {
     //if (spell != _curSpell && spell != SpellType::NONE) {
     //    _curSpellNum++;
     //}

@@ -76,6 +76,7 @@ protected:
      */
     pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, int h);
 
+    Vec2 getClosestPlayer(Vec2 enemPos, std::vector<Vec2> targs);
 
 public:
     EnemyFactory();

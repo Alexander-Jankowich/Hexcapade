@@ -10,15 +10,19 @@
 #ifndef __NETWORK_CONTROLLER_H__
 #define __NETWORK_CONTROLLER_H__
 
-class NetworkController : public cugl::physics2::distrib::NetEventController {
+using namespace cugl;
+using namespace std;
+using namespace cugl::physics2::distrib;
+
+class NetworkController : public NetEventController {
 public:
 
-    using InputCallback = std::function<void(const std::string& playerId, const ClientInput&)>;
+    using InputCallback = function<void(const string& playerId, const ClientInput&)>;
 
 private:
 #pragma mark Attributes
-    std::unordered_set<std::string> _players;
-    std::string _currHost;
+    unordered_set<string> _players;
+    string _currHost;
 //    InputCallback _inputCallback;
 //    bool _handlerAttached = false;
 //    void attachReceiptHandler();
@@ -37,48 +41,29 @@ public:
 
     // TODO ADJUST THIS
 
-    std::shared_ptr<cugl::netcode::NetcodeConnection> getNetwork() {
+    shared_ptr<cugl::netcode::NetcodeConnection> getNetwork() {
         return _network;
     }
 
-//    void setInputCallback(InputCallback cb) {
-//        _inputCallback = cb;
-//        if (_network) attachReceiptHandler();
-//    }
-//
-//    void sendInput(const ClientInput& input) {
-//        if (!_network || _isHost) return;
-//        //CULog("CLIENT sending input: joystick=%.2f spellType=%d pickup=%d pos=(%.2f, %.2f)",
-//            //input.joystickAngle, input.spellType, input.pickupPressed, input.posX, input.posY);
-//        auto bytes = MessageSerializer::encodeClientInput(input);
-//        _network->sendToHost(bytes);
-//    }
-//
-//
     void resetStatus() { _status = Status::IDLE; }
     
-    std::unordered_set<std::string> getPlayers() {return _network->getPlayers();}
+    unordered_set<string> getPlayers() {return _network->getPlayers();}
     
-    std::string getPID() {return _network->getUUID();}
+    string getPID() {return _network->getUUID();}
     
-    bool connectClient(std::string roomId) {
+    bool connectClient(string roomId) {
         return connectAsClient(dec2hex(roomId)); // this will become custom translate fn later
     }
 
     bool hasNetwork() { return _network != nullptr; }
 
-    std::string getRoomCode() {
+    string getRoomCode() {
         if (!_network) return "";
-        std::string room = _network->getRoom();
+        string room = _network->getRoom();
         if (room.empty()) return "";
         return hex2dec(room);
     }
 
-
-//    HostInput getLatestHostInput() { return _latestHostInput; }
-//    bool hasNewHostInput() { return _hasNewHostInput; }
-//    void clearNewHostInput() { _hasNewHostInput = false; }
-    
     void endGame(bool won);
 };
 #endif // !__NETWORK_CONTROLLER_H__

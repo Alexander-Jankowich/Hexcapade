@@ -99,7 +99,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 
 #pragma mark Enemy Behavior
 
-Vec2 getClosestPlayer(Vec2 enemPos, std::vector<Vec2> targs) {
+Vec2 EnemyFactory::getClosestPlayer(Vec2 enemPos, std::vector<Vec2> targs) {
     float minDist = FLT_MAX;
     Vec2 minPos = Vec2(0, 0); // default
     for (auto t : targs) {
