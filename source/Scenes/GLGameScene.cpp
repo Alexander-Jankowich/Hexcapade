@@ -72,16 +72,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _input.init(_constants->get("input"), cugl::Rect(0, 0, getSize().width, getSize().height));
     _inputDisplay = make_shared<InputDisplay>(&_input, _constants->get("input"));
 
-    // create the player
-    //_player = make_shared<Player>(getSize() / 2, 12, assets->get<Texture>("player"));
-
-    //_players = make_shared<PlayerSet>();
-    //_players->addPlayer(_player);
-
-    // Create enemy with 10 health
-    //_enemy = make_shared<EnemySet>();
-    //_enemy->setTexture(assets->get<Texture>("enemy"));
-    //    _enemy->spawnEnemy(getSize() / 4, 4);
     lastEnemySpawn = 0;
 
     // Initialize inventory system
@@ -89,12 +79,10 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _quota = 100;
     _playerWon = false;
 
-    try
-    {
+    try {
         _font = assets->get<Font>("OpenSans");
     }
-    catch (...)
-    {
+    catch (...) {
         _font = nullptr;
     }
 
@@ -148,18 +136,14 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _networkCtrl = NetworkController::alloc(_assets);
     _networkCtrl->enablePhysics(_world, linkSceneToObsFunc);
 
-    //if (!isHost) {
-    //    _network->getPhysController()->acquireObs(_cannon2, 0);
-    //}
-
     _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
     _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
     _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
 
     // Make player now
-    //auto params = _playerFact->serializeParams(getSize() / 2, Vec2::ZERO, "???");
-    //auto pair = _network->getPhysController()->addSharedObstacle(_playerFactId, params);
-    //_player = (std::shared_ptr<Player>) pair.second;
+    auto params = _playerFact->serializeParams(getSize() / 2, _networkCtrl->getPID());
+    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
+    _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
 
     setActive(false);
     return true;

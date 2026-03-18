@@ -61,7 +61,7 @@ protected:
     std::shared_ptr<EnemyFactory> _enemyFact;
     Uint32 _enemyFactId;
 
-    std::shared_ptr<Player> _player;
+    std::shared_ptr<PlayerObstacle> _player;
     
     std::shared_ptr<PlayerSet> _players;
 
