@@ -54,6 +54,7 @@ protected:
 
 
 public:
+    PlayerFactory();
     /**
      * Allocates a new instance of the factory using the given AssetManager.
      */

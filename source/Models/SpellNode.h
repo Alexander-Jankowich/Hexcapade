@@ -17,6 +17,7 @@ protected:
     Vec2 _velocity;
     Vec2 _pos;
 public:
+    
     void setVel(Vec2 v) { _velocity = v; }
     void setPos(Vec2 p) { _pos = p; }
     Vec2 getPos() { return _pos; }

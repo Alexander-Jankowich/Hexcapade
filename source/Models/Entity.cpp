@@ -26,7 +26,6 @@ Entity::Entity(const cugl::Vec2& pos, int health, std::shared_ptr<cugl::graphics
     _frozen_counter = 0;
 
     _size = Size::ZERO;
-    _color = Color4::WHITE;
 }
 
 /**
@@ -86,8 +85,8 @@ void Entity::setKnockback(Vec2 v) {
 //    }
 //}
 
-//void Entity::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) {
-//    static Affine2 trans;
-//    trans = Affine2::createTranslation(_position);
-//    batch->draw(_texture, _color, _size/2, trans);
-//}
+void Entity::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) {
+    static Affine2 trans;
+    trans = Affine2::createTranslation(_position);
+    batch->draw(_texture, Color4::WHITE, _size/2, trans);
+}

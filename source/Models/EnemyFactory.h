@@ -23,7 +23,7 @@ protected:
 public:
     EnemyObstacle(Vec2 pos, cugl::Size s, int h);
 
-    static shared_ptr<EnemyObstacle> alloc(Vec2 pos, cugl::Size& s, int h) {
+    static shared_ptr<EnemyObstacle> alloc(Vec2 pos, cugl::Size s, int h) {
         auto f = make_shared<EnemyObstacle>(pos, s, h);
         return f;
     }
@@ -53,6 +53,7 @@ protected:
 
 
 public:
+    EnemyFactory();
     /**
      * Allocates a new instance of the factory using the given AssetManager.
      */

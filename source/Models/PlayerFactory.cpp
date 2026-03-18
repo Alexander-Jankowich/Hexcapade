@@ -34,7 +34,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
     pl->setShared(true);
 
     // Create player
-    auto sprite = std::make_shared<Player>(pos, 12, pid, _assets->get<graphics::Texture>("player"));
+    auto sprite = std::make_shared<Player>(pos, 12, pid, image);
 
     return std::make_pair(pl, sprite);
 }

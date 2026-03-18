@@ -10,7 +10,7 @@
 using namespace std;
 using namespace cugl;
 
-EnemyObstacle::EnemyObstacle(Vec2 pos, cugl::Size s, int h) {
+EnemyObstacle::EnemyObstacle(Vec2 pos, Size s, int h) {
     init(pos, s);
     _health = h;
 }
@@ -21,7 +21,7 @@ EnemyObstacle::EnemyObstacle(Vec2 pos, cugl::Size s, int h) {
 pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory::createObstacle(Vec2 pos, Vec2 velocity, int h) {
     
     auto image = _assets->get<graphics::Texture>("enemy"); // TODO this will need to update with additional metadata (which asset to get)
-    auto size = image->getSize();
+    Size size = image->getSize();
     
     // Create the SpellObstacle
     auto en = EnemyObstacle::alloc(pos, size, h);
@@ -34,8 +34,8 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 
     en->setShared(true);
 
-    // Create player
-    auto sprite = make_shared<Enemy>(pos, 2.5, h, _assets->get<graphics::Texture>("enemy"));
+    // Create enemy
+    auto sprite = make_shared<Enemy>(pos, 2.5, h, image);
 
     return std::make_pair(en, sprite);
 }
