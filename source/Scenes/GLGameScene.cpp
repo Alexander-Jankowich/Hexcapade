@@ -230,13 +230,6 @@ void GameScene::preUpdate(float dt)
 {
     _input.update(dt);
 
-    //if (_networkCtrl && _networkCtrl->hasNetwork())
-    //{
-    //    _networkCtrl->update();
-    //    if(_networkCtrl->getStatus()==NetworkController::Status::WON) _playerWon=true;
-    //    if(_networkCtrl->getStatus()==NetworkController::Status::LOST) _playerLost=true;
-    //}
-
     if (_input.pressedReset())
     {
         reset();
@@ -247,18 +240,6 @@ void GameScene::preUpdate(float dt)
     if (_playerLost || _playerWon)
     {
         return;
-    }
-    // spawn an enemy if host and need to spawn
-    if (_ishost)
-    {
-        lastEnemySpawn += dt;
-        if (lastEnemySpawn > 8)
-        {
-            lastEnemySpawn = 0;
-            //_enemy->spawnEnemy(getSize() / 2, 4);
-            auto params = _enemyFact->serializeParams(getSize() / 2, Vec2::ZERO, 4);
-            auto pair = _network->getPhysController()->addSharedObstacle(_enemyFactId, params);
-        }
     }
 
     // Player movement
@@ -289,16 +270,28 @@ void GameScene::preUpdate(float dt)
     {
         sendSpell = true;
         CULog("Release spell--------------------------------------------------------");
-        // CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
-        if (_ishost)
-        {
-            //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
-            auto params = _spellFact->serializeParams(playerScreenPos, angle*5, _player->getSpell());
-            auto pair = _network->getPhysController()->addSharedObstacle(_spellFactId, params);
+        //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
+        auto params = _spellFact->serializeParams(playerScreenPos, angle*5, _player->getSpell());
+        auto pair = _network->getPhysController()->addSharedObstacle(_spellFactId, params);
 
-            _input.resolveSpell();
-            _player->resolveSpell();
+        _input.resolveSpell();
+        _player->resolveSpell();
+    }
+
+    // spawn an enemy if host and need to spawn
+    if (_ishost)
+    {
+        lastEnemySpawn += dt;
+        if (lastEnemySpawn > 8)
+        {
+            lastEnemySpawn = 0;
+            //_enemy->spawnEnemy(getSize() / 2, 4);
+            auto params = _enemyFact->serializeParams(getSize() / 2, Vec2::ZERO, 4);
+            auto pair = _network->getPhysController()->addSharedObstacle(_enemyFactId, params);
         }
+
+        // Change to be all player positions
+        _enemyFact->update({_player->getPosition()});
     }
 
     _inputDisplay->update(playerScreenPos);
