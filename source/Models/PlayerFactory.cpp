@@ -5,21 +5,10 @@
 //  Created by Serena Duncan on 3/17/26.
 //
 #include "PlayerFactory.h"
-
 using namespace std;
 using namespace cugl;
 
-PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
-    init(pos, s); // TODO WHAT THE FUCK SHOULD THIS BE
-    _pid = pid;
-}
 
-void PlayerObstacle::setSpell(SpellType spell) {
-    //if (spell != _curSpell && spell != SpellType::NONE) {
-    //    _curSpellNum++;
-    //}
-    _curSpell = spell;
-}
 
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters

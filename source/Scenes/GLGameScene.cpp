@@ -243,7 +243,7 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
-    _player->setColor(_input.showAim() ? Color4::BLUE : Color4::WHITE);
+    _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : _player->getState()); // uh this def aint right
     _player->update(dt); // idk if this is right...
 
     cugl::Vec2 playerScreenPos = _player->getPosition();
@@ -633,13 +633,31 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     // Dynamic objects need constant updating
     if (obj->getBodyType() == b2_dynamicBody) {
         scene2::SceneNode* weak = node.get(); // No need for smart pointer in callback
-        obj->setListener([=, this](physics2::Obstacle* obs) {
-            float leftover = Application::get()->getFixedRemainder() / 1000000.f;
-            Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
-            float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
-            weak->setPosition(pos * 1);
-            weak->setAngle(angle);
-            });
+        
+        // i do not know how else to check if it is a player...
+        const shared_ptr<const PlayerObstacle> p = std::dynamic_pointer_cast<const PlayerObstacle>(obj);
+        if (p != nullptr) {
+            std::shared_ptr<Player> p_node = std::dynamic_pointer_cast<Player>(node);
+            obj->setListener([=, this](physics2::Obstacle* obs) {
+                PlayerObstacle* p = dynamic_cast<PlayerObstacle*>(obs);
+                p_node->updateAnimationState(p->getState());
+                float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+                Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+                float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+                p_node->setPosition(pos * 1);
+                p_node->setAngle(angle);
+                });
+            
+        } else {
+            obj->setListener([=, this](physics2::Obstacle* obs) {
+                float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+                Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+                float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+                weak->setPosition(pos * 1);
+                weak->setAngle(angle);
+                });
+        }
+        
     }
 }
 

@@ -10,19 +10,16 @@
 #include <cugl/cugl.h>
 #include "Entity.h"
 #include "SpellSet.h"
-
+#include "PlayerFactory.h"
 class Player : public Entity {
 private:
     float _speed;
-    float _playerAngle;
     SpellType _curSpell;
     std::string _playerId; // player identifier, rn its the uuid
 
     // Counter for number of spells player has fired, used for spell id generation
     unsigned int _curSpellNum;
     
-    // temp for now
-    int _inventoryVal;
 
 public:
 #pragma mark Constructors
@@ -50,9 +47,6 @@ public:
      */
     const int getSpeed() const { return _speed; }
     
-    void addItem(int val) {_inventoryVal+=val;}
-    int getInventoryValue() {return _inventoryVal;}
-    
     const std::string getPID() const {return _playerId;}
     void setPID(std::string pid) {_playerId = pid;}
     
@@ -61,6 +55,8 @@ public:
         setPosition(getSize() / 2);
         setVelocity(cugl::Vec2::ZERO);
     }
+    
+    void updateAnimationState(PlayerObstacle::AnimationState s);
 
     /**
      * Sets the max speed of the player
@@ -71,11 +67,8 @@ public:
 
     void setVelocity(cugl::Vec2 value) override;
 
-    void updateAngle(float angle);
 
-    float getAngle() { return _playerAngle; }
-
-    cugl::Vec2 getDirection() { return cugl::Vec2(std::cos(_playerAngle), std::sin(_playerAngle)); }
+    cugl::Vec2 getDirection() { return _velocity.normalize(); }
 
     /**
     * Sets the current spell of the player.

@@ -14,32 +14,21 @@ using namespace cugl::graphics;
 
 Player::Player(const cugl::Vec2& pos, float speed, std::string pid, const std::shared_ptr<cugl::graphics::Texture>& tex) :
 Entity(pos, 100, tex) {
-    _playerAngle = -PI/2; // initialize to point right
     _speed = speed;
     _playerId = pid;
-    _inventoryVal=0;
 }
 
 Player::Player(const cugl::Vec2& pos, float speed, const std::shared_ptr<cugl::graphics::Texture>& tex)
 : Entity(pos, 100, tex) {
-    _playerAngle = -PI/2; // initialize to point right
     _speed = speed;
     _curSpell = SpellType::NONE;
     _curSpellNum = 0;
-    _inventoryVal=0;
 }
 
 void Player::setVelocity(cugl::Vec2 value) {
     Entity::setVelocity(value);
-    if (!_velocity.isZero()) {
-        _playerAngle = _velocity.getAngle();
-    }
 }
 
-void Player::updateAngle(float angle) {
-    _playerAngle = angle;
-    //_shape->setAngle(angle);
-}
 
 void Player::setSpell(SpellType spell) {
     if (spell != _curSpell && spell != SpellType::NONE) {
