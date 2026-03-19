@@ -70,7 +70,7 @@ void HostScene::dispose() {
 void HostScene::update(float dt) {
     _networkCtrl->updateNet();
     _player->setText(std::to_string(_networkCtrl->getNumPlayers()));
-    if (_networkCtrl->getStatus() == NetworkController::Status::IDLE && _networkCtrl->hasNetwork()) {
+    if (_networkCtrl->getStatus() == NetworkController::Status::CONNECTED && _networkCtrl->hasNetwork()) {
         //_gameid->setText(_networkCtrl.getRoomCode());
         std::string code = _networkCtrl->getRoomCode();
         if (!code.empty()) {              // ← add this guard
@@ -105,12 +105,12 @@ void HostScene::updateText(const std::shared_ptr<scene2::Button>& button, const 
 }
 
 void HostScene::configureStartButton() {
-    if(_networkCtrl->getStatus()==NetworkController::Status::CONNECTED) {
+    if(_networkCtrl->getStatus()<=NetworkController::Status::CONNECTING) {
         updateText(_startgame,"Waiting");
         _startgame->deactivate();
 
     }
-    else if(_networkCtrl->getStatus()==NetworkController::Status::IDLE) {
+    else if(_networkCtrl->getStatus()==NetworkController::Status::CONNECTED) {
         updateText(_startgame, "Start Game");
         _startgame->activate();
     }

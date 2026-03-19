@@ -29,6 +29,14 @@ void Player::setVelocity(cugl::Vec2 value) {
     Entity::setVelocity(value);
 }
 
+void Player::updateAnimationState(PlayerObstacle::AnimationState s) {
+    if (s==PlayerObstacle::AnimationState::CASTING) {
+        setColor(Color4::BLUE);
+    }
+    else {
+        setColor(Color4::WHITE);
+    }
+}
 
 void Player::setSpell(SpellType spell) {
     if (spell != _curSpell && spell != SpellType::NONE) {

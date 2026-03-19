@@ -58,9 +58,7 @@ public:
     bool hasNetwork() { return _network != nullptr; }
 
     string getRoomCode() {
-        if (!_network) return "";
-        string room = _network->getRoom();
-        if (room.empty()) return "";
+        string room = getRoomID();
         return hex2dec(room);
     }
 

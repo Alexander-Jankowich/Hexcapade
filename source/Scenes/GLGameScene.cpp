@@ -98,9 +98,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     // this spawns one artifact and one spell for prototype startup
     spawnInitialItems();
 
-    // Creation of the physics world and star translator
-    //cugl::Rect bounds = Rect(0, 0, getSize().width / PHYSICS_SCALE, getSize().height / PHYSICS_SCALE);
-    //_world = cugl::physics2::ObstacleWorld::alloc(bounds, Vec2(0, 0));
 
     _spellFact = SpellFactory::alloc(_assets);
     _playerFact = PlayerFactory::alloc(_assets);
@@ -127,23 +124,8 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     //    };
     _world->update(0.02f);
 
-
-    //Make a std::function reference of the linkSceneToObs function in game scene for network controller
-    std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
-        this->linkSceneToObs(obs, node);
-        };
-
     _networkCtrl = NetworkController::alloc(_assets);
-    _networkCtrl->enablePhysics(_world, linkSceneToObsFunc);
-
-    _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
-    _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
-    _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
-
-    // Make player now
-    auto params = _playerFact->serializeParams(getSize() / 2, _networkCtrl->getPID());
-    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
-    _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
+    
 
     setActive(false);
     return true;
@@ -535,19 +517,19 @@ void GameScene::updateItemPickupState()
     _canPickupItem = false;
     _pickupIndex = -1;
     _pickupPrompt = "";
-
+// not rn
     // this converts player center from physics units into screen units
-    for (size_t ii = 0; ii < _items.size(); ++ii)
-    {
-        if (_collisions.resolvePlayerItem(_player, _items[ii].position, _items[ii].radius))
-        {
-            _canPickupItem = true;
-            _pickupIndex = (int)ii;
-            // Can't use CU_TOUCH_SCREEN in this manner, since it just isn't defined on PC
-            //_pickupPrompt = CU_TOUCH_SCREEN ? "tap to pickup " + _items[ii].name : "press e to pickup " + _items[ii].name;
-            return;
-        }
-    }
+//    for (size_t ii = 0; ii < _items.size(); ++ii)
+//    {
+//        if (_collisions.resolvePlayerItem(_player, _items[ii].position, _items[ii].radius))
+//        {
+//            _canPickupItem = true;
+//            _pickupIndex = (int)ii;
+//            // Can't use CU_TOUCH_SCREEN in this manner, since it just isn't defined on PC
+//            //_pickupPrompt = CU_TOUCH_SCREEN ? "tap to pickup " + _items[ii].name : "press e to pickup " + _items[ii].name;
+//            return;
+//        }
+//    }
 }
 
 void GameScene::tryPickupItem()
@@ -592,19 +574,29 @@ void GameScene::setActive(bool value)
         if (value)
         {
             _input.activate();
-            // Host registers callback to collect client inputs each frame
-            // create the OTHER players (both host n client do this) - must do once game scene takes over network handling
-            _player->setPID(_networkCtrl->getPID());
-            CULog("num players acc to game network: %d", _networkCtrl->getPlayers().size());
+            
+            // init network and world once we start the game
+            //Make a std::function reference of the linkSceneToObs function in game scene for network controller
+            std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
+                this->linkSceneToObs(obs, node);
+                };
+            
+            _networkCtrl->enablePhysics(_world, linkSceneToObsFunc);
+
+            _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
+            _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
+            _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
+            
+            // create all players (both host n client do this) - must do once game scene takes over network handling
             for (auto p : _networkCtrl->getPlayers())
             {
-                if (p != _networkCtrl->getPID())
-                {
-                    CULog("adding ANOTHER player");
-                    _players->addPlayer(make_shared<Player>(cugl::Vec2(2 + getSize().width / 2, 2 + getSize().height / 2), 12, p, _assets->get<Texture>("player")));
-                }
+                auto params = _playerFact->serializeParams(getSize() / 2, _networkCtrl->getPID());
+                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
             }
-            CULog("num players in set: %d", _players->numPlayers());
+            // set _player to the correct object
+            _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
+            
+            
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
         }

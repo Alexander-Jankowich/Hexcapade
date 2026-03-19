@@ -10,6 +10,7 @@
 
 #include <cugl/cugl.h>
 #include "PlayerObstacle.h"
+#include "Player.h"
 using namespace cugl;
 using namespace std;
 using namespace cugl::physics2::distrib;
