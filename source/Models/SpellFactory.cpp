@@ -10,11 +10,11 @@
 using namespace std;
 using namespace cugl;
 
-SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, bool freeze, bool healed) {
+SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, bool freeze, bool heal) {
     init(pos, 10);
     damage = dmg;
     froze = freeze;
-    healed = healed;
+    healed = heal;
     setLinearVelocity(vel);
 }
 
