@@ -18,6 +18,9 @@
 #include <sstream>
 #include <random> //itemssss
 #include <box2d/b2_draw.h>
+#include <box2d/b2_world.h>
+#include <box2d/b2_contact.h>
+#include <box2d/b2_collision.h>
 
 #include "GLGameScene.h"
 
@@ -132,8 +135,11 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _world -> activateCollisionCallbacks(true);
     _world -> activateFilterCallbacks(false);
     _world -> activateDestructionCallbacks(true);
-    _world->onBeginContact = [this](b2Contact* contact) {
-            beginContact(contact);
+    //_world->onBeginContact = [this](b2Contact* contact) {
+    //        beginContact(contact);
+    //    }
+    _world->beforeSolve = [this](b2Contact* contact, const b2Manifold* oldManifold) {
+        beforeSolve(contact, oldManifold);
         };
     _world->update(1);
     
@@ -269,7 +275,7 @@ void GameScene::preUpdate(float dt)
         auto spellRemove = _spellFact->update();
         for (auto spell : spellRemove) {
             _networkCtrl->getPhysController()->removeSharedObstacle(spell);
-            CULog("Remove spell bc exceed range");
+            CULog("Remove spell bc exceed range: %d", spell->isRemoved());
         }
     }
 
@@ -618,6 +624,10 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             
         } else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
+                if (obs->isRemoved()) {
+                    CULog("spell removed!");
+                    _worldnode->removeChild(node);
+                }
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
                 Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
                 float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
@@ -630,4 +640,57 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     }
     
     
+}
+
+/**
+ * Handles any modifications necessary before collision resolution
+ *
+ * This method is called just before Box2D resolves a collision.  We use this method
+ * to implement sound on contact, using the algorithms outlined in Ian Parberry's
+ * "Introduction to Game Physics with Box2D".
+ *
+ * @param  contact  	The two bodies that collided
+ * @param  oldManfold  	The collision manifold before contact
+ */
+void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
+    float speed = 0;
+
+    // Use Ian Parberry's method to compute a speed threshold
+    b2Body* body1 = contact->GetFixtureA()->GetBody();
+    b2Body* body2 = contact->GetFixtureB()->GetBody();
+
+    physics2::Obstacle* obs1 = reinterpret_cast<physics2::Obstacle*>(body1->GetUserData().pointer);
+    physics2::Obstacle* obs2 = reinterpret_cast<physics2::Obstacle*>(body2->GetUserData().pointer);
+
+    SpellObstacle* spell = nullptr;
+    PlayerObstacle* player = nullptr;
+    EnemyObstacle* enemy = nullptr;
+
+    if (typeid(*obs1) == typeid(SpellObstacle)) {
+        spell = reinterpret_cast<SpellObstacle*> (obs1);
+    }
+    else if (typeid(*obs1) == typeid(PlayerObstacle)) {
+        player = reinterpret_cast<PlayerObstacle*> (obs1);
+    }
+    else if (typeid(*obs1) == typeid(EnemyObstacle)) {
+        enemy = reinterpret_cast<EnemyObstacle*> (obs1);
+    }
+
+    if (typeid(*obs2) == typeid(SpellObstacle)) {
+        spell = reinterpret_cast<SpellObstacle*> (obs2);
+    }
+    else if (typeid(*obs2) == typeid(PlayerObstacle)) {
+        player = reinterpret_cast<PlayerObstacle*> (obs2);
+    }
+    else if (typeid(*obs2) == typeid(EnemyObstacle)) {
+        enemy = reinterpret_cast<EnemyObstacle*> (obs2);
+    }
+
+    if (player && spell) {
+        CULog("spell and player collision");
+        return;
+    }
+    if (player && enemy) {
+        CULog("enemy and player colliison");
+    }
 }
