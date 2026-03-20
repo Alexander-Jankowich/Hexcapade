@@ -123,10 +123,10 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     //    beginContact(contact);
     //    };
     _world->update(0.02f);
-
-    _networkCtrl = NetworkController::alloc(_assets);
     
-
+    
+    _networkCtrl = NetworkController::alloc(_assets);
+    _players = std::make_shared<PlayerSet>();
     setActive(false);
     return true;
 }
@@ -145,11 +145,13 @@ void GameScene::dispose()
 
 void GameScene::reset()
 {
-    _players->reset();
+    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> player_pair =
+    _playerFact -> createObstacle(Vec2(0,0),_networkCtrl -> getPID());
+    _player = std::dynamic_pointer_cast<PlayerObstacle>(player_pair.first);
+    _players -> addPlayer(std::dynamic_pointer_cast<Player>(player_pair.second));
     _playerLost = false;
     _playerWon = false;
     _currInventoryScore = 0;
-    _enemy->reset();
     lastEnemySpawn = 0;
 
     spells.current.clear();
@@ -225,8 +227,8 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
-    _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : _player->getState()); // uh this def aint right
-    _player->update(dt); // idk if this is right...
+    _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : _player->getState());
+    _player->update(dt); 
 
     cugl::Vec2 playerScreenPos = _player->getPosition();
 
@@ -664,3 +666,4 @@ void GameScene::initPlayers() {
     //addInitObstacle(playerOb, _player);
 
 }
+

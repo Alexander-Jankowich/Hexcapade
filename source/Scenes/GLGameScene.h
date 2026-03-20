@@ -124,7 +124,7 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _currInventoryScore(0), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1) {}
+    GameScene() : cugl::scene2::Scene2(), _currInventoryScore(0), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1){}
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.

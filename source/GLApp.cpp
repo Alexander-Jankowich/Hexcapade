@@ -396,6 +396,7 @@ void GeometryApp::updateHostScene(float dt) {
             _hostScene.setActive(false);
             _gameplay.setConnection(_hostScene.getNetwork(), true);
             // Transfer connection ownership
+            CULog("im here");
             _hostScene.release();
             _gameplay.setActive(true);
             _scene = State::GAME;

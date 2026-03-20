@@ -35,12 +35,12 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, string pid);
+    
 
 
 public:
     PlayerFactory();
-
+    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, string pid);
     /**
      * Allocates a new instance of the factory using the given AssetManager.
      */

@@ -74,6 +74,7 @@ public:
     */
     void setSpell(SpellType spell) {_curSpell = spell;}
     void resolveSpell() { _curSpell = SpellType::NONE; }
+    void setHealth(int h) {_health = h;}
 
     SpellType getSpell() { return _curSpell; }
 
