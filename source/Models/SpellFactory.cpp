@@ -146,13 +146,11 @@ std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {
             it = current.erase(it);
             continue;
         }
-
         // Mark spells to be removed when out of range
         if ((*it)->getTraveled() > (*it)->getRange()) {
             (*it)->markRemoved(true);
         }
         it++;
-
     }
 
     return remove;

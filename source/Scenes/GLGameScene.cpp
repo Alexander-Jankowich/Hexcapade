@@ -704,6 +704,8 @@ void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
  * @param  oldManfold  	The collision manifold before contact
  */
 void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
+    if (!_ishost) return;
+    
     b2Body* body1 = contact->GetFixtureA()->GetBody();
     b2Body* body2 = contact->GetFixtureB()->GetBody();
 
@@ -752,6 +754,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
         //_networkCtrl->getPhysController()->removeSharedObstacle(reinterpret_cast<std::shared_ptr<physics2::Obstacle>>(spell));
         spell->markRemoved(true);
+        if (enemy->getHealth()==0) enemy->markRemoved(true);
         CULog("spell and enemy collision: %d", enemy->getHealth());
         return;
     }
