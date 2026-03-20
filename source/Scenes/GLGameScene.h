@@ -20,8 +20,6 @@
 #include "../Controllers/NetworkController.h"
 #include "../Models/InputDisplay.h"
 #include <cstddef> 
-#include "../Models/EnemySet.h"
-#include "../Models/SpellSet.h"
 #include "../Controllers/CollisionController.h"
 #include "../Models/Player.h"
 #include "../Models/SpellFactory.h"

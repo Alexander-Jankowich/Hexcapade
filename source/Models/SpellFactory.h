@@ -9,17 +9,17 @@
 #define __SPELL_FACTORY_H__
 
 #include <cugl/cugl.h>
-#include "SpellSet.h"
+#include "SpellNode.h"
 
 using namespace cugl;
 using namespace cugl::physics2::distrib;
 
-//enum class SpellType {
-//    NONE,
-//    FREEZE,
-//    FIREBALL,
-//    HEAL
-//};
+enum class SpellType {
+    NONE,
+    FREEZE,
+    FIREBALL,
+    HEAL
+};
 
 /**
 * An extension of WheelObstacle to represent spell collision objects.

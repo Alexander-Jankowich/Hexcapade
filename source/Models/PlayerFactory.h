@@ -9,8 +9,9 @@
 #define __PLAYER_FACTORY_H__
 
 #include <cugl/cugl.h>
-#include "PlayerObstacle.h"
+//#include "PlayerObstacle.h"
 #include "Player.h"
+
 using namespace cugl;
 using namespace std;
 using namespace cugl::physics2::distrib;

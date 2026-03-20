@@ -22,8 +22,6 @@
 #include <cugl/cugl.h>
 #include "Entity.h"
 
-/** The number of frames until we can fire again */
-#define RELOAD_RATE 3
 
 /**
  * Model class representing an alien ship.
@@ -77,7 +75,7 @@ public:
      * @param batch     The sprite batch to draw to
      * @param size      The size of the window (for wrap around)
      */
-    void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
+    //void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
 };
 
 #endif // !__GP_ENEMY_H__
