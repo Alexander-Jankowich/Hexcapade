@@ -13,7 +13,7 @@
 //
 #ifndef __GL_INPUT_CONTROLLER_H__
 #define __GL_INPUT_CONTROLLER_H__
-#include "../Models/SpellSet.h"
+#include "../Models/SpellFactory.h"
 
 /**
  * Device-independent input manager.

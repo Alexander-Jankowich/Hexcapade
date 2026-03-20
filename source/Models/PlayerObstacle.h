@@ -4,7 +4,8 @@
 //
 //  Created by Serena Duncan on 3/18/26.
 //
-#include "SpellSet.h"
+#include "SpellFactory.h"
+
 using namespace cugl;
 using namespace std;
 using namespace cugl::physics2::distrib;

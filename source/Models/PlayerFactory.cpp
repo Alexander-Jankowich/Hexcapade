@@ -9,7 +9,6 @@ using namespace std;
 using namespace cugl;
 
 
-
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */

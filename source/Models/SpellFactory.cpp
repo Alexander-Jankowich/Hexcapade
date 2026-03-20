@@ -63,8 +63,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     spell->setShared(true);
 
     // Create Spell! Hard code values for now, change later
-    auto sprite = std::make_shared<SpellSet::Spell>(pos, vel,
-        5, false, false, 1, 1,
+    auto sprite = std::make_shared<SpellNode>(pos, vel, 1, 1,
         _assets->get<graphics::Texture>("spell"));
 
     switch (type) {

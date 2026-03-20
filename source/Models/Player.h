@@ -9,8 +9,9 @@
 #define __GP_PLAYER_H__
 #include <cugl/cugl.h>
 #include "Entity.h"
-#include "SpellSet.h"
-#include "PlayerFactory.h"
+#include "SpellFactory.h"
+#include "PlayerObstacle.h"
+
 class Player : public Entity {
 private:
     float _speed;

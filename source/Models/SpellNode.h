@@ -17,13 +17,12 @@ protected:
     Vec2 _velocity;
     Vec2 _pos;
 public:
+    SpellNode(const cugl::Vec2 pos, cugl::Vec2 vel, int rows, int cols, std::shared_ptr<cugl::graphics::Texture> texture);
     
     void setVel(Vec2 v) { _velocity = v; }
     void setPos(Vec2 p) { _pos = p; }
     Vec2 getPos() { return _pos; }
     Vec2 getVel() { return _velocity; }
-    
-    
 };
 
 
