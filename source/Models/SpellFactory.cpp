@@ -134,15 +134,13 @@ std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {
     std::unordered_set<std::shared_ptr<SpellObstacle>> remove;
 
     for (auto it = current.begin(); it != current.end(); ) {
-        // Remove from set if removed from scene
-        if ((*it)->isRemoved()) {
-            it = current.erase(it);
-            continue;
+        // Mark spells to be removed when out of range
+        if ((*it)->getTraveled() > (*it)->getRange()) {
+            (*it)->markRemoved(true);
         }
 
-
-        // delete spells if they go out of range
-        if ((*it)->getTraveled() > (*it)->getRange()) {
+        // Remove from set if removed from scene
+        if ((*it)->isRemoved()) {
             remove.emplace(*it);
             it = current.erase(it);
         }

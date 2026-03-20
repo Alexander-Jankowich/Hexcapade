@@ -635,11 +635,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                 weak->setAngle(angle);
                 });
         }
-        
-       
     }
-    
-    
 }
 
 /**
@@ -686,15 +682,18 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
     // Checking for collisions
     if (player && spell) {
-        CULog("spell and player collision");
+        //CULog("spell and player collision");
         return;
     }
     if (player && enemy) {
-        CULog("enemy and player colliison");
+        //CULog("enemy and player colliison");
         return;
     }
     if (enemy && spell) {
-        CULog("spell and enemy collision");
+        enemy->setHealth(enemy->getHealth() - spell->getDamage());
+        //_networkCtrl->getPhysController()->removeSharedObstacle(reinterpret_cast<std::shared_ptr<physics2::Obstacle>>(spell));
+        spell->markRemoved(true);
+        CULog("spell and enemy collision: %d", enemy->getHealth());
         return;
     }
 }
