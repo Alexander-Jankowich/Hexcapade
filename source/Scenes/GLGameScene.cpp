@@ -36,6 +36,19 @@ using namespace cugl::graphics;
 
 #define PI 3.14159265358979323
 
+/**
+ * Processes the start of a collision
+ *
+ * This method is called when we first get a collision between two objects.
+ * We use this method to test if it is the "right" kind of collision.  In
+ * particular, we use it to test if we make it to the win door.
+ *
+ * @param  contact  The two bodies that collided
+ */
+void GameScene::beginContact(b2Contact* contact){
+    CULog("made contact");
+}
+
 #pragma mark -
 #pragma mark Constructors
 /**
@@ -111,14 +124,19 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _worldnode = scene2::SceneNode::alloc();
     _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     _worldnode->setPosition(offset);
+    
 
     addChild(_worldnode);
 
     _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, dimen.width / PHYSICS_SCALE , SCENE_HEIGHT / PHYSICS_SCALE), Vec2::ZERO);
     _world -> activateCollisionCallbacks(true);
-    _world -> activateFilterCallbacks(true);
+    _world -> activateFilterCallbacks(false);
     _world -> activateDestructionCallbacks(true);
+    _world->onBeginContact = [this](b2Contact* contact) {
+            beginContact(contact);
+        };
     _world->update(1);
+    
     
     
     _networkCtrl = NetworkController::alloc(_assets);
@@ -197,7 +215,6 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
     Vec2 pos = _player -> getPosition();
-    CULog("pos : %f, %f", pos.x,pos.y);
     //CULog("body active: %d", _player->isAwake());
     //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
@@ -554,6 +571,8 @@ void GameScene::setActive(bool value)
     }
 }
 
+
+
 void GameScene::addInitObstacle(const std::shared_ptr<physics2::Obstacle>& obj,
     const std::shared_ptr<scene2::SceneNode>& node) {
     _world->initObstacle(obj);
@@ -598,5 +617,8 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                 });
         }
         
+       
     }
+    
+    
 }

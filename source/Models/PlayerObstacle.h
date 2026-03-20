@@ -53,6 +53,7 @@ public:
 
     static shared_ptr<PlayerObstacle> alloc(Vec2 pos, string pid, cugl::Size& s) {
         auto f = make_shared<PlayerObstacle>(pos, pid, s);
+        f -> createFixtures();
         return f;
     }
 

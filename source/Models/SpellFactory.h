@@ -36,6 +36,7 @@ public:
     static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos,
         cugl::Vec2 vel, int dmg, bool freeze, bool healed) {
         auto f = std::make_shared<SpellObstacle>(pos, vel, dmg, freeze, healed);
+        f -> createFixtures();
         return f;
     }
 };

@@ -319,6 +319,8 @@ private:
      */
     void addInitObstacle(const std::shared_ptr<cugl::physics2::Obstacle>& obj,
         const std::shared_ptr<cugl::scene2::SceneNode>& node);
+    
+    void beginContact(b2Contact* contact);
 
 };
 

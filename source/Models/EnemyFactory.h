@@ -26,6 +26,7 @@ public:
 
     static shared_ptr<EnemyObstacle> alloc(const cugl::Vec2& pos, float speed, int health, cugl::Size s) {
         auto f = make_shared<EnemyObstacle>(pos, speed, health, s);
+        f -> createFixtures();
         return f;
     }
 

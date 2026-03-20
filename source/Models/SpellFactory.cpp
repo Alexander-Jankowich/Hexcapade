@@ -6,12 +6,16 @@
 //
 
 #include "SpellFactory.h"
+#define PHYSICS_SCALE 100
 
 using namespace std;
 using namespace cugl;
 
 SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, bool freeze, bool heal) {
-    init(pos, 10);
+    init(pos, 10.0f / PHYSICS_SCALE);
+    setAwake(true);
+    setEnabled(true);
+    setBodyType(b2_dynamicBody);
     damage = dmg;
     froze = freeze;
     healed = heal;

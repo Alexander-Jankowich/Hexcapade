@@ -6,12 +6,16 @@
 //
 
 #include "EnemyFactory.h"
+#define PHYSICS_SCALE 100
 
 using namespace std;
 using namespace cugl;
 
 EnemyObstacle::EnemyObstacle(const cugl::Vec2& pos, float speed, int health, cugl::Size s) {
-    init(pos, s);
+    init(pos, s / PHYSICS_SCALE);
+    setAwake(true);
+    setEnabled(true);
+    setBodyType(b2_dynamicBody);
     _health = health;
     _speed = speed;
 }
