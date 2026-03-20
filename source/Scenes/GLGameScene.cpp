@@ -312,7 +312,7 @@ void GameScene::preUpdate(float dt)
         auto spellRemove = _spellFact->update();
         for (auto spell : spellRemove) {
             _networkCtrl->getPhysController()->removeSharedObstacle(spell);
-            CULog("Remove spell bc exceed range: %d", spell->isRemoved());
+            CULog("Remove spell: %d", spell->isRemoved());
         }
     }
 
@@ -666,7 +666,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                 float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
                 p_node->setPosition(pos * PHYSICS_SCALE);
                 p_node->setAngle(angle);
-                });
+            });
             
         } else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
@@ -680,7 +680,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                 float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
                 weak->setPosition(pos * PHYSICS_SCALE);
                 weak->setAngle(angle);
-                });
+            });
         }
     }
 }
@@ -709,6 +709,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
     physics2::Obstacle* obs1 = reinterpret_cast<physics2::Obstacle*>(body1->GetUserData().pointer);
     physics2::Obstacle* obs2 = reinterpret_cast<physics2::Obstacle*>(body2->GetUserData().pointer);
+
+    if (obs1->isRemoved() || obs2->isRemoved()) {
+        return;
+    }
 
     SpellObstacle* spell = nullptr;
     PlayerObstacle* player = nullptr;
