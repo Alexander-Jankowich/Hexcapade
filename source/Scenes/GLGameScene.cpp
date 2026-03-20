@@ -31,7 +31,7 @@ using namespace cugl::graphics;
 #define SCENE_HEIGHT 720
 
 /** The ratio between the physics world and the screen. */
-#define PHYSICS_SCALE 50
+#define PHYSICS_SCALE 100
 
 #define PI 3.14159265358979323
 
@@ -118,11 +118,11 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 
     addChild(_worldnode);
 
-    _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, dimen.width, SCENE_HEIGHT), Vec2::ZERO);
+    _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, dimen.width / PHYSICS_SCALE , SCENE_HEIGHT / PHYSICS_SCALE), Vec2::ZERO);
     //_world->onBeginContact = [this](b2Contact* contact) {
     //    beginContact(contact);
     //    };
-    _world->update(0.02f);
+    _world->update(1);
     
     
     _networkCtrl = NetworkController::alloc(_assets);
@@ -149,6 +149,7 @@ void GameScene::reset()
     _playerFact -> createObstacle(Vec2(0,0),_networkCtrl -> getPID());
     _player = std::dynamic_pointer_cast<PlayerObstacle>(player_pair.first);
     _players -> addPlayer(std::dynamic_pointer_cast<Player>(player_pair.second));
+    
     _playerLost = false;
     _playerWon = false;
     _currInventoryScore = 0;
@@ -218,7 +219,7 @@ void GameScene::preUpdate(float dt)
         {
             lastEnemySpawn = 0;
             //_enemy->spawnEnemy(getSize() / 2, 4);
-            auto params = _enemyFact->serializeParams(getSize() / 2, Vec2::ZERO, 4);
+            auto params = _enemyFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, Vec2::ZERO, 4);
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
         }
     }
@@ -226,8 +227,10 @@ void GameScene::preUpdate(float dt)
     // Player movement
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
-    CULog("x: %f, y: %f", velocity.x, velocity.y);
-    _player->setVelocity(velocity);
+    CULog("body active: %d", _player->isAwake());
+    CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
+    _player -> setLinearVelocity(velocity);
+    _player -> setVelocity(velocity);
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : _player->getState());
     _player->update(dt);
 
@@ -256,7 +259,7 @@ void GameScene::preUpdate(float dt)
         if (_ishost)
         {
             //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
-            auto params = _spellFact->serializeParams(playerScreenPos, angle*5, _player->getSpell());
+            auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle*5, _player->getSpell());
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
         }
         _input.resolveSpell();
@@ -271,7 +274,7 @@ void GameScene::preUpdate(float dt)
         {
             lastEnemySpawn = 0;
             //_enemy->spawnEnemy(getSize() / 2, 4);
-            auto params = _enemyFact->serializeParams(getSize() / 2, Vec2::ZERO, 4);
+            auto params = _enemyFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, Vec2::ZERO, 4);
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
         }
 
@@ -593,7 +596,7 @@ void GameScene::setActive(bool value)
             // create all players (both host n client do this) - must do once game scene takes over network handling
             for (auto p : _networkCtrl->getPlayers())
             {
-                auto params = _playerFact->serializeParams(getSize() / 2, _networkCtrl->getPID());
+                auto params = _playerFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, _networkCtrl->getPID());
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
             }
             // set _player to the correct object
@@ -639,7 +642,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
                 Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
                 float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
-                p_node->setPosition(pos * 1);
+                p_node->setPosition(pos * PHYSICS_SCALE);
                 p_node->setAngle(angle);
                 });
             
