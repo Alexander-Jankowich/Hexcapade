@@ -355,12 +355,12 @@ void GameScene::fixedUpdate(Uint64 step)
     
     // handle cast spell event
     if(_networkCtrl->isInAvailable()){
-            auto e = _networkCtrl->popInEvent();
-            if(auto cse = std::dynamic_pointer_cast<CastSpellEvent>(e)){
-                CULog("COMBO SPELL GOT");
-                processComboEvent(cse);
-            }
+        auto e = _networkCtrl->popInEvent();
+        if(auto cse = std::dynamic_pointer_cast<CastSpellEvent>(e)){
+            CULog("COMBO SPELL GOT");
+            processComboEvent(cse);
         }
+    }
 
     _world->update(step / 1000000.0f);
 }
@@ -615,8 +615,8 @@ void GameScene::setActive(bool value)
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
 
             // set _player to the correct object
+            _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
-            
             
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
