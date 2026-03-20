@@ -44,10 +44,7 @@ protected:
     vector<int> _inventory;
 
 public:
-    PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
-        init(pos, s); // TODO WHAT THE FUCK SHOULD THIS BE
-        _pid = pid;
-    }
+    PlayerObstacle(Vec2 pos, string pid, cugl::Size s);
 
     static shared_ptr<PlayerObstacle> alloc(Vec2 pos, string pid, cugl::Size& s) {
         auto f = make_shared<PlayerObstacle>(pos, pid, s);
@@ -67,7 +64,7 @@ public:
         return sum;
     }
 
-    void setVelocity(Vec2 v) {_velocity = v;}
+    void setVelocity(Vec2 v) { _velocity = v; setLinearVelocity(_velocity); }
     /**
     * Sets the current spell of the player.
     * Also increments _curSpellNum if this spell is different than the previous one.

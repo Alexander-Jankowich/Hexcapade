@@ -200,23 +200,19 @@ void GameScene::preUpdate(float dt)
 {
     _input.update(dt);
 
-    if (_input.pressedReset())
-    {
+    if (_input.pressedReset()) {
         reset();
         _input.resolvedReset();
         return;
     }
 
-    if (_playerLost || _playerWon)
-    {
+    if (_playerLost || _playerWon) {
         return;
     }
     // spawn an enemy if host and need to spawn
-    if (_ishost)
-    {
+    if (_ishost) {
         lastEnemySpawn += dt;
-        if (lastEnemySpawn > 8)
-        {
+        if (lastEnemySpawn > 8) {
             lastEnemySpawn = 0;
             //_enemy->spawnEnemy(getSize() / 2, 4);
             auto params = _enemyFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, Vec2::ZERO, 4);
@@ -227,10 +223,9 @@ void GameScene::preUpdate(float dt)
     // Player movement
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
-    CULog("body active: %d", _player->isAwake());
-    CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
-    _player -> setLinearVelocity(velocity);
-    _player -> setVelocity(velocity);
+    _player->setVelocity(velocity);
+    //CULog("body active: %d", _player->isAwake());
+    //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : _player->getState());
     _player->update(dt);
 
@@ -240,38 +235,33 @@ void GameScene::preUpdate(float dt)
     tryPickupItem();
 
     // Spellcasting
-    if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE)
-    {
+    if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
         _player->setSpell(_input.getGesture());
     }
 
     bool sendSpell = false;
     Vec2 angle = _input.getSpellAngle();
-    if (angle.isZero())
-    {
+    if (angle.isZero()) {
         angle = _player->getDirection();
     }
-    if (_input.shouldReleaseSpell())
-    {
+    if (_input.shouldReleaseSpell()) {
         sendSpell = true;
         CULog("Release spell--------------------------------------------------------");
         // CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
-        if (_ishost)
-        {
-            //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
-            auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle*5, _player->getSpell());
-            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-        }
+        //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
+        // Spawn spell, make host owner of object
+        auto params = _spellFact->serializeParams(playerScreenPos, angle*5, _player->getSpell());
+        auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+        _networkCtrl->getPhysController()->releaseObs(pair.first);
+
         _input.resolveSpell();
         _player->resolveSpell();
     }
 
     // spawn an enemy if host and need to spawn
-    if (_ishost)
-    {
+    if (_ishost) {
         lastEnemySpawn += dt;
-        if (lastEnemySpawn > 8)
-        {
+        if (lastEnemySpawn > 8) {
             lastEnemySpawn = 0;
             //_enemy->spawnEnemy(getSize() / 2, 4);
             auto params = _enemyFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, Vec2::ZERO, 4);
@@ -284,12 +274,10 @@ void GameScene::preUpdate(float dt)
 
     _inputDisplay->update(playerScreenPos);
 
-    if (_player->getHealth() <= 0)
-    {
+    if (_player->getHealth() <= 0) {
         _playerLost = true;
     }
-    if ((_playerLost || _playerWon) && _ishost)
-    {
+    if ((_playerLost || _playerWon) && _ishost) {
         _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
     }
 }

@@ -18,10 +18,9 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
     auto image = _assets->get<graphics::Texture>("player"); // TODO this will need to update with additional metadata (which asset to get)
     auto size = image->getSize();
     
-    // Create the SpellObstacle
+    // Create the PlayerObstacle
     auto pl = PlayerObstacle::alloc(pos, pid, size);
-    pl -> setHealth(10);
-    pl -> setSpeed(8);
+
 //    pl->setAngleSnap(0); // Snap to the nearest degree
 //
 //    // Set the physics attributes
