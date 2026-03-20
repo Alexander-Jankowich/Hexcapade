@@ -295,6 +295,7 @@ void GameScene::preUpdate(float dt)
 void GameScene::fixedUpdate(Uint64 step)
 {
     // First process incoming events
+    _networkCtrl->updateNet();
 
     _world->update(step / 1000000.0f);
 }
