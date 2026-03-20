@@ -299,7 +299,11 @@ void GameScene::preUpdate(float dt)
         }
 
         // Change to be all player positions
-        auto toRemove = _enemyFact->update({_player->getPosition()});
+        std::vector<Vec2> player_pos;
+        for (auto p : _playerFact->current) {
+            player_pos.push_back(p->getPosition());
+        }
+        auto toRemove = _enemyFact->update(player_pos);
         for (auto en : toRemove) {
             _networkCtrl->getPhysController()->removeSharedObstacle(en);
         }
@@ -667,8 +671,9 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         } else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 if (obs->isRemoved()) {
-                    CULog("spell removed!");
+                    CULog("object removed!");
                     _worldnode->removeChild(node);
+                    return;
                 }
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
                 Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
@@ -682,6 +687,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
 
 void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
     if (e->getP2() == _player->getPID()) {
+        CULog("recieved spell combo event for our spell");
         _input.resolveSpell();
         _player->resolveSpell();
     }
