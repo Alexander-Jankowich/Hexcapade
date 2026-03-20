@@ -46,7 +46,6 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _startgame->addListener([this](const std::string& name, bool down) {
         if (down) {
             _networkCtrl->startGame();
-            _networkCtrl -> markReady();
         }
     });
     
@@ -79,6 +78,7 @@ void HostScene::update(float dt) {
         }
     }
     configureStartButton();
+    _networkCtrl -> markReady();
 }
 
 void HostScene::setActive(bool value) {
