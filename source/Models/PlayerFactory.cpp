@@ -21,7 +21,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
     // Create the SpellObstacle
     auto pl = PlayerObstacle::alloc(pos, pid, size);
     pl -> setHealth(10);
-
+    pl -> setSpeed(5);
 //    pl->setAngleSnap(0); // Snap to the nearest degree
 //
 //    // Set the physics attributes

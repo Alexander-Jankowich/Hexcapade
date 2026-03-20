@@ -226,9 +226,10 @@ void GameScene::preUpdate(float dt)
     // Player movement
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
+    CULog("x: %f, y: %f", velocity.x, velocity.y);
     _player->setVelocity(velocity);
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : _player->getState());
-    _player->update(dt); 
+    _player->update(dt);
 
     cugl::Vec2 playerScreenPos = _player->getPosition();
 
