@@ -124,6 +124,7 @@ std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::update(std::vec
     for (auto it = current.begin(); it != current.end(); ) {
         // Remove from set if removed from scene
         if ((*it)->isRemoved()) {
+            remove.emplace(*it);
             it = current.erase(it);
             continue;
         }
@@ -138,13 +139,13 @@ std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::update(std::vec
 
 
         // delete enemies if they fall below 0 hp.
-        if ((*it)->getHealth() > 0) {
-            it++;
-        }
-        else {
-            remove.emplace(*it);
-            it = current.erase(it);
-        }
+//        if ((*it)->getHealth() > 0) {
+//            it++;
+//        }
+//        else {
+//            remove.emplace(*it);
+//            it = current.erase(it);
+//        }
 
     }
 
