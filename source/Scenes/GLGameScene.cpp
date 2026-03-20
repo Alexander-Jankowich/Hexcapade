@@ -49,7 +49,7 @@ using namespace cugl::graphics;
  * @param  contact  The two bodies that collided
  */
 void GameScene::beginContact(b2Contact* contact){
-    CULog("made contact");
+    //CULog("made contact");
 }
 
 #pragma mark -
@@ -137,7 +137,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _world -> activateDestructionCallbacks(true);
     //_world->onBeginContact = [this](b2Contact* contact) {
     //        beginContact(contact);
-    //    }
+    //    };
     _world->beforeSolve = [this](b2Contact* contact, const b2Manifold* oldManifold) {
         beforeSolve(contact, oldManifold);
         };
@@ -653,9 +653,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
  * @param  oldManfold  	The collision manifold before contact
  */
 void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
-    float speed = 0;
-
-    // Use Ian Parberry's method to compute a speed threshold
     b2Body* body1 = contact->GetFixtureA()->GetBody();
     b2Body* body2 = contact->GetFixtureB()->GetBody();
 
@@ -666,6 +663,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     PlayerObstacle* player = nullptr;
     EnemyObstacle* enemy = nullptr;
 
+    // Get types of the 2 obstacles; only care about collisions between different types of obstacles
     if (typeid(*obs1) == typeid(SpellObstacle)) {
         spell = reinterpret_cast<SpellObstacle*> (obs1);
     }
@@ -686,11 +684,17 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy = reinterpret_cast<EnemyObstacle*> (obs2);
     }
 
+    // Checking for collisions
     if (player && spell) {
         CULog("spell and player collision");
         return;
     }
     if (player && enemy) {
         CULog("enemy and player colliison");
+        return;
+    }
+    if (enemy && spell) {
+        CULog("spell and enemy collision");
+        return;
     }
 }
