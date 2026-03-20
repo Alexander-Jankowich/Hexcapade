@@ -162,7 +162,6 @@ public:
     
     std::shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
 
-    //void addItem(int value);
     int getInventoryValue() const { return _currInventoryScore; }
     int getQuota() const { return _quota; }
     bool hasWon() const { return _playerWon; }
@@ -321,7 +320,6 @@ private:
     void addInitObstacle(const std::shared_ptr<cugl::physics2::Obstacle>& obj,
         const std::shared_ptr<cugl::scene2::SceneNode>& node);
 
-    void initPlayers();
 };
 
 #endif // !__GL_GAME_SCENE_H__
