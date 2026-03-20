@@ -705,6 +705,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     physics2::Obstacle* obs1 = reinterpret_cast<physics2::Obstacle*>(body1->GetUserData().pointer);
     physics2::Obstacle* obs2 = reinterpret_cast<physics2::Obstacle*>(body2->GetUserData().pointer);
 
+    if (obs1->isRemoved() || obs2->isRemoved()) {
+        return;
+    }
+
     SpellObstacle* spell = nullptr;
     PlayerObstacle* player = nullptr;
     EnemyObstacle* enemy = nullptr;
