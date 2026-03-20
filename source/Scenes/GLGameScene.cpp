@@ -249,23 +249,37 @@ void GameScene::preUpdate(float dt)
         // Spawn spell, make host owner of object
         
         CULog("Spell type: %d", _player->getSpell());
-        SpellType t = _player->getSpell();
+        SpellType t = SpellType::NONE;
 
         // check for possible combos - serena implemented
         for (auto p : _playerFact->current) {
             if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
                 // calc combo spell + send combo event
                 if (_player->getSpell() == SpellType::FIREBALL) {
-                    if (p->getSpell()==SpellType::FIREBALL) t=SpellType::COMBO_FIREBALL;
+                    if (p->getSpell() == SpellType::FIREBALL) {
+                        t = SpellType::COMBO_FIREBALL;
+                    }
                 }
                 else if (_player->getSpell() == SpellType::FREEZE) {
-                    if (p->getSpell()==SpellType::FREEZE) t=SpellType::COMBO_FREEZE;
+                    if (p->getSpell() == SpellType::FREEZE) {
+                        t = SpellType::COMBO_FREEZE;
+                    }
                 }
-                if (t!=SpellType::NONE)
+
+                // Spell is combo-ed!
+                if (t != SpellType::NONE) {
                     _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
+                    break;
+                }
             }
         }
 
+        // Not a combo, use base spell
+        if (t == SpellType::NONE) {
+            t = _player->getSpell();
+        }
+
+        CULog("Casting spell type: %d", t);
         auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, t);
         auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
         _networkCtrl->getPhysController()->releaseObs(pair.first);

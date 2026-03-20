@@ -48,6 +48,12 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     case SpellType::HEAL:
         values = _spellConsts->get("heal");
         break;
+    case SpellType::COMBO_FIREBALL:
+        values = _spellConsts->get("fireball");
+        break;
+    case SpellType::COMBO_FREEZE:
+        values = _spellConsts->get("freeze");
+        break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
     default:
