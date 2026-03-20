@@ -26,19 +26,28 @@ enum class SpellType {
 */
 class SpellObstacle : public physics2::WheelObstacle {
 protected:
-    float damage;
-    bool froze;
-    bool healed;
+    float _damage;
+    bool _froze;
+    bool _healed;
+
+    cugl::Vec2 _start;
+    float _range;
 
 public:
-    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, bool freeze, bool healed);
+    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed);
 
     static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos,
-        cugl::Vec2 vel, int dmg, bool freeze, bool healed) {
-        auto f = std::make_shared<SpellObstacle>(pos, vel, dmg, freeze, healed);
-        f -> createFixtures();
+        cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed) {
+        auto f = std::make_shared<SpellObstacle>(pos, vel, dmg, range, freeze, healed);
+        f->createFixtures();
         return f;
     }
+
+    bool getHealed() { return _healed; }
+    bool getFroze() { return _froze; }
+    bool getDamage() { return _damage; }
+    bool getRange() { return _range; }
+    float getTraveled() { return getPosition().distance(_start); }
 };
 
 /**
@@ -68,6 +77,9 @@ protected:
 public:
     SpellFactory() {};
 
+    /** Set of all current enemies */
+    std::unordered_set<std::shared_ptr<SpellObstacle>> current;
+
     /**
      * Allocates a new instance of the factory using the given AssetManager.
      */
@@ -94,6 +106,13 @@ public:
      * Generate a pair of Obstacle and SceneNode using serialized parameters.
      */
     std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(const std::vector<std::byte>& params) override;
+
+    /**
+    * Updates all spells
+    * 
+    * @return a set of all spells to be removed from the world
+    */
+    std::unordered_set<std::shared_ptr<SpellObstacle>> update();
 };
 
 #endif // !__SPELL_FACTORY_H__

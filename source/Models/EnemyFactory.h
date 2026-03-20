@@ -81,6 +81,10 @@ protected:
 
 public:
     EnemyFactory() {}
+
+    /** Set of all current enemies */
+    std::unordered_set<std::shared_ptr<EnemyObstacle>> current;
+
     /**
      * Allocates a new instance of the factory using the given AssetManager.
      */
@@ -107,15 +111,14 @@ public:
      */
     pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(const vector<byte>& params) override;
 
-    /** Set of all current enemies */
-    std::unordered_set<std::shared_ptr<EnemyObstacle>> current;
-
     /**
     * Updates all enemies to go to nearest target
     * 
     * TODO: change to a proper AI
+    * 
+    * @return a set of all enemies to be removed from the world
     */
-    void update(std::vector<cugl::Vec2> targets);
+    std::unordered_set<std::shared_ptr<EnemyObstacle>> update(std::vector<cugl::Vec2> targets);
 };
 
 #endif // !__ENEMY_FACTORY_H__

@@ -227,7 +227,7 @@ void GameScene::preUpdate(float dt)
     // Spellcasting
     if (_input.getGesture() != SpellType::NONE) {
         _player->setSpell(_input.getGesture());
-        CULog("Set spell! %d", _player->getSpell());
+        //CULog("Set spell! %d", _player->getSpell());
     }
 
     bool sendSpell = false;
@@ -241,7 +241,6 @@ void GameScene::preUpdate(float dt)
         // CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
         //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
         // Spawn spell, make host owner of object
-        CULog("Spell type: %d", _player->getSpell());
         auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, _player->getSpell());
         auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
         _networkCtrl->getPhysController()->releaseObs(pair.first);
@@ -250,8 +249,8 @@ void GameScene::preUpdate(float dt)
         _player->resolveSpell();
     }
 
-    // spawn an enemy if host and need to spawn
     if (_ishost) {
+        // spawn an enemy if host and need to spawn
         lastEnemySpawn += dt;
         if (lastEnemySpawn > 8) {
             lastEnemySpawn = 0;
@@ -261,7 +260,17 @@ void GameScene::preUpdate(float dt)
         }
 
         // Change to be all player positions
-        _enemyFact->update({_player->getPosition()});
+        auto toRemove = _enemyFact->update({_player->getPosition()});
+        for (auto en : toRemove) {
+            _networkCtrl->getPhysController()->removeSharedObstacle(en);
+        }
+
+        // Remove spells that have gone out of range
+        auto spellRemove = _spellFact->update();
+        for (auto spell : spellRemove) {
+            _networkCtrl->getPhysController()->removeSharedObstacle(spell);
+            CULog("Remove spell bc exceed range");
+        }
     }
 
     _inputDisplay->update(playerScreenPos);

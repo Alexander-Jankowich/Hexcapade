@@ -56,6 +56,8 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 
     en->setShared(true);
 
+    current.emplace(en);
+
     // Create enemy
     auto sprite = make_shared<Enemy>(pos, 2.5, h, image);
 
@@ -116,7 +118,9 @@ Vec2 EnemyFactory::getClosestPlayer(Vec2 enemPos, std::vector<Vec2> targs) {
     return minPos;
 }
 
-void EnemyFactory::update(std::vector<Vec2> targets) {
+std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::update(std::vector<Vec2> targets) {
+    std::unordered_set<std::shared_ptr<EnemyObstacle>> remove;
+
     for (auto it = current.begin(); it != current.end(); ) {
         // Remove from set if removed from scene
         if ((*it)->isRemoved()) {
@@ -138,9 +142,11 @@ void EnemyFactory::update(std::vector<Vec2> targets) {
             it++;
         }
         else {
-            (*it)->markRemoved(true);
+            remove.emplace(*it);
             it = current.erase(it);
         }
 
     }
+
+    return remove;
 }

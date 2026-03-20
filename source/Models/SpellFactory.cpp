@@ -11,14 +11,19 @@
 using namespace std;
 using namespace cugl;
 
-SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, bool freeze, bool heal) {
+SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, float range, bool freeze, bool heal) {
     init(pos, 10.0f / PHYSICS_SCALE);
     setAwake(true);
     setEnabled(true);
     setBodyType(b2_dynamicBody);
-    damage = dmg;
-    froze = freeze;
-    healed = heal;
+
+    _damage = dmg;
+    _froze = freeze;
+    _healed = heal;
+
+    _start = pos;
+    _range = range;
+
     setLinearVelocity(vel);
 }
 
@@ -52,6 +57,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     Vec2 vel = norm * values->getFloat("speed");
     auto spell = SpellObstacle::alloc(pos, vel,
         values->getInt("damage"),
+        values->getFloat("range"),
         values->getBool("freeze", false),
         values->getBool("heal", false));
     //auto spell = SpellObstacle::alloc(pos, type);
@@ -61,6 +67,8 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     // Set the physics attributes
 
     spell->setShared(true);
+
+    current.emplace(spell);
 
     // Create Spell! Hard code values for now, change later
     auto sprite = std::make_shared<SpellNode>(pos, vel, 1, 1,
@@ -120,4 +128,29 @@ std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode
     Vec2 velocity = Vec2(vx, vy);
     SpellType type = (SpellType) _deserializer.readUint16();
     return createObstacle(pos, velocity, type);
+}
+
+std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {
+    std::unordered_set<std::shared_ptr<SpellObstacle>> remove;
+
+    for (auto it = current.begin(); it != current.end(); ) {
+        // Remove from set if removed from scene
+        if ((*it)->isRemoved()) {
+            it = current.erase(it);
+            continue;
+        }
+
+
+        // delete spells if they go out of range
+        if ((*it)->getTraveled() > (*it)->getRange()) {
+            remove.emplace(*it);
+            it = current.erase(it);
+        }
+        else {
+            it++;
+        }
+
+    }
+
+    return remove;
 }
