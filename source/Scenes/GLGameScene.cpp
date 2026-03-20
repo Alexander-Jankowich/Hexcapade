@@ -671,7 +671,12 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         } else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 if (obs->isRemoved()) {
-                    CULog("object removed!");
+                    if (typeid(*obs) == typeid(SpellObstacle)) {
+                        CULog("spell node removed!");
+                    }
+                    else {
+                        CULog("enemy node removed!");
+                    }
                     _worldnode->removeChild(node);
                     return;
                 }

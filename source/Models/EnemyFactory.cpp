@@ -146,7 +146,7 @@ std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::update(std::vec
 //            remove.emplace(*it);
 //            it = current.erase(it);
 //        }
-
+        it++;
     }
 
     return remove;
