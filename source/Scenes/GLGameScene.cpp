@@ -156,16 +156,7 @@ void GameScene::reset()
 }
 
 #pragma mark -
-#pragma mark Inventory
-// this has been bumped down to player model but keeping here just in case
-// void GameScene::addItem(int value) {
-//    _inventoryValue += value;
-//    if (_inventoryValue >= _quota) {
-//        _playerWon = true;
-//    }
-//}
 
-#pragma mark -
 #pragma mark Gameplay Handling
 /**
  * The method called to indicate the start of a deterministic loop.
@@ -336,27 +327,6 @@ void GameScene::postUpdate(float remain)
  */
 void GameScene::render()
 {
-    // DO NOT DO THIS IN YOUR FINAL GAME
-    //_batch->setPerspective(getCamera()->getCombined());
-    //_batch->begin();
-
-    //Color4 original = _batch->getColor();
-
-    //drawItems();
-
-    //_players->draw(_batch);
-
-    //_enemy->draw(_batch);
-
-    //spells.draw(_batch);
-
-    //renderHUD();
-
-    //_inputDisplay->draw(_batch);
-
-    //_batch->setColor(original);
-    //_batch->end();
-
     Scene2::render();
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
@@ -630,16 +600,3 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         
     }
 }
-
-void GameScene::initPlayers() {
-    //auto image = _assets->get<graphics::Texture>("player"); // TODO this will need to update with additional metadata (which asset to get)
-    //auto size = image->getSize();
-    //_player = std::make_shared<Player>(getSize() / 2, 12, image);
-
-    //Vec2 playerPos = (_player->getPosition());
-    //auto playerOb = PlayerObstacle::alloc(playerPos, "???", size);
-
-    //addInitObstacle(playerOb, _player);
-
-}
-
