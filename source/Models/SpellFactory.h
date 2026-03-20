@@ -15,10 +15,12 @@ using namespace cugl;
 using namespace cugl::physics2::distrib;
 
 enum class SpellType {
-    NONE,
-    FREEZE,
-    FIREBALL,
-    HEAL
+    NONE=0,
+    FREEZE=1,
+    FIREBALL=2,
+    HEAL=3,
+    COMBO_FIREBALL=4,
+    COMBO_FREEZE=5
 };
 
 /**

@@ -34,6 +34,8 @@ using namespace cugl::graphics;
 /** The ratio between the physics world and the screen. */
 #define PHYSICS_SCALE 100
 
+#define COMBO_RADIUS 25
+
 #define PI 3.14159265358979323
 
 /**
@@ -230,18 +232,35 @@ void GameScene::preUpdate(float dt)
         //CULog("Set spell! %d", _player->getSpell());
     }
 
-    bool sendSpell = false;
     Vec2 angle = _input.getSpellAngle();
     if (angle.isZero()) {
         angle = _player->getDirection();
     }
     if (_input.shouldReleaseSpell()) {
-        sendSpell = true;
         CULog("Release spell--------------------------------------------------------");
         // CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
         //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
         // Spawn spell, make host owner of object
-        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, _player->getSpell());
+        
+        CULog("Spell type: %d", _player->getSpell());
+        SpellType t = _player->getSpell();
+
+        // check for possible combos - serena implemented
+        for (auto p : _playerFact->current) {
+            if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
+                // calc combo spell + send combo event
+                if (_player->getSpell() == SpellType::FIREBALL) {
+                    if (p->getSpell()==SpellType::FIREBALL) t=SpellType::COMBO_FIREBALL;
+                }
+                else if (_player->getSpell() == SpellType::FREEZE) {
+                    if (p->getSpell()==SpellType::FREEZE) t=SpellType::COMBO_FREEZE;
+                }
+                if (t!=SpellType::NONE)
+                    _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
+            }
+        }
+
+        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, t);
         auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
         _networkCtrl->getPhysController()->releaseObs(pair.first);
 
@@ -313,6 +332,15 @@ void GameScene::fixedUpdate(Uint64 step)
 {
     // First process incoming events
     _networkCtrl->updateNet();
+    
+    // handle cast spell event
+    if(_networkCtrl->isInAvailable()){
+            auto e = _networkCtrl->popInEvent();
+            if(auto cse = std::dynamic_pointer_cast<CastSpellEvent>(e)){
+                CULog("COMBO SPELL GOT");
+                processComboEvent(cse);
+            }
+        }
 
     _world->update(step / 1000000.0f);
 }
@@ -625,9 +653,12 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                 weak->setAngle(angle);
                 });
         }
-        
-       
     }
-    
-    
+}
+
+void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
+    if (e->getP2() == _player->getPID()) {
+        _input.resolveSpell();
+        _player->resolveSpell();
+    }
 }

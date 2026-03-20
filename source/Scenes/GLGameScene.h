@@ -25,6 +25,7 @@
 #include "../Models/SpellFactory.h"
 #include "../Models/PlayerFactory.h"
 #include "../Models/EnemyFactory.h"
+#include "../Models/ComboEvent.h"
 
 /**
  * This class is the primary gameplay constroller for the demo.
@@ -275,9 +276,10 @@ public:
      */
     void render() override;
 
-    void setActive(bool value);
+    void setActive(bool value) override;
 
 private:
+    void processComboEvent(const std::shared_ptr<CastSpellEvent>& e);
 
     // this builds one random item and returns it
     ItemData createRandomItem(bool forceArtifact, bool forceSpell);
