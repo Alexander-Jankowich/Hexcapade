@@ -36,11 +36,16 @@ protected:
 
     float _speed;
     SpellType _curSpell;
+
     /** Velocity of entity */
     cugl::Vec2 _velocity;
 
     /** The amount of health this entity has */
     int _health;
+
+    /** The angle the enity is facing */
+    cugl::Vec2 _angle;
+
     vector<int> _inventory;
 
 public:
@@ -57,17 +62,17 @@ public:
     AnimationState getState(){return _state;}
     void setAniState(AnimationState s) {_state = s;}
     
-    cugl::Vec2 getDirection() {return _velocity.getNormalization();}
+    cugl::Vec2 getDirection() { return _angle; }
     int getInventoryVal() {
         int sum = 0;
         for (auto i : _inventory) sum +=i;
         return sum;
     }
 
-    void setVelocity(Vec2 v) { _velocity = v; setLinearVelocity(_velocity); }
+    void setVelocity(Vec2 v);
+
     /**
     * Sets the current spell of the player.
-    * Also increments _curSpellNum if this spell is different than the previous one.
     */
     void setSpell(SpellType spell) {_curSpell = spell;}
     void resolveSpell() { _curSpell = SpellType::NONE; }

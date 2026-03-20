@@ -868,7 +868,7 @@ void InputController::update(float dt) {
         _isAiming = false;
         _releaseSpell = true;
         currentStroke.clear();
-        CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
+        //CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
     }
 }
 
@@ -1084,7 +1084,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         _isAiming = false;
         _releaseSpell = true;
         _spellAngle = pos - _touchStart;
-        CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
+        //CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
         return;
     }
 
@@ -1112,10 +1112,11 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         // Register tap as pickup, to be changed using buttons?
         _pickupPressed = true;
     }
-    CULog("Stroke points:");
-        for (const auto& p : currentStroke) {
-            CULog("{%f, %f},", p.x, p.y);
-        }
+
+    //CULog("Stroke points:");
+    //for (const auto& p : currentStroke) {
+    //    CULog("{%f, %f},", p.x, p.y);
+    //}
 
     // Clear points
     currentStroke.clear();

@@ -22,7 +22,6 @@
 #include <cstddef> 
 #include "../Models/EnemySet.h"
 #include "../Models/SpellSet.h"
-#include "../Models/PlayerSet.h"
 #include "../Controllers/CollisionController.h"
 #include "../Models/Player.h"
 #include "../Models/SpellFactory.h"
@@ -63,9 +62,6 @@ protected:
 
     std::shared_ptr<PlayerObstacle> _player;
     
-    std::shared_ptr<PlayerSet> _players;
-
-    std::shared_ptr<EnemySet> _enemy;
     float lastEnemySpawn;
 
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
@@ -89,8 +85,6 @@ protected:
     std::shared_ptr<cugl::JsonValue> _gestures;
 
     bool input_down = false;
-
-    SpellSet spells;
 
     struct ItemData {
         enum class ItemType {

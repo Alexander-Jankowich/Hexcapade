@@ -26,17 +26,18 @@ using namespace cugl::physics2::distrib;
 */
 class SpellObstacle : public physics2::WheelObstacle {
 protected:
-    SpellType _type;
+    float damage;
+    bool froze;
+    bool healed;
 
 public:
-    SpellObstacle(Vec2 pos, SpellType t);
+    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, bool freeze, bool healed);
 
-    static std::shared_ptr<SpellObstacle> alloc(Vec2 pos, SpellType t) {
-        auto f = std::make_shared<SpellObstacle>(pos, t);
+    static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos,
+        cugl::Vec2 vel, int dmg, bool freeze, bool healed) {
+        auto f = std::make_shared<SpellObstacle>(pos, vel, dmg, freeze, healed);
         return f;
     }
-
-    SpellType getType() { return _type; }
 };
 
 /**
@@ -54,6 +55,8 @@ protected:
     LWSerializer _serializer;
     /** Deserializer for supporting parameters */
     LWDeserializer _deserializer;
+
+    std::shared_ptr<cugl::JsonValue> _spellConsts;
 
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
@@ -78,6 +81,7 @@ public:
      */
     void init(std::shared_ptr<AssetManager>& assets) {
         _assets = assets;
+        _spellConsts = _assets->get<JsonValue>("constants")->get("spells");
     }
 
     /**

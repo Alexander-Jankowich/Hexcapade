@@ -86,10 +86,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
         _font = nullptr;
     }
 
-    spells = SpellSet(_constants->get("spells"));
-    spells.setTexture(assets->get<Texture>("spell"));
-    _collisions.init(getSize());
-
     // this resets pickup prompt state
     _canPickupItem = false;
     _pickupIndex = -1;
@@ -97,7 +93,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 
     // this spawns one artifact and one spell for prototype startup
     spawnInitialItems();
-
 
     _spellFact = SpellFactory::alloc(_assets);
     _playerFact = PlayerFactory::alloc(_assets);
@@ -126,7 +121,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     
     
     _networkCtrl = NetworkController::alloc(_assets);
-    _players = std::make_shared<PlayerSet>();
     setActive(false);
     return true;
 }
@@ -137,7 +131,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 void GameScene::dispose()
 {
     // NOTHING TO DO THIS TIME
-    spells.dispose();
     _inputDisplay->dispose();
     _assets->dispose();
     _assets = nullptr;
@@ -145,18 +138,15 @@ void GameScene::dispose()
 
 void GameScene::reset()
 {
-    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> player_pair =
-    _playerFact -> createObstacle(Vec2(0,0),_networkCtrl -> getPID());
-    _player = std::dynamic_pointer_cast<PlayerObstacle>(player_pair.first);
-    _players -> addPlayer(std::dynamic_pointer_cast<Player>(player_pair.second));
+    //pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> player_pair =
+    //_playerFact -> createObstacle(Vec2(0,0),_networkCtrl -> getPID());
+    //_player = std::dynamic_pointer_cast<PlayerObstacle>(player_pair.first);
     
     _playerLost = false;
     _playerWon = false;
     _currInventoryScore = 0;
     lastEnemySpawn = 0;
 
-    spells.current.clear();
-    spells.pending.clear();
     spawnInitialItems();
     
     if (_ishost) { // broadcast to all in room
@@ -227,16 +217,17 @@ void GameScene::preUpdate(float dt)
     //CULog("body active: %d", _player->isAwake());
     //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : _player->getState());
-    _player->update(dt);
 
-    cugl::Vec2 playerScreenPos = _player->getPosition();
+    cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
+    //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
 
     updateItemPickupState();
     tryPickupItem();
 
     // Spellcasting
-    if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
+    if (_input.getGesture() != SpellType::NONE) {
         _player->setSpell(_input.getGesture());
+        CULog("Set spell! %d", _player->getSpell());
     }
 
     bool sendSpell = false;
@@ -250,7 +241,8 @@ void GameScene::preUpdate(float dt)
         // CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
         //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
         // Spawn spell, make host owner of object
-        auto params = _spellFact->serializeParams(playerScreenPos, angle*5, _player->getSpell());
+        CULog("Spell type: %d", _player->getSpell());
+        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, _player->getSpell());
         auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
         _networkCtrl->getPhysController()->releaseObs(pair.first);
 
@@ -376,6 +368,7 @@ void GameScene::render()
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
     renderHUD();
+    _inputDisplay->draw(_batch);
     _batch->end();
 }
 
@@ -622,6 +615,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         
         // i do not know how else to check if it is a player...
         const shared_ptr<const PlayerObstacle> p = std::dynamic_pointer_cast<const PlayerObstacle>(obj);
+
         if (p != nullptr) {
             std::shared_ptr<Player> p_node = std::dynamic_pointer_cast<Player>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
@@ -639,7 +633,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
                 Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
                 float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
-                weak->setPosition(pos * 1);
+                weak->setPosition(pos * PHYSICS_SCALE);
                 weak->setAngle(angle);
                 });
         }

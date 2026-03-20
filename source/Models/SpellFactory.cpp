@@ -10,31 +10,56 @@
 using namespace std;
 using namespace cugl;
 
-SpellObstacle::SpellObstacle(Vec2 pos, SpellType t) {
+SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, bool freeze, bool healed) {
     init(pos, 10);
-    _type = t;
+    damage = dmg;
+    froze = freeze;
+    healed = healed;
+    setLinearVelocity(vel);
 }
 
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 velocity, SpellType type) {
-    //Choose randomly between wooden crates and iron crates.
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 angle, SpellType type) {
     auto image = _assets->get<graphics::Texture>("spell");
     float radius(image->getSize().width / 2.f);
     
     // Create the SpellObstacle
-    auto spell = SpellObstacle::alloc(pos, type);
+    cugl::Vec2 norm = angle.getNormalization();
+    std::shared_ptr<JsonValue> values;
+
+    switch (type) {
+    case SpellType::FIREBALL:
+        values = _spellConsts->get("fireball");
+        break;
+    case SpellType::FREEZE:
+        values = _spellConsts->get("freeze");
+        break;
+    case SpellType::HEAL:
+        values = _spellConsts->get("heal");
+        break;
+    case SpellType::NONE:
+        CULog("Creating non-existent spell!");
+    default:
+        CULog("Spell not implemented!!!! %d", (int) type);
+    }
+
+    Vec2 vel = norm * values->getFloat("speed");
+    auto spell = SpellObstacle::alloc(pos, vel,
+        values->getInt("damage"),
+        values->getBool("freeze", false),
+        values->getBool("heal", false));
+    //auto spell = SpellObstacle::alloc(pos, type);
 
     spell->setAngleSnap(0); // Snap to the nearest degree
 
     // Set the physics attributes
-    spell->setLinearVelocity(velocity);
 
     spell->setShared(true);
 
     // Create Spell! Hard code values for now, change later
-    auto sprite = std::make_shared<SpellSet::Spell>(pos, velocity,
+    auto sprite = std::make_shared<SpellSet::Spell>(pos, vel,
         5, false, false, 1, 1,
         _assets->get<graphics::Texture>("spell"));
 
@@ -44,7 +69,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 /**
  * Helper method for converting normal parameters into byte vectors used for syncing.
  */
-std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, Vec2 velocity, SpellType type) {
+std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, Vec2 angle, SpellType type) {
     /**
      * TODO: Use _serializer to serialize pos and scale (remember to make a
      * shared copy of the serializer reference, otherwise it will be lost if
@@ -53,8 +78,8 @@ std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, 
     _serializer.reset();
     _serializer.writeFloat(pos.x);
     _serializer.writeFloat(pos.y);
-    _serializer.writeFloat(velocity.x);
-    _serializer.writeFloat(velocity.y);
+    _serializer.writeFloat(angle.x);
+    _serializer.writeFloat(angle.y);
     _serializer.writeUint16((uint16_t)type);
     return std::make_shared<std::vector<std::byte>>(_serializer.serialize());
 }
