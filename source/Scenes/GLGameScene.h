@@ -322,6 +322,7 @@ private:
     
     void beginContact(b2Contact* contact);
 
+    void beforeSolve(b2Contact* contact, const b2Manifold* oldManifold);
 };
 
 #endif // !__GL_GAME_SCENE_H__
