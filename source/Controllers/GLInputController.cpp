@@ -1218,7 +1218,7 @@ void InputController::touchMotionCB(const TouchEvent& event, const Vec2& previou
 
 void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
     _touchDown = true;
-    CULog("Mouse press");
+    //CULog("Mouse press");
 
     Vec2 pos = mouse2Screen(event.position);
     Zone zone = getZone(pos);

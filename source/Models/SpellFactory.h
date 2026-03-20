@@ -47,8 +47,8 @@ public:
 
     bool getHealed() { return _healed; }
     bool getFroze() { return _froze; }
-    bool getDamage() { return _damage; }
-    bool getRange() { return _range; }
+    float getDamage() { return _damage; }
+    float getRange() { return _range; }
     float getTraveled() { return getPosition().distance(_start); }
 };
 

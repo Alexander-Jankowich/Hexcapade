@@ -308,7 +308,7 @@ void GameScene::preUpdate(float dt)
         auto spellRemove = _spellFact->update();
         for (auto spell : spellRemove) {
             _networkCtrl->getPhysController()->removeSharedObstacle(spell);
-            CULog("Remove spell bc exceed range: %d", spell->isRemoved());
+            CULog("Remove spell: %d", spell->isRemoved());
         }
     }
 
@@ -662,20 +662,21 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                 float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
                 p_node->setPosition(pos * PHYSICS_SCALE);
                 p_node->setAngle(angle);
-                });
+            });
             
         } else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 if (obs->isRemoved()) {
                     CULog("spell removed!");
                     _worldnode->removeChild(node);
+                    return;
                 }
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
                 Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
                 float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
                 weak->setPosition(pos * PHYSICS_SCALE);
                 weak->setAngle(angle);
-                });
+            });
         }
     }
 }
