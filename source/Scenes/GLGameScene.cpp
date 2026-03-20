@@ -17,6 +17,7 @@
 #include <iostream>
 #include <sstream>
 #include <random> //itemssss
+#include <box2d/b2_draw.h>
 
 #include "GLGameScene.h"
 
@@ -114,9 +115,9 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     addChild(_worldnode);
 
     _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, dimen.width / PHYSICS_SCALE , SCENE_HEIGHT / PHYSICS_SCALE), Vec2::ZERO);
-    //_world->onBeginContact = [this](b2Contact* contact) {
-    //    beginContact(contact);
-    //    };
+    _world -> activateCollisionCallbacks(true);
+    _world -> activateFilterCallbacks(true);
+    _world -> activateDestructionCallbacks(true);
     _world->update(1);
     
     
@@ -204,6 +205,8 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
+    Vec2 pos = _player -> getPosition();
+    CULog("pos : %f, %f", pos.x,pos.y);
     //CULog("body active: %d", _player->isAwake());
     //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
@@ -274,7 +277,7 @@ void GameScene::preUpdate(float dt)
  *
  * This method is always invoked in-between a call to {@link #preUpdate}
  * and {@link #postUpdate}. However, to guarantee determinism, it is
- * possible that this method is called multiple times between those two
+ * possible that this method be called multiple times between those two
  * calls. Depending on the value of {@link #getFixedStep}, it can also
  * (periodically) be called zero times, particularly if {@link #getFPS}
  * is much faster.
@@ -566,7 +569,7 @@ void GameScene::setActive(bool value)
             // create all players (both host n client do this) - must do once game scene takes over network handling
             for (auto p : _networkCtrl->getPlayers())
             {
-                auto params = _playerFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, _networkCtrl->getPID());
+                auto params = _playerFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, p);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
             }
             // set _player to the correct object

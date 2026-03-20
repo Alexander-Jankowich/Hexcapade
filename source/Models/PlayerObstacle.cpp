@@ -3,7 +3,7 @@
 #include "PlayerObstacle.h"
 
 PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
-    init(pos, s); // TODO WHAT THE FUCK SHOULD THIS BE
+    init(pos, s); 
     _pid = pid;
     _speed = 8;
     _health = 10;

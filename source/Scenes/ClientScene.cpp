@@ -51,6 +51,7 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _gameid->addExitListener([this](const std::string& name, const std::string& value) {
         if (!value.empty()) {
             _networkCtrl->connectClient(value);
+            
         }
     });
 
@@ -84,6 +85,7 @@ void ClientScene::update(float dt) {
     _networkCtrl->updateNet();
     _player->setText(std::to_string(_networkCtrl->getNumPlayers()));
     configureStartButton();
+    _networkCtrl -> markReady();
 }
 
 void ClientScene::setActive(bool value) {
