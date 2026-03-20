@@ -63,6 +63,20 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         5, false, false, 1, 1,
         _assets->get<graphics::Texture>("spell"));
 
+    switch (type) {
+    case SpellType::FIREBALL:
+        sprite->setColor(Color4::RED);
+        break;
+    case SpellType::FREEZE:
+        sprite->setColor(Color4::BLUE);
+        break;
+    case SpellType::HEAL:
+        sprite->setColor(Color4::GREEN);
+        break;
+    default:
+        break;
+    }
+
     return std::make_pair(spell, sprite);
 }
 

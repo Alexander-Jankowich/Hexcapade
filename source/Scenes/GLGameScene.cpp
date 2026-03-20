@@ -199,16 +199,6 @@ void GameScene::preUpdate(float dt)
     if (_playerLost || _playerWon) {
         return;
     }
-    // spawn an enemy if host and need to spawn
-    if (_ishost) {
-        lastEnemySpawn += dt;
-        if (lastEnemySpawn > 8) {
-            lastEnemySpawn = 0;
-            //_enemy->spawnEnemy(getSize() / 2, 4);
-            auto params = _enemyFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, Vec2::ZERO, 4);
-            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
-        }
-    }
 
     // Player movement
     cugl::Vec2 input = _input.getMove();
@@ -216,8 +206,7 @@ void GameScene::preUpdate(float dt)
     _player->setVelocity(velocity);
     //CULog("body active: %d", _player->isAwake());
     //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
-    _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : _player->getState());
-
+    _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
     //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
 
