@@ -566,12 +566,9 @@ void GameScene::setActive(bool value)
             _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
             _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
             
-            // create all players (both host n client do this) - must do once game scene takes over network handling
-            for (auto p : _networkCtrl->getPlayers())
-            {
-                auto params = _playerFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, p);
-                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
-            }
+            auto params = _playerFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, _networkCtrl->getPID());
+            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
+
             // set _player to the correct object
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
             
