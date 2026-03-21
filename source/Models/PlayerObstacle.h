@@ -10,6 +10,7 @@ using namespace cugl;
 using namespace std;
 using namespace cugl::physics2::distrib;
 
+#define MAX_HEALTH 10
 
 /**
 * An extension of WheelObstacle to represent spell collision objects.
@@ -72,13 +73,14 @@ public:
     }
 
     void setVelocity(Vec2 v);
+    cugl::Vec2 getVelocity() {return _velocity;}
 
     /**
     * Sets the current spell of the player.
     */
     void setSpell(SpellType spell) {_curSpell = spell;}
     void resolveSpell() { _curSpell = SpellType::NONE; }
-    void setHealth(int h) {_health = h;}
+    void setHealth(int h) {_health = min(h, MAX_HEALTH);}
     void setSpeed(float s) {_speed = s;}
 
     SpellType getSpell() { return _curSpell; }

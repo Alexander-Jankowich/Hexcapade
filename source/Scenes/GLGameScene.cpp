@@ -280,7 +280,7 @@ void GameScene::preUpdate(float dt)
         }
 
         CULog("Casting spell type: %d", t);
-        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, t);
+        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, t, _networkCtrl->getShortUID());
         auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
         _networkCtrl->getPhysController()->releaseObs(pair.first);
 
@@ -670,16 +670,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             
         } else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                if (obs->isRemoved()) {
-                    if (typeid(*obs) == typeid(SpellObstacle)) {
-                        CULog("spell node removed!");
-                    }
-                    else {
-                        CULog("enemy node removed!");
-                    }
-                    _worldnode->removeChild(node);
-                    return;
-                }
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
                 Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
                 float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
@@ -748,16 +738,26 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
     // Checking for collisions
     if (player && spell) {
-        //CULog("spell and player collision");
+        if (player->getPID()==_networkCtrl->getPID() && spell->getCasterUID()==_networkCtrl->getShortUID()) return;
+        if (spell->getHealed()) {
+            int nh = player->getHealth() + HEAL_AMT;
+            player->setHealth(nh);
+            spell->markRemoved(true);
+        }
         return;
     }
     if (player && enemy) {
         //CULog("enemy and player colliison");
+        // TODO make this actually work?
+        player->getBody()->ApplyLinearImpulseToCenter(b2Vec2(20 * enemy->getLinearVelocity().x, 20 * enemy->getLinearVelocity().y), true);
+        enemy->getBody()->ApplyLinearImpulseToCenter(b2Vec2(-20 * enemy->getLinearVelocity().x, -20 * enemy->getLinearVelocity().y), true);
+        // TODO - get enemy to pause after attack
+       
         return;
     }
     if (enemy && spell) {
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
-        //_networkCtrl->getPhysController()->removeSharedObstacle(reinterpret_cast<std::shared_ptr<physics2::Obstacle>>(spell));
+        // TODO implement freezing
         spell->markRemoved(true);
         if (enemy->getHealth()==0) enemy->markRemoved(true);
         CULog("spell and enemy collision: %d", enemy->getHealth());

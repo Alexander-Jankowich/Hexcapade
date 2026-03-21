@@ -11,6 +11,7 @@
 #include <cugl/cugl.h>
 #include "SpellNode.h"
 
+#define HEAL_AMT 3;
 using namespace cugl;
 using namespace cugl::physics2::distrib;
 
@@ -31,16 +32,17 @@ protected:
     float _damage;
     bool _froze;
     bool _healed;
+    int _caster;
 
     cugl::Vec2 _start;
     float _range;
 
 public:
-    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed);
+    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed, int c);
 
     static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos,
-        cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed) {
-        auto f = std::make_shared<SpellObstacle>(pos, vel, dmg, range, freeze, healed);
+        cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed, int c) {
+        auto f = std::make_shared<SpellObstacle>(pos, vel, dmg, range, freeze, healed, c);
         f->createFixtures();
         return f;
     }
@@ -48,6 +50,7 @@ public:
     bool getHealed() { return _healed; }
     bool getFroze() { return _froze; }
     float getDamage() { return _damage; }
+    int getCasterUID() {return _caster;}
     float getRange() { return _range; }
     float getTraveled() { return getPosition().distance(_start); }
 };
@@ -73,7 +76,7 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, SpellType type);
+    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, SpellType type, int c_uid);
 
 
 public:
@@ -102,7 +105,7 @@ public:
     /**
      * Helper method for converting normal parameters into byte vectors used for syncing.
      */
-    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, Vec2 velocity, SpellType type);
+    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, Vec2 velocity, SpellType type, int c);
 
     /**
      * Generate a pair of Obstacle and SceneNode using serialized parameters.

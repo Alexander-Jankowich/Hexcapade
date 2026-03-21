@@ -11,7 +11,7 @@
 using namespace std;
 using namespace cugl;
 
-SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, float range, bool freeze, bool heal) {
+SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, float range, bool freeze, bool heal, int c) {
     init(pos, 10.0f / PHYSICS_SCALE);
     setAwake(true);
     setEnabled(true);
@@ -23,6 +23,8 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, floa
 
     _start = pos;
     _range = range;
+    
+    _caster = c;
 
     setLinearVelocity(vel);
 }
@@ -30,7 +32,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, floa
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 angle, SpellType type) {
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 angle, SpellType type, int c_uid) {
     auto image = _assets->get<graphics::Texture>("spell");
     float radius(image->getSize().width / 2.f);
     
@@ -65,7 +67,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         values->getInt("damage"),
         values->getFloat("range"),
         values->getBool("freeze", false),
-        values->getBool("heal", false));
+        values->getBool("heal", false), c_uid);
     //auto spell = SpellObstacle::alloc(pos, type);
 
     spell->setAngleSnap(0); // Snap to the nearest degree
@@ -100,7 +102,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 /**
  * Helper method for converting normal parameters into byte vectors used for syncing.
  */
-std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, Vec2 angle, SpellType type) {
+std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, Vec2 angle, SpellType type, int c) {
     /**
      * TODO: Use _serializer to serialize pos and scale (remember to make a
      * shared copy of the serializer reference, otherwise it will be lost if
@@ -112,6 +114,7 @@ std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, 
     _serializer.writeFloat(angle.x);
     _serializer.writeFloat(angle.y);
     _serializer.writeUint16((uint16_t)type);
+    _serializer.writeUint32(c);
     return std::make_shared<std::vector<std::byte>>(_serializer.serialize());
 }
 
@@ -133,7 +136,8 @@ std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode
     float vy = _deserializer.readFloat();
     Vec2 velocity = Vec2(vx, vy);
     SpellType type = (SpellType) _deserializer.readUint16();
-    return createObstacle(pos, velocity, type);
+    int c = _deserializer.readUint32();
+    return createObstacle(pos, velocity, type, c);
 }
 
 std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {
