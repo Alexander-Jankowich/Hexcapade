@@ -8,10 +8,75 @@
 #include <cmath>
 #include <limits>
 #include <queue>
+#include <unordered_set>
 #include <utility>
 
 using namespace cugl;
 using namespace cugl::graphics;
+
+namespace {
+    // tiled stores flip flags inside the high bits of the gid, so the draw
+    // path needs to peel those back off before it looks up the base tile art
+    constexpr unsigned int kTiledHorizontalFlipFlag = 0x80000000u;
+    constexpr unsigned int kTiledVerticalFlipFlag = 0x40000000u;
+    constexpr unsigned int kTiledDiagonalFlipFlag = 0x20000000u;
+    constexpr unsigned int kTiledFlipMask = 0xE0000000u;
+
+    // this strips the tiled flip bits off so we can look up the real tile id.
+    unsigned int stripTiledFlipFlags(unsigned int rawGid) {
+        return rawGid & ~kTiledFlipMask;
+    }
+
+    // these tiny helpers let the draw path ask for each authored tiled flip directly.
+    bool hasTiledHorizontalFlip(unsigned int rawGid) {
+        return (rawGid & kTiledHorizontalFlipFlag) != 0;
+    }
+
+    bool hasTiledVerticalFlip(unsigned int rawGid) {
+        return (rawGid & kTiledVerticalFlipFlag) != 0;
+    }
+
+    bool hasTiledDiagonalFlip(unsigned int rawGid) {
+        return (rawGid & kTiledDiagonalFlipFlag) != 0;
+    }
+
+    // this is the tiny 2x2 matrix we use for authored tiled flip transforms.
+    struct TileTransform2D {
+        float m11 = 1.0f;
+        float m12 = 0.0f;
+        float m21 = 0.0f;
+        float m22 = 1.0f;
+    };
+
+    // this multiplies two small tile transforms so draw can apply them together.
+    TileTransform2D multiplyTransform(const TileTransform2D& a, const TileTransform2D& b) {
+        TileTransform2D result;
+        result.m11 = a.m11 * b.m11 + a.m12 * b.m21;
+        result.m12 = a.m11 * b.m12 + a.m12 * b.m22;
+        result.m21 = a.m21 * b.m11 + a.m22 * b.m21;
+        result.m22 = a.m21 * b.m12 + a.m22 * b.m22;
+        return result;
+    }
+
+    // tiled flip flags represent affine transforms too, so we convert them
+    // into one small 2x2 matrix for the draw call...?
+    TileTransform2D makeTileTransform(bool flipHorizontal, bool flipVertical,
+                                      bool flipDiagonal) {
+        TileTransform2D raw;
+
+        if (flipDiagonal) {
+            raw = multiplyTransform(TileTransform2D{0.0f, 1.0f, 1.0f, 0.0f}, raw);
+        }
+        if (flipHorizontal) {
+            raw = multiplyTransform(TileTransform2D{-1.0f, 0.0f, 0.0f, 1.0f}, raw);
+        }
+        if (flipVertical) {
+            raw = multiplyTransform(TileTransform2D{1.0f, 0.0f, 0.0f, -1.0f}, raw);
+        }
+
+        return raw;
+    }
+}
 
 Map::Map() :
 _gridWidth(0),
@@ -20,11 +85,16 @@ _tileSize(0.0f),
 _origin(Vec2::ZERO),
 _worldBounds(Rect::ZERO),
 _playerSpawn(Vec2::ZERO),
-_config() {
+_config(),
+_hallFloorGid(0),
+_tiledRoomPrefab(nullptr) {
     _rng.seed(std::random_device{}());
 }
 
 bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsigned int seed) {
+    // this now builds the map from one repeated tiled room (ex) instead of carving
+    // each room shape procedurally. we still keep the current map runtime,
+    // hallway logic, collision helpers, and room controller on top of it just in case
     _config = config;
 
     if (_config.roomPalette.empty()) {
@@ -36,36 +106,47 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     }
     _rng.seed(seed);
 
-    _tileSize = std::max(8.0f, _config.tileSize);
+    // this is the one room prefab we repeat for the first tiled-backed map;
+    // later we can swap this for a pool of tmj room files without changing
+    // the rest of the map/runtime architecture!
+    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("tiles/example_2.tmj");
+    if (!_tiledRoomPrefab) {
+        CULog("tiled room load failed: tiles/example_2.tmj :(");
+        return false;
+    }
+
+    // we use the tiled tile size as the real map tile size so the rendered art,
+    // collision grid, and world positions stay aligned (ask deisgners)
+    _tileSize = std::max(8.0f, (float)_tiledRoomPrefab->getTileWidth());
+    int clampedMinRooms = std::max(1, _config.roomCountMin);
+    int clampedMaxRooms = std::max(clampedMinRooms, _config.roomCountMax);
+    std::uniform_int_distribution<int> roomCountDist(clampedMinRooms, clampedMaxRooms);
+    int targetRoomCount = roomCountDist(_rng);
+
+    bool useTemplates = !_config.roomTemplates.empty();
+    int prefabWidth = std::max(1, _tiledRoomPrefab->getWidth());
+    int prefabHeight = std::max(1, _tiledRoomPrefab->getHeight());
+
+    // for now we stay on one hallway layout mode so the parser/render changes
+    // are easier to validate against what tiled itself shows
     float worldScaleX = std::max(1.0f, _config.worldScaleX);
     float worldScaleY = std::max(1.0f, _config.worldScaleY);
     _gridWidth = std::max(std::max(16, _config.worldMinGridWidth),
                           (int)std::ceil((viewSize.width / _tileSize) * worldScaleX));
     _gridHeight = std::max(std::max(16, _config.worldMinGridHeight),
                            (int)std::ceil((viewSize.height / _tileSize) * worldScaleY));
+
     _origin = Vec2::ZERO;
     _worldBounds = Rect(_origin.x, _origin.y, _gridWidth * _tileSize, _gridHeight * _tileSize);
 
     _tiles.assign((size_t)(_gridWidth * _gridHeight), TileType::EMPTY);
     _tileRoomIndex.assign((size_t)(_gridWidth * _gridHeight), -1);
+    clearRenderLayers();
     _rooms.clear();
     _itemSpawnPoints.clear();
     _enemySpawnPoints.clear();
     _playerSpawn = Vec2::ZERO;
-
-    int clampedMinRooms = std::max(1, _config.roomCountMin);
-    int clampedMaxRooms = std::max(clampedMinRooms, _config.roomCountMax);
-    std::uniform_int_distribution<int> roomCountDist(clampedMinRooms, clampedMaxRooms);
-    int targetRoomCount = roomCountDist(_rng);
-
-    int widthMin = std::max(4, _config.roomWidthMin);
-    int widthMax = std::max(widthMin, _config.roomWidthMax);
-    int heightMin = std::max(4, _config.roomHeightMin);
-    int heightMax = std::max(heightMin, _config.roomHeightMax);
-    std::uniform_int_distribution<int> roomWidthDist(widthMin, widthMax);
-    std::uniform_int_distribution<int> roomHeightDist(heightMin, heightMax);
-    bool useTemplates = !_config.roomTemplates.empty();
-    std::uniform_int_distribution<size_t> templateDist(0, useTemplates ? (_config.roomTemplates.size() - 1) : 0);
+    _hallFloorGid = _tiledRoomPrefab->getPrimaryFloorGid();
 
     std::vector<GridRoom> generatedRooms;
     generatedRooms.reserve((size_t)targetRoomCount);
@@ -79,8 +160,16 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
         return std::abs(ax - bx) + std::abs(ay - by);
     };
 
-    int edgePadding = std::max(1, _config.roomEdgePadding);
-    int placementAttempts = std::max(1, _config.roomPlacementAttempts);
+    /*
+    // old random room path kept here for reference while repeated tiled rooms replace it.
+    int widthMin = std::max(4, _config.roomWidthMin);
+    int widthMax = std::max(widthMin, _config.roomWidthMax);
+    int heightMin = std::max(4, _config.roomHeightMin);
+    int heightMax = std::max(heightMin, _config.roomHeightMax);
+    std::uniform_int_distribution<int> roomWidthDist(widthMin, widthMax);
+    std::uniform_int_distribution<int> roomHeightDist(heightMin, heightMax);
+    std::uniform_int_distribution<size_t> templateDist(0, useTemplates ? (_config.roomTemplates.size() - 1) : 0);
+
     for (int attempt = 0; attempt < placementAttempts && (int)generatedRooms.size() < targetRoomCount; ++attempt) {
         int rw = roomWidthDist(_rng);
         int rh = roomHeightDist(_rng);
@@ -91,6 +180,23 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
             rw = std::max(4, templ.width);
             rh = std::max(4, templ.height);
         }
+        GridRoom candidate{xDist(_rng), yDist(_rng), rw, rh, templateIndex};
+        generatedRooms.push_back(candidate);
+    }
+
+    for (size_t ii = 0; ii < generatedRooms.size(); ++ii) {
+        carveRoom(generatedRooms[ii], (int)ii);
+    }
+    */
+
+    // the new tiled path still uses the old high-level room placement logic,
+    // but every room now has the same shape because it comes from the tmj prefab.
+    int edgePadding = std::max(1, _config.roomEdgePadding);
+    int placementAttempts = std::max(1, _config.roomPlacementAttempts);
+    for (int attempt = 0; attempt < placementAttempts && (int)generatedRooms.size() < targetRoomCount; ++attempt) {
+        int rw = prefabWidth;
+        int rh = prefabHeight;
+        int templateIndex = useTemplates ? (int)(generatedRooms.size() % _config.roomTemplates.size()) : -1;
 
         int maxX = _gridWidth - rw - edgePadding - 1;
         int maxY = _gridHeight - rh - edgePadding - 1;
@@ -118,15 +224,20 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     }
 
     if (generatedRooms.empty()) {
-        int fallbackW = std::clamp((widthMin + widthMax) / 2, 6, std::max(6, _gridWidth - 2));
-        int fallbackH = std::clamp((heightMin + heightMax) / 2, 6, std::max(6, _gridHeight - 2));
-        int fallbackX = std::clamp(_gridWidth / 2 - fallbackW / 2, 1, std::max(1, _gridWidth - fallbackW - 1));
-        int fallbackY = std::clamp(_gridHeight / 2 - fallbackH / 2, 1, std::max(1, _gridHeight - fallbackH - 1));
-        generatedRooms.push_back(GridRoom{fallbackX, fallbackY, fallbackW, fallbackH, -1});
+        // if room placement fails, we still drop one room in the center so the
+        // run stays playable instead of booting into an empty map (for debugging originally)
+        int centerRoomW = std::min(prefabWidth, std::max(1, _gridWidth - 2));
+        int centerRoomH = std::min(prefabHeight, std::max(1, _gridHeight - 2));
+        int centerRoomX = std::clamp(_gridWidth / 2 - centerRoomW / 2, 1, std::max(1, _gridWidth - centerRoomW - 1));
+        int centerRoomY = std::clamp(_gridHeight / 2 - centerRoomH / 2, 1, std::max(1, _gridHeight - centerRoomH - 1));
+        generatedRooms.push_back(GridRoom{centerRoomX, centerRoomY, centerRoomW, centerRoomH,
+                                          useTemplates ? 0 : -1});
     }
 
+    // this stamps the tiled room layers directly into the map grid (?) and the
+    // map-wide render layers before we carve hallways between room instances.
     for (size_t ii = 0; ii < generatedRooms.size(); ++ii) {
-        carveRoom(generatedRooms[ii], (int)ii);
+        stampTiledRoom(generatedRooms[ii], (int)ii);
     }
 
     std::vector<std::pair<int, int>> roomLinks;
@@ -146,12 +257,11 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     };
 
     for (size_t ii = 1; ii < generatedRooms.size(); ++ii) {
-        Vec2 centerA((float)(generatedRooms[ii].x + generatedRooms[ii].w / 2),
-                     (float)(generatedRooms[ii].y + generatedRooms[ii].h / 2));
-
         float bestDist2 = std::numeric_limits<float>::max();
         size_t bestIndex = 0;
         for (size_t jj = 0; jj < ii; ++jj) {
+            Vec2 centerA((float)(generatedRooms[ii].x + generatedRooms[ii].w / 2),
+                         (float)(generatedRooms[ii].y + generatedRooms[ii].h / 2));
             Vec2 centerB((float)(generatedRooms[jj].x + generatedRooms[jj].w / 2),
                          (float)(generatedRooms[jj].y + generatedRooms[jj].h / 2));
             float dist2 = (centerA - centerB).lengthSquared();
@@ -161,31 +271,53 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
             }
         }
 
-        Vec2 centerB((float)(generatedRooms[bestIndex].x + generatedRooms[bestIndex].w / 2),
-                     (float)(generatedRooms[bestIndex].y + generatedRooms[bestIndex].h / 2));
-        carveHallway(centerA, centerB);
+        // old center-to-center hall anchors are what made hallways bulldoze
+        // through the middle of the room art. the new anchors try to connect
+        // from room edges so we only open a doorway-sized cut into the prefab.
+        Vec2 hallStartAnchor = pickHallAnchorTile(generatedRooms[ii], generatedRooms[bestIndex]);
+        Vec2 hallEndAnchor = pickHallAnchorTile(generatedRooms[bestIndex], generatedRooms[ii]);
+        openDoorwayForHallAnchor(generatedRooms[ii], generatedRooms[bestIndex], hallStartAnchor);
+        openDoorwayForHallAnchor(generatedRooms[bestIndex], generatedRooms[ii], hallEndAnchor);
+
+        // the doorway stays on the room boundary, but the hallway itself starts
+        // one tile outside the room so it does not paint over the room edge.
+        Vec2 hallStart = getExteriorHallTileForAnchor(generatedRooms[ii], hallStartAnchor);
+        Vec2 hallEnd = getExteriorHallTileForAnchor(generatedRooms[bestIndex], hallEndAnchor);
+        carveHallway(hallStart, hallEnd, (int)ii, (int)bestIndex);
         pushRoomLink((int)ii, (int)bestIndex);
     }
 
+    /*
+    // old extra hall pass kept here for reference while we keep the tiled
+    // layout simpler. the extra links were making strange edge corridors
+    // before the room files had real doorway markers to guide them.
     size_t extraStep = (size_t)std::max(2, _config.extraHallConnectionStep);
     size_t extraOffset = extraStep - 1;
     for (size_t ii = 0; ii + extraOffset < generatedRooms.size(); ii += extraStep) {
         if (hallwayDistance(generatedRooms[ii], generatedRooms[ii + extraOffset]) > maxHallwayLength) {
             continue;
         }
-        Vec2 centerA((float)(generatedRooms[ii].x + generatedRooms[ii].w / 2),
-                     (float)(generatedRooms[ii].y + generatedRooms[ii].h / 2));
-        Vec2 centerB((float)(generatedRooms[ii + extraOffset].x + generatedRooms[ii + extraOffset].w / 2),
-                     (float)(generatedRooms[ii + extraOffset].y + generatedRooms[ii + extraOffset].h / 2));
-        carveHallway(centerA, centerB);
+        Vec2 hallStart = pickHallAnchorTile(generatedRooms[ii], generatedRooms[ii + extraOffset]);
+        Vec2 hallEnd = pickHallAnchorTile(generatedRooms[ii + extraOffset], generatedRooms[ii]);
+        openDoorwayForHallAnchor(generatedRooms[ii], generatedRooms[ii + extraOffset], hallStart);
+        openDoorwayForHallAnchor(generatedRooms[ii + extraOffset], generatedRooms[ii], hallEnd);
+        carveHallway(hallStart, hallEnd);
         pushRoomLink((int)ii, (int)(ii + extraOffset));
     }
+    */
 
+    /*
+    // old procgen obstacle + wall pass kept here for reference while the tiled
+    // room prefab supplies its own room walls and art.
     for (const GridRoom& room : generatedRooms) {
         placeObstaclesInRoom(room);
     }
-
     buildWalls();
+    */
+
+    // this small cleanup strips out isolated hall tabs that can be left behind
+    // when the hallway brush touches a room edge but does not actually continue.
+    pruneHallArtifacts();
 
     _rooms.reserve(generatedRooms.size());
     for (size_t ii = 0; ii < generatedRooms.size(); ++ii) {
@@ -219,15 +351,538 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
         _rooms[(size_t)edge.second].addConnection(edge.first);
     }
 
-    seedRoomSpawns(generatedRooms);
+    // the new spawn pass uses the tiled markers and transforms them into
+    // world-space positions for each repeated room instance.
+    seedTiledRoomSpawns(generatedRooms);
 
     if (!generatedRooms.empty()) {
-        const GridRoom& start = generatedRooms.front();
-        _playerSpawn = tileToWorldCenter(start.x + start.w / 2, start.y + start.h / 2);
+        const GridRoom& startRoom = generatedRooms.front();
+        if (_tiledRoomPrefab->hasPlayerSpawn()) {
+            _playerSpawn = roomLocalToWorld(startRoom, _tiledRoomPrefab->getPlayerSpawn().localPosition);
+        } else {
+            _playerSpawn = tileToWorldCenter(startRoom.x + startRoom.w / 2, startRoom.y + startRoom.h / 2);
+        }
         _playerSpawn = findNearestWalkableWorld(_playerSpawn);
     }
 
     return !_rooms.empty();
+}
+
+void Map::clearRenderLayers() {
+    // these layers keep the stamped tiled art separate from the walkability grid.
+    size_t gridSize = (size_t)(_gridWidth * _gridHeight);
+    _floorRenderGids.assign(gridSize, 0);
+    _wallRenderGids.assign(gridSize, 0);
+    _decoRenderGids.assign(gridSize, 0);
+    _visFixRenderGids.assign(gridSize, 0);
+}
+
+void Map::setRenderGid(std::vector<unsigned int>& layer, int x, int y, unsigned int gid) {
+    // this writes one gid into the map-wide render layer for a specific tile.
+    if (!inBounds(x, y)) {
+        return;
+    }
+    layer[(size_t)toIndex(x, y)] = gid;
+}
+
+void Map::clearRenderTile(int x, int y) {
+    // hall carving uses this to remove stamped room art where a hallway needs
+    // to pass through a wall or room edge.
+    if (!inBounds(x, y)) {
+        return;
+    }
+
+    size_t index = (size_t)toIndex(x, y);
+    _floorRenderGids[index] = 0;
+    _wallRenderGids[index] = 0;
+    _decoRenderGids[index] = 0;
+    _visFixRenderGids[index] = 0;
+}
+
+void Map::stampTiledRoom(const GridRoom& room, int roomIndex) {
+    // this copies one repeated tiled room into the current map grid.
+    if (!_tiledRoomPrefab) {
+        return;
+    }
+
+    for (int yy = 0; yy < room.h; ++yy) {
+        for (int xx = 0; xx < room.w; ++xx) {
+            int mapX = room.x + xx;
+            int mapY = room.y + yy;
+            int sourceX = xx;
+            int sourceY = yy;
+
+            // render layers keep the raw tiled gid so draw can still honor
+            // authored flip flags. collision only cares about the base gid.
+            unsigned int floorRawGid = _tiledRoomPrefab->getFloorLayer().getRawTileAt(sourceX, sourceY);
+            unsigned int wallRawGid = _tiledRoomPrefab->getWallLayer().getRawTileAt(sourceX, sourceY);
+            unsigned int decoRawGid = _tiledRoomPrefab->getDecoLayer().getRawTileAt(sourceX, sourceY);
+            unsigned int visFixRawGid = _tiledRoomPrefab->getVisFixLayer().getRawTileAt(sourceX, sourceY);
+            unsigned int floorGid = stripTiledFlipFlags(floorRawGid);
+            unsigned int wallGid = stripTiledFlipFlags(wallRawGid);
+
+            setRenderGid(_floorRenderGids, mapX, mapY, floorRawGid);
+            setRenderGid(_wallRenderGids, mapX, mapY, wallRawGid);
+            setRenderGid(_decoRenderGids, mapX, mapY, decoRawGid);
+            setRenderGid(_visFixRenderGids, mapX, mapY, visFixRawGid);
+
+            bool walkableFloor = _tiledRoomPrefab->hasWalkableFloorAt(sourceX, sourceY);
+            bool hasAnyRoomArt = floorGid != 0 || wallGid != 0 ||
+                                 stripTiledFlipFlags(decoRawGid) != 0 ||
+                                 stripTiledFlipFlags(visFixRawGid) != 0;
+
+            // only the connected interior floor region should be walkable.
+            // decorative border floor tiles stay blocked so halls do not snap
+            // to fake openings near the room frame art.
+            if (walkableFloor) {
+                setTile(mapX, mapY, TileType::ROOM_FLOOR, roomIndex);
+            } else if (hasAnyRoomArt) {
+                setTile(mapX, mapY, TileType::WALL, roomIndex);
+            }
+        }
+    }
+}
+
+cugl::Vec2 Map::roomLocalToWorld(const GridRoom& room, const Vec2& localPos) const {
+    // tiled marker positions are local to the room prefab, so we offset them by
+    // the repeated room instance origin to get their world-space position.
+    return Vec2(_origin.x + room.x * _tileSize + localPos.x,
+                _origin.y + room.y * _tileSize + localPos.y);
+}
+
+void Map::seedTiledRoomSpawns(const std::vector<GridRoom>& rooms) {
+    // this reuses the existing room/spawn runtime, but the source positions now
+    // come from tiled markers instead of random points inside the room.
+    _itemSpawnPoints.clear();
+    _enemySpawnPoints.clear();
+
+    if (!_tiledRoomPrefab) {
+        return;
+    }
+
+    for (size_t ii = 0; ii < rooms.size(); ++ii) {
+        const GridRoom& room = rooms[ii];
+
+        for (const TiledRoomData::ObjectMarker& marker : _tiledRoomPrefab->getItemSpawns()) {
+            Vec2 world = findNearestWalkableWorld(roomLocalToWorld(room, marker.localPosition));
+            _itemSpawnPoints.push_back(world);
+            if (ii < _rooms.size()) {
+                _rooms[ii].addItemSpawn(world);
+            }
+        }
+
+        if ((int)ii >= std::max(0, _config.skipEnemySpawnsInFirstRooms)) {
+            for (const TiledRoomData::ObjectMarker& marker : _tiledRoomPrefab->getEnemySpawns()) {
+                Vec2 world = findNearestWalkableWorld(roomLocalToWorld(room, marker.localPosition));
+                _enemySpawnPoints.push_back(world);
+                if (ii < _rooms.size()) {
+                    _rooms[ii].addEnemySpawn(world);
+                }
+            }
+        }
+    }
+
+    if (_itemSpawnPoints.empty() && !rooms.empty()) {
+        _itemSpawnPoints.push_back(findNearestWalkableWorld(
+            roomLocalToWorld(rooms.front(), Vec2(_tileSize * 2.0f, _tileSize * 2.0f))
+        ));
+    }
+    if (_enemySpawnPoints.empty() && !rooms.empty()) {
+        _enemySpawnPoints.push_back(findNearestWalkableWorld(
+            roomLocalToWorld(rooms.back(), Vec2(_tileSize * 2.0f, _tileSize * 2.0f))
+        ));
+    }
+}
+
+Vec2 Map::pickHallAnchorTile(const GridRoom& room, const GridRoom& otherRoom) const {
+    /*
+    // old inferred-opening scan kept here for reference. it was trying to use
+    // the tmj edge art itself to find a doorway, but our sample room does not
+    // author real openings on its border yet, so the result could still land
+    // in awkward places near shelves or corners.
+    if (!_tiledRoomPrefab) {
+        return Vec2((float)(room.x + room.w / 2), (float)(room.y + room.h / 2));
+    }
+    ...
+    */
+
+    // this one library room prefab is much friendlier on the left/right sides
+    // than on the decorated top wall, so for now we prefer side entrances.
+    //
+    // that keeps hallways from punching through the shelves and top wall art
+    // until we have authored doorway markers or more room prefabs.
+    int roomCenterX = room.x + room.w / 2;
+    int otherCenterX = otherRoom.x + otherRoom.w / 2;
+    int dx = otherCenterX - roomCenterX;
+
+    auto isPlayablePrefabTile = [&](int localX, int localY) {
+        if (!_tiledRoomPrefab || localX < 0 || localY < 0 || localX >= room.w || localY >= room.h) {
+            return false;
+        }
+        return _tiledRoomPrefab->hasWalkableFloorAt(localX, localY);
+    };
+
+    // this finds the best row for a doorway on one side by scanning inward
+    // from the room edge until we hit the first real walkable room floor tile.
+    auto pickBestDoorRowFromSide = [&](bool useRightSide) {
+        int boundaryLocalX = useRightSide ? (room.w - 1) : 0;
+        int inwardStepX = useRightSide ? -1 : 1;
+        int bestLocalY = room.h / 2;
+        int bestScore = std::numeric_limits<int>::max();
+
+        for (int localY = 1; localY < std::max(1, room.h - 1); ++localY) {
+            int firstFloorDepth = -1;
+            for (int step = 0; step < room.w; ++step) {
+                int localX = boundaryLocalX + step * inwardStepX;
+                if (localX < 0 || localX >= room.w) {
+                    break;
+                }
+                if (isPlayablePrefabTile(localX, localY)) {
+                    firstFloorDepth = step;
+                    break;
+                }
+            }
+
+            if (firstFloorDepth < 0) {
+                continue;
+            }
+
+            int centerBias = std::abs(localY - room.h / 2);
+            int score = firstFloorDepth * 10 + centerBias;
+            if (score < bestScore) {
+                bestScore = score;
+                bestLocalY = localY;
+            }
+        }
+
+        return Vec2((float)(room.x + boundaryLocalX), (float)(room.y + bestLocalY));
+    };
+
+    // if the other room is roughly centered above/below us, we still pick one
+    // of the side doors instead of cutting through the top wall.
+    bool useRightSide = dx >= 0;
+    if (dx == 0) {
+        useRightSide = roomCenterX < (_gridWidth / 2);
+    }
+
+    return pickBestDoorRowFromSide(useRightSide);
+}
+
+Vec2 Map::getExteriorHallTileForAnchor(const GridRoom& room, const Vec2& anchorTile) const {
+    // this keeps the hall itself outside the room footprint. the boundary tile
+    // is still handled by the doorway carve above.
+    int anchorX = (int)anchorTile.x;
+    int anchorY = (int)anchorTile.y;
+
+    if (anchorX <= room.x) {
+        return Vec2((float)(anchorX - 1), (float)anchorY);
+    }
+    if (anchorX >= room.x + room.w - 1) {
+        return Vec2((float)(anchorX + 1), (float)anchorY);
+    }
+    if (anchorY <= room.y) {
+        return Vec2((float)anchorX, (float)(anchorY - 1));
+    }
+    if (anchorY >= room.y + room.h - 1) {
+        return Vec2((float)anchorX, (float)(anchorY + 1));
+    }
+
+    // the anchor should always be on the boundary, but if it is not we return
+    // it unchanged so the caller still gets a valid tile.
+    return anchorTile;
+}
+
+void Map::carveHallTile(int x, int y, bool horizontalSegment) {
+    // hall_thickness should mean the literal corridor width in tiles.
+    int hallThickness = std::max(1, _config.hallThickness);
+    int lowerSpread = (hallThickness - 1) / 2;
+    int upperSpread = hallThickness / 2;
+
+    for (int offset = -lowerSpread; offset <= upperSpread; ++offset) {
+        int tx = x;
+        int ty = y;
+        if (horizontalSegment) {
+            ty += offset;
+        } else {
+            tx += offset;
+        }
+
+        if (!inBounds(tx, ty)) {
+            continue;
+        }
+
+        // room floor is already walkable, so we do not repaint it as hallway.
+        // that keeps the rug/spawn area and room floor art intact inside rooms.
+        TileType current = getTile(tx, ty);
+        if (current == TileType::ROOM_FLOOR || current == TileType::HALL_FLOOR) {
+            continue;
+        }
+
+        setTile(tx, ty, TileType::HALL_FLOOR);
+        clearRenderTile(tx, ty);
+    }
+}
+
+void Map::carveDoorTile(int x, int y) {
+    // this is the one-tile doorway primitive. openDoorwayForHallAnchor can
+    // call it more than once when the configured hallway is wider than one tile.
+    if (!inBounds(x, y)) {
+        return;
+    }
+
+    // if we have already reached the room floor, we leave the room art alone.
+    if (getTile(x, y) == TileType::ROOM_FLOOR) {
+        return;
+    }
+
+    setTile(x, y, TileType::HALL_FLOOR);
+    clearRenderTile(x, y);
+}
+
+int Map::scoreHallTileDamage(int x, int y, int fromRoomIndex, int toRoomIndex) const {
+    // empty space and existing halls are cheap to reuse. the big thing we want
+    // to avoid is plowing through some third room that was already stamped.
+    if (!inBounds(x, y)) {
+        return 10000;
+    }
+
+    size_t index = (size_t)toIndex(x, y);
+    int tileRoom = _tileRoomIndex[index];
+    TileType tile = _tiles[index];
+
+    if (tileRoom != -1 && tileRoom != fromRoomIndex && tileRoom != toRoomIndex) {
+        return 400;
+    }
+
+    if (tile == TileType::EMPTY || tile == TileType::HALL_FLOOR) {
+        return 0;
+    }
+
+    if (tile == TileType::ROOM_FLOOR) {
+        // doorway cuts into the two endpoint rooms are expected, but we still
+        // give them a small cost so the route chooser prefers empty space first.
+        return 8;
+    }
+
+    if (tile == TileType::WALL) {
+        // carving through room wall art is allowed near the connection point,
+        // but it should lose against a route that stays out in the void.
+        return 20;
+    }
+
+    return 60;
+}
+
+int Map::scoreHallwayRoute(const Vec2& from, const Vec2& to, bool horizontalFirst,
+                           int fromRoomIndex, int toRoomIndex) const {
+    // this scores the exact tiles each l-shaped hall would touch. lower means
+    // "keep more of the stamped room art intact".
+    int x1 = (int)from.x;
+    int y1 = (int)from.y;
+    int x2 = (int)to.x;
+    int y2 = (int)to.y;
+
+    int hallThickness = std::max(1, _config.hallThickness);
+    int lowerSpread = (hallThickness - 1) / 2;
+    int upperSpread = hallThickness / 2;
+    int score = 0;
+    std::unordered_set<int> visited;
+
+    auto visitTile = [&](int x, int y, bool horizontalSegment) {
+        for (int offset = -lowerSpread; offset <= upperSpread; ++offset) {
+            int tx = x;
+            int ty = y;
+            if (horizontalSegment) {
+                ty += offset;
+            } else {
+                tx += offset;
+            }
+
+            if (!inBounds(tx, ty)) {
+                score += 10000;
+                continue;
+            }
+
+            int index = toIndex(tx, ty);
+            if (!visited.insert(index).second) {
+                continue;
+            }
+            score += scoreHallTileDamage(tx, ty, fromRoomIndex, toRoomIndex);
+        }
+    };
+
+    if (horizontalFirst) {
+        int startX = std::min(x1, x2);
+        int endX = std::max(x1, x2);
+        for (int xx = startX; xx <= endX; ++xx) {
+            visitTile(xx, y1, true);
+        }
+        int startY = std::min(y1, y2);
+        int endY = std::max(y1, y2);
+        for (int yy = startY; yy <= endY; ++yy) {
+            visitTile(x2, yy, false);
+        }
+    } else {
+        int startY = std::min(y1, y2);
+        int endY = std::max(y1, y2);
+        for (int yy = startY; yy <= endY; ++yy) {
+            visitTile(x1, yy, false);
+        }
+        int startX = std::min(x1, x2);
+        int endX = std::max(x1, x2);
+        for (int xx = startX; xx <= endX; ++xx) {
+            visitTile(xx, y2, true);
+        }
+    }
+
+    return score;
+}
+
+void Map::openDoorwayForHallAnchor(const GridRoom& room, const GridRoom& otherRoom,
+                                   const Vec2& anchorTile) {
+    // the hall can reach the room edge and still leave the room blocked because
+    // the sample tmj keeps full wall art around the perimeter. this helper
+    // carves a tiny guaranteed doorway inward so every room stays enterable.
+
+    int stepX = 0;
+    int stepY = 0;
+
+    // the anchor already tells us which boundary we chose, so use that to
+    // decide how to step inward instead of re-guessing from room centers.
+    if ((int)anchorTile.x <= room.x) {
+        stepX = 1;
+    } else if ((int)anchorTile.x >= room.x + room.w - 1) {
+        stepX = -1;
+    } else if ((int)anchorTile.y <= room.y) {
+        stepY = 1;
+    } else if ((int)anchorTile.y >= room.y + room.h - 1) {
+        stepY = -1;
+    }
+
+    /*
+    // old "walk inward until the tmj says this tile is open" logic kept here
+    // for reference. with a room that has no authored edge doorway, this still
+    // depended too much on where the anchor landed.
+    int maxDoorDepth = std::max(2, std::max(room.w, room.h));
+    for (int depth = 0; depth < maxDoorDepth; ++depth) {
+        ...
+    }
+    */
+
+    int hallThickness = std::max(1, _config.hallThickness);
+    int lowerSpread = (hallThickness - 1) / 2;
+    int upperSpread = hallThickness / 2;
+    int perpX = (stepY != 0) ? 1 : 0;
+    int perpY = (stepX != 0) ? 1 : 0;
+
+    int tileX = (int)anchorTile.x;
+    int tileY = (int)anchorTile.y;
+    // instead of carving a fixed number of tiles, we stop as soon as we reach
+    // the first real walkable room tile. that keeps entrances from chewing
+    // through the middle rug/spawn area when the floor is already close by.
+    int maxDoorDepth = std::max(room.w, room.h);
+    for (int depth = 0; depth < maxDoorDepth; ++depth) {
+        if (!inBounds(tileX, tileY)) {
+            break;
+        }
+
+        // doorways should match the hall width so players do not get pinched
+        // at the room edge even when the corridor is wider than one tile.
+        for (int offset = -lowerSpread; offset <= upperSpread; ++offset) {
+            carveDoorTile(tileX + perpX * offset, tileY + perpY * offset);
+        }
+
+        int localX = tileX - room.x;
+        int localY = tileY - room.y;
+        if (_tiledRoomPrefab) {
+            if (_tiledRoomPrefab->hasWalkableFloorAt(localX, localY)) {
+                break;
+            }
+        }
+
+        tileX += stepX;
+        tileY += stepY;
+    }
+}
+
+void Map::pruneHallArtifacts() {
+    // the older cleanup only removed single isolated tiles, which still left
+    // behind tiny hall stubs that touched one room but did not actually go
+    // anywhere useful. this pass looks at each exterior hall component as a
+    // whole and only keeps it if it really connects at least two rooms.
+    std::vector<cugl::Vec2> toClear;
+    std::vector<uint8_t> visited((size_t)_tiles.size(), 0);
+    static const std::array<cugl::Vec2, 4> DIRS = {
+        cugl::Vec2(1, 0), cugl::Vec2(-1, 0), cugl::Vec2(0, 1), cugl::Vec2(0, -1)
+    };
+
+    for (int y = 0; y < _gridHeight; ++y) {
+        for (int x = 0; x < _gridWidth; ++x) {
+            if (getTile(x, y) != TileType::HALL_FLOOR) {
+                continue;
+            }
+
+            int startIndex = toIndex(x, y);
+            if (visited[(size_t)startIndex] != 0) {
+                continue;
+            }
+
+            // room-owned floor stays alone. this cleanup is only for hall cells
+            // that live outside a stamped room footprint.
+            if (_tileRoomIndex[(size_t)startIndex] != -1) {
+                visited[(size_t)startIndex] = 1;
+                continue;
+            }
+
+            std::vector<cugl::Vec2> component;
+            std::queue<cugl::Vec2> frontier;
+            std::unordered_set<int> connectedRooms;
+
+            frontier.push(cugl::Vec2((float)x, (float)y));
+            visited[(size_t)startIndex] = 1;
+
+            while (!frontier.empty()) {
+                cugl::Vec2 current = frontier.front();
+                frontier.pop();
+                component.push_back(current);
+
+                for (const cugl::Vec2& dir : DIRS) {
+                    int nx = (int)current.x + (int)dir.x;
+                    int ny = (int)current.y + (int)dir.y;
+                    if (!inBounds(nx, ny)) {
+                        continue;
+                    }
+
+                    int nextIndex = toIndex(nx, ny);
+                    TileType neighborTile = getTile(nx, ny);
+
+                    if (neighborTile == TileType::HALL_FLOOR && _tileRoomIndex[(size_t)nextIndex] == -1) {
+                        if (visited[(size_t)nextIndex] == 0) {
+                            visited[(size_t)nextIndex] = 1;
+                            frontier.push(cugl::Vec2((float)nx, (float)ny));
+                        }
+                        continue;
+                    }
+
+                    int roomIndex = _tileRoomIndex[(size_t)nextIndex];
+                    if (roomIndex != -1 && neighborTile == TileType::ROOM_FLOOR) {
+                        connectedRooms.insert(roomIndex);
+                    }
+                }
+            }
+
+            // a useful hallway component should actually connect at least two
+            // different rooms. if it only touches one room, it is just a stub.
+            if (connectedRooms.size() < 2) {
+                toClear.insert(toClear.end(), component.begin(), component.end());
+            }
+        }
+    }
+
+    for (const cugl::Vec2& tile : toClear) {
+        setTile((int)tile.x, (int)tile.y, TileType::EMPTY, -1);
+        clearRenderTile((int)tile.x, (int)tile.y);
+    }
 }
 
 void Map::draw(const std::shared_ptr<SpriteBatch>& batch) const {
@@ -235,6 +890,10 @@ void Map::draw(const std::shared_ptr<SpriteBatch>& batch) const {
         return;
     }
 
+    // map rendering changes batch state a lot, so we save/restore the basics
+    // here so later world draws like players and enemies do not inherit the
+    // backdrop tint by accident.
+    Color4 originalColor = batch->getColor();
     batch->setTexture(nullptr);
 
     Rect backdrop(_worldBounds.origin.x, _worldBounds.origin.y,
@@ -242,32 +901,76 @@ void Map::draw(const std::shared_ptr<SpriteBatch>& batch) const {
     batch->setColor(_config.backdropColor);
     batch->fill(backdrop);
 
-    for (int yy = 0; yy < _gridHeight; ++yy) {
-        for (int xx = 0; xx < _gridWidth; ++xx) {
-            TileType tile = getTile(xx, yy);
-            if (tile == TileType::EMPTY) {
-                continue;
+    if (_tiledRoomPrefab && _tiledRoomPrefab->getTileset().texture) {
+        // this is the new tiled-backed draw path. repeated room tiles come from
+        // the real tileset art, while hallways still use a borrowed floor tile.
+        for (int yy = 0; yy < _gridHeight; ++yy) {
+            for (int xx = 0; xx < _gridWidth; ++xx) {
+                TileType tile = getTile(xx, yy);
+                if (tile == TileType::EMPTY) {
+                    continue;
+                }
+
+                float px = _origin.x + xx * _tileSize;
+                float py = _origin.y + yy * _tileSize;
+                Rect cell(px, py, _tileSize, _tileSize);
+                size_t index = (size_t)toIndex(xx, yy);
+
+                if (tile == TileType::HALL_FLOOR) {
+                    // halls should still read as walkable tiled space, not a
+                    // debug block, so we borrow a floor tile from the prefab.
+                    std::shared_ptr<Texture> hallTexture = _tiledRoomPrefab->getTextureForGid(_hallFloorGid);
+                    if (hallTexture) {
+                        batch->draw(hallTexture, Color4::WHITE, cell);
+                    } else {
+                        batch->setTexture(nullptr);
+                        batch->setColor(_config.hallFloorColor);
+                        batch->fill(cell);
+                    }
+                    continue;
+                }
+
+                auto drawLayerGid = [&](unsigned int rawGid) {
+                    std::shared_ptr<Texture> tileTexture = _tiledRoomPrefab->getTextureForGid(rawGid);
+                    if (!tileTexture) {
+                        return;
+                    }
+
+                    bool flipHorizontal = hasTiledHorizontalFlip(rawGid);
+                    bool flipVertical = hasTiledVerticalFlip(rawGid);
+                    bool flipDiagonal = hasTiledDiagonalFlip(rawGid);
+
+                    if (!flipHorizontal && !flipVertical && !flipDiagonal) {
+                        batch->draw(tileTexture, Color4::WHITE, cell);
+                        return;
+                    }
+
+                    // this keeps authored tiled flips working without rotating
+                    // the whole room prefab in code.
+                    Vec2 tileOrigin(_tileSize * 0.5f, _tileSize * 0.5f);
+                    TileTransform2D tileTransform = makeTileTransform(flipHorizontal, flipVertical,
+                                                                     flipDiagonal);
+                    Affine2 transform(tileTransform.m11, tileTransform.m12,
+                                      tileTransform.m21, tileTransform.m22,
+                                      0.0f, 0.0f);
+                    batch->draw(tileTexture, Color4::WHITE, cell, tileOrigin, transform);
+                };
+
+                // this order matches the layer order in example_2.tmj.
+                drawLayerGid(_floorRenderGids[index]);
+                drawLayerGid(_visFixRenderGids[index]);
+                drawLayerGid(_wallRenderGids[index]);
+                drawLayerGid(_decoRenderGids[index]);
+
+                // no debug fill here on purpose. if a tiled layer is missing,
+                // we would rather notice the bad room data than silently hide it.
             }
-
-            float px = _origin.x + xx * _tileSize;
-            float py = _origin.y + yy * _tileSize;
-            Rect cell(px, py, _tileSize, _tileSize);
-
-            Color4 color = _config.backdropColor;
-            if (tile == TileType::ROOM_FLOOR) {
-                color = getFloorColorForTile(xx, yy);
-            } else if (tile == TileType::HALL_FLOOR) {
-                color = _config.hallFloorColor;
-            } else if (tile == TileType::WALL) {
-                color = _config.wallTopColor;
-            } else if (tile == TileType::OBSTACLE) {
-                color = _config.obstacleFaceColor;
-            }
-
-            batch->setColor(color);
-            batch->fill(cell);
         }
+        batch->setColor(originalColor);
+        return;
     }
+
+    batch->setColor(originalColor);
 }
 
 bool Map::canOccupy(const Vec2& worldPos, float radius) const {
@@ -346,7 +1049,7 @@ Vec2 Map::getNextWaypoint(const Vec2& fromWorld, const Vec2& toWorld) const {
     visited[(size_t)startIndex] = 1;
 
     int reached = -1;
-    int fallback = startIndex;
+    int closestReached = startIndex;
 
     int goalX = goalIndex % _gridWidth;
     int goalY = goalIndex / _gridWidth;
@@ -365,8 +1068,8 @@ Vec2 Map::getNextWaypoint(const Vec2& fromWorld, const Vec2& toWorld) const {
         int current = frontier.front();
         frontier.pop();
 
-        if (manhattanToGoal(current) < manhattanToGoal(fallback)) {
-            fallback = current;
+        if (manhattanToGoal(current) < manhattanToGoal(closestReached)) {
+            closestReached = current;
         }
 
         if (current == goalIndex) {
@@ -393,7 +1096,7 @@ Vec2 Map::getNextWaypoint(const Vec2& fromWorld, const Vec2& toWorld) const {
     }
 
     if (reached < 0) {
-        reached = fallback;
+        reached = closestReached;
     }
     if (reached == startIndex) {
         return tileToWorldCenter(startIndex % _gridWidth, startIndex / _gridWidth);
@@ -491,7 +1194,9 @@ Vec2 Map::tileToWorldCenter(int x, int y) const {
 }
 
 bool Map::overlapsExistingRoom(const GridRoom& candidate, const std::vector<GridRoom>& rooms) const {
-    int roomBuffer = std::max(0, _config.roomBufferTiles);
+    // the tiled hallway path needs at least one tile of breathing room so the
+    // outside hall tile can exist without landing inside another room.
+    int roomBuffer = std::max(1, _config.roomBufferTiles);
     int cLeft = candidate.x - roomBuffer;
     int cRight = candidate.x + candidate.w + roomBuffer - 1;
     int cBottom = candidate.y - roomBuffer;
@@ -512,6 +1217,8 @@ bool Map::overlapsExistingRoom(const GridRoom& candidate, const std::vector<Grid
     return false;
 }
 
+/*
+// old random-room helpers kept here as reference from the pre-tiled map path.
 void Map::carveRoom(const GridRoom& room, int roomIndex) {
     for (int yy = room.y; yy < room.y + room.h; ++yy) {
         for (int xx = room.x; xx < room.x + room.w; ++xx) {
@@ -519,48 +1226,44 @@ void Map::carveRoom(const GridRoom& room, int roomIndex) {
         }
     }
 }
+*/
 
-void Map::carveHallway(const Vec2& from, const Vec2& to) {
+void Map::carveHallway(const Vec2& from, const Vec2& to, int fromRoomIndex, int toRoomIndex) {
     int x1 = (int)from.x;
     int y1 = (int)from.y;
     int x2 = (int)to.x;
     int y2 = (int)to.y;
-    int hallThickness = std::max(1, _config.hallThickness);
 
-    bool horizontalFirst = std::uniform_int_distribution<int>(0, 1)(_rng) == 0;
+    int horizontalScore = scoreHallwayRoute(from, to, true, fromRoomIndex, toRoomIndex);
+    int verticalScore = scoreHallwayRoute(from, to, false, fromRoomIndex, toRoomIndex);
+    bool horizontalFirst = horizontalScore <= verticalScore;
     if (horizontalFirst) {
         int startX = std::min(x1, x2);
         int endX = std::max(x1, x2);
         for (int xx = startX; xx <= endX; ++xx) {
-            for (int offset = 0; offset < hallThickness; ++offset) {
-                setTile(xx, y1 + offset, TileType::HALL_FLOOR);
-            }
+            carveHallTile(xx, y1, true);
         }
         int startY = std::min(y1, y2);
         int endY = std::max(y1, y2);
         for (int yy = startY; yy <= endY; ++yy) {
-            for (int offset = 0; offset < hallThickness; ++offset) {
-                setTile(x2 + offset, yy, TileType::HALL_FLOOR);
-            }
+            carveHallTile(x2, yy, false);
         }
     } else {
         int startY = std::min(y1, y2);
         int endY = std::max(y1, y2);
         for (int yy = startY; yy <= endY; ++yy) {
-            for (int offset = 0; offset < hallThickness; ++offset) {
-                setTile(x1 + offset, yy, TileType::HALL_FLOOR);
-            }
+            carveHallTile(x1, yy, false);
         }
         int startX = std::min(x1, x2);
         int endX = std::max(x1, x2);
         for (int xx = startX; xx <= endX; ++xx) {
-            for (int offset = 0; offset < hallThickness; ++offset) {
-                setTile(xx, y2 + offset, TileType::HALL_FLOOR);
-            }
+            carveHallTile(xx, y2, true);
         }
     }
 }
 
+/*
+// old obstacle/spawn helpers kept here as reference from the pre-tiled map path.
 void Map::placeObstaclesInRoom(const GridRoom& room) {
     int obstacleCountMin = std::max(0, _config.obstacleCountMin);
     int obstacleCountMax = std::max(obstacleCountMin, _config.obstacleCountMax);
@@ -692,17 +1395,17 @@ Vec2 Map::pickRandomWalkableInRoom(const GridRoom& room, const Vec2* avoid) {
         return world;
     }
 
-    Vec2 fallback = tileToWorldCenter(room.x + room.w / 2 + _config.primaryItemOffsetX,
-                                      room.y + room.h / 2 + _config.primaryItemOffsetY);
-    fallback = findNearestWalkableWorld(fallback);
+    Vec2 centerPick = tileToWorldCenter(room.x + room.w / 2 + _config.primaryItemOffsetX,
+                                        room.y + room.h / 2 + _config.primaryItemOffsetY);
+    centerPick = findNearestWalkableWorld(centerPick);
 
-    if (avoid && (fallback - *avoid).lengthSquared() < minSpacing2) {
+    if (avoid && (centerPick - *avoid).lengthSquared() < minSpacing2) {
         Vec2 nudged = tileToWorldCenter(room.x + room.w / 2 + _config.secondaryItemOffsetX,
                                         room.y + room.h / 2 + _config.secondaryItemOffsetY);
-        fallback = findNearestWalkableWorld(nudged);
+        centerPick = findNearestWalkableWorld(nudged);
     }
 
-    return fallback;
+    return centerPick;
 }
 
 void Map::seedRoomSpawns(const std::vector<GridRoom>& rooms) {
@@ -757,6 +1460,7 @@ Color4 Map::getFloorColorForTile(int x, int y) const {
     }
     return _rooms[(size_t)roomIndex].getDebugColor();
 }
+*/
 
 int Map::findNearestWalkableTileIndex(int startX, int startY) const {
     if (_tiles.empty()) {

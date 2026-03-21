@@ -25,36 +25,36 @@ inline std::shared_ptr<cugl::JsonValue> loadAssetJson(const std::string& path) {
 
 inline int getIntMin(const std::shared_ptr<cugl::JsonValue>& node,
                      const std::string& key,
-                     int fallback,
+                     int defaultValue,
                      int minValue) {
     if (!node) {
-        return fallback;
+        return defaultValue;
     }
-    return std::max(minValue, node->getInt(key, fallback));
+    return std::max(minValue, node->getInt(key, defaultValue));
 }
 
 inline float getFloatMin(const std::shared_ptr<cugl::JsonValue>& node,
                          const std::string& key,
-                         float fallback,
+                         float defaultValue,
                          float minValue) {
     if (!node) {
-        return fallback;
+        return defaultValue;
     }
-    return std::max(minValue, node->getFloat(key, fallback));
+    return std::max(minValue, node->getFloat(key, defaultValue));
 }
 
 inline cugl::Color4 readColor4(const std::shared_ptr<cugl::JsonValue>& node,
-                               const cugl::Color4& fallback) {
+                               const cugl::Color4& defaultValue) {
     if (!node || node->size() < 3) {
-        return fallback;
+        return defaultValue;
     }
 
-    int r = std::clamp(node->get(0)->asInt(fallback.r), 0, 255);
-    int g = std::clamp(node->get(1)->asInt(fallback.g), 0, 255);
-    int b = std::clamp(node->get(2)->asInt(fallback.b), 0, 255);
-    int a = fallback.a;
+    int r = std::clamp(node->get(0)->asInt(defaultValue.r), 0, 255);
+    int g = std::clamp(node->get(1)->asInt(defaultValue.g), 0, 255);
+    int b = std::clamp(node->get(2)->asInt(defaultValue.b), 0, 255);
+    int a = defaultValue.a;
     if (node->size() >= 4) {
-        a = std::clamp(node->get(3)->asInt(fallback.a), 0, 255);
+        a = std::clamp(node->get(3)->asInt(defaultValue.a), 0, 255);
     }
     return cugl::Color4((unsigned char)r, (unsigned char)g, (unsigned char)b, (unsigned char)a);
 }
@@ -94,6 +94,8 @@ inline void parseProceduralConfig(const std::shared_ptr<cugl::JsonValue>& root, 
     config.map.extraHallConnectionStep = getIntMin(mapNode, "extra_hall_connection_step",
                                                    config.map.extraHallConnectionStep, 2);
 
+    /*
+    // old obstacle tuning loader kept as reference with the older obstacle path.
     config.map.obstacleCountMin = getIntMin(mapNode, "obstacle_count_min", config.map.obstacleCountMin, 0);
     config.map.obstacleCountMax = getIntMin(mapNode, "obstacle_count_max", config.map.obstacleCountMax, config.map.obstacleCountMin);
     config.map.obstacleSizeMin = getIntMin(mapNode, "obstacle_size_min", config.map.obstacleSizeMin, 1);
@@ -103,6 +105,7 @@ inline void parseProceduralConfig(const std::shared_ptr<cugl::JsonValue>& root, 
                                                         config.map.obstacleCenterClearanceTiles, 0);
     config.map.obstaclePlacementAttempts = getIntMin(mapNode, "obstacle_placement_attempts",
                                                      config.map.obstaclePlacementAttempts, 1);
+    */
 
     config.map.largeRoomWidthThreshold = getIntMin(mapNode, "large_room_width_threshold",
                                                    config.map.largeRoomWidthThreshold, 1);
@@ -123,8 +126,11 @@ inline void parseProceduralConfig(const std::shared_ptr<cugl::JsonValue>& root, 
         config.map.hallFloorColor = readColor4(colorsNode->get("hall_floor"), config.map.hallFloorColor);
         config.map.wallFaceColor = readColor4(colorsNode->get("wall_face"), config.map.wallFaceColor);
         config.map.wallTopColor = readColor4(colorsNode->get("wall_top"), config.map.wallTopColor);
+        /*
+        // old obstacle colors kept with the older obstacle path.
         config.map.obstacleFaceColor = readColor4(colorsNode->get("obstacle_face"), config.map.obstacleFaceColor);
         config.map.obstacleTopColor = readColor4(colorsNode->get("obstacle_top"), config.map.obstacleTopColor);
+        */
 
         std::shared_ptr<cugl::JsonValue> paletteNode = colorsNode->get("room_palette");
         if (paletteNode && paletteNode->size() > 0) {

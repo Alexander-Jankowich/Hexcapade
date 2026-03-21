@@ -101,26 +101,23 @@ protected:
     /** Architecture-spec world-item owner for pickups, drops, and quota seeding. */
     ItemSet _itemSet;
 
-    // GA: itemnet old scene-local item prototype kept for reference while
-    // ItemSet becomes the gameplay source of truth on this branch.
-#if 0
-    struct ItemData {
-        enum class ItemType {
-            ARTIFACT,
-            SPELL
-        };
-
-        ItemType type;
-        std::string name;
-        int value;
-        cugl::Vec2 position;
-        float radius;
-        cugl::Color4 color;
-    };
-
-    /** this stores all items currently on the map */
-    std::vector<ItemData> _items;
-#endif
+    // ga: itemnet old scene-local item prototype kept for reference while
+    // itemset becomes the gameplay source of truth on this branch.
+    // struct ItemData {
+    //     enum class ItemType {
+    //         ARTIFACT,
+    //         SPELL
+    //     };
+    //
+    //     ItemType type;
+    //     std::string name;
+    //     int value;
+    //     cugl::Vec2 position;
+    //     float radius;
+    //     cugl::Color4 color;
+    // };
+    //
+    // std::vector<ItemData> _items;
     /** this tracks if player is close enough to pickup an item */
     bool _canPickupItem;
     /** this stores the index for the current pickup target */
@@ -350,11 +347,9 @@ private:
 
     // GA: itemnet old scene-local item prototype kept for reference while
     // ItemSet/Inventory replace the temporary vector-based path.
-#if 0
-    ItemData createRandomItem(bool forceArtifact, bool forceSpell);
-    void spawnInitialItems();
-    void spawnReplacementItem();
-#endif
+    // ItemData createRandomItem(bool forceArtifact, bool forceSpell);
+    // void spawnInitialItems();
+    // void spawnReplacementItem();
     // this updates nearest item + pickup prompt state
     void updateItemPickupState();
     // this updates whether the player can currently use the prototype deposit zone

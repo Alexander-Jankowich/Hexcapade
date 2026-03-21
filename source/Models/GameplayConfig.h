@@ -39,6 +39,9 @@ struct MapGenerationConfig {
     int maxHallwayLengthTiles = 26;
     int extraHallConnectionStep = 3;
 
+    /*
+    // old obstacle tuning kept here as reference from the earlier procgen pass.
+    // the current tiled room path does not place random obstacles.
     int obstacleCountMin = 2;
     int obstacleCountMax = 4;
     int obstacleSizeMin = 1;
@@ -46,6 +49,7 @@ struct MapGenerationConfig {
     int obstacleMarginTiles = 2;
     int obstacleCenterClearanceTiles = 2;
     int obstaclePlacementAttempts = 90;
+    */
 
     int largeRoomWidthThreshold = 12;
     int largeRoomHeightThreshold = 10;
@@ -61,8 +65,11 @@ struct MapGenerationConfig {
     cugl::Color4 hallFloorColor = cugl::Color4(146, 132, 98, 255);
     cugl::Color4 wallFaceColor = cugl::Color4(42, 50, 58, 255);
     cugl::Color4 wallTopColor = cugl::Color4(69, 78, 88, 255);
+    /*
+    // old obstacle colors kept with the old obstacle tuning above.
     cugl::Color4 obstacleFaceColor = cugl::Color4(96, 96, 96, 255);
     cugl::Color4 obstacleTopColor = cugl::Color4(152, 152, 152, 255);
+    */
 
     std::vector<cugl::Color4> roomPalette = {
         cugl::Color4(98, 142, 184, 255),

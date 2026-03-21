@@ -74,6 +74,36 @@ namespace {
             "net_spellbook_" + std::to_string(itemId), 1, "spellbook1", 25
         );
     }
+
+    // item ids and texture stuff
+    std::string getItemTextureKey(const std::shared_ptr<Item>& item) {
+        if (!item) {
+            return "";
+        }
+
+        const std::string& itemId = item->getId();
+        if (itemId.rfind("artifact_scroll", 0) == 0) {
+            return "artifact_scroll";
+        }
+        if (itemId.rfind("artifact_gem", 0) == 0) {
+            return "artifact_gem";
+        }
+        if (itemId.rfind("spellbook_fire", 0) == 0) {
+            return "spellbook_fire";
+        }
+        if (itemId.rfind("spellbook_freeze", 0) == 0) {
+            return "spellbook_freeze";
+        }
+        if (itemId.rfind("spellbook_heal", 0) == 0) {
+            return "spellbook_heal";
+        }
+
+        // keep one tiny fallback so older ids still show something readable.
+        if (item->getKind() == Item::Kind::ARTIFACT) {
+            return "artifact_scroll";
+        }
+        return "spellbook_fire";
+    }
 }
 
 #pragma mark -
@@ -175,9 +205,9 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _depositPosition = Vec2::ZERO;
     _inventoryPanelOpen = false;
 
-#if 0
+/*
     // ga: procnet old screen-space bootstrap kept for reference while the map
-    // becomes the shared run layout source
+    // becomes the shared run layout source.
     _itemSet.reset();
     if (kGuaranteedArtifacts > 0 || kGuaranteedSpellbooks > 0) {
         _itemSet.spawnInitialPrototypeItems();
@@ -186,7 +216,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
         (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
         kMaxAdditionalPrototypeItems
     );
-#endif
+*/
 
     _itemSet.reset();
     if (!_networkCtrl || !_networkCtrl->hasNetwork() || _ishost) {
@@ -301,9 +331,9 @@ void GameScene::rebuildMapForRun() {
     _depositPosition = _map->getPlayerSpawn();
     _player->setPosition(_map->getPlayerSpawn());
 
-#if 0
+/*
     // ga: procnet old random item seeding kept as reference while room spawn
-    // points become the temporary source for initial item placement
+    // points are the current source for initial item placement.
     _itemSet.reset();
     _itemSet.setSpawnBounds(_map->getWorldBounds());
     if (kGuaranteedArtifacts > 0 || kGuaranteedSpellbooks > 0) {
@@ -313,7 +343,7 @@ void GameScene::rebuildMapForRun() {
         (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
         kMaxAdditionalPrototypeItems
     );
-#endif
+*/
     _itemSet.reset();
     _itemSet.setSpawnConfig(_runConfig.item);
     _itemSet.setSpawnBounds(_map->getWorldBounds());
@@ -1146,11 +1176,11 @@ void GameScene::applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& pl
 
 void GameScene::applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items) {
     _itemSet.reset();
-#if 0
+/*
     // ga: procnet old screen-space item bounds kept as reference during the
-    // move to map-owned world bounds
+    // move to map-owned world bounds.
     _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
-#endif
+*/
     if (_map) {
         _itemSet.setSpawnBounds(_map->getWorldBounds());
     } else {
@@ -1228,7 +1258,7 @@ void GameScene::drawDepositZone() {
 
 // GA: itemnet old scene-local item prototype kept for reference while ItemSet
 // and Inventory replace it as the gameplay source of truth.
-#if 0
+/*
 GameScene::ItemData GameScene::createRandomItem(bool forceArtifact, bool forceSpell) {
     ...
 }
@@ -1240,7 +1270,7 @@ void GameScene::spawnInitialItems() {
 void GameScene::spawnReplacementItem() {
     ...
 }
-#endif
+*/
 
 void GameScene::updateItemPickupState()
 {
@@ -1286,12 +1316,22 @@ void GameScene::tryPickupItem() {
 
 void GameScene::drawItems()
 {
-    _batch->setTexture(nullptr);
     for (const ItemSet::WorldItem& world : _itemSet.getItems()) {
         Rect body(world.position.x - world.radius, world.position.y - world.radius,
                   world.radius * 2.0f, world.radius * 2.0f);
-        _batch->setColor(world.item->getDebugColor());
+
+        std::string textureKey = getItemTextureKey(world.item);
+        std::shared_ptr<Texture> itemTexture = textureKey.empty() ? nullptr : _assets->get<Texture>(textureKey);
+        if (itemTexture) {
+            // textured pickups are back. we draw them in the same world rect the
+            // debug circles used before so networking/item positions stay unchanged.
+            _batch->draw(itemTexture, Color4::WHITE, body);
+            continue;
+        }
+
+        // keep the old debug fill as a last resort if a texture asset is missing.
         _batch->setTexture(nullptr);
+        _batch->setColor(world.item->getDebugColor());
         _batch->fill(body);
     }
 }
