@@ -224,7 +224,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _mapSceneSize = this->getSize();
     _mapSeed = chooseNonZeroSeed();
     _runRevision = 1;
-    rebuildMapForRun();
+    
     
 
     _spellFact = SpellFactory::alloc(_assets);
@@ -417,7 +417,6 @@ void GameScene::updateCameraFollow() {
     if (maxCenterY < minCenterY) {
         minCenterY = maxCenterY = world.getMidY();
     }
-    CULog("minCenterx: %f, maxCenterX: %f", minCenterX, maxCenterX);
     float cx = std::clamp(_player->getPosition().x * PHYSICS_SCALE, minCenterX, maxCenterX);
     float cy = std::clamp(_player->getPosition().y * PHYSICS_SCALE, minCenterY, maxCenterY);
     _cameraBottomLeft = Vec2(cx - halfW, cy - halfH);
@@ -426,7 +425,6 @@ void GameScene::updateCameraFollow() {
     
     cameraPos.x = cx;
     cameraPos.y = cy;
-    CULog("x: %f, y : %f", cameraPos.x, cameraPos.y);
     camera->setPosition(cameraPos);
     camera->update();
 }
@@ -483,7 +481,6 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
     Vec2 pos = _player -> getPosition();
-    CULog("x: %f, y: %f", pos.x, pos.y);
     //CULog("body active: %d", _player->isAwake());
     //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
@@ -704,7 +701,9 @@ void GameScene::postUpdate(float remain)
  */
 void GameScene::render()
 {
-    
+    if (_map) {
+        _map->draw(_batch);
+    }
     Scene2::render();
     
     _batch->setPerspective(getCamera()->getCombined());
@@ -718,9 +717,7 @@ void GameScene::render()
     renderHUD();
     _inputDisplay->draw(_batch);
     _batch->setColor(original);
-    if (_map) {
-        _map->draw(_batch);
-    }
+    
     _batch->end();
 }
 
@@ -1210,7 +1207,7 @@ void GameScene::setActive(bool value)
             // set _player to the correct object
             _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
-            
+            rebuildMapForRun();
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
         }

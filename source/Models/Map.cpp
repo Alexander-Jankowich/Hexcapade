@@ -109,7 +109,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     // this is the one room prefab we repeat for the first tiled-backed map;
     // later we can swap this for a pool of tmj room files without changing
     // the rest of the map/runtime architecture!
-    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("tiles/example_2.tmj");
+    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("example_2.tmj");
     if (!_tiledRoomPrefab) {
         CULog("tiled room load failed: tiles/example_2.tmj :(");
         return false;

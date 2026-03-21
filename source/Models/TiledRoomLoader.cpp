@@ -267,38 +267,58 @@ namespace {
     // the tmj tells us which tileset file it uses
     // the tsx tells us how big each tile is and which image contains the art
     // and then we slice that image into the subtextures the room renderer will ask for later
-    bool loadTilesetData(const std::string& tmjAssetPath,
-                         const std::shared_ptr<JsonValue>& root,
-                         TiledRoomData::TilesetData& outTileset) {
-        std::shared_ptr<JsonValue> tilesetsNode = root ? root->get("tilesets") : nullptr;
-        if (!tilesetsNode || tilesetsNode->size() == 0) {
-            return false;
-        }
+bool loadTilesetData(const std::string& tmjAssetPath,
+                     const std::shared_ptr<JsonValue>& root,
+                     TiledRoomData::TilesetData& outTileset) {
 
-        std::shared_ptr<JsonValue> tilesetRef = tilesetsNode->get(0);
-        if (!tilesetRef) {
-            return false;
-        }
+    std::shared_ptr<JsonValue> tilesetsNode = root ? root->get("tilesets") : nullptr;
+    if (!tilesetsNode || tilesetsNode->size() == 0) {
+        CULog("FAIL: no tilesets node");
+        return false;
+    }
 
-        outTileset.firstGid = (unsigned int)tilesetRef->getInt("firstgid", 1);
+    std::shared_ptr<JsonValue> tilesetRef = tilesetsNode->get(0);
+    if (!tilesetRef) {
+        CULog("FAIL: tilesetRef null");
+        return false;
+    }
 
-        std::string tmjDir = getAssetDirectory(tmjAssetPath);
-        outTileset.tsxAssetPath = joinAssetPath(tmjDir, tilesetRef->getString("source", ""));
-        if (outTileset.tsxAssetPath.empty()) {
-            return false;
-        }
+    outTileset.firstGid = (unsigned int)tilesetRef->getInt("firstgid", 1);
 
-        std::shared_ptr<TextReader> reader = TextReader::allocWithAsset(outTileset.tsxAssetPath);
-        if (!reader) {
-            return false;
-        }
+    std::string tmjDir = getAssetDirectory(tmjAssetPath);
+    std::string source = tilesetRef->getString("source", "");
+    CULog("TSX source: %s", source.c_str());
 
-        std::string tsxText = reader->readAll();
-        std::string tilesetTag = extractXmlTag(tsxText, "tileset");
-        std::string imageTag = extractXmlTag(tsxText, "image");
-        if (tilesetTag.empty() || imageTag.empty()) {
-            return false;
-        }
+    outTileset.tsxAssetPath = joinAssetPath(tmjDir, source);
+    CULog("Resolved TSX path: %s", outTileset.tsxAssetPath.c_str());
+
+    if (outTileset.tsxAssetPath.empty()) {
+        CULog("FAIL: empty tsx path");
+        return false;
+    }
+
+    std::shared_ptr<TextReader> reader = TextReader::allocWithAsset(outTileset.tsxAssetPath);
+    CULog("This is da path %s",outTileset.tsxAssetPath.c_str());
+    if (!reader) {
+        CULog("FAIL: could not open TSX file");
+        return false;
+    }
+
+    std::string tsxText = reader->readAll();
+    CULog("TSX loaded, size=%zu", tsxText.size());
+
+    std::string tilesetTag = extractXmlTag(tsxText, "tileset");
+    std::string imageTag = extractXmlTag(tsxText, "image");
+
+    if (tilesetTag.empty()) {
+        CULog("FAIL: no <tileset> tag");
+        return false;
+    }
+    if (imageTag.empty()) {
+        CULog("FAIL: no <image> tag");
+        return false;
+    }
+
 
         outTileset.tileWidth = extractXmlIntAttribute(tilesetTag, "tilewidth", 0);
         outTileset.tileHeight = extractXmlIntAttribute(tilesetTag, "tileheight", 0);
