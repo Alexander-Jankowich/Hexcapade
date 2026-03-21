@@ -18,8 +18,12 @@
 #include <vector>
 #include "../Controllers/GLInputController.h"
 #include "../Controllers/NetworkController.h"
+#include "../Controllers/RoomController.h"
 #include "../Models/InputDisplay.h"
 #include <cstddef> 
+#include "../Models/GameplayConfig.h"
+#include "../Models/Map.h"
+#include "../Models/ItemSet.h"
 #include "../Controllers/CollisionController.h"
 #include "../Models/Player.h"
 #include "../Models/SpellFactory.h"
@@ -61,12 +65,22 @@ protected:
 
     std::shared_ptr<PlayerObstacle> _player;
     
+    std::shared_ptr<Map> _map;
+    RoomController _roomController;
+    RunBalanceConfig _runConfig;
+    cugl::Vec2 _cameraBottomLeft;
+    int _runRevision;
+    int _appliedRunRevision;
+    unsigned int _mapSeed;
+    cugl::Size _mapSceneSize;
     float lastEnemySpawn;
 
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
     CollisionController _collisions;
-    /** The total value of items all players have collected */
-    int _currInventoryScore;
+    /** GA: itemnet legacy scene-local inventory cache kept during the migration. */
+    int _inventoryValue;
+    /** The total value already deposited into the shared quota. */
+    int _depositedValue;
     /** The value the player needs to reach to win */
     int _quota;
     /** Whether the player has won */
@@ -85,19 +99,24 @@ protected:
 
     bool input_down = false;
 
-    struct ItemData {
-        enum class ItemType {
-            ARTIFACT,
-            SPELL
-        };
+    /** Architecture-spec world-item owner for pickups, drops, and quota seeding. */
+    ItemSet _itemSet;
 
-        ItemType type;
-        std::string name;
-        int value;
-        cugl::Vec2 position;
-        float radius;
-        cugl::Color4 color;
-    };
+    // ga: itemnet old scene-local item prototype kept for reference while
+    // itemset becomes the gameplay source of truth on this branch.
+    // struct ItemData {
+    //     enum class ItemType {
+    //         ARTIFACT,
+    //         SPELL
+    //     };
+    //
+    //     ItemType type;
+    //     std::string name;
+    //     int value;
+    //     cugl::Vec2 position;
+    //     float radius;
+    //     cugl::Color4 color;
+    // };
     
   //  class DebugDraw : public b2Draw {
   //  public:
@@ -111,15 +130,22 @@ protected:
    //     void DrawTransform(const b2Transform& xf) override {}
   //     void DrawPoint(const b2Vec2& p, float size, const b2Color& color) override {}
    // };
-
-    /** this stores all items currently on the map */
-    std::vector<ItemData> _items;
+    //
+    // std::vector<ItemData> _items;
     /** this tracks if player is close enough to pickup an item */
     bool _canPickupItem;
     /** this stores the index for the current pickup target */
     int _pickupIndex;
     /** this stores the current prompt text for pickup */
     std::string _pickupPrompt;
+        /** this tracks whether the player is currently inside the deposit zone */
+    bool _canDeposit;
+    /** this stores the prototype origin/deposit interaction position */
+    cugl::Vec2 _depositPosition;
+    /** this stores the prototype origin/deposit interaction radius */
+    float _depositRadius;
+    /** this tracks local-only inventory panel visibility */
+    bool _inventoryPanelOpen;
 
 public:
 #pragma mark -
@@ -130,7 +156,7 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _currInventoryScore(0), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1){}
+    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1), _inventoryValue(0), _depositedValue(0), _quota(500), _canPickupItem(false), _pickupIndex(-1), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
@@ -161,7 +187,9 @@ public:
     
     std::shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
 
-    int getInventoryValue() const { return _currInventoryScore; }
+    void addItem(int value);
+    int getInventoryValue() const;
+    int getDepositedValue() const { return _depositedValue; }
     int getQuota() const { return _quota; }
     bool hasWon() const { return _playerWon; }
     bool hasLost() const { return _playerLost; }
@@ -280,19 +308,56 @@ public:
 
 private:
     void processComboEvent(const std::shared_ptr<CastSpellEvent>& e);
+    // this maps local HUD input into explicit pickup/drop/deposit requests
+    void handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex);
+    // this maps the last panel tap to an inventory row index for the upcoming item flow
+    int getInventoryPanelIndexAt(const cugl::Vec2& tapPos) const;
+    // this executes pickup against ItemSet and the local player's Inventory
+    bool pickupNearbyItem();
+    // this deposits all currently carried items into the shared quota
+    bool depositAtDropoff();
+    // this drops a specific inventory slot back into world space
+    bool dropInventoryIndex(size_t index);
+    // host-only helper that validates and applies a pickup for the given player
+    bool hostPickupForPlayer(const std::shared_ptr<Player>& player);
+    // host-only helper that validates and applies a drop for the given player
+    bool hostDropInventoryIndex(const std::shared_ptr<Player>& player, size_t index);
+    // host-only helper that validates and applies a deposit for the given player
+    bool hostDepositForPlayer(const std::shared_ptr<Player>& player);
+    // client-side mirror helper that replaces one player's inventory from a host snapshot
+    void applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player, const std::vector<HostInventoryItemData>& items);
+    // client-side mirror helper that replaces all world items from a host snapshot
+    void applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items);
+    // this loads map/item quota tuning from json without changing the networking path
+    void loadGameplayConfig();
+    // this rebuilds the current map from host-owned run metadata
+    void rebuildMapForRun();
+    // this keeps the world camera centered on the local player inside map bounds
+    void updateCameraFollow();
+    // this resolves the local player move against generated room/hall walls
+    cugl::Vec2 resolvePlayerMapMove(const cugl::Vec2& startPos, const cugl::Vec2& velocity) const;
+    // this returns the camera offset used to keep hud elements screen-anchored
+    cugl::Vec2 getHUDOffset() const;
 
-    // this builds one random item and returns it
-    ItemData createRandomItem(bool forceArtifact, bool forceSpell);
-    // this respawns the map starter set of items
-    void spawnInitialItems();
-    // this spawns one replacement item after pickup
-    void spawnReplacementItem();
+    // GA: itemnet old scene-local item prototype kept for reference while
+    // ItemSet/Inventory replace the temporary vector-based path.
+    // ItemData createRandomItem(bool forceArtifact, bool forceSpell);
+    // void spawnInitialItems();
+    // void spawnReplacementItem();
     // this updates nearest item + pickup prompt state
     void updateItemPickupState();
+    // this updates whether the player can currently use the prototype deposit zone
+    void updateDepositState();
     // this handles desktop e key pickup action
     void tryPickupItem();
+    // this reserves the keyboard/mobile drop path for the inventory-backed item port
+    void tryDropItem();
+    // this reserves the keyboard/mobile deposit path for the inventory-backed item port
+    void tryDepositItems();
     // this draws all active items
     void drawItems();
+    // this draws the prototype deposit zone so desktop/mobile tests can target it
+    void drawDepositZone();
 
 
     void renderHUD();
@@ -326,5 +391,4 @@ private:
 };
 
 #endif // !__GL_GAME_SCENE_H__
-
 

@@ -65,4 +65,3 @@ public:
     void endGame(bool won);
 };
 #endif // !__NETWORK_CONTROLLER_H__
-
