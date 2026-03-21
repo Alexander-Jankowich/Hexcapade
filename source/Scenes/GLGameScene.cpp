@@ -178,7 +178,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 
     _map = std::make_shared<Map>();
     _roomController.setMap(_map);
-    _cameraBottomLeft = Vec2::ZERO;
     _runRevision = 0;
     _appliedRunRevision = -1;
     _mapSeed = 0;
@@ -221,14 +220,12 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 */
 
     _itemSet.reset();
-    if (!_networkCtrl || !_networkCtrl->hasNetwork() || _ishost) {
-        _mapSceneSize = this->getSize();
-        _mapSeed = chooseNonZeroSeed();
-        _runRevision = 1;
-        rebuildMapForRun();
-    } else {
-        _roomController.setMap(nullptr);
-    }
+    
+    _mapSceneSize = this->getSize();
+    _mapSeed = chooseNonZeroSeed();
+    _runRevision = 1;
+    rebuildMapForRun();
+    
 
     _spellFact = SpellFactory::alloc(_assets);
     _playerFact = PlayerFactory::alloc(_assets);
@@ -250,7 +247,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 
     addChild(_worldnode);
 
-    _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, dimen.width / PHYSICS_SCALE , SCENE_HEIGHT / PHYSICS_SCALE), Vec2::ZERO);
+    _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, dimen.width * 1000 , SCENE_HEIGHT * 1000), Vec2::ZERO);
     _world -> activateCollisionCallbacks(true);
     _world -> activateFilterCallbacks(false);
     _world -> activateDestructionCallbacks(true);
@@ -326,10 +323,11 @@ void GameScene::addItem(int value) {
 }
 
 int GameScene::getInventoryValue() const {
-    if (!_player || !_player->getInventory()) {
-        return _inventoryValue;
-    }
-    return _player->getInventory()->getCarriedValue();
+    //if (!_player || !_player->getInventory()) {
+    //    return _inventoryValue;
+    //}
+    //return _player->getInventory()->getCarriedValue();
+    return 1;
 }
 
 void GameScene::loadGameplayConfig() {
@@ -356,7 +354,6 @@ void GameScene::rebuildMapForRun() {
     _appliedRunRevision = _runRevision;
     _quota = std::max(1, _runConfig.quota);
     _depositPosition = _map->getPlayerSpawn();
-    _player->setPosition(_map->getPlayerSpawn());
 
 /*
     // ga: procnet old random item seeding kept as reference while room spawn
@@ -382,8 +379,8 @@ void GameScene::rebuildMapForRun() {
         kMaxAdditionalPrototypeItems
     );
 
-    updateItemPickupState();
-    updateDepositState();
+    //updateItemPickupState();
+    //updateDepositState();
     updateCameraFollow();
 }
 
@@ -420,14 +417,16 @@ void GameScene::updateCameraFollow() {
     if (maxCenterY < minCenterY) {
         minCenterY = maxCenterY = world.getMidY();
     }
-
-    float cx = std::clamp(_player->getPosition().x, minCenterX, maxCenterX);
-    float cy = std::clamp(_player->getPosition().y, minCenterY, maxCenterY);
+    CULog("minCenterx: %f, maxCenterX: %f", minCenterX, maxCenterX);
+    float cx = std::clamp(_player->getPosition().x * PHYSICS_SCALE, minCenterX, maxCenterX);
+    float cy = std::clamp(_player->getPosition().y * PHYSICS_SCALE, minCenterY, maxCenterY);
     _cameraBottomLeft = Vec2(cx - halfW, cy - halfH);
 
     Vec3 cameraPos = camera->getPosition();
+    
     cameraPos.x = cx;
     cameraPos.y = cy;
+    CULog("x: %f, y : %f", cameraPos.x, cameraPos.y);
     camera->setPosition(cameraPos);
     camera->update();
 }
@@ -468,7 +467,7 @@ Vec2 GameScene::getHUDOffset() const {
 void GameScene::preUpdate(float dt)
 {
     _input.update(dt);
-
+    
     if (_input.pressedReset()) {
         reset();
         _input.resolvedReset();
@@ -484,14 +483,15 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
     Vec2 pos = _player -> getPosition();
+    CULog("x: %f, y: %f", pos.x, pos.y);
     //CULog("body active: %d", _player->isAwake());
     //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
     //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
 
-    updateItemPickupState();
-    updateDepositState();
+    //updateItemPickupState();
+    //updateDepositState();
     _input.setInventoryPanelOpen(_inventoryPanelOpen);
 
     bool pickupRequested = false;
@@ -502,31 +502,31 @@ void GameScene::preUpdate(float dt)
         pickupRequested = true;
         _input.resolvedPickup();
     }
-    if (_input.pressedDrop()) {
-        std::shared_ptr<Inventory> inventory = _player->getInventory();
-        if (inventory && !inventory->isEmpty()) {
-            dropIndex = (int)inventory->getCount() - 1;
-        }
-        _input.resolvedDrop();
-    }
+    //if (_input.pressedDrop()) {
+    //    std::shared_ptr<Inventory> inventory = _player->getInventory();
+     //   if (inventory && !inventory->isEmpty()) {
+     //       dropIndex = (int)inventory->getCount() - 1;
+     //   }
+      //  _input.resolvedDrop();
+   // }
     if (_input.pressedDeposit()) {
         depositRequested = true;
         _input.resolvedDeposit();
     }
     handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
 
-    bool hasNetwork = _networkCtrl && _networkCtrl->hasNetwork();
-    if (!hasNetwork || _ishost) {
-        if (pickupRequested) {
-            pickupNearbyItem();
-        }
-        if (dropIndex >= 0) {
-            dropInventoryIndex((size_t)dropIndex);
-        }
-        if (depositRequested) {
-            depositAtDropoff();
-        }
-    }
+    //bool hasNetwork = _networkCtrl && _networkCtrl->hasNetwork();
+   // if (!hasNetwork || _ishost) {
+//        if (pickupRequested) {
+//            pickupNearbyItem();
+//        }
+//        if (dropIndex >= 0) {
+//            dropInventoryIndex((size_t)dropIndex);
+//        }
+//        if (depositRequested) {
+//            depositAtDropoff();
+//        }
+   // }
 
     // Spellcasting
     if (_input.getGesture() != SpellType::NONE) {
@@ -704,20 +704,23 @@ void GameScene::postUpdate(float remain)
  */
 void GameScene::render()
 {
+    
     Scene2::render();
+    
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
 
     Color4 original = _batch->getColor();
 
-    if (_map) {
-        _map->draw(_batch);
-    }
+    
     drawDepositZone();
     drawItems();
     renderHUD();
     _inputDisplay->draw(_batch);
     _batch->setColor(original);
+    if (_map) {
+        _map->draw(_batch);
+    }
     _batch->end();
 }
 
@@ -771,15 +774,15 @@ void GameScene::renderHUD()
     {
         _batch->setColor(Color4::WHITE);
 
-        std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
-        size_t itemCount = inventory ? inventory->getCount() : 0;
-        size_t inventoryCapacity = inventory ? inventory->getCapacity() : kPrototypeInventoryCapacity;
-        std::shared_ptr<TextLayout> invLabel = TextLayout::allocWithText(
-            "inventory: " + std::to_string(itemCount) + "/" + std::to_string(inventoryCapacity), _font);
-        invLabel->layout();
-        Affine2 invTrans;
-        invTrans.translate(inventoryHeader.origin.x + 10 + hudOffset.x, inventoryHeader.origin.y + 12 + hudOffset.y);
-        _batch->drawText(invLabel, invTrans);
+        //std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
+        //size_t itemCount = inventory ? inventory->getCount() : 0;
+        //size_t inventoryCapacity = inventory ? inventory->getCapacity() : kPrototypeInventoryCapacity;
+        //std::shared_ptr<TextLayout> invLabel = TextLayout::allocWithText(
+        //    "inventory: " + std::to_string(itemCount) + "/" + std::to_string(inventoryCapacity), _font);
+        //invLabel->layout();
+       // Affine2 invTrans;
+        //invTrans.translate(inventoryHeader.origin.x + 10 + hudOffset.x, inventoryHeader.origin.y + 12 + //hudOffset.y);
+       // _batch->drawText(invLabel, invTrans);
 
         std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
             "Quota: $" + std::to_string(_depositedValue) + " / $" + std::to_string(_quota), _font);
@@ -807,13 +810,13 @@ void GameScene::renderHUD()
             pickupText = "deposit at origin";
         }
 #else
-        if (_canPickupItem) {
-            pickupText = _pickupPrompt;
-        } else if (_canDeposit && inventory && !inventory->isEmpty()) {
-            pickupText = "press f to deposit carried items";
-        } else if (inventory && !inventory->isEmpty()) {
-            pickupText = "e pickup  q drop  f deposit";
-        }
+       // if (_canPickupItem) {
+        //    pickupText = _pickupPrompt;
+      //  } else if (_canDeposit && inventory && !inventory->isEmpty()) {
+       //     pickupText = "press f to deposit carried items";
+       // } else if (inventory && !inventory->isEmpty()) {
+        //    pickupText = "e pickup  q drop  f deposit";
+       // }
 #endif
         std::shared_ptr<TextLayout> pickupLabel = TextLayout::allocWithText(pickupText, _font);
         pickupLabel->layout();
@@ -886,204 +889,204 @@ void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequest
 #endif
 }
 
-bool GameScene::pickupNearbyItem() {
-    return hostPickupForPlayer(_player);
-}
+//bool GameScene::pickupNearbyItem() {
+   // return hostPickupForPlayer(_player);
+//}
 
-bool GameScene::depositAtDropoff() {
-    return hostDepositForPlayer(_player);
-}
+//bool GameScene::depositAtDropoff() {
+   // return hostDepositForPlayer(_player);
+//}
 
-bool GameScene::dropInventoryIndex(size_t index) {
-    return hostDropInventoryIndex(_player, index);
-}
+//bool GameScene::dropInventoryIndex(size_t index) {
+   // return hostDropInventoryIndex(_player, index);
+//}
 
-bool GameScene::hostPickupForPlayer(const std::shared_ptr<Player>& player) {
+//bool GameScene::hostPickupForPlayer(const std::shared_ptr<PlayerObstacle>& player) {
     // Host-authoritative item pickup. The host validates overlap and capacity
     // before moving an item from ItemSet into the player's Inventory.
-    if (!player) {
-        return false;
-    }
+    //if (!player) {
+    //    return false;
+    //}
 
-    int pickupIndex = _itemSet.findNearestPickupIndex(player->getPosition(), player->getSize());
-    if (pickupIndex < 0) {
-        return false;
-    }
+    //int pickupIndex = _itemSet.findNearestPickupIndex(player->getPosition(), player->getSize());
+    //if (pickupIndex < 0) {
+    //    return false;
+  //  }
 
-    std::shared_ptr<Inventory> inventory = player->getInventory();
-    if (!inventory || !inventory->canAddItem()) {
-        if (player == _player) {
+   // std::shared_ptr<Inventory> inventory = player->getInventory();
+    //if (!inventory || !inventory->canAddItem()) {
+     //   if (player == _player) {
 #ifdef CU_TOUCH_SCREEN
             _pickupPrompt = "inventory full";
 #else
-            _pickupPrompt = "inventory full, press q to drop";
+        //    _pickupPrompt = "inventory full, press q to drop";
 #endif
-        }
-        return false;
-    }
+      //  }
+      //  return false;
+    //}
 
-    std::shared_ptr<Item> item = _itemSet.takeAt((size_t)pickupIndex);
-    if (!item) {
-        return false;
-    }
+   // std::shared_ptr<Item> item = _itemSet.takeAt((size_t)pickupIndex);
+   // if (!item) {
+   //     return false;
+   // }
 
-    if (!inventory->addItem(item)) {
-        _itemSet.addDroppedItem(item, player->getPosition());
-        return false;
-    }
+   // if (!inventory->addItem(item)) {
+   //     _itemSet.addDroppedItem(item, player->getPosition());
+    ///    return false;
+    //}
 
-    if (player == _player) {
-        _inventoryValue = inventory->getCarriedValue();
-        updateItemPickupState();
-        updateDepositState();
-    }
-    return true;
-}
+   // if (player == _player) {
+   //     _inventoryValue = inventory->getCarriedValue();
+    //    updateItemPickupState();
+    //    updateDepositState();
+   // }
+   // return true;
+//}
 
-bool GameScene::hostDropInventoryIndex(const std::shared_ptr<Player>& player, size_t index) {
-    // Host-authoritative drop. The host verifies slot ownership before putting
-    // the item back into ItemSet near the player.
-    if (!player) {
-        return false;
-    }
+//bool GameScene::hostDropInventoryIndex(const std::shared_ptr<Player>& player, size_t index) {
+//    // Host-authoritative drop. The host verifies slot ownership before putting
+//    // the item back into ItemSet near the player.
+//    if (!player) {
+//        return false;
+//    }
+//
+//    std::shared_ptr<Inventory> inventory = player->getInventory();
+//    if (!inventory) {
+//        return false;
+//    }
+//
+//    std::shared_ptr<Item> dropped = inventory->dropItemAt(index);
+//    if (!dropped) {
+//        return false;
+//    }
+//
+//    Vec2 dropDir = player->getDirection();
+//    if (dropDir.isZero()) {
+//        dropDir = Vec2(1, 0);
+//    }
+//
+//    Vec2 dropPos = player->getPosition() + dropDir.getNormalization() * 26.0f;
+//    _itemSet.addDroppedItem(dropped, dropPos);
+//
+//    if (player == _player) {
+//        _inventoryValue = inventory->getCarriedValue();
+//        updateItemPickupState();
+//        updateDepositState();
+//    }
+//    return true;
+//}
+//
+//bool GameScene::hostDepositForPlayer(const std::shared_ptr<Player>& player) {
+//    // Host-authoritative deposit. The host checks deposit-zone overlap and then
+//    // moves carried value into the shared team quota total.
+//    if (!player) {
+//        return false;
+//    }
+//
+//    if (!_collisions.resolvePlayerItem(player, _depositPosition, _depositRadius)) {
+//        return false;
+//    }
+//
+//    std::shared_ptr<Inventory> inventory = player->getInventory();
+//    if (!inventory || inventory->isEmpty()) {
+//        return false;
+//    }
+//
+//    _depositedValue += inventory->depositAllItems();
+//    if (_depositedValue >= _quota) {
+//        _playerWon = true;
+//    }
+//
+//    if (player == _player) {
+//        _inventoryValue = inventory->getCarriedValue();
+//        updateDepositState();
+//    }
+//    return true;
+//}
+//
+//void GameScene::applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player,
+//                                               const std::vector<HostInventoryItemData>& items) {
+//    if (!player) {
+//        return;
+//    }
+//
+//    if (!player->getInventory()) {
+//        player->setInventory(std::make_shared<Inventory>(kPrototypeInventoryCapacity));
+//    }
+//
+//    std::shared_ptr<Inventory> inventory = player->getInventory();
+//    inventory->clear();
+//    for (const HostInventoryItemData& item : items) {
+//        inventory->addItem(makePrototypeItem(item.id, item.kind, item.name, item.value));
+//    }
+//}
 
-    std::shared_ptr<Inventory> inventory = player->getInventory();
-    if (!inventory) {
-        return false;
-    }
+//void GameScene::applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items) {
+//    _itemSet.reset();
+///*
+//    // ga: procnet old screen-space item bounds kept as reference during the
+//    // move to map-owned world bounds.
+//    _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
+//*/
+//    if (_map) {
+//        _itemSet.setSpawnBounds(_map->getWorldBounds());
+//    } else {
+//        _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
+//    }
+//    for (const HostWorldItemData& item : items) {
+//        _itemSet.addDroppedItem(
+//            makePrototypeItem(item.id, item.kind, item.name, item.value),
+//            Vec2(item.posX, item.posY),
+//            item.radius
+//        );
+//    }
+//}
+//
+//int GameScene::getInventoryPanelIndexAt(const Vec2& tapPos) const {
+//    Rect panel = _input.getInventoryPanelBounds();
+//    if (!panel.contains(tapPos)) {
+//        return -1;
+//    }
+//
+//    std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
+//    if (!inventory || inventory->isEmpty()) {
+//        return -1;
+//    }
+//
+//    float rowH = panel.size.height / 4.0f;
+//    float fromTop = panel.getMaxY() - tapPos.y;
+//    int index = (int)(fromTop / rowH);
+//    if (index < 0 || index >= (int)inventory->getCount()) {
+//        return -1;
+//    }
+//    return index;
+//}
+//
+//void GameScene::updateDepositState() {
+//    _canDeposit = _collisions.resolvePlayerItem(_player, _depositPosition, _depositRadius);
+//}
+//
+//void GameScene::tryDropItem() {
+//    if (!_input.pressedDrop()) {
+//        return;
+//    }
+//    _input.resolvedDrop();
+//
+//    std::shared_ptr<Inventory> inventory = _player->getInventory();
+//    if (!inventory || inventory->isEmpty()) {
+//        return;
+//    }
+//
+//    dropInventoryIndex(inventory->getCount() - 1);
+//}
 
-    std::shared_ptr<Item> dropped = inventory->dropItemAt(index);
-    if (!dropped) {
-        return false;
-    }
-
-    Vec2 dropDir = player->getDirection();
-    if (dropDir.isZero()) {
-        dropDir = Vec2(1, 0);
-    }
-
-    Vec2 dropPos = player->getPosition() + dropDir.getNormalization() * 26.0f;
-    _itemSet.addDroppedItem(dropped, dropPos);
-
-    if (player == _player) {
-        _inventoryValue = inventory->getCarriedValue();
-        updateItemPickupState();
-        updateDepositState();
-    }
-    return true;
-}
-
-bool GameScene::hostDepositForPlayer(const std::shared_ptr<Player>& player) {
-    // Host-authoritative deposit. The host checks deposit-zone overlap and then
-    // moves carried value into the shared team quota total.
-    if (!player) {
-        return false;
-    }
-
-    if (!_collisions.resolvePlayerItem(player, _depositPosition, _depositRadius)) {
-        return false;
-    }
-
-    std::shared_ptr<Inventory> inventory = player->getInventory();
-    if (!inventory || inventory->isEmpty()) {
-        return false;
-    }
-
-    _depositedValue += inventory->depositAllItems();
-    if (_depositedValue >= _quota) {
-        _playerWon = true;
-    }
-
-    if (player == _player) {
-        _inventoryValue = inventory->getCarriedValue();
-        updateDepositState();
-    }
-    return true;
-}
-
-void GameScene::applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player,
-                                               const std::vector<HostInventoryItemData>& items) {
-    if (!player) {
-        return;
-    }
-
-    if (!player->getInventory()) {
-        player->setInventory(std::make_shared<Inventory>(kPrototypeInventoryCapacity));
-    }
-
-    std::shared_ptr<Inventory> inventory = player->getInventory();
-    inventory->clear();
-    for (const HostInventoryItemData& item : items) {
-        inventory->addItem(makePrototypeItem(item.id, item.kind, item.name, item.value));
-    }
-}
-
-void GameScene::applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items) {
-    _itemSet.reset();
-/*
-    // ga: procnet old screen-space item bounds kept as reference during the
-    // move to map-owned world bounds.
-    _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
-*/
-    if (_map) {
-        _itemSet.setSpawnBounds(_map->getWorldBounds());
-    } else {
-        _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
-    }
-    for (const HostWorldItemData& item : items) {
-        _itemSet.addDroppedItem(
-            makePrototypeItem(item.id, item.kind, item.name, item.value),
-            Vec2(item.posX, item.posY),
-            item.radius
-        );
-    }
-}
-
-int GameScene::getInventoryPanelIndexAt(const Vec2& tapPos) const {
-    Rect panel = _input.getInventoryPanelBounds();
-    if (!panel.contains(tapPos)) {
-        return -1;
-    }
-
-    std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
-    if (!inventory || inventory->isEmpty()) {
-        return -1;
-    }
-
-    float rowH = panel.size.height / 4.0f;
-    float fromTop = panel.getMaxY() - tapPos.y;
-    int index = (int)(fromTop / rowH);
-    if (index < 0 || index >= (int)inventory->getCount()) {
-        return -1;
-    }
-    return index;
-}
-
-void GameScene::updateDepositState() {
-    _canDeposit = _collisions.resolvePlayerItem(_player, _depositPosition, _depositRadius);
-}
-
-void GameScene::tryDropItem() {
-    if (!_input.pressedDrop()) {
-        return;
-    }
-    _input.resolvedDrop();
-
-    std::shared_ptr<Inventory> inventory = _player->getInventory();
-    if (!inventory || inventory->isEmpty()) {
-        return;
-    }
-
-    dropInventoryIndex(inventory->getCount() - 1);
-}
-
-void GameScene::tryDepositItems() {
-    if (!_input.pressedDeposit()) {
-        return;
-    }
-    _input.resolvedDeposit();
-    depositAtDropoff();
-}
+//void GameScene::tryDepositItems() {
+//    if (!_input.pressedDeposit()) {
+//        return;
+//    }
+//    _input.resolvedDeposit();
+//    depositAtDropoff();
+//}
 
 void GameScene::drawDepositZone() {
     if (!_map || _appliedRunRevision <= 0) {
@@ -1116,47 +1119,47 @@ void GameScene::spawnReplacementItem() {
 }
 */
 
-void GameScene::updateItemPickupState()
-{
-    _canPickupItem = false;
-    _pickupIndex = -1;
-    _pickupPrompt = "";
-
-    _pickupIndex = _itemSet.findNearestPickupIndex(_player->getPosition(), _player->getSize());
-    if (_pickupIndex < 0) {
-        return;
-    }
-
-    const std::vector<ItemSet::WorldItem>& items = _itemSet.getItems();
-    if (_pickupIndex >= (int)items.size()) {
-        _pickupIndex = -1;
-        return;
-    }
-
-    _canPickupItem = true;
-    std::shared_ptr<Inventory> inventory = _player->getInventory();
-    if (inventory && !inventory->canAddItem()) {
-#ifdef CU_TOUCH_SCREEN
-        _pickupPrompt = "inventory full";
-#else
-        _pickupPrompt = "inventory full, press q to drop";
-#endif
-    } else {
-#ifdef CU_TOUCH_SCREEN
-        _pickupPrompt = "pickup item";
-#else
-        _pickupPrompt = "press e to pickup " + items[(size_t)_pickupIndex].item->getName();
-#endif
-    }
-}
-
-void GameScene::tryPickupItem() {
-    if (!_input.pressedPickup()) {
-        return;
-    }
-    _input.resolvedPickup();
-    pickupNearbyItem();
-}
+//void GameScene::updateItemPickupState()
+//{
+//    _canPickupItem = false;
+//    _pickupIndex = -1;
+//    _pickupPrompt = "";
+//
+//    _pickupIndex = _itemSet.findNearestPickupIndex(_player->getPosition(), _player->getSize());
+//    if (_pickupIndex < 0) {
+//        return;
+//    }
+//
+//    const std::vector<ItemSet::WorldItem>& items = _itemSet.getItems();
+//    if (_pickupIndex >= (int)items.size()) {
+//        _pickupIndex = -1;
+//        return;
+//    }
+//
+//    _canPickupItem = true;
+//    std::shared_ptr<Inventory> inventory = _player->getInventory();
+//    if (inventory && !inventory->canAddItem()) {
+//#ifdef CU_TOUCH_SCREEN
+//        _pickupPrompt = "inventory full";
+//#else
+//        _pickupPrompt = "inventory full, press q to drop";
+//#endif
+//    } else {
+//#ifdef CU_TOUCH_SCREEN
+//        _pickupPrompt = "pickup item";
+//#else
+//        _pickupPrompt = "press e to pickup " + items[(size_t)_pickupIndex].item->getName();
+//#endif
+//    }
+//}
+//
+//void GameScene::tryPickupItem() {
+//    if (!_input.pressedPickup()) {
+//        return;
+//    }
+//    _input.resolvedPickup();
+//    pickupNearbyItem();
+//}
 
 void GameScene::drawItems()
 {
@@ -1201,7 +1204,7 @@ void GameScene::setActive(bool value)
             _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
             _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
             
-            auto params = _playerFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, _networkCtrl->getPID());
+            auto params = _playerFact->serializeParams(_map -> getPlayerSpawn(), _networkCtrl->getPID());
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
 
             // set _player to the correct object

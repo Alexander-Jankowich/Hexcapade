@@ -156,7 +156,7 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1), _inventoryValue(0), _depositedValue(0), _quota(500), _canPickupItem(false), _pickupIndex(-1), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
+    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _playerLost(false), _pickupIndex(-1), _inventoryValue(0), _depositedValue(0), _canPickupItem(false),  _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
@@ -325,9 +325,9 @@ private:
     // host-only helper that validates and applies a deposit for the given player
     bool hostDepositForPlayer(const std::shared_ptr<Player>& player);
     // client-side mirror helper that replaces one player's inventory from a host snapshot
-    void applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player, const std::vector<HostInventoryItemData>& items);
-    // client-side mirror helper that replaces all world items from a host snapshot
-    void applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items);
+//    void applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player, const std::vector<HostInventoryItemData>& items);
+//    // client-side mirror helper that replaces all world items from a host snapshot
+    //void applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items);
     // this loads map/item quota tuning from json without changing the networking path
     void loadGameplayConfig();
     // this rebuilds the current map from host-owned run metadata

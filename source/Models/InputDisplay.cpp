@@ -5,6 +5,7 @@
 //
 
 #include "InputDisplay.h"
+#define PHYSICS_SCALE 100
 
 using namespace cugl;
 using namespace cugl::graphics;
@@ -72,7 +73,7 @@ void InputDisplay::update(Vec2 playerPos) {
 	if (_showAim) {
 		// keep the aim arrow in world space so it still follows the player
 		_arrowTrans = Affine2::createRotation(_input->getSpellAngle().getAngle());
-		_arrowTrans.translate(playerPos);
+		_arrowTrans.translate(playerPos * PHYSICS_SCALE);
 	}
 }
 

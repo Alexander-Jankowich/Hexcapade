@@ -585,11 +585,13 @@ std::shared_ptr<TiledRoomData> TiledRoomLoader::loadFromAsset(const std::string&
     // step 1 reads the tmj itself which gives us the room structure and layer layout
     std::shared_ptr<JsonReader> reader = JsonReader::allocWithAsset(assetPath);
     if (!reader) {
+        CULog("no reader");
         return nullptr;
     }
 
     std::shared_ptr<JsonValue> root = reader->readJson();
     if (!root) {
+        CULog("no json?");
         return nullptr;
     }
 
@@ -602,12 +604,14 @@ std::shared_ptr<TiledRoomData> TiledRoomLoader::loadFromAsset(const std::string&
     room->_tileWidth = root->getInt("tilewidth", 0);
     room->_tileHeight = root->getInt("tileheight", 0);
     if (room->_width <= 0 || room->_height <= 0 || room->_tileWidth <= 0 || room->_tileHeight <= 0) {
+        CULog("room dimension check");
         return nullptr;
     }
 
     // step 3 follows the tileset reference so the renderer can draw the real authored art
     // this is where the tmj stops being just ids and starts being tied to the actual png
     if (!loadTilesetData(assetPath, root, room->_tileset)) {
+        CULog("613 failed");
         return nullptr;
     }
 
@@ -615,18 +619,21 @@ std::shared_ptr<TiledRoomData> TiledRoomLoader::loadFromAsset(const std::string&
     // for now we expect one art group and one objects group because that matches the provided files
     std::shared_ptr<JsonValue> rootLayers = root->get("layers");
     if (!rootLayers) {
+        CULog("no root layers?");
         return nullptr;
     }
 
     std::shared_ptr<JsonValue> artGroup = findNamedChild(rootLayers, "art");
     std::shared_ptr<JsonValue> objectGroup = findNamedChild(rootLayers, "objects");
     if (!artGroup || !objectGroup) {
+        CULog("no art or object?");
         return nullptr;
     }
 
     std::shared_ptr<JsonValue> artLayers = artGroup->get("layers");
     std::shared_ptr<JsonValue> objectLayers = objectGroup->get("layers");
     if (!artLayers || !objectLayers) {
+        CULog("no art or object layers?");
         return nullptr;
     }
 
@@ -634,6 +641,7 @@ std::shared_ptr<TiledRoomData> TiledRoomLoader::loadFromAsset(const std::string&
     // floor is required because it defines the base playable surface
     // the others are optional overlays that add walls and decoration
     if (!readTileLayer(findNamedChild(artLayers, "floor"), room->_floorLayer)) {
+        CULog("no floor?");
         return nullptr;
     }
     readTileLayer(findNamedChild(artLayers, "wall"), room->_wallLayer);
@@ -657,6 +665,6 @@ std::shared_ptr<TiledRoomData> TiledRoomLoader::loadFromAsset(const std::string&
     // step 7 derives the actual walkable room interior from the authored art and player spawn
     // this is the mask the map code trusts when it decides where the player can move and where halls can connect
     buildWalkableFloorMask(*room);
-
+    CULog("room is null: %d", room==nullptr);
     return room;
 }
