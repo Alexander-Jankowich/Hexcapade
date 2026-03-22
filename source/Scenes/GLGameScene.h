@@ -48,7 +48,7 @@ protected:
     /** The controller to manage the ship */
     InputController _input;
     std::shared_ptr<InputDisplay> _inputDisplay;
-
+    std::shared_ptr<cugl::Random> _random;
     /** Reference to the physics root of the scene graph */
     std::shared_ptr<cugl::scene2::SceneNode> _worldnode;
 
