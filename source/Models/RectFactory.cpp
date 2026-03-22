@@ -12,7 +12,7 @@ using namespace std;
 using namespace cugl;
 
 RectObstacle::RectObstacle(const cugl::Vec2 pos, float w, float h) {
-    _dimens = Size(w, h);
+    _dimens = Size(w / PHYSICS_SCALE, h / PHYSICS_SCALE);
     init(pos, _dimens);
 
     setBodyType(b2_staticBody);
