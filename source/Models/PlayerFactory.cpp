@@ -32,6 +32,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
 
     // Create player
     auto sprite = std::make_shared<Player>(pos, 12, pid, image);
+    sprite -> setScale(0.5);
 
     return std::make_pair(pl, sprite);
 }

@@ -1390,7 +1390,22 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         return;
     }
     if(wall && player){
-        CULog("ow i hit a wall");
+        b2WorldManifold manifold;
+            contact->GetWorldManifold(&manifold);
+
+            b2Vec2 normal = manifold.normal;
+
+            b2Vec2 vel = player->getBody()->GetLinearVelocity();
+
+            // remove component INTO the wall
+            float dot = vel.x * normal.x + vel.y * normal.y;
+            if (dot < 0) {
+                b2Vec2 newVel = vel - dot * normal;
+                player->getBody()->SetLinearVelocity(newVel);
+            }
+    }
+    if(wall && enemy){
+        contact -> SetEnabled(false);
     }
 }
 

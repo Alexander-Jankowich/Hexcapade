@@ -4,7 +4,7 @@
 #define PHYSICS_SCALE 100
 
 PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
-    init(pos, s / PHYSICS_SCALE);
+    init(pos, (s * 0.1) / PHYSICS_SCALE);
     setBodyType(b2_dynamicBody);
     setAwake(true);
     setEnabled(true);

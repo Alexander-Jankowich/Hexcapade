@@ -943,6 +943,7 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
 //                    }
                     continue;
                 }
+                
 
 //                auto drawLayerGid = [&](unsigned int rawGid) {
 ////                    std::shared_ptr<Texture> tileTexture = _tiledRoomPrefab->getTextureForGid(rawGid);
