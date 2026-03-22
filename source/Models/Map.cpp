@@ -946,7 +946,7 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
                 
 
 //                auto drawLayerGid = [&](unsigned int rawGid) {
-////                    std::shared_ptr<Texture> tileTexture = _tiledRoomPrefab->getTextureForGid(rawGid);
+////                       std::shared_ptr<Texture> tileTexture = _tiledRoomPrefab->getTextureForGid(rawGid);
 ////                    if (!tileTexture) {
 ////                        return;
 ////                    }
@@ -1017,6 +1017,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::draw() {
                 }
                 else if (tile==TileType::ROOM_FLOOR) {
                     tex = _tiledRoomPrefab->getTextureForGid(_floorRenderGids[index]);
+                }else if (tile == TileType::OBSTACLE){
+                    tex = _tiledRoomPrefab -> getTextureForGid(_decoRenderGids[index]);
                 }
                 if (!tex){
                     CULog("missing");

@@ -25,12 +25,7 @@ RectObstacle::RectObstacle(const cugl::Vec2 pos, float w, float h) {
  */
 pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> RectFactory::createObstacle(Vec2 pos, float w, float h, unsigned int t_gid) {
     auto obs = RectObstacle::alloc(pos, w, h);
-
-
-    // Set the physics attributes
     obs->setShared(true);
-
-    // Create Spell! Hard code values for now, change later
     cugl::Rect r = cugl::Rect(0, 0, w, h);
     auto sprite = std::make_shared<cugl::scene2::PolygonNode>();
     sprite->initWithTexturePoly(_tiledData->getTextureForGid(t_gid), r);
@@ -43,8 +38,10 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> RectFactory:
  */
 std::shared_ptr<std::vector<std::byte>> RectFactory::serializeParams(Vec2 pos, float w, float h, unsigned int gid) {
     _serializer.reset();
-    _serializer.writeFloat(pos.x);
-    _serializer.writeFloat(pos.y);
+    float centerX = pos.x + (w / PHYSICS_SCALE) * 0.5f;
+    float centerY = pos.y + (h / PHYSICS_SCALE) * 0.5f;
+    _serializer.writeFloat(centerX);
+    _serializer.writeFloat(centerY);
     _serializer.writeFloat(w);
     _serializer.writeFloat(h);
     _serializer.writeUint32(gid);
