@@ -224,7 +224,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _itemSet.reset();
     
     _mapSceneSize = this->getSize();
-    _mapSeed = chooseNonZeroSeed();
+    //_mapSeed = chooseNonZeroSeed();
     _runRevision = 1;
     
     
@@ -306,11 +306,11 @@ void GameScene::reset()
     _input.setInventoryPanelOpen(false);
 
     _mapSceneSize = this->getSize();
-    _mapSeed = chooseNonZeroSeed();
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
 
     if (_ishost) {
+        _mapSeed = chooseNonZeroSeed();
         _networkCtrl->startGame();
     }
 }
@@ -662,6 +662,10 @@ void GameScene::fixedUpdate(Uint64 step)
             CULog("COMBO SPELL GOT");
             processComboEvent(cse);
         }
+        else if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e)){
+            CULog("INIT EVENT GOT");
+            processInitEvent(cse);
+        }
     }
 
     _world->update(step / 1000000.0f);
@@ -797,15 +801,15 @@ void GameScene::renderHUD()
 
         std::string pickupText = "move close to item";
 #ifdef CU_TOUCH_SCREEN
-        if (_canPickupItem) {
-            if (inventory && !inventory->canAddItem()) {
-                pickupText = "inventory full";
-            } else {
-                pickupText = "pickup item";
-            }
-        } else if (_canDeposit && inventory && !inventory->isEmpty()) {
-            pickupText = "deposit at origin";
-        }
+//        if (_canPickupItem) {
+//            if (inventory && !inventory->canAddItem()) {
+//                pickupText = "inventory full";
+//            } else {
+//                pickupText = "pickup item";
+//            }
+//        } else if (_canDeposit && inventory && !inventory->isEmpty()) {
+//            pickupText = "deposit at origin";
+//        }
 #else
        // if (_canPickupItem) {
         //    pickupText = _pickupPrompt;
@@ -822,62 +826,62 @@ void GameScene::renderHUD()
         _batch->drawText(pickupLabel, pickupTrans);
 
 #ifdef CU_TOUCH_SCREEN
-        if (_inventoryPanelOpen && inventory) {
-            Rect panelBounds = _input.getInventoryPanelBounds();
-            drawBox(panelBounds.origin.x + hudOffset.x, panelBounds.origin.y + hudOffset.y,
-                    panelBounds.size.width, panelBounds.size.height,
-                    Color4(20, 20, 20, 230));
-
-            float rowH = panelBounds.size.height / 4.0f;
-            for (int ii = 0; ii < 4; ++ii) {
-                float rowY = panelBounds.getMaxY() - rowH * (ii + 1);
-                drawBox(panelBounds.origin.x + 2.0f + hudOffset.x, rowY + 1.0f + hudOffset.y,
-                        panelBounds.size.width - 4.0f, rowH - 2.0f,
-                        Color4(40, 40, 40, 220));
-
-                std::string rowText = "-";
-                if ((size_t)ii < inventory->getCount()) {
-                    rowText = inventory->getItems()[(size_t)ii]->getName();
-                }
-
-                std::shared_ptr<TextLayout> rowLabel = TextLayout::allocWithText(rowText, _font);
-                rowLabel->layout();
-                Affine2 rowTrans;
-                rowTrans.translate(panelBounds.origin.x + 10.0f + hudOffset.x, rowY + 8.0f + hudOffset.y);
-                _batch->drawText(rowLabel, rowTrans);
-            }
-        }
+//        if (_inventoryPanelOpen && inventory) {
+//            Rect panelBounds = _input.getInventoryPanelBounds();
+//            drawBox(panelBounds.origin.x + hudOffset.x, panelBounds.origin.y + hudOffset.y,
+//                    panelBounds.size.width, panelBounds.size.height,
+//                    Color4(20, 20, 20, 230));
+//
+//            float rowH = panelBounds.size.height / 4.0f;
+//            for (int ii = 0; ii < 4; ++ii) {
+//                float rowY = panelBounds.getMaxY() - rowH * (ii + 1);
+//                drawBox(panelBounds.origin.x + 2.0f + hudOffset.x, rowY + 1.0f + hudOffset.y,
+//                        panelBounds.size.width - 4.0f, rowH - 2.0f,
+//                        Color4(40, 40, 40, 220));
+//
+//                std::string rowText = "-";
+//                if ((size_t)ii < inventory->getCount()) {
+//                    rowText = inventory->getItems()[(size_t)ii]->getName();
+//                }
+//
+//                std::shared_ptr<TextLayout> rowLabel = TextLayout::allocWithText(rowText, _font);
+//                rowLabel->layout();
+//                Affine2 rowTrans;
+//                rowTrans.translate(panelBounds.origin.x + 10.0f + hudOffset.x, rowY + 8.0f + hudOffset.y);
+//                _batch->drawText(rowLabel, rowTrans);
+//            }
+//        }
 #endif // CU_TOUCH_SCREEN
     }
 }
 
 void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex) {
 #ifdef CU_TOUCH_SCREEN
-    if (_input.pressedInventoryToggle()) {
-        _inventoryPanelOpen = !_inventoryPanelOpen;
-        _input.setInventoryPanelOpen(_inventoryPanelOpen);
-        _input.resolvedInventoryToggle();
-        CULog("inventory panel toggled: %d", _inventoryPanelOpen ? 1 : 0);
-    }
-
-    if (_input.pressedInventoryPanel()) {
-        if (_inventoryPanelOpen) {
-            int index = getInventoryPanelIndexAt(_input.getLastUITap());
-            if (index >= 0) {
-                dropIndex = index;
-            }
-        }
-        _input.resolvedInventoryPanel();
-    }
-
-    if (_input.pressedContextAction()) {
-        _input.resolvedContextAction();
-        if (_canPickupItem) {
-            pickupRequested = true;
-        } else if (_canDeposit) {
-            depositRequested = true;
-        }
-    }
+//    if (_input.pressedInventoryToggle()) {
+//        _inventoryPanelOpen = !_inventoryPanelOpen;
+//        _input.setInventoryPanelOpen(_inventoryPanelOpen);
+//        _input.resolvedInventoryToggle();
+//        CULog("inventory panel toggled: %d", _inventoryPanelOpen ? 1 : 0);
+//    }
+//
+//    if (_input.pressedInventoryPanel()) {
+//        if (_inventoryPanelOpen) {
+//            int index = getInventoryPanelIndexAt(_input.getLastUITap());
+//            if (index >= 0) {
+//                dropIndex = index;
+//            }
+//        }
+//        _input.resolvedInventoryPanel();
+//    }
+//
+//    if (_input.pressedContextAction()) {
+//        _input.resolvedContextAction();
+//        if (_canPickupItem) {
+//            pickupRequested = true;
+//        } else if (_canDeposit) {
+//            depositRequested = true;
+//        }
+//    }
 #else
     if (_input.pressedInventoryToggle()) {
         _inventoryPanelOpen = !_inventoryPanelOpen;
@@ -914,7 +918,7 @@ void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequest
     //if (!inventory || !inventory->canAddItem()) {
      //   if (player == _player) {
 #ifdef CU_TOUCH_SCREEN
-            _pickupPrompt = "inventory full";
+           // _pickupPrompt = "inventory full";
 #else
         //    _pickupPrompt = "inventory full, press q to drop";
 #endif
@@ -1191,6 +1195,7 @@ void GameScene::setActive(bool value)
             
             // init network and world once we start the game
             //Make a std::function reference of the linkSceneToObs function in game scene for network controller
+            
             std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
                 this->linkSceneToObs(obs, node);
                 };
@@ -1207,7 +1212,10 @@ void GameScene::setActive(bool value)
             // set _player to the correct object
             _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
+            
+            
             rebuildMapForRun();
+            
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
         }
@@ -1272,6 +1280,11 @@ void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
         _input.resolveSpell();
         _player->resolveSpell();
     }
+}
+
+void GameScene::processInitEvent(const std::shared_ptr<GameInitEvent>& e) {
+    _mapSeed = e->getSeed();
+    rebuildMapForRun();
 }
 
 /**
@@ -1349,4 +1362,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         CULog("spell and enemy collision: %d", enemy->getHealth());
         return;
     }
+}
+
+void GameScene::initHost() {
+    _mapSeed=chooseNonZeroSeed();
+    _networkCtrl->pushOutEvent(GameInitEvent::allocGameInitEvent(_mapSeed));
 }

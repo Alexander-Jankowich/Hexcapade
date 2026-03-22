@@ -5,6 +5,8 @@
 //  Created by Serena Duncan on 3/2/26.
 //
 #include <cugl/cugl.h>
+#include "../Models/GameInitEvent.h"
+#include "../Models/ComboEvent.h"
 
 #ifndef __NETWORK_CONTROLLER_H__
 #define __NETWORK_CONTROLLER_H__
@@ -40,6 +42,7 @@ public:
         f->init(assets);
         return f;
     }
+    void init(const std::shared_ptr<AssetManager>& a);
 
     // TODO ADJUST THIS
 
@@ -56,6 +59,8 @@ public:
     bool connectClient(string roomId);
 
     bool hasNetwork() { return _network != nullptr; }
+    
+  //  void startGame() override;
 
     string getRoomCode() {
         string room = getRoomID();

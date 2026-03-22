@@ -40,11 +40,22 @@ std::string NetworkController::hex2dec(const std::string& hex) {
 
 #pragma mark PublicMethods
 
+void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
+    attachEventType<GameInitEvent>();
+    attachEventType<CastSpellEvent>();
+    cugl::physics2::distrib::NetEventController::init(a);
+}
+
 bool NetworkController::connectClient(string roomId) {
     return connectAsClient(dec2hex(roomId)); // this will become custom translate fn later
 }
 
-
+//void NetworkController::startGame(){
+//    CUAssertLog(_isHost, "Only host should call startGame()");
+//    if (_status == Status::CONNECTED) {
+//        _network->startSession();
+//    }
+//}
 void NetworkController::endGame(bool won) {
 //        if (_network) {
 //            CULog("broadcasting end game");
