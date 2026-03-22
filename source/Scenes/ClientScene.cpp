@@ -83,9 +83,20 @@ void ClientScene::updateText(const std::shared_ptr<scene2::Button>& button, cons
 
 void ClientScene::update(float dt) {
     _networkCtrl->updateNet();
+        
+    // handle init  event
+    if(_networkCtrl->isInAvailable()){
+        CULog("have in event");
+        auto e = _networkCtrl->popInEvent();
+        if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e)){
+            CULog("INIT EVENT GOT");
+            processInitEvent(cse);
+        }
+    }
+    
     _player->setText(std::to_string(_networkCtrl->getNumPlayers()));
     configureStartButton();
-    _networkCtrl -> markReady();
+    if (_networkCtrl->getRandSeed()>0) _networkCtrl->markReady();
 }
 
 void ClientScene::setActive(bool value) {
@@ -130,4 +141,9 @@ void ClientScene::configureStartButton() {
         default:
             break;
     }
+}
+
+void ClientScene::processInitEvent(const std::shared_ptr<GameInitEvent> &e) {
+    CULog("client recieved init!");
+    _networkCtrl->setRandSeed(e->getSeed());
 }

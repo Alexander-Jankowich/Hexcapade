@@ -15,6 +15,7 @@ using namespace std;
 #pragma mark PrivateClientHelpers
 
 
+
 std::string NetworkController::dec2hex(const std::string& dec) {
     Uint32 value = strtool::stou32(dec);
     if (value >= 65536) value = 0;
@@ -50,12 +51,7 @@ bool NetworkController::connectClient(string roomId) {
     return connectAsClient(dec2hex(roomId)); // this will become custom translate fn later
 }
 
-//void NetworkController::startGame(){
-//    CUAssertLog(_isHost, "Only host should call startGame()");
-//    if (_status == Status::CONNECTED) {
-//        _network->startSession();
-//    }
-//}
+
 void NetworkController::endGame(bool won) {
 //        if (_network) {
 //            CULog("broadcasting end game");

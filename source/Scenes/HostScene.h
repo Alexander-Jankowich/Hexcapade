@@ -25,6 +25,8 @@ private:
     /** The players label (for updating) */
     std::shared_ptr<cugl::scene2::Label> _player;
     std::string _roomCode;
+    
+    int _randseed;
 
     bool checkConnection();
 
@@ -37,8 +39,9 @@ public:
     virtual void setActive(bool value) override;
 
 
-    void update(float dt);
-    
+    void update(float dt) override;
+    int getRandSeed(){return _randseed;}
+    void sendInitMsg();
     void disconnect() {_networkCtrl->disconnect();}
     void release() { _networkCtrl = nullptr; }
     NetworkController::Status getStatus(){return _networkCtrl->getStatus();}

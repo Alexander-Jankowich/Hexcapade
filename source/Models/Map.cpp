@@ -91,10 +91,10 @@ _playerSpawn(Vec2::ZERO),
 _config(),
 _hallFloorGid(0),
 _tiledRoomPrefab(nullptr) {
-    _rng.seed(std::random_device{}());
 }
 
 bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsigned int seed) {
+    CULog("seed: %d", seed);
     // this now builds the map from one repeated tiled room (ex) instead of carving
     // each room shape procedurally. we still keep the current map runtime,
     // hallway logic, collision helpers, and room controller on top of it just in case
@@ -104,10 +104,8 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
         _config.roomPalette.push_back(Color4(118, 146, 108, 255));
     }
 
-    if (seed == 0) {
-        seed = std::random_device{}();
-    }
-    _rng.seed(seed);
+    CUAssertLog(seed!=0, "map generation seed is zero");
+    _rng.initWithSeed(seed);
 
     // this is the one room prefab we repeat for the first tiled-backed map;
     // later we can swap this for a pool of tmj room files without changing
@@ -121,10 +119,11 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     // we use the tiled tile size as the real map tile size so the rendered art,
     // collision grid, and world positions stay aligned (ask deisgners)
     _tileSize = std::max(8.0f, (float)_tiledRoomPrefab->getTileWidth());
-    int clampedMinRooms = std::max(1, _config.roomCountMin);
-    int clampedMaxRooms = std::max(clampedMinRooms, _config.roomCountMax);
-    std::uniform_int_distribution<int> roomCountDist(clampedMinRooms, clampedMaxRooms);
-    int targetRoomCount = roomCountDist(_rng);
+    //int clampedMinRooms = std::max(1, _config.roomCountMin);
+//    int clampedMaxRooms = std::max(clampedMinRooms, _config.roomCountMax);
+//    std::uniform_int_distribution<int> roomCountDist(clampedMinRooms, clampedMaxRooms);
+    // FLAG: RANDOM INT
+    int targetRoomCount = std::max(_config.roomCountMin, (int) (_rng.getDouble() * _config.roomCountMax));
 
     bool useTemplates = !_config.roomTemplates.empty();
     int prefabWidth = std::max(1, _tiledRoomPrefab->getWidth());
@@ -152,7 +151,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     _hallFloorGid = _tiledRoomPrefab->getPrimaryFloorGid();
 
     std::vector<GridRoom> generatedRooms;
-    generatedRooms.reserve((size_t)targetRoomCount);
+    //generatedRooms.reserve((size_t)targetRoomCount);
     int maxHallwayLength = std::max(1, _config.maxHallwayLengthTiles);
 
     auto hallwayDistance = [](const GridRoom& a, const GridRoom& b) {
@@ -196,6 +195,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     // but every room now has the same shape because it comes from the tmj prefab.
     int edgePadding = std::max(1, _config.roomEdgePadding);
     int placementAttempts = std::max(1, _config.roomPlacementAttempts);
+    // TODO this needs to be a while loop probably??
     for (int attempt = 0; attempt < placementAttempts && (int)generatedRooms.size() < targetRoomCount; ++attempt) {
         int rw = prefabWidth;
         int rh = prefabHeight;
@@ -207,15 +207,19 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
             continue;
         }
 
-        std::uniform_int_distribution<int> xDist(edgePadding, maxX);
-        std::uniform_int_distribution<int> yDist(edgePadding, maxY);
-        GridRoom candidate{xDist(_rng), yDist(_rng), rw, rh, templateIndex};
+//        std::uniform_int_distribution<int> xDist(edgePadding, maxX);
+//        std::uniform_int_distribution<int> yDist(edgePadding, maxY);
+        // FLAG: RANDOM
+        int x = std::max((int)(_rng.getDouble() * maxX), edgePadding);
+        int y = std::max((int)(_rng.getDouble() * maxY), edgePadding);
+
+        GridRoom candidate{x, y, rw, rh, templateIndex};
         if (overlapsExistingRoom(candidate, generatedRooms)) {
             continue;
         }
 
         if (!generatedRooms.empty()) {
-            int nearestDistance = std::numeric_limits<int>::max();
+            int nearestDistance = INT_MAX;
             for (const GridRoom& existing : generatedRooms) {
                 nearestDistance = std::min(nearestDistance, hallwayDistance(candidate, existing));
             }
@@ -223,6 +227,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
                 continue;
             }
         }
+        CULog("generated rooms size %d", generatedRooms.size());
         generatedRooms.push_back(candidate);
     }
 
@@ -260,7 +265,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     };
 
     for (size_t ii = 1; ii < generatedRooms.size(); ++ii) {
-        float bestDist2 = std::numeric_limits<float>::max();
+        float bestDist2 = MAXFLOAT;
         size_t bestIndex = 0;
         for (size_t jj = 0; jj < ii; ++jj) {
             Vec2 centerA((float)(generatedRooms[ii].x + generatedRooms[ii].w / 2),
@@ -338,8 +343,8 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
                 color = templ.color;
             }
             if (!templ.possibleModifiers.empty()) {
-                std::uniform_int_distribution<size_t> modifierDist(0, templ.possibleModifiers.size() - 1);
-                activeModifier = templ.possibleModifiers[modifierDist(_rng)];
+                //std::uniform_int_distribution<size_t> modifierDist(0, templ.possibleModifiers.size() - 1);
+                activeModifier = templ.possibleModifiers[(int) (_rng.getDouble() * (templ.possibleModifiers.size() - 1))];
             }
         }
         _rooms.emplace_back((int)ii, worldRect, color, activeModifier);
@@ -531,7 +536,7 @@ Vec2 Map::pickHallAnchorTile(const GridRoom& room, const GridRoom& otherRoom) co
         int boundaryLocalX = useRightSide ? (room.w - 1) : 0;
         int inwardStepX = useRightSide ? -1 : 1;
         int bestLocalY = room.h / 2;
-        int bestScore = std::numeric_limits<int>::max();
+        int bestScore = INT_MAX;
 
         for (int localY = 1; localY < std::max(1, room.h - 1); ++localY) {
             int firstFloorDepth = -1;
@@ -1197,6 +1202,7 @@ Vec2 Map::tileToWorldCenter(int x, int y) const {
 }
 
 bool Map::overlapsExistingRoom(const GridRoom& candidate, const std::vector<GridRoom>& rooms) const {
+    if (rooms.size()==0) return false;
     // the tiled hallway path needs at least one tile of breathing room so the
     // outside hall tile can exist without landing inside another room.
     int roomBuffer = std::max(1, _config.roomBufferTiles);

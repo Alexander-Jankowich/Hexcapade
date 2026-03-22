@@ -43,6 +43,8 @@ public:
     }
 
     void resetStatus() { _networkCtrl->resetStatus(); }
+    
+    void processInitEvent(const std::shared_ptr<GameInitEvent>& e);
 
     void reset() {
         _networkCtrl->disconnect();

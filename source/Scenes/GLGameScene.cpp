@@ -53,10 +53,10 @@ namespace {
     constexpr int kMaxAdditionalPrototypeItems = 40;
     constexpr float kEnemySpawnDelaySeconds = 15.0f;
 
-    unsigned int chooseNonZeroSeed() {
-        unsigned int seed = (unsigned int)std::random_device{}();
-        return seed == 0 ? 1u : seed;
-    }
+//    unsigned int chooseNonZeroSeed() {
+//        unsigned int seed = (unsigned int)std::random_device{}();
+//        return seed == 0 ? 1u : seed;
+//    }
 
     std::shared_ptr<Item> makePrototypeItem(const std::string& id, int kind,
                                             const std::string& name, int value) {
@@ -309,9 +309,7 @@ void GameScene::reset()
     _mapSceneSize = this->getSize();
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
-
     if (_ishost) {
-        _mapSeed = chooseNonZeroSeed();
         _networkCtrl->startGame();
     }
 }
@@ -677,10 +675,10 @@ void GameScene::fixedUpdate(Uint64 step)
             CULog("COMBO SPELL GOT");
             processComboEvent(cse);
         }
-        else if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e)){
-            CULog("INIT EVENT GOT");
-            processInitEvent(cse);
-        }
+//        else if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e)){
+//            CULog("INIT EVENT GOT");
+//            processInitEvent(cse);
+//        }
     }
 
     _world->update(step / 1000000.0f);
@@ -1207,7 +1205,8 @@ void GameScene::setActive(bool value)
         if (value)
         {
             _input.activate();
-            
+            _mapSeed = _networkCtrl->getRandSeed();
+            CULog("set map seed to : %d", _mapSeed);
             // init network and world once we start the game
             //Make a std::function reference of the linkSceneToObs function in game scene for network controller
             
@@ -1216,10 +1215,12 @@ void GameScene::setActive(bool value)
                 };
             
             _networkCtrl->enablePhysics(_world, linkSceneToObsFunc);
-            rebuildMapForRun();
             _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
             _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
             _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
+            if (_mapSeed != 0) {
+                rebuildMapForRun();
+            }
             
             auto params = _playerFact->serializeParams(_map -> getPlayerSpawn() / PHYSICS_SCALE, _networkCtrl->getPID());
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
@@ -1228,9 +1229,8 @@ void GameScene::setActive(bool value)
             _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
             
-            if (_mapSeed != 0) {
-                rebuildMapForRun();
-            }
+            
+            
             
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
@@ -1298,10 +1298,10 @@ void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
     }
 }
 
-void GameScene::processInitEvent(const std::shared_ptr<GameInitEvent>& e) {
-    _mapSeed = e->getSeed();
-    rebuildMapForRun();
-}
+//void GameScene::processInitEvent(const std::shared_ptr<GameInitEvent>& e) {
+//    _mapSeed = e->getSeed();
+//    rebuildMapForRun();
+//}
 
 /**
  * Handles any modifications necessary before collision resolution
@@ -1380,7 +1380,5 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
 }
 
-void GameScene::initHost() {
-    _mapSeed=chooseNonZeroSeed();
-    _networkCtrl->pushOutEvent(GameInitEvent::allocGameInitEvent(_mapSeed));
-}
+
+

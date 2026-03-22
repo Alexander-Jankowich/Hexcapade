@@ -21,6 +21,7 @@ private:
 #pragma mark Attributes
     unordered_set<string> _players;
     string _currHost;
+    unsigned int _randSeed;
 //    InputCallback _inputCallback;
 //    bool _handlerAttached = false;
 //    void attachReceiptHandler();
@@ -43,9 +44,9 @@ public:
         return f;
     }
     void init(const std::shared_ptr<AssetManager>& a);
-
     // TODO ADJUST THIS
-
+    void setRandSeed(int s) {_randSeed=s;}
+    unsigned int getRandSeed() {return _randSeed;}
     shared_ptr<cugl::netcode::NetcodeConnection> getNetwork() {
         return _network;
     }
@@ -60,8 +61,6 @@ public:
 
     bool hasNetwork() { return _network != nullptr; }
     
-  //  void startGame() override;
-
     string getRoomCode() {
         string room = getRoomID();
         return hex2dec(room);

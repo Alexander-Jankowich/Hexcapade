@@ -5,7 +5,6 @@
 
 #include <cugl/cugl.h>
 #include <memory>
-#include <random>
 #include <vector>
 
 #include "GameplayConfig.h"
@@ -52,12 +51,12 @@ private:
     MapGenerationConfig _config;
     std::shared_ptr<TiledRoomData> _tiledRoomPrefab;
 
-    mutable std::mt19937 _rng;
+    cugl::Random _rng;
 
 public:
     Map();
 
-    bool generate(const cugl::Size& viewSize, const MapGenerationConfig& config, unsigned int seed = 0);
+    bool generate(const cugl::Size& viewSize, const MapGenerationConfig& config, unsigned int seed);
     void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) const;
 
     bool canOccupy(const cugl::Vec2& worldPos, float radius) const;
