@@ -235,6 +235,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _playerFact = PlayerFactory::alloc(_assets);
     _enemyFact = EnemyFactory::alloc(_assets);
     _rectFact = RectFactory::alloc(_assets, _map->_tiledRoomPrefab);
+    CULog("did tiled thing load: %d", _map->_tiledRoomPrefab==nullptr);
 
     // IMPORTANT: SCALING MUST BE UNIFORM
     // This means that we cannot change the aspect ratio of the physics world
@@ -355,7 +356,10 @@ void GameScene::rebuildMapForRun() {
 
     _roomController.setMap(_map);
     _appliedRunRevision = _runRevision;
-    _map->populateObtacles(_networkCtrl, _rectFact, _rectFactId);
+    if(_networkCtrl -> isHost()){
+        _map->populateObtacles(_networkCtrl, _rectFact, _rectFactId);
+    }
+    
     _quota = std::max(1, _runConfig.quota);
     _depositPosition = _map->getPlayerSpawn();
 

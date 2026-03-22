@@ -58,7 +58,7 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, float w, float h, int t_gid);
+    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, float w, float h, unsigned int t_gid);
 
 
 public:
@@ -84,7 +84,7 @@ public:
     /**
      * Helper method for converting normal parameters into byte vectors used for syncing.
      */
-    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, float w, float h, int t_gid);
+    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, float w, float h, unsigned int t_gid);
 
     /**
      * Generate a pair of Obstacle and SceneNode using serialized parameters.

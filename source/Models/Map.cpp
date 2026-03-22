@@ -956,7 +956,7 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
 
                     if (!flipHorizontal && !flipVertical && !flipDiagonal) {
                         //batch->draw(tileTexture, Color4::WHITE, cell);
-                        auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _hallFloorGid);
+                        auto params = rectFact->serializeParams(cugl::Vec2(px / PHYSICS_SCALE, py / PHYSICS_SCALE), _tileSize  / PHYSICS_SCALE, _tileSize  / PHYSICS_SCALE, rawGid);
                         auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
                         return;
                     }
@@ -970,15 +970,15 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
 //                                      tileTransform.m21, tileTransform.m22,
 //                                      0.0f, 0.0f);
 //                    batch->draw(tileTexture, Color4::WHITE, cell, tileOrigin, transform);
-                    auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _hallFloorGid);
+                    auto params = rectFact->serializeParams(cugl::Vec2(px / PHYSICS_SCALE, py / PHYSICS_SCALE), _tileSize  / PHYSICS_SCALE, _tileSize  / PHYSICS_SCALE, rawGid);
                     auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
                 };
 
                 // this order matches the layer order in example_2.tmj.
-                drawLayerGid(_floorRenderGids[index]);
-                drawLayerGid(_visFixRenderGids[index]);
+                //drawLayerGid(_floorRenderGids[index]);
+                //drawLayerGid(_visFixRenderGids[index]);
                 drawLayerGid(_wallRenderGids[index]);
-                drawLayerGid(_decoRenderGids[index]);
+                //drawLayerGid(_decoRenderGids[index]);
 
                 // no debug fill here on purpose. if a tiled layer is missing,
                 // we would rather notice the bad room data than silently hide it.

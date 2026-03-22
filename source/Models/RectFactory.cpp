@@ -12,17 +12,20 @@ using namespace std;
 using namespace cugl;
 
 RectObstacle::RectObstacle(const cugl::Vec2 pos, float w, float h) {
-    init(pos);
+    _dimens = Size(w, h);
+    init(pos, _dimens);
     setAwake(false);
+    setEnabled(false);
+    setSensor(true);
     setBodyType(b2_staticBody);
     _pos = pos;
-    _dimens = Size(w, h);
+    
 }
 
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> RectFactory::createObstacle(Vec2 pos, float w, float h, int t_gid) {
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> RectFactory::createObstacle(Vec2 pos, float w, float h, unsigned int t_gid) {
     auto obs = RectObstacle::alloc(pos, w, h);
 
 
@@ -30,7 +33,8 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> RectFactory:
     obs->setShared(true);
 
     // Create Spell! Hard code values for now, change later
-    cugl::Rect r = cugl::Rect(pos.x, pos.y, w, h);
+    cugl::Rect r(-w * PHYSICS_SCALE/2, -h * PHYSICS_SCALE/2,
+                 w * PHYSICS_SCALE, h * PHYSICS_SCALE);
     auto sprite = std::make_shared<cugl::scene2::PolygonNode>();
     sprite->initWithTexturePoly(_tiledData->getTextureForGid(t_gid), r);
 
@@ -40,7 +44,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> RectFactory:
 /**
  * Helper method for converting normal parameters into byte vectors used for syncing.
  */
-std::shared_ptr<std::vector<std::byte>> RectFactory::serializeParams(Vec2 pos, float w, float h, int gid) {
+std::shared_ptr<std::vector<std::byte>> RectFactory::serializeParams(Vec2 pos, float w, float h, unsigned int gid) {
     _serializer.reset();
     _serializer.writeFloat(pos.x);
     _serializer.writeFloat(pos.y);
@@ -61,6 +65,6 @@ std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode
     Vec2 pos = Vec2(x, y);
     float w = _deserializer.readFloat();
     float h = _deserializer.readFloat();
-    int gid = _deserializer.readUint32();
+    unsigned int gid = _deserializer.readUint32();
     return createObstacle(pos, w, h, gid);
 }
