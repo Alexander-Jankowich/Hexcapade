@@ -1007,9 +1007,9 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::draw() {
                     continue;
                 }
                 
-                float px = (_origin.x + xx * _tileSize) / PHYSICS_SCALE;
-                float py = (_origin.y + yy * _tileSize) / PHYSICS_SCALE;
-                Rect cell(px, py, _tileSize, _tileSize);
+                float px = (_origin.x + xx * _tileSize);
+                float py = (_origin.y + yy * _tileSize);
+                Rect cell(0, 0, _tileSize, _tileSize);
                 size_t index = (size_t)toIndex(xx, yy);
                 std::shared_ptr<Texture> tex = _tiledRoomPrefab->getTextureForGid(_hallFloorGid); //default for now
                 if (tile == TileType::HALL_FLOOR) {
@@ -1018,8 +1018,15 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::draw() {
                 else if (tile==TileType::ROOM_FLOOR) {
                     tex = _tiledRoomPrefab->getTextureForGid(_floorRenderGids[index]);
                 }
+                if (!tex){
+                    CULog("missing");
+                    continue;
+                }
+                    
                 auto sprite = std::make_shared<cugl::scene2::PolygonNode>();
                 sprite->initWithTexturePoly(tex, cell);
+                sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+                sprite->setPosition(Vec2(px, py));
                 world->addChild(sprite);
             }
         }

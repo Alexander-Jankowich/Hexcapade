@@ -356,6 +356,11 @@ void GameScene::rebuildMapForRun() {
 
     _roomController.setMap(_map);
     _appliedRunRevision = _runRevision;
+    auto mapNode = _map->draw();
+    mapNode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    mapNode->setPosition(Vec2::ZERO);
+
+    _worldnode->addChild(mapNode);
     if(_networkCtrl -> isHost()){
         _map->populateObtacles(_networkCtrl, _rectFact, _rectFactId);
     }
@@ -394,11 +399,7 @@ void GameScene::rebuildMapForRun() {
     }
     
     // SERENA ADDED: STUFF FOR MAP TO GENERATE ITS NODE FN
-    auto mapNode = _map->draw();
-    mapNode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    mapNode->setPosition(Vec2::ZERO);
-    CULog("number of children in mapNode: %d", mapNode->getChildren().size());
-    _worldnode->addChild(mapNode);
+    
     
 }
 
