@@ -392,11 +392,15 @@ void GeometryApp::updateHostScene(float dt) {
         _mainmenu.setActive(true);
         _scene = State::MENU;
         break;
+    case NetworkController::Status::HANDSHAKE:
     case NetworkController::Status::READY:
+            CULog("status, sending init: %d", _hostScene.getStatus());
+            _hostScene.sendInitMsg();
+            break;
+    case NetworkController::Status::INGAME:
             _hostScene.setActive(false);
-            _gameplay.setConnection(_hostScene.getNetwork(), true);
+            _gameplay.setConnection(_hostScene.getNetwork(), true); // TODO - move this method into init
             // Transfer connection ownership
-            CULog("im here");
             _hostScene.release();
             _gameplay.setActive(true);
             _scene = State::GAME;
@@ -418,7 +422,11 @@ void GeometryApp::updateClientScene(float dt) {
         _mainmenu.setActive(true);
         _scene = State::MENU;
         break;
-    case NetworkController::Status::READY:
+    case NetworkController::Status::HANDSHAKE :
+//            _gameplay.init(_assets);
+//            _gameplay.setSpriteBatch(_batch);
+            break;
+    case NetworkController::Status::INGAME:
             _clientScene.setActive(false);
             _gameplay.setConnection(_clientScene.getNetwork(), false);
             // Transfer connection ownership

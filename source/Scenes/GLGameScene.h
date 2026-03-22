@@ -29,7 +29,9 @@
 #include "../Models/SpellFactory.h"
 #include "../Models/PlayerFactory.h"
 #include "../Models/EnemyFactory.h"
+#include "../Models/RectFactory.h"
 #include "../Models/ComboEvent.h"
+#include "../Models/GameInitEvent.h"
 
 /**
  * This class is the primary gameplay constroller for the demo.
@@ -62,6 +64,8 @@ protected:
     Uint32 _playerFactId;
     std::shared_ptr<EnemyFactory> _enemyFact;
     Uint32 _enemyFactId;
+    std::shared_ptr<RectFactory> _rectFact;
+    Uint32 _rectFactId;
 
     std::shared_ptr<PlayerObstacle> _player;
     
@@ -305,9 +309,12 @@ public:
     void render() override;
 
     void setActive(bool value) override;
-
+    
+    void initHost();
 private:
     void processComboEvent(const std::shared_ptr<CastSpellEvent>& e);
+    void processInitEvent(const std::shared_ptr<GameInitEvent>& e);
+
     // this maps local HUD input into explicit pickup/drop/deposit requests
     void handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex);
     // this maps the last panel tap to an inventory row index for the upcoming item flow

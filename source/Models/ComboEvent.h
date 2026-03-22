@@ -19,12 +19,13 @@ protected:
     cugl::netcode::NetcodeSerializer _serializer;
     cugl::netcode::NetcodeDeserializer _deserializer;
     
-    std::string _p1ID;
-    std::string _p2ID;
-    SpellType _combo;
+
     
     
 public:
+    std::string _p1ID;
+    std::string _p2ID;
+    SpellType _combo;
     /**
      * This method is used by the NetEventController to create a new event of
      * using a reference of the same type.

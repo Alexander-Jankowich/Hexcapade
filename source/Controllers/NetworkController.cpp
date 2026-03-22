@@ -15,6 +15,7 @@ using namespace std;
 #pragma mark PrivateClientHelpers
 
 
+
 std::string NetworkController::dec2hex(const std::string& dec) {
     Uint32 value = strtool::stou32(dec);
     if (value >= 65536) value = 0;
@@ -39,6 +40,12 @@ std::string NetworkController::hex2dec(const std::string& hex) {
 
 
 #pragma mark PublicMethods
+
+void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
+    attachEventType<GameInitEvent>();
+    attachEventType<CastSpellEvent>();
+    cugl::physics2::distrib::NetEventController::init(a);
+}
 
 bool NetworkController::connectClient(string roomId) {
     return connectAsClient(dec2hex(roomId)); // this will become custom translate fn later

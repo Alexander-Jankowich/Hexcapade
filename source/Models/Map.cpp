@@ -91,10 +91,18 @@ _playerSpawn(Vec2::ZERO),
 _config(),
 _hallFloorGid(0),
 _tiledRoomPrefab(nullptr) {
-    _rng.seed(std::random_device{}());
+}
+
+// FLAG: Serena added
+void Map::init() {
+    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("example_2.tmj");
+    if (!_tiledRoomPrefab) {
+        CULog("tiled room load failed: tiles/example_2.tmj :(");
+    }
 }
 
 bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsigned int seed) {
+    CULog("seed: %d", seed);
     // this now builds the map from one repeated tiled room (ex) instead of carving
     // each room shape procedurally. we still keep the current map runtime,
     // hallway logic, collision helpers, and room controller on top of it just in case
@@ -104,27 +112,21 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
         _config.roomPalette.push_back(Color4(118, 146, 108, 255));
     }
 
-    if (seed == 0) {
-        seed = std::random_device{}();
-    }
-    _rng.seed(seed);
+    CUAssertLog(seed!=0, "map generation seed is zero");
+    _rng.initWithSeed(seed);
 
     // this is the one room prefab we repeat for the first tiled-backed map;
     // later we can swap this for a pool of tmj room files without changing
     // the rest of the map/runtime architecture!
-    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("example_2.tmj");
-    if (!_tiledRoomPrefab) {
-        CULog("tiled room load failed: tiles/example_2.tmj :(");
-        return false;
-    }
 
     // we use the tiled tile size as the real map tile size so the rendered art,
     // collision grid, and world positions stay aligned (ask deisgners)
     _tileSize = std::max(8.0f, (float)_tiledRoomPrefab->getTileWidth());
-    int clampedMinRooms = std::max(1, _config.roomCountMin);
-    int clampedMaxRooms = std::max(clampedMinRooms, _config.roomCountMax);
-    std::uniform_int_distribution<int> roomCountDist(clampedMinRooms, clampedMaxRooms);
-    int targetRoomCount = roomCountDist(_rng);
+    //int clampedMinRooms = std::max(1, _config.roomCountMin);
+//    int clampedMaxRooms = std::max(clampedMinRooms, _config.roomCountMax);
+//    std::uniform_int_distribution<int> roomCountDist(clampedMinRooms, clampedMaxRooms);
+    // FLAG: RANDOM INT
+    int targetRoomCount = std::max(_config.roomCountMin, (int) (_rng.getDouble() * _config.roomCountMax));
 
     bool useTemplates = !_config.roomTemplates.empty();
     int prefabWidth = std::max(1, _tiledRoomPrefab->getWidth());
@@ -152,7 +154,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     _hallFloorGid = _tiledRoomPrefab->getPrimaryFloorGid();
 
     std::vector<GridRoom> generatedRooms;
-    generatedRooms.reserve((size_t)targetRoomCount);
+    //generatedRooms.reserve((size_t)targetRoomCount);
     int maxHallwayLength = std::max(1, _config.maxHallwayLengthTiles);
 
     auto hallwayDistance = [](const GridRoom& a, const GridRoom& b) {
@@ -196,6 +198,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     // but every room now has the same shape because it comes from the tmj prefab.
     int edgePadding = std::max(1, _config.roomEdgePadding);
     int placementAttempts = std::max(1, _config.roomPlacementAttempts);
+    // TODO this needs to be a while loop probably??
     for (int attempt = 0; attempt < placementAttempts && (int)generatedRooms.size() < targetRoomCount; ++attempt) {
         int rw = prefabWidth;
         int rh = prefabHeight;
@@ -207,15 +210,19 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
             continue;
         }
 
-        std::uniform_int_distribution<int> xDist(edgePadding, maxX);
-        std::uniform_int_distribution<int> yDist(edgePadding, maxY);
-        GridRoom candidate{xDist(_rng), yDist(_rng), rw, rh, templateIndex};
+//        std::uniform_int_distribution<int> xDist(edgePadding, maxX);
+//        std::uniform_int_distribution<int> yDist(edgePadding, maxY);
+        // FLAG: RANDOM
+        int x = std::max((int)(_rng.getDouble() * maxX), edgePadding);
+        int y = std::max((int)(_rng.getDouble() * maxY), edgePadding);
+
+        GridRoom candidate{x, y, rw, rh, templateIndex};
         if (overlapsExistingRoom(candidate, generatedRooms)) {
             continue;
         }
 
         if (!generatedRooms.empty()) {
-            int nearestDistance = std::numeric_limits<int>::max();
+            int nearestDistance = INT_MAX;
             for (const GridRoom& existing : generatedRooms) {
                 nearestDistance = std::min(nearestDistance, hallwayDistance(candidate, existing));
             }
@@ -223,6 +230,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
                 continue;
             }
         }
+        CULog("generated rooms size %d", generatedRooms.size());
         generatedRooms.push_back(candidate);
     }
 
@@ -260,7 +268,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     };
 
     for (size_t ii = 1; ii < generatedRooms.size(); ++ii) {
-        float bestDist2 = std::numeric_limits<float>::max();
+        float bestDist2 = MAXFLOAT;
         size_t bestIndex = 0;
         for (size_t jj = 0; jj < ii; ++jj) {
             Vec2 centerA((float)(generatedRooms[ii].x + generatedRooms[ii].w / 2),
@@ -338,8 +346,8 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
                 color = templ.color;
             }
             if (!templ.possibleModifiers.empty()) {
-                std::uniform_int_distribution<size_t> modifierDist(0, templ.possibleModifiers.size() - 1);
-                activeModifier = templ.possibleModifiers[modifierDist(_rng)];
+                //std::uniform_int_distribution<size_t> modifierDist(0, templ.possibleModifiers.size() - 1);
+                activeModifier = templ.possibleModifiers[(int) (_rng.getDouble() * (templ.possibleModifiers.size() - 1))];
             }
         }
         _rooms.emplace_back((int)ii, worldRect, color, activeModifier);
@@ -531,7 +539,7 @@ Vec2 Map::pickHallAnchorTile(const GridRoom& room, const GridRoom& otherRoom) co
         int boundaryLocalX = useRightSide ? (room.w - 1) : 0;
         int inwardStepX = useRightSide ? -1 : 1;
         int bestLocalY = room.h / 2;
-        int bestScore = std::numeric_limits<int>::max();
+        int bestScore = INT_MAX;
 
         for (int localY = 1; localY < std::max(1, room.h - 1); ++localY) {
             int firstFloorDepth = -1;
@@ -888,21 +896,21 @@ void Map::pruneHallArtifacts() {
     }
 }
 
-void Map::draw(const std::shared_ptr<SpriteBatch>& batch) const {
-    if (!batch || _tiles.empty()) {
-        return;
-    }
+void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shared_ptr<RectFactory> rectFact, Uint32 rectFactId) {
+//    if (!batch || _tiles.empty()) {
+//        return;
+//    }
 
     // map rendering changes batch state a lot, so we save/restore the basics
     // here so later world draws like players and enemies do not inherit the
     // backdrop tint by accident.
-    Color4 originalColor = batch->getColor();
-    batch->setTexture(nullptr);
-
-    Rect backdrop(_worldBounds.origin.x, _worldBounds.origin.y,
-                  _worldBounds.size.width, _worldBounds.size.height);
-    batch->setColor(_config.backdropColor);
-    batch->fill(backdrop);
+//    Color4 originalColor = batch->getColor();
+//    batch->setTexture(nullptr);
+//
+//    Rect backdrop(_worldBounds.origin.x, _worldBounds.origin.y,
+//                  _worldBounds.size.width, _worldBounds.size.height);
+//    batch->setColor(_config.backdropColor);
+//    batch->fill(backdrop);
 
     if (_tiledRoomPrefab && _tiledRoomPrefab->getTileset().texture) {
         // this is the new tiled-backed draw path. repeated room tiles come from
@@ -914,49 +922,56 @@ void Map::draw(const std::shared_ptr<SpriteBatch>& batch) const {
                     continue;
                 }
 
-                float px = _origin.x + xx * _tileSize;
-                float py = _origin.y + yy * _tileSize;
+                float px = (_origin.x + xx * _tileSize) / PHYSICS_SCALE;
+                float py = (_origin.y + yy * _tileSize) / PHYSICS_SCALE;
                 Rect cell(px, py, _tileSize, _tileSize);
                 size_t index = (size_t)toIndex(xx, yy);
 
                 if (tile == TileType::HALL_FLOOR) {
                     // halls should still read as walkable tiled space, not a
                     // debug block, so we borrow a floor tile from the prefab.
-                    std::shared_ptr<Texture> hallTexture = _tiledRoomPrefab->getTextureForGid(_hallFloorGid);
-                    if (hallTexture) {
-                        batch->draw(hallTexture, Color4::WHITE, cell);
-                    } else {
-                        batch->setTexture(nullptr);
-                        batch->setColor(_config.hallFloorColor);
-                        batch->fill(cell);
-                    }
+                    // FLAG: serena did, unsure if we need all this error checking...
+//                    std::shared_ptr<Texture> hallTexture = _tiledRoomPrefab->getTextureForGid(_hallFloorGid);
+//                    if (hallTexture) {
+                        auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _hallFloorGid);
+                        auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
+                        //batch->draw(hallTexture, Color4::WHITE, cell);
+//                    } else {
+//                        batch->setTexture(nullptr);
+//                        batch->setColor(_config.hallFloorColor);
+//                        batch->fill(cell);
+//                    }
                     continue;
                 }
 
                 auto drawLayerGid = [&](unsigned int rawGid) {
-                    std::shared_ptr<Texture> tileTexture = _tiledRoomPrefab->getTextureForGid(rawGid);
-                    if (!tileTexture) {
-                        return;
-                    }
+//                    std::shared_ptr<Texture> tileTexture = _tiledRoomPrefab->getTextureForGid(rawGid);
+//                    if (!tileTexture) {
+//                        return;
+//                    }
 
                     bool flipHorizontal = hasTiledHorizontalFlip(rawGid);
                     bool flipVertical = hasTiledVerticalFlip(rawGid);
                     bool flipDiagonal = hasTiledDiagonalFlip(rawGid);
 
                     if (!flipHorizontal && !flipVertical && !flipDiagonal) {
-                        batch->draw(tileTexture, Color4::WHITE, cell);
+                        //batch->draw(tileTexture, Color4::WHITE, cell);
+                        auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _hallFloorGid);
+                        auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
                         return;
                     }
 
                     // this keeps authored tiled flips working without rotating
                     // the whole room prefab in code.
-                    Vec2 tileOrigin(_tileSize * 0.5f, _tileSize * 0.5f);
-                    TileTransform2D tileTransform = makeTileTransform(flipHorizontal, flipVertical,
-                                                                     flipDiagonal);
-                    Affine2 transform(tileTransform.m11, tileTransform.m12,
-                                      tileTransform.m21, tileTransform.m22,
-                                      0.0f, 0.0f);
-                    batch->draw(tileTexture, Color4::WHITE, cell, tileOrigin, transform);
+//                    Vec2 tileOrigin(_tileSize * 0.5f, _tileSize * 0.5f);
+//                    TileTransform2D tileTransform = makeTileTransform(flipHorizontal, flipVertical,
+//                                                                     flipDiagonal);
+//                    Affine2 transform(tileTransform.m11, tileTransform.m12,
+//                                      tileTransform.m21, tileTransform.m22,
+//                                      0.0f, 0.0f);
+//                    batch->draw(tileTexture, Color4::WHITE, cell, tileOrigin, transform);
+                    auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _hallFloorGid);
+                    auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
                 };
 
                 // this order matches the layer order in example_2.tmj.
@@ -969,11 +984,9 @@ void Map::draw(const std::shared_ptr<SpriteBatch>& batch) const {
                 // we would rather notice the bad room data than silently hide it.
             }
         }
-        batch->setColor(originalColor);
+        //batch->setColor(originalColor);
         return;
     }
-
-    batch->setColor(originalColor);
 }
 
 bool Map::canOccupy(const Vec2& worldPos, float radius) const {
@@ -1197,6 +1210,7 @@ Vec2 Map::tileToWorldCenter(int x, int y) const {
 }
 
 bool Map::overlapsExistingRoom(const GridRoom& candidate, const std::vector<GridRoom>& rooms) const {
+    if (rooms.size()==0) return false;
     // the tiled hallway path needs at least one tile of breathing room so the
     // outside hall tile can exist without landing inside another room.
     int roomBuffer = std::max(1, _config.roomBufferTiles);
