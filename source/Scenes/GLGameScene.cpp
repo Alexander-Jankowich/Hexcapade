@@ -1348,7 +1348,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         return;
     }
     if (player && enemy) {
-        //CULog("enemy and player colliison");
+        CULog("enemy and player colliison");
         // TODO make this actually work?
         player->getBody()->ApplyLinearImpulseToCenter(b2Vec2(20 * enemy->getLinearVelocity().x, 20 * enemy->getLinearVelocity().y), true);
         enemy->getBody()->ApplyLinearImpulseToCenter(b2Vec2(-20 * enemy->getLinearVelocity().x, -20 * enemy->getLinearVelocity().y), true);
