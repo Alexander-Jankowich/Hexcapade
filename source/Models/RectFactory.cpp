@@ -33,8 +33,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> RectFactory:
     obs->setShared(true);
 
     // Create Spell! Hard code values for now, change later
-    cugl::Rect r(-w * PHYSICS_SCALE/2, -h * PHYSICS_SCALE/2,
-                 w * PHYSICS_SCALE, h * PHYSICS_SCALE);
+    cugl::Rect r = cugl::Rect(0, 0, w, h);
     auto sprite = std::make_shared<cugl::scene2::PolygonNode>();
     sprite->initWithTexturePoly(_tiledData->getTextureForGid(t_gid), r);
 

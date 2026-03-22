@@ -1262,7 +1262,7 @@ void GameScene::addInitObstacle(const std::shared_ptr<physics2::Obstacle>& obj,
 void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     const std::shared_ptr<scene2::SceneNode>& node) {
 
-    node->setPosition(obj->getPosition() * 1);
+    node->setPosition(obj->getPosition() * PHYSICS_SCALE);
     _worldnode->addChild(node);
 
     // Dynamic objects need constant updating

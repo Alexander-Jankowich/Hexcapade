@@ -956,7 +956,7 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
 
                     if (!flipHorizontal && !flipVertical && !flipDiagonal) {
                         //batch->draw(tileTexture, Color4::WHITE, cell);
-                        auto params = rectFact->serializeParams(cugl::Vec2(px / PHYSICS_SCALE, py / PHYSICS_SCALE), _tileSize  / PHYSICS_SCALE, _tileSize  / PHYSICS_SCALE, rawGid);
+                        auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, rawGid);
                         auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
                         return;
                     }
@@ -970,7 +970,7 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
 //                                      tileTransform.m21, tileTransform.m22,
 //                                      0.0f, 0.0f);
 //                    batch->draw(tileTexture, Color4::WHITE, cell, tileOrigin, transform);
-                    auto params = rectFact->serializeParams(cugl::Vec2(px / PHYSICS_SCALE, py / PHYSICS_SCALE), _tileSize  / PHYSICS_SCALE, _tileSize  / PHYSICS_SCALE, rawGid);
+                    auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize  , _tileSize , rawGid);
                     auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
                 };
 
