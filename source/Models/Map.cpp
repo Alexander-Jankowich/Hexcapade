@@ -268,7 +268,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     };
 
     for (size_t ii = 1; ii < generatedRooms.size(); ++ii) {
-        float bestDist2 = MAXFLOAT;
+        float bestDist2 = std::numeric_limits<float>::max();
         size_t bestIndex = 0;
         for (size_t jj = 0; jj < ii; ++jj) {
             Vec2 centerA((float)(generatedRooms[ii].x + generatedRooms[ii].w / 2),
