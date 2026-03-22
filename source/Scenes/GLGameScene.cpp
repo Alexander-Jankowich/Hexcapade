@@ -168,6 +168,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     // Get constants
     _constants = assets->get<JsonValue>("constants");
     _gestures = assets->get<JsonValue>("gestures");
+    _random = cugl::Random::alloc();
 
     // Start up the input handler
     // this keeps main's json-driven input setup while preserving the
@@ -383,7 +384,10 @@ void GameScene::rebuildMapForRun() {
 
     //updateItemPickupState();
     //updateDepositState();
-    updateCameraFollow();
+    if(_player){
+        updateCameraFollow();
+    }
+    
 }
 
 void GameScene::updateCameraFollow() {
@@ -589,8 +593,19 @@ void GameScene::preUpdate(float dt)
         if (lastEnemySpawn > 8) {
             lastEnemySpawn = 0;
             //_enemy->spawnEnemy(getSize() / 2, 4);
-            auto params = _enemyFact->serializeParams((getSize() / 2) / PHYSICS_SCALE, Vec2::ZERO, 4);
-            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
+            
+            
+            auto spawns = _map -> getEnemySpawnPoints();
+            std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
+            if (!spawns.empty()) {
+                std::uint64_t index = rand % spawns.size();
+                Vec2 pos = spawns[index];
+
+                auto params = _enemyFact->serializeParams(pos / PHYSICS_SCALE, Vec2::ZERO, 4);
+                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
+            }
+            
+            
         }
 
         // Change to be all player positions
@@ -1201,12 +1216,12 @@ void GameScene::setActive(bool value)
                 };
             
             _networkCtrl->enablePhysics(_world, linkSceneToObsFunc);
-
+            rebuildMapForRun();
             _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
             _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
             _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
             
-            auto params = _playerFact->serializeParams(_map -> getPlayerSpawn(), _networkCtrl->getPID());
+            auto params = _playerFact->serializeParams(_map -> getPlayerSpawn() / PHYSICS_SCALE, _networkCtrl->getPID());
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
 
             // set _player to the correct object
