@@ -29,6 +29,17 @@
 #include "../Models/Inventory.h"
 #include "../Models/SpellBook.h"
 
+// Lock the screen size to fixed height regardless of aspect ratio
+#define SCENE_HEIGHT 720
+
+/** The ratio between the physics world and the screen. */
+#define PHYSICS_SCALE 100
+
+#define COMBO_RADIUS 25
+
+#define PI 3.14159265358979323
+
+
 using namespace cugl;
 using namespace std;
 using namespace cugl::graphics;
@@ -113,15 +124,6 @@ namespace {
 #pragma mark -
 #pragma mark Level Layout
 
-// Lock the screen size to fixed height regardless of aspect ratio
-#define SCENE_HEIGHT 720
-
-/** The ratio between the physics world and the screen. */
-#define PHYSICS_SCALE 100
-
-#define COMBO_RADIUS 25
-
-#define PI 3.14159265358979323
 
 /**
  * Processes the start of a collision
@@ -701,22 +703,25 @@ void GameScene::postUpdate(float remain)
  */
 void GameScene::render()
 {
+    
+
+    _batch->setPerspective(getCamera()->getCombined());
+    _batch->begin();
     if (_map) {
         _map->draw(_batch);
     }
-    Scene2::render();
     
-    _batch->setPerspective(getCamera()->getCombined());
-    _batch->begin();
 
     Color4 original = _batch->getColor();
 
-    
+    Scene2::render();
+    _batch->begin();
     drawDepositZone();
     drawItems();
     renderHUD();
     _inputDisplay->draw(_batch);
     _batch->setColor(original);
+    
     
     _batch->end();
 }
@@ -847,7 +852,7 @@ void GameScene::renderHUD()
                 _batch->drawText(rowLabel, rowTrans);
             }
         }
-#endif
+#endif // CU_TOUCH_SCREEN
     }
 }
 

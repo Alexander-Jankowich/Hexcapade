@@ -11,6 +11,9 @@
 #include <unordered_set>
 #include <utility>
 
+#define PHYSICS_SCALE 100
+
+
 using namespace cugl;
 using namespace cugl::graphics;
 
@@ -360,7 +363,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
         if (_tiledRoomPrefab->hasPlayerSpawn()) {
             _playerSpawn = roomLocalToWorld(startRoom, _tiledRoomPrefab->getPlayerSpawn().localPosition);
         } else {
-            _playerSpawn = tileToWorldCenter(startRoom.x + startRoom.w / 2, startRoom.y + startRoom.h / 2);
+            _playerSpawn = tileToWorldCenter((startRoom.x + startRoom.w / 2) * PHYSICS_SCALE, (startRoom.y + startRoom.h / 2) * PHYSICS_SCALE);
         }
         _playerSpawn = findNearestWalkableWorld(_playerSpawn);
     }
@@ -1189,8 +1192,8 @@ bool Map::worldToTile(const Vec2& worldPos, int& outX, int& outY) const {
 }
 
 Vec2 Map::tileToWorldCenter(int x, int y) const {
-    return Vec2(_origin.x + (x + 0.5f) * _tileSize,
-                _origin.y + (y + 0.5f) * _tileSize);
+    return Vec2((_origin.x + (x + 0.5f) * _tileSize) * PHYSICS_SCALE,
+                (_origin.y + (y + 0.5f) * _tileSize) * PHYSICS_SCALE);
 }
 
 bool Map::overlapsExistingRoom(const GridRoom& candidate, const std::vector<GridRoom>& rooms) const {
