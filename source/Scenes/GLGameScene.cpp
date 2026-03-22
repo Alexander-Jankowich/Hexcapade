@@ -393,6 +393,13 @@ void GameScene::rebuildMapForRun() {
         updateCameraFollow();
     }
     
+    // SERENA ADDED: STUFF FOR MAP TO GENERATE ITS NODE FN
+    auto mapNode = _map->draw();
+    mapNode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    mapNode->setPosition(Vec2::ZERO);
+    CULog("number of children in mapNode: %d", mapNode->getChildren().size());
+    _worldnode->addChild(mapNode);
+    
 }
 
 void GameScene::updateCameraFollow() {
@@ -728,7 +735,7 @@ void GameScene::postUpdate(float remain)
 void GameScene::render()
 {
     
-
+    Scene2::render();
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
 //    if (_map) {
@@ -738,7 +745,7 @@ void GameScene::render()
     drawItems();
     renderHUD();
     _inputDisplay->draw(_batch);
-    Scene2::render();
+    _batch->end();
     
     
 

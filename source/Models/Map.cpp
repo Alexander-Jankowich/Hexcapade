@@ -990,6 +990,43 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
     }
 }
 
+std::shared_ptr<cugl::scene2::SceneNode> Map::draw() {
+    auto world = scene2::SceneNode::alloc();
+    //    Rect backdrop(_worldBounds.origin.x, _worldBounds.origin.y,
+    //                  _worldBounds.size.width, _worldBounds.size.height);
+    //    batch->setColor(_config.backdropColor);
+    //    batch->fill(backdrop);
+
+    if (_tiledRoomPrefab && _tiledRoomPrefab->getTileset().texture) {
+        // this is the new tiled-backed draw path. repeated room tiles come from
+        // the real tileset art, while hallways still use a borrowed floor tile.
+        for (int yy = 0; yy < _gridHeight; ++yy) {
+            for (int xx = 0; xx < _gridWidth; ++xx) {
+                TileType tile = getTile(xx, yy);
+                if (tile == TileType::EMPTY) {
+                    continue;
+                }
+                
+                float px = (_origin.x + xx * _tileSize) / PHYSICS_SCALE;
+                float py = (_origin.y + yy * _tileSize) / PHYSICS_SCALE;
+                Rect cell(px, py, _tileSize, _tileSize);
+                size_t index = (size_t)toIndex(xx, yy);
+                std::shared_ptr<Texture> tex = _tiledRoomPrefab->getTextureForGid(_hallFloorGid); //default for now
+                if (tile == TileType::HALL_FLOOR) {
+                    tex = _tiledRoomPrefab->getTextureForGid(_hallFloorGid);
+                }
+                else if (tile==TileType::ROOM_FLOOR) {
+                    tex = _tiledRoomPrefab->getTextureForGid(_floorRenderGids[index]);
+                }
+                auto sprite = std::make_shared<cugl::scene2::PolygonNode>();
+                sprite->initWithTexturePoly(tex, cell);
+                world->addChild(sprite);
+            }
+        }
+    }
+    return world;
+}
+
 bool Map::canOccupy(const Vec2& worldPos, float radius) const {
     if (_tiles.empty()) {
         return false;
