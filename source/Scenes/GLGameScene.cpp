@@ -1228,8 +1228,9 @@ void GameScene::setActive(bool value)
             _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
             
-            
-            rebuildMapForRun();
+            if (_mapSeed != 0) {
+                rebuildMapForRun();
+            }
             
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
