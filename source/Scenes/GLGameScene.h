@@ -29,6 +29,7 @@
 #include "../Models/SpellFactory.h"
 #include "../Models/PlayerFactory.h"
 #include "../Models/EnemyFactory.h"
+#include "../Models/RectFactory.h"
 #include "../Models/ComboEvent.h"
 #include "../Models/GameInitEvent.h"
 
@@ -63,6 +64,8 @@ protected:
     Uint32 _playerFactId;
     std::shared_ptr<EnemyFactory> _enemyFact;
     Uint32 _enemyFactId;
+    std::shared_ptr<RectFactory> _rectFact;
+    Uint32 _rectFactId;
 
     std::shared_ptr<PlayerObstacle> _player;
     

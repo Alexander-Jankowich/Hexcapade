@@ -93,6 +93,14 @@ _hallFloorGid(0),
 _tiledRoomPrefab(nullptr) {
 }
 
+// FLAG: Serena added
+void Map::init() {
+    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("example_2.tmj");
+    if (!_tiledRoomPrefab) {
+        CULog("tiled room load failed: tiles/example_2.tmj :(");
+    }
+}
+
 bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsigned int seed) {
     CULog("seed: %d", seed);
     // this now builds the map from one repeated tiled room (ex) instead of carving
@@ -110,11 +118,6 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     // this is the one room prefab we repeat for the first tiled-backed map;
     // later we can swap this for a pool of tmj room files without changing
     // the rest of the map/runtime architecture!
-    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("example_2.tmj");
-    if (!_tiledRoomPrefab) {
-        CULog("tiled room load failed: tiles/example_2.tmj :(");
-        return false;
-    }
 
     // we use the tiled tile size as the real map tile size so the rendered art,
     // collision grid, and world positions stay aligned (ask deisgners)
@@ -893,21 +896,21 @@ void Map::pruneHallArtifacts() {
     }
 }
 
-void Map::draw(const std::shared_ptr<SpriteBatch>& batch) const {
-    if (!batch || _tiles.empty()) {
-        return;
-    }
+void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shared_ptr<RectFactory> rectFact, Uint32 rectFactId) {
+//    if (!batch || _tiles.empty()) {
+//        return;
+//    }
 
     // map rendering changes batch state a lot, so we save/restore the basics
     // here so later world draws like players and enemies do not inherit the
     // backdrop tint by accident.
-    Color4 originalColor = batch->getColor();
-    batch->setTexture(nullptr);
-
-    Rect backdrop(_worldBounds.origin.x, _worldBounds.origin.y,
-                  _worldBounds.size.width, _worldBounds.size.height);
-    batch->setColor(_config.backdropColor);
-    batch->fill(backdrop);
+//    Color4 originalColor = batch->getColor();
+//    batch->setTexture(nullptr);
+//
+//    Rect backdrop(_worldBounds.origin.x, _worldBounds.origin.y,
+//                  _worldBounds.size.width, _worldBounds.size.height);
+//    batch->setColor(_config.backdropColor);
+//    batch->fill(backdrop);
 
     if (_tiledRoomPrefab && _tiledRoomPrefab->getTileset().texture) {
         // this is the new tiled-backed draw path. repeated room tiles come from
@@ -919,49 +922,56 @@ void Map::draw(const std::shared_ptr<SpriteBatch>& batch) const {
                     continue;
                 }
 
-                float px = _origin.x + xx * _tileSize;
-                float py = _origin.y + yy * _tileSize;
+                float px = (_origin.x + xx * _tileSize) / PHYSICS_SCALE;
+                float py = (_origin.y + yy * _tileSize) / PHYSICS_SCALE;
                 Rect cell(px, py, _tileSize, _tileSize);
                 size_t index = (size_t)toIndex(xx, yy);
 
                 if (tile == TileType::HALL_FLOOR) {
                     // halls should still read as walkable tiled space, not a
                     // debug block, so we borrow a floor tile from the prefab.
-                    std::shared_ptr<Texture> hallTexture = _tiledRoomPrefab->getTextureForGid(_hallFloorGid);
-                    if (hallTexture) {
-                        batch->draw(hallTexture, Color4::WHITE, cell);
-                    } else {
-                        batch->setTexture(nullptr);
-                        batch->setColor(_config.hallFloorColor);
-                        batch->fill(cell);
-                    }
+                    // FLAG: serena did, unsure if we need all this error checking...
+//                    std::shared_ptr<Texture> hallTexture = _tiledRoomPrefab->getTextureForGid(_hallFloorGid);
+//                    if (hallTexture) {
+                        auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _hallFloorGid);
+                        auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
+                        //batch->draw(hallTexture, Color4::WHITE, cell);
+//                    } else {
+//                        batch->setTexture(nullptr);
+//                        batch->setColor(_config.hallFloorColor);
+//                        batch->fill(cell);
+//                    }
                     continue;
                 }
 
                 auto drawLayerGid = [&](unsigned int rawGid) {
-                    std::shared_ptr<Texture> tileTexture = _tiledRoomPrefab->getTextureForGid(rawGid);
-                    if (!tileTexture) {
-                        return;
-                    }
+//                    std::shared_ptr<Texture> tileTexture = _tiledRoomPrefab->getTextureForGid(rawGid);
+//                    if (!tileTexture) {
+//                        return;
+//                    }
 
                     bool flipHorizontal = hasTiledHorizontalFlip(rawGid);
                     bool flipVertical = hasTiledVerticalFlip(rawGid);
                     bool flipDiagonal = hasTiledDiagonalFlip(rawGid);
 
                     if (!flipHorizontal && !flipVertical && !flipDiagonal) {
-                        batch->draw(tileTexture, Color4::WHITE, cell);
+                        //batch->draw(tileTexture, Color4::WHITE, cell);
+                        auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _hallFloorGid);
+                        auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
                         return;
                     }
 
                     // this keeps authored tiled flips working without rotating
                     // the whole room prefab in code.
-                    Vec2 tileOrigin(_tileSize * 0.5f, _tileSize * 0.5f);
-                    TileTransform2D tileTransform = makeTileTransform(flipHorizontal, flipVertical,
-                                                                     flipDiagonal);
-                    Affine2 transform(tileTransform.m11, tileTransform.m12,
-                                      tileTransform.m21, tileTransform.m22,
-                                      0.0f, 0.0f);
-                    batch->draw(tileTexture, Color4::WHITE, cell, tileOrigin, transform);
+//                    Vec2 tileOrigin(_tileSize * 0.5f, _tileSize * 0.5f);
+//                    TileTransform2D tileTransform = makeTileTransform(flipHorizontal, flipVertical,
+//                                                                     flipDiagonal);
+//                    Affine2 transform(tileTransform.m11, tileTransform.m12,
+//                                      tileTransform.m21, tileTransform.m22,
+//                                      0.0f, 0.0f);
+//                    batch->draw(tileTexture, Color4::WHITE, cell, tileOrigin, transform);
+                    auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _hallFloorGid);
+                    auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
                 };
 
                 // this order matches the layer order in example_2.tmj.
@@ -974,11 +984,9 @@ void Map::draw(const std::shared_ptr<SpriteBatch>& batch) const {
                 // we would rather notice the bad room data than silently hide it.
             }
         }
-        batch->setColor(originalColor);
+        //batch->setColor(originalColor);
         return;
     }
-
-    batch->setColor(originalColor);
 }
 
 bool Map::canOccupy(const Vec2& worldPos, float radius) const {

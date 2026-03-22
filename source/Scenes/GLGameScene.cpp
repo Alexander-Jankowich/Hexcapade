@@ -180,6 +180,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     lastEnemySpawn = 0;
 
     _map = std::make_shared<Map>();
+    _map->init(); // initialize with tiled data
     _roomController.setMap(_map);
     _runRevision = 0;
     _appliedRunRevision = -1;
@@ -233,6 +234,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _spellFact = SpellFactory::alloc(_assets);
     _playerFact = PlayerFactory::alloc(_assets);
     _enemyFact = EnemyFactory::alloc(_assets);
+    _rectFact = RectFactory::alloc(_assets, _map->_tiledRoomPrefab);
 
     // IMPORTANT: SCALING MUST BE UNIFORM
     // This means that we cannot change the aspect ratio of the physics world
@@ -353,6 +355,7 @@ void GameScene::rebuildMapForRun() {
 
     _roomController.setMap(_map);
     _appliedRunRevision = _runRevision;
+    _map->populateObtacles(_networkCtrl, _rectFact, _rectFactId);
     _quota = std::max(1, _runConfig.quota);
     _depositPosition = _map->getPlayerSpawn();
 
@@ -724,9 +727,9 @@ void GameScene::render()
 
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
-    if (_map) {
-        _map->draw(_batch);
-    }
+//    if (_map) {
+//        _map->draw(_batch);
+//    }
     drawDepositZone();
     drawItems();
     
@@ -1218,6 +1221,8 @@ void GameScene::setActive(bool value)
             _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
             _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
             _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
+            _rectFactId = _networkCtrl->getPhysController()->attachFactory(_rectFact);
+            
             if (_mapSeed != 0) {
                 rebuildMapForRun();
             }
@@ -1228,9 +1233,6 @@ void GameScene::setActive(bool value)
             // set _player to the correct object
             _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
-            
-            
-            
             
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());

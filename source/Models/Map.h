@@ -10,6 +10,8 @@
 #include "GameplayConfig.h"
 #include "Room.h"
 #include "TiledRoomLoader.h"
+#include "../Controllers/NetworkController.h"
+#include "../Models/RectFactory.h"
 
 class Map {
 public:
@@ -49,15 +51,18 @@ private:
     std::vector<cugl::Vec2> _enemySpawnPoints;
     cugl::Vec2 _playerSpawn;
     MapGenerationConfig _config;
-    std::shared_ptr<TiledRoomData> _tiledRoomPrefab;
 
     cugl::Random _rng;
 
 public:
     Map();
+    std::shared_ptr<TiledRoomData> _tiledRoomPrefab;
+    
+    void init();
+
 
     bool generate(const cugl::Size& viewSize, const MapGenerationConfig& config, unsigned int seed);
-    void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) const;
+    void populateObtacles(const std::shared_ptr<NetworkController> network, std::shared_ptr<RectFactory> rectFact,  Uint32 rectFactId);
 
     bool canOccupy(const cugl::Vec2& worldPos, float radius) const;
     cugl::Vec2 resolveSlideMove(const cugl::Vec2& startPos, const cugl::Vec2& velocity, float radius) const;
