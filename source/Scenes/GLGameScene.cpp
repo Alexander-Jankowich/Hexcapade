@@ -1335,6 +1335,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     SpellObstacle* spell = nullptr;
     PlayerObstacle* player = nullptr;
     EnemyObstacle* enemy = nullptr;
+    RectObstacle* wall = nullptr;
 
     // Get types of the 2 obstacles; only care about collisions between different types of obstacles
     if (typeid(*obs1) == typeid(SpellObstacle)) {
@@ -1345,6 +1346,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     else if (typeid(*obs1) == typeid(EnemyObstacle)) {
         enemy = reinterpret_cast<EnemyObstacle*> (obs1);
+    }else if (typeid(*obs1) == typeid(RectObstacle)) {
+        wall = reinterpret_cast<RectObstacle*> (obs1);
     }
 
     if (typeid(*obs2) == typeid(SpellObstacle)) {
@@ -1355,6 +1358,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     else if (typeid(*obs2) == typeid(EnemyObstacle)) {
         enemy = reinterpret_cast<EnemyObstacle*> (obs2);
+    }else if (typeid(*obs2) == typeid(RectObstacle)) {
+        wall = reinterpret_cast<RectObstacle*> (obs2);
     }
 
     // Checking for collisions
@@ -1383,6 +1388,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (enemy->getHealth()==0) enemy->markRemoved(true);
         CULog("spell and enemy collision: %d", enemy->getHealth());
         return;
+    }
+    if(wall && player){
+        CULog("ow i hit a wall");
     }
 }
 

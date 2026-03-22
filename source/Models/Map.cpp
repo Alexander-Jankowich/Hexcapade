@@ -927,13 +927,13 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
                 Rect cell(px, py, _tileSize, _tileSize);
                 size_t index = (size_t)toIndex(xx, yy);
 
-                if (tile == TileType::HALL_FLOOR) {
+                if (tile == TileType::WALL) {
                     // halls should still read as walkable tiled space, not a
                     // debug block, so we borrow a floor tile from the prefab.
                     // FLAG: serena did, unsure if we need all this error checking...
 //                    std::shared_ptr<Texture> hallTexture = _tiledRoomPrefab->getTextureForGid(_hallFloorGid);
 //                    if (hallTexture) {
-                        auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _hallFloorGid);
+                        auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _wallRenderGids[index]);
                         auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
                         //batch->draw(hallTexture, Color4::WHITE, cell);
 //                    } else {
@@ -944,44 +944,44 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
                     continue;
                 }
 
-                auto drawLayerGid = [&](unsigned int rawGid) {
-//                    std::shared_ptr<Texture> tileTexture = _tiledRoomPrefab->getTextureForGid(rawGid);
-//                    if (!tileTexture) {
+//                auto drawLayerGid = [&](unsigned int rawGid) {
+////                    std::shared_ptr<Texture> tileTexture = _tiledRoomPrefab->getTextureForGid(rawGid);
+////                    if (!tileTexture) {
+////                        return;
+////                    }
+//
+//                    bool flipHorizontal = hasTiledHorizontalFlip(rawGid);
+//                    bool flipVertical = hasTiledVerticalFlip(rawGid);
+//                    bool flipDiagonal = hasTiledDiagonalFlip(rawGid);
+//
+//                    if (!flipHorizontal && !flipVertical && !flipDiagonal) {
+//                        //batch->draw(tileTexture, Color4::WHITE, cell);
+//                        auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, rawGid);
+//                        auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
 //                        return;
 //                    }
-
-                    bool flipHorizontal = hasTiledHorizontalFlip(rawGid);
-                    bool flipVertical = hasTiledVerticalFlip(rawGid);
-                    bool flipDiagonal = hasTiledDiagonalFlip(rawGid);
-
-                    if (!flipHorizontal && !flipVertical && !flipDiagonal) {
-                        //batch->draw(tileTexture, Color4::WHITE, cell);
-                        auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, rawGid);
-                        auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
-                        return;
-                    }
-
-                    // this keeps authored tiled flips working without rotating
-                    // the whole room prefab in code.
-//                    Vec2 tileOrigin(_tileSize * 0.5f, _tileSize * 0.5f);
-//                    TileTransform2D tileTransform = makeTileTransform(flipHorizontal, flipVertical,
-//                                                                     flipDiagonal);
-//                    Affine2 transform(tileTransform.m11, tileTransform.m12,
-//                                      tileTransform.m21, tileTransform.m22,
-//                                      0.0f, 0.0f);
-//                    batch->draw(tileTexture, Color4::WHITE, cell, tileOrigin, transform);
-                    auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize  , _tileSize , rawGid);
-                    auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
-                };
-
-                // this order matches the layer order in example_2.tmj.
-                //drawLayerGid(_floorRenderGids[index]);
-                //drawLayerGid(_visFixRenderGids[index]);
-                drawLayerGid(_wallRenderGids[index]);
-                //drawLayerGid(_decoRenderGids[index]);
-
-                // no debug fill here on purpose. if a tiled layer is missing,
-                // we would rather notice the bad room data than silently hide it.
+//
+//                    // this keeps authored tiled flips working without rotating
+//                    // the whole room prefab in code.
+////                    Vec2 tileOrigin(_tileSize * 0.5f, _tileSize * 0.5f);
+////                    TileTransform2D tileTransform = makeTileTransform(flipHorizontal, flipVertical,
+////                                                                     flipDiagonal);
+////                    Affine2 transform(tileTransform.m11, tileTransform.m12,
+////                                      tileTransform.m21, tileTransform.m22,
+////                                      0.0f, 0.0f);
+////                    batch->draw(tileTexture, Color4::WHITE, cell, tileOrigin, transform);
+//                    auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize  , _tileSize , rawGid);
+//                    auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
+//                };
+//
+//                // this order matches the layer order in example_2.tmj.
+//                //drawLayerGid(_floorRenderGids[index]);
+//                //drawLayerGid(_visFixRenderGids[index]);
+//                drawLayerGid(_wallRenderGids[index]);
+//                //drawLayerGid(_decoRenderGids[index]);
+//
+//                // no debug fill here on purpose. if a tiled layer is missing,
+//                // we would rather notice the bad room data than silently hide it.
             }
         }
         //batch->setColor(originalColor);

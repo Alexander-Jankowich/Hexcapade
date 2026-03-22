@@ -14,9 +14,7 @@ using namespace cugl;
 RectObstacle::RectObstacle(const cugl::Vec2 pos, float w, float h) {
     _dimens = Size(w, h);
     init(pos, _dimens);
-    setAwake(false);
-    setEnabled(false);
-    setSensor(true);
+
     setBodyType(b2_staticBody);
     _pos = pos;
     
