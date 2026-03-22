@@ -710,20 +710,15 @@ void GameScene::render()
     if (_map) {
         _map->draw(_batch);
     }
-    
-
-    Color4 original = _batch->getColor();
-
-    Scene2::render();
-    _batch->begin();
     drawDepositZone();
     drawItems();
+    
+    Color4 original = _batch->getColor();
     renderHUD();
     _inputDisplay->draw(_batch);
     _batch->setColor(original);
-    
-    
-    _batch->end();
+    Scene2::render();
+
 }
 
 void GameScene::renderHUD()
