@@ -736,12 +736,11 @@ void GameScene::render()
 //    }
     drawDepositZone();
     drawItems();
-    
-    Color4 original = _batch->getColor();
     renderHUD();
     _inputDisplay->draw(_batch);
-    _batch->setColor(original);
     Scene2::render();
+    
+    
 
 }
 
