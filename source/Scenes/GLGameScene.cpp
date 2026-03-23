@@ -309,6 +309,7 @@ void GameScene::reset()
 
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
+    _map -> populateObtacles(_networkCtrl, _rectFact, _rectFactId);
     if (_networkCtrl->isHost()) {
         _networkCtrl->startGame();
     }
@@ -345,6 +346,7 @@ void GameScene::rebuildMapForRun() {
         CULog("map generation failed for run revision %d", _runRevision);
         return;
     }
+    _map -> populateObtacles(_networkCtrl, _rectFact, _rectFactId);
     auto n = _map -> draw2();
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
@@ -1223,9 +1225,12 @@ void GameScene::initMap() {
     _rectFactId = _networkCtrl->getPhysController()->attachFactory(_rectFact);
     _mapSeed= _networkCtrl->getRandSeed();
     CULog("set map seed to : %d", _mapSeed);
+    
     if (_mapSeed != 0) {
         rebuildMapForRun();
+        
     }
+    
 }
 
 void GameScene::setActive(bool value)
@@ -1382,6 +1387,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     if (player && enemy) {
         //CULog("enemy and player colliison");
         // TODO make this actually work?
+        //CULog("here");
         player->getBody()->ApplyLinearImpulseToCenter(b2Vec2(20 * enemy->getLinearVelocity().x, 20 * enemy->getLinearVelocity().y), true);
         enemy->getBody()->ApplyLinearImpulseToCenter(b2Vec2(-20 * enemy->getLinearVelocity().x, -20 * enemy->getLinearVelocity().y), true);
         // TODO - get enemy to pause after attack
@@ -1397,6 +1403,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         return;
     }
     if(wall && player){
+        
         b2WorldManifold manifold;
             contact->GetWorldManifold(&manifold);
 
@@ -1404,7 +1411,6 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
             b2Vec2 vel = player->getBody()->GetLinearVelocity();
 
-            // remove component INTO the wall
             float dot = vel.x * normal.x + vel.y * normal.y;
             if (dot < 0) {
                 b2Vec2 newVel = vel - dot * normal;
@@ -1412,6 +1418,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             }
     }
     if(wall && enemy){
+        //CULog("here wall and enemy");
         contact -> SetEnabled(false);
     }
 }
