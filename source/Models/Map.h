@@ -37,7 +37,7 @@ private:
     float _tileSize;
     cugl::Vec2 _origin;
     cugl::Rect _worldBounds;
-
+    std::vector<std::vector<TileType>> _tileGrid;
     std::vector<TileType> _tiles;
     std::vector<int> _tileRoomIndex;
     std::vector<unsigned int> _floorRenderGids;
@@ -47,6 +47,7 @@ private:
     unsigned int _hallFloorGid;
 
     std::vector<Room> _rooms;
+    
     std::vector<cugl::Vec2> _itemSpawnPoints;
     std::vector<cugl::Vec2> _enemySpawnPoints;
     cugl::Vec2 _playerSpawn;

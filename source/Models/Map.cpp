@@ -143,6 +143,12 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
 
     _origin = Vec2::ZERO;
     _worldBounds = Rect(_origin.x, _origin.y, _gridWidth * _tileSize, _gridHeight * _tileSize);
+    
+    // FLAG: TILE GRID
+    for (int col = 0; col <_gridWidth * _tileSize; col++){
+        std::vector<TileType> v(_gridHeight*_tileSize);
+        _tileGrid.push_back(v);
+    }
 
     _tiles.assign((size_t)(_gridWidth * _gridHeight), TileType::EMPTY);
     _tileRoomIndex.assign((size_t)(_gridWidth * _gridHeight), -1);
@@ -165,34 +171,6 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
         return std::abs(ax - bx) + std::abs(ay - by);
     };
 
-    /*
-    // old random room path kept here for reference while repeated tiled rooms replace it.
-    int widthMin = std::max(4, _config.roomWidthMin);
-    int widthMax = std::max(widthMin, _config.roomWidthMax);
-    int heightMin = std::max(4, _config.roomHeightMin);
-    int heightMax = std::max(heightMin, _config.roomHeightMax);
-    std::uniform_int_distribution<int> roomWidthDist(widthMin, widthMax);
-    std::uniform_int_distribution<int> roomHeightDist(heightMin, heightMax);
-    std::uniform_int_distribution<size_t> templateDist(0, useTemplates ? (_config.roomTemplates.size() - 1) : 0);
-
-    for (int attempt = 0; attempt < placementAttempts && (int)generatedRooms.size() < targetRoomCount; ++attempt) {
-        int rw = roomWidthDist(_rng);
-        int rh = roomHeightDist(_rng);
-        int templateIndex = -1;
-        if (useTemplates) {
-            templateIndex = (int)templateDist(_rng);
-            const RoomTemplateConfig& templ = _config.roomTemplates[(size_t)templateIndex];
-            rw = std::max(4, templ.width);
-            rh = std::max(4, templ.height);
-        }
-        GridRoom candidate{xDist(_rng), yDist(_rng), rw, rh, templateIndex};
-        generatedRooms.push_back(candidate);
-    }
-
-    for (size_t ii = 0; ii < generatedRooms.size(); ++ii) {
-        carveRoom(generatedRooms[ii], (int)ii);
-    }
-    */
 
     // the new tiled path still uses the old high-level room placement logic,
     // but every room now has the same shape because it comes from the tmj prefab.
@@ -230,7 +208,6 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
                 continue;
             }
         }
-        CULog("generated rooms size %d", generatedRooms.size());
         generatedRooms.push_back(candidate);
     }
 
@@ -250,85 +227,91 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     for (size_t ii = 0; ii < generatedRooms.size(); ++ii) {
         stampTiledRoom(generatedRooms[ii], (int)ii);
     }
-
-    std::vector<std::pair<int, int>> roomLinks;
-    auto pushRoomLink = [&](int a, int b) {
-        if (a == b) {
-            return;
-        }
-        if (a > b) {
-            std::swap(a, b);
-        }
-        for (const auto& edge : roomLinks) {
-            if (edge.first == a && edge.second == b) {
-                return;
+    
+    // flood the rest of the map with hallway tiles
+    std::queue<cugl::Vec2> queue;
+    // something dumb to find first non-empty tile
+    for (int i=0; i<_tileGrid.size(); i++) {
+        for (int j=0; j<_tileGrid.at(i).size(); j++){
+            if (_tileGrid.at(i).at(j)==TileType::EMPTY) {
+                queue.push(Vec2(i, j));
+                goto floodfill;
+                
             }
         }
-        roomLinks.emplace_back(a, b);
-    };
-
-    for (size_t ii = 1; ii < generatedRooms.size(); ++ii) {
-        float bestDist2 = std::numeric_limits<float>::max();
-        size_t bestIndex = 0;
-        for (size_t jj = 0; jj < ii; ++jj) {
-            Vec2 centerA((float)(generatedRooms[ii].x + generatedRooms[ii].w / 2),
-                         (float)(generatedRooms[ii].y + generatedRooms[ii].h / 2));
-            Vec2 centerB((float)(generatedRooms[jj].x + generatedRooms[jj].w / 2),
-                         (float)(generatedRooms[jj].y + generatedRooms[jj].h / 2));
-            float dist2 = (centerA - centerB).lengthSquared();
-            if (dist2 < bestDist2) {
-                bestDist2 = dist2;
-                bestIndex = jj;
-            }
-        }
-
-        // old center-to-center hall anchors are what made hallways bulldoze
-        // through the middle of the room art. the new anchors try to connect
-        // from room edges so we only open a doorway-sized cut into the prefab.
-        Vec2 hallStartAnchor = pickHallAnchorTile(generatedRooms[ii], generatedRooms[bestIndex]);
-        Vec2 hallEndAnchor = pickHallAnchorTile(generatedRooms[bestIndex], generatedRooms[ii]);
-        openDoorwayForHallAnchor(generatedRooms[ii], generatedRooms[bestIndex], hallStartAnchor);
-        openDoorwayForHallAnchor(generatedRooms[bestIndex], generatedRooms[ii], hallEndAnchor);
-
-        // the doorway stays on the room boundary, but the hallway itself starts
-        // one tile outside the room so it does not paint over the room edge.
-        Vec2 hallStart = getExteriorHallTileForAnchor(generatedRooms[ii], hallStartAnchor);
-        Vec2 hallEnd = getExteriorHallTileForAnchor(generatedRooms[bestIndex], hallEndAnchor);
-        carveHallway(hallStart, hallEnd, (int)ii, (int)bestIndex);
-        pushRoomLink((int)ii, (int)bestIndex);
     }
+// TODO: update to utilize spans for efficiency
+floodfill:
+    while(!queue.empty()) {
+        cugl::Vec2 node = queue.front(); // REMEMBER THESE ARE ARRAY INDEXES
 
-    /*
-    // old extra hall pass kept here for reference while we keep the tiled
-    // layout simpler. the extra links were making strange edge corridors
-    // before the room files had real doorway markers to guide them.
-    size_t extraStep = (size_t)std::max(2, _config.extraHallConnectionStep);
-    size_t extraOffset = extraStep - 1;
-    for (size_t ii = 0; ii + extraOffset < generatedRooms.size(); ii += extraStep) {
-        if (hallwayDistance(generatedRooms[ii], generatedRooms[ii + extraOffset]) > maxHallwayLength) {
-            continue;
-        }
-        Vec2 hallStart = pickHallAnchorTile(generatedRooms[ii], generatedRooms[ii + extraOffset]);
-        Vec2 hallEnd = pickHallAnchorTile(generatedRooms[ii + extraOffset], generatedRooms[ii]);
-        openDoorwayForHallAnchor(generatedRooms[ii], generatedRooms[ii + extraOffset], hallStart);
-        openDoorwayForHallAnchor(generatedRooms[ii + extraOffset], generatedRooms[ii], hallEnd);
-        carveHallway(hallStart, hallEnd);
-        pushRoomLink((int)ii, (int)(ii + extraOffset));
+        queue.pop();
+        if (_tileGrid.at(node.x).at(node.y) != TileType::EMPTY) continue;
+        // set to hallway
+        _tileGrid.at(node.x).at(node.y) = TileType::HALL_FLOOR;
+        
+        // add up
+        if(node.x > 0 && _tileGrid.at(node.x - 1).at(node.y) == TileType::EMPTY) queue.push(cugl::Vec2(node.x-1, node.y));
+        // add down
+        if(node.x < _tileGrid.size()-1 && _tileGrid.at(node.x + 1).at(node.y) == TileType::EMPTY) queue.push(cugl::Vec2(node.x+1, node.y));
+        // add left
+        if(node.y > 0 && _tileGrid.at(node.x).at(node.y-1) == TileType::EMPTY) queue.push(cugl::Vec2(node.x, node.y-1));
+        // add right
+        if(node.y < _tileGrid.at(0).size()-1 && _tileGrid.at(node.x).at(node.y+1) == TileType::EMPTY) queue.push(cugl::Vec2(node.x, node.y+1));
     }
-    */
+        
+    
+//    std::vector<std::pair<int, int>> roomLinks;
+//    auto pushRoomLink = [&](int a, int b) {
+//        if (a == b) {
+//            return;
+//        }
+//        if (a > b) {
+//            std::swap(a, b);
+//        }
+//        for (const auto& edge : roomLinks) {
+//            if (edge.first == a && edge.second == b) {
+//                return;
+//            }
+//        }
+//        roomLinks.emplace_back(a, b);
+//    };
+//
+//    for (size_t ii = 1; ii < generatedRooms.size(); ++ii) {
+//        float bestDist2 = std::numeric_limits<float>::max();
+//        size_t bestIndex = 0;
+//        for (size_t jj = 0; jj < ii; ++jj) {
+//            Vec2 centerA((float)(generatedRooms[ii].x + generatedRooms[ii].w / 2),
+//                         (float)(generatedRooms[ii].y + generatedRooms[ii].h / 2));
+//            Vec2 centerB((float)(generatedRooms[jj].x + generatedRooms[jj].w / 2),
+//                         (float)(generatedRooms[jj].y + generatedRooms[jj].h / 2));
+//            float dist2 = (centerA - centerB).lengthSquared();
+//            if (dist2 < bestDist2) {
+//                bestDist2 = dist2;
+//                bestIndex = jj;
+//            }
+//        }
+//
+//        // old center-to-center hall anchors are what made hallways bulldoze
+//        // through the middle of the room art. the new anchors try to connect
+//        // from room edges so we only open a doorway-sized cut into the prefab.
+//        Vec2 hallStartAnchor = pickHallAnchorTile(generatedRooms[ii], generatedRooms[bestIndex]);
+//        Vec2 hallEndAnchor = pickHallAnchorTile(generatedRooms[bestIndex], generatedRooms[ii]);
+//        openDoorwayForHallAnchor(generatedRooms[ii], generatedRooms[bestIndex], hallStartAnchor);
+//        openDoorwayForHallAnchor(generatedRooms[bestIndex], generatedRooms[ii], hallEndAnchor);
+//
+//        // the doorway stays on the room boundary, but the hallway itself starts
+//        // one tile outside the room so it does not paint over the room edge.
+//        Vec2 hallStart = getExteriorHallTileForAnchor(generatedRooms[ii], hallStartAnchor);
+//        Vec2 hallEnd = getExteriorHallTileForAnchor(generatedRooms[bestIndex], hallEndAnchor);
+//        carveHallway(hallStart, hallEnd, (int)ii, (int)bestIndex);
+//        pushRoomLink((int)ii, (int)bestIndex);
+//    }
 
-    /*
-    // old procgen obstacle + wall pass kept here for reference while the tiled
-    // room prefab supplies its own room walls and art.
-    for (const GridRoom& room : generatedRooms) {
-        placeObstaclesInRoom(room);
-    }
-    buildWalls();
-    */
 
     // this small cleanup strips out isolated hall tabs that can be left behind
     // when the hallway brush touches a room edge but does not actually continue.
-    pruneHallArtifacts();
+    //pruneHallArtifacts();
 
     _rooms.reserve(generatedRooms.size());
     for (size_t ii = 0; ii < generatedRooms.size(); ++ii) {
@@ -337,7 +320,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
                        _origin.y + room.y * _tileSize,
                        room.w * _tileSize,
                        room.h * _tileSize);
-
+        // FLAG: what the fuck is this doing - serena
         Color4 color = _config.roomPalette[ii % _config.roomPalette.size()];
         std::string activeModifier;
         if (room.templateIndex >= 0 && room.templateIndex < (int)_config.roomTemplates.size()) {
@@ -353,14 +336,14 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
         _rooms.emplace_back((int)ii, worldRect, color, activeModifier);
     }
 
-    for (const auto& edge : roomLinks) {
-        if (edge.first < 0 || edge.second < 0 ||
-            edge.first >= (int)_rooms.size() || edge.second >= (int)_rooms.size()) {
-            continue;
-        }
-        _rooms[(size_t)edge.first].addConnection(edge.second);
-        _rooms[(size_t)edge.second].addConnection(edge.first);
-    }
+//    for (const auto& edge : roomLinks) {
+//        if (edge.first < 0 || edge.second < 0 ||
+//            edge.first >= (int)_rooms.size() || edge.second >= (int)_rooms.size()) {
+//            continue;
+//        }
+//        _rooms[(size_t)edge.first].addConnection(edge.second);
+//        _rooms[(size_t)edge.second].addConnection(edge.first);
+//    }
 
     // the new spawn pass uses the tiled markers and transforms them into
     // world-space positions for each repeated room instance.
@@ -422,7 +405,7 @@ void Map::stampTiledRoom(const GridRoom& room, int roomIndex) {
             int mapY = room.y + yy;
             int sourceX = xx;
             int sourceY = yy;
-
+            // TODO: ensure this is not buggy bc it seems suspicious...
             // render layers keep the raw tiled gid so draw can still honor
             // authored flip flags. collision only cares about the base gid.
             unsigned int floorRawGid = _tiledRoomPrefab->getFloorLayer().getRawTileAt(sourceX, sourceY);
@@ -447,8 +430,11 @@ void Map::stampTiledRoom(const GridRoom& room, int roomIndex) {
             // to fake openings near the room frame art.
             if (walkableFloor) {
                 setTile(mapX, mapY, TileType::ROOM_FLOOR, roomIndex);
+                _tileGrid.at(mapX).at(mapY) = TileType::ROOM_FLOOR;
             } else if (hasAnyRoomArt) {
                 setTile(mapX, mapY, TileType::WALL, roomIndex);
+                _tileGrid.at(mapX).at(mapY) = TileType::WALL;
+
             }
         }
     }
@@ -915,9 +901,9 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
     if (_tiledRoomPrefab && _tiledRoomPrefab->getTileset().texture) {
         // this is the new tiled-backed draw path. repeated room tiles come from
         // the real tileset art, while hallways still use a borrowed floor tile.
-        for (int yy = 0; yy < _gridHeight; ++yy) {
+        for (int yy = 0; yy < _gridHeight; ++yy) { // uh why height then width wtf
             for (int xx = 0; xx < _gridWidth; ++xx) {
-                TileType tile = getTile(xx, yy);
+                TileType tile = _tileGrid.at(xx).at(yy);
                 if (tile == TileType::EMPTY) {
                     continue;
                 }
@@ -1001,7 +987,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::draw2(){
         // the real tileset art, while hallways still use a borrowed floor tile.
         for (int yy = 0; yy < _gridHeight; ++yy) {
             for (int xx = 0; xx < _gridWidth; ++xx) {
-                TileType tile = getTile(xx, yy);
+                TileType tile = _tileGrid.at(xx).at(yy);
                 if (tile == TileType::EMPTY) {
                     continue;
                 }
@@ -1044,7 +1030,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::draw() {
         std::vector<std::shared_ptr<cugl::scene2::PolygonNode>> decor;
         for (int yy = 0; yy < _gridHeight; ++yy) {
             for (int xx = 0; xx < _gridWidth; ++xx) {
-                TileType tile = getTile(xx, yy);
+                TileType tile = _tileGrid.at(xx).at(yy);
                 if (tile == TileType::EMPTY) {
                     continue;
                 }

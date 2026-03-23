@@ -185,7 +185,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _runRevision = 0;
     _appliedRunRevision = -1;
     _mapSeed = 0;
-    _mapSceneSize = this->getSize();
     loadGameplayConfig();
 
     // Initialize inventory system
@@ -225,7 +224,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 
     _itemSet.reset();
     
-    _mapSceneSize = this->getSize();
     //_mapSeed = chooseNonZeroSeed();
     _runRevision = 1;
     
@@ -309,7 +307,6 @@ void GameScene::reset()
     _inventoryPanelOpen = false;
     _input.setInventoryPanelOpen(false);
 
-    _mapSceneSize = this->getSize();
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
     if (_ishost) {
@@ -344,12 +341,7 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-    Size buildSize = _mapSceneSize;
-    if (buildSize.width <= 0 || buildSize.height <= 0) {
-        buildSize = this->getSize();
-    }
-
-    if (!_map->generate(buildSize, _runConfig.map, _mapSeed)) {
+    if (!_map->generate(getSize(), _runConfig.map, _mapSeed)) {
         CULog("map generation failed for run revision %d", _runRevision);
         return;
     }
