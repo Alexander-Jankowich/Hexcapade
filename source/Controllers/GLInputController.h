@@ -360,7 +360,7 @@ protected:
     std::function<cugl::Vec2(const cugl::Vec2&)> _screenToWorld;
 
     /**The gesture recognizer*/
-    std::shared_ptr<cugl::GestureRecognizer> recognizer;
+    std::shared_ptr<cugl::PGestureRecognizer> recognizer;
 
     /** Mapping of gesture strings to the correct Gesture */
     std::unordered_map<std::string, SpellType> _gesturemap;

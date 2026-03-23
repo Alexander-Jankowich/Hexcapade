@@ -1216,6 +1216,7 @@ void GameScene::drawItems()
 void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
     if (_networkCtrl!=nullptr) return;
     _networkCtrl = n;
+    _map->init();
 }
 
 void GameScene::initMap() {
