@@ -48,7 +48,7 @@ public:
      * @param pos   The ship position
      * @param data  The data defining the physics constants
      */
-    Entity(const cugl::Vec2& pos, int health, std::shared_ptr<cugl::graphics::Texture> tex);
+    Entity(const cugl::Vec2& pos, int health, std::shared_ptr<cugl::graphics::Texture> tex, int rows, int cols);
 
     /**
      * Disposes the ship, releasing all resources.
@@ -150,7 +150,7 @@ public:
      * @param batch     The sprite batch to draw to
      * @param size      The size of the window (for wrap around)
      */
-    void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
+    //void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
 
     void setKnockback(cugl::Vec2 target);
 

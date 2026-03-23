@@ -654,9 +654,8 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         scene2::SceneNode* weak = node.get(); // No need for smart pointer in callback
         
         // i do not know how else to check if it is a player...
-        const shared_ptr<const PlayerObstacle> p = std::dynamic_pointer_cast<const PlayerObstacle>(obj);
 
-        if (p != nullptr) {
+        if (typeid(*obj) == typeid(PlayerObstacle)) {
             std::shared_ptr<Player> p_node = std::dynamic_pointer_cast<Player>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 PlayerObstacle* p = dynamic_cast<PlayerObstacle*>(obs);
@@ -666,6 +665,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                 float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
                 p_node->setPosition(pos * PHYSICS_SCALE);
                 p_node->setAngle(angle);
+                p_node->setVelocity(p->getLinearVelocity() * PHYSICS_SCALE);
             });
             
         } else {
