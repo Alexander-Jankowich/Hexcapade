@@ -22,7 +22,7 @@
     "room_buffer_tiles": 1,
     "room_edge_padding": 1,
     "_comment_hall_thickness": "changes hallway width",
-    "hall_thickness": 2,
+    "hall_thickness": 3,
     "_comment_max_hallway": "caps how far a newly placed room can be from existing rooms so hallways stay shorter",
     "max_hallway_length_tiles": 18,
     "extra_hall_connection_step": 3,
