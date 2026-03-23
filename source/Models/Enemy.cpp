@@ -12,7 +12,7 @@ using namespace cugl;
  * @param data  The data defining the physics constants
  */
 Enemy::Enemy(const cugl::Vec2& pos, float speed, int health,
-             std::shared_ptr<cugl::graphics::Texture>& tex) : Entity(pos, health, tex) {
+             std::shared_ptr<cugl::graphics::Texture>& tex) : Entity(pos, health, tex, 1, 1) {
     _speed = speed;
 }
 

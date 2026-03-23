@@ -21,7 +21,7 @@
             "file":  "textures/left_arrow.png"
         },
         "player": {
-            "file": "textures/character.png"
+            "file": "textures/playerfox_sheet.png"
         },
         "artifact_gem": {
             "file": "textures/artifact_gem.png"

@@ -56,6 +56,7 @@ public:
      */
     void init(shared_ptr<AssetManager>& assets) {
         _assets = assets;
+        Player::setConsts(_assets->get<JsonValue>("constants")->get("player"));
     }
 
     /**
@@ -69,6 +70,7 @@ public:
     pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(const vector<byte>& params) override;
 
     std::unordered_set<std::shared_ptr<PlayerObstacle>> current;
+
 
     std::shared_ptr<PlayerObstacle> getPlayerByPID(std::string pid) {
         for (auto p : current) {
