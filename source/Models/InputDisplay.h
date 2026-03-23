@@ -51,7 +51,11 @@ private:
 
 	/** Gesture attributes */
 	cugl::Path2 _gesture;
+    cugl::Path2 _gesture2;
+    cugl::Path2 _gesture3;
 	cugl::Poly2 _gestureDisplay;
+    cugl::Poly2 _secondDisplay;
+    cugl::Poly2 _thirdDisplay;
 	int _gestureWidth;
 	cugl::Color4 _gestureColor;
 

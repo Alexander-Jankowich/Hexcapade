@@ -69,7 +69,15 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     // Start up the input handler
     // This is the size of scene! We want to screenToWorld and worldToScreen
     // Factor out conversion with lambda gamescene -> input
-    _input.init(_constants->get("input"), cugl::Rect(0, 0, getSize().width, getSize().height));
+    cugl::Size display = cugl::Application::get()->getDisplaySize();
+    _input.init(
+        _constants->get("input"),
+        cugl::Rect(0, 0, display.width, display.height),
+        [this](const cugl::Vec2& screenCoords) -> cugl::Vec2 {
+            cugl::Vec3 world = screenToWorldCoords(screenCoords);
+            return cugl::Vec2(world.x, world.y);
+        }
+    );
     _inputDisplay = make_shared<InputDisplay>(&_input, _constants->get("input"));
 
     // create the player

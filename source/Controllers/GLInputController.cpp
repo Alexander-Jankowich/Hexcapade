@@ -33,6 +33,38 @@ using namespace cugl;
 /** How fast a double click must be in milliseconds */
 #define DOUBLE_CLICK    400
 
+std::vector<std::vector<Vec2>> X_GESTURE = {
+    {
+        {1026.695312, 544.195312},
+        {1026.695312, 543.953125},
+        {1012.515625, 529.476562},
+        {969.273438, 487.671875},
+        {902.906250, 426.726562},
+        {847.929688, 377.593750},
+        {815.179688, 349.468750},
+        {794.531250, 333.039062},
+        {779.953125, 321.648438},
+        {774.023438, 317.710938},
+        {772.375000, 317.421875},
+        {772.328125, 319.281250},
+        {772.328125, 319.281250}
+    },
+    {
+        {786.523438, 544.015625},
+        {788.179688, 543.070312},
+        {813.078125, 526.609375},
+        {864.593750, 501.273438},
+        {943.875000, 457.046875},
+        {988.789062, 430.570312},
+        {1036.046875, 401.820312},
+        {1097.742188, 360.757812},
+        {1111.539062, 351.742188},
+        {1116.757812, 348.515625},
+        {1117.578125, 348.007812},
+        {1117.578125, 348.007812}
+    }
+};
+
 std::vector<cugl::Vec2> V_GESTURE = {
     {947.566650, 554.066650},
     {955.754150, 544.787476},
@@ -775,26 +807,29 @@ _timeSinceCast(0)
  *
  * @return true if the initialization was successful
  */
-bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds) {
+bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
+                            std::function<cugl::Vec2(const cugl::Vec2&)> screenToWorld) {
+    _screenToWorld = screenToWorld;
     recognizer = cugl::PGestureRecognizer::alloc();
-    recognizer->addGesture("V", { V_GESTURE_1 });
-    recognizer->addGesture("V", { V_GESTURE_2 });
-    recognizer->addGesture("V", { V_GESTURE_3 });
-    recognizer->addGesture("V", { V_GESTURE_4 });
-    recognizer->addGesture("V", { V_GESTURE_5 });
-    recognizer->addGesture("C", { CIRCLE });
-    recognizer->addGesture("C", { CIRCLE_1 });
-    recognizer->addGesture("C", { CIRCLE_2 });
-    recognizer->addGesture("C", { CIRCLE_3 });
-    recognizer->addGesture("C", { CIRCLE_4 });
-    recognizer->addGesture("C", { CIRCLE_5 });
-    recognizer->addGesture("C", { CIRCLE_6 });
-    recognizer->addGesture("C", { CIRCLE_7 });
-    recognizer->addGesture("C", { CIRCLE_8 });
-    recognizer->addGesture("Z", { Z_GESTURE });
-    recognizer->addGesture("Z", { Z_GESTURE_1 });
-    recognizer->addGesture("Z", { Z_GESTURE_2 });
-    recognizer->addGesture("Z", { Z_GESTURE_3 });
+    recognizer -> addGesture("V", { X_GESTURE });
+//    recognizer->addGesture("V", { V_GESTURE_1 });
+//    recognizer->addGesture("V", { V_GESTURE_2 });
+//    recognizer->addGesture("V", { V_GESTURE_3 });
+//    recognizer->addGesture("V", { V_GESTURE_4 });
+//    recognizer->addGesture("V", { V_GESTURE_5 });
+//    recognizer->addGesture("C", { CIRCLE });
+//    recognizer->addGesture("C", { CIRCLE_1 });
+//    recognizer->addGesture("C", { CIRCLE_2 });
+//    recognizer->addGesture("C", { CIRCLE_3 });
+//    recognizer->addGesture("C", { CIRCLE_4 });
+//    recognizer->addGesture("C", { CIRCLE_5 });
+//    recognizer->addGesture("C", { CIRCLE_6 });
+//    recognizer->addGesture("C", { CIRCLE_7 });
+//    recognizer->addGesture("C", { CIRCLE_8 });
+//    recognizer->addGesture("Z", { Z_GESTURE });
+//    recognizer->addGesture("Z", { Z_GESTURE_1 });
+//    recognizer->addGesture("Z", { Z_GESTURE_2 });
+//    recognizer->addGesture("Z", { Z_GESTURE_3 });
 
     recognizer->set_accuracy(0.84f);
 
@@ -864,7 +899,7 @@ void InputController::update(float dt) {
 
     // Update _isAiming
     _timeSinceCast += dt;
-    if (_timeSinceCast > 1 && _isAiming) {
+    if (_timeSinceCast > 10000 && _isAiming) {
         _isAiming = false;
         _releaseSpell = true;
         currentStroke.clear();
@@ -1013,25 +1048,11 @@ InputController::Zone InputController::getZone(const Vec2 pos) const {
  * @return the scene location of a touch
  */
 Vec2 InputController::touch2Screen(const Vec2 pos) const {
-    float px = pos.x * _tbounds.getMaxX() / _sbounds.getMaxX();
-    float py = pos.y *_tbounds.getMaxY() / _sbounds.getMaxY() ;
-
-    Vec2 result;
-    result.x = px;
-    result.y = _sbounds.getMaxY() - py;
-    return result;
-//    return Display::get()->getTouchWindowPosition(pos.x, pos.y);
+    return _screenToWorld(pos);
 }
 
 Vec2 InputController::mouse2Screen(const Vec2 pos) const {
-    float px = pos.x;
-    float py = pos.y;
-
-    Vec2 result;
-    result.x = px;
-    result.y = _sbounds.getMaxY() - py;
-    return result;
-//    return Display::get()->getMouseWindowPosition(pos.x, pos.y);
+    return _screenToWorld(pos);
 }
 
 /**
@@ -1091,10 +1112,35 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
     _spellAngle.setZero();
     currentStroke.push_back(pos);
     if (currentStroke.size() > 3) {
-        std::string gesture = recognizer->match({ currentStroke });
-
         try {
-            _lastGesture = _gesturemap[gesture];
+            if((currentStroke.size() > 3) & !secondStroke.empty() & !thirdStroke.empty()){
+                std::string gesture = recognizer->match({ currentStroke });
+                std::string gesture2 = recognizer -> match({ currentStroke, secondStroke });
+                std::string gesture3 = recognizer -> match({ currentStroke, secondStroke, thirdStroke });
+                if(recognizer -> similarity(gesture,{ currentStroke }) > recognizer -> similarity(gesture2, {currentStroke, secondStroke})){
+                    if(recognizer -> similarity(gesture,{ currentStroke }) > recognizer -> similarity(gesture3, {currentStroke, secondStroke, thirdStroke})){
+                        _lastGesture = _gesturemap[gesture];
+                    }
+                    _lastGesture = _gesturemap[gesture3];
+                }else{
+                    if(recognizer -> similarity(gesture2,{ currentStroke, secondStroke }) > recognizer -> similarity(gesture3, {currentStroke, secondStroke, thirdStroke})){
+                        _lastGesture = _gesturemap[gesture2];
+                    }
+                    _lastGesture = _gesturemap[gesture3];
+                }
+            }else if((currentStroke.size() > 3) & !secondStroke.empty()){
+                std::string gesture = recognizer->match({ currentStroke });
+                std::string gesture2 = recognizer -> match({ currentStroke, secondStroke });
+                
+                if(recognizer -> similarity(gesture,{ currentStroke }) > recognizer -> similarity(gesture2, {currentStroke, secondStroke})){
+                    _lastGesture = _gesturemap[gesture];
+                }else{
+                    _lastGesture = _gesturemap[gesture2];
+                }
+            }else if (currentStroke.size() > 3){
+                std::string gesture = recognizer->match({ currentStroke });
+                _lastGesture = _gesturemap[gesture];
+            }
             _timeSinceCast = 0;
         }
         catch (std::out_of_range) {
@@ -1112,12 +1158,22 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         // Register tap as pickup, to be changed using buttons?
         _pickupPressed = true;
     }
-    CULog("Stroke points:");
+    CULog("First Stroke points:");
         for (const auto& p : currentStroke) {
+            CULog("{%f, %f},", p.x, p.y);
+        }
+    CULog("Second Stroke points:");
+        for (const auto& p : secondStroke) {
+            CULog("{%f, %f},", p.x, p.y);
+        }
+    CULog("Third Stroke points:");
+        for (const auto& p : thirdStroke) {
             CULog("{%f, %f},", p.x, p.y);
         }
 
     // Clear points
+    thirdStroke = secondStroke;
+    secondStroke = currentStroke;
     currentStroke.clear();
 }
 
