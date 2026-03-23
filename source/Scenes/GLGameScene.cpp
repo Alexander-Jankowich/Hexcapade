@@ -309,7 +309,7 @@ void GameScene::reset()
 
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
-    if (_ishost) {
+    if (_networkCtrl->isHost()) {
         _networkCtrl->startGame();
     }
 }
@@ -592,7 +592,7 @@ void GameScene::preUpdate(float dt)
         _player->resolveSpell();
     }
 
-    if (_ishost) {
+    if (_networkCtrl->isHost()) {
         // spawn an enemy if host and need to spawn
         lastEnemySpawn += dt;
         if (lastEnemySpawn > 8) {
@@ -639,7 +639,7 @@ void GameScene::preUpdate(float dt)
     if (_player->getHealth() <= 0) {
         _playerLost = true;
     }
-    if ((_playerLost || _playerWon) && _ishost) {
+    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
         _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
     }
 }
@@ -1327,7 +1327,7 @@ void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
  * @param  oldManfold  	The collision manifold before contact
  */
 void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
-    if (!_ishost) return;
+    if (!_networkCtrl->isHost()) return;
     
     b2Body* body1 = contact->GetFixtureA()->GetBody();
     b2Body* body2 = contact->GetFixtureB()->GetBody();
