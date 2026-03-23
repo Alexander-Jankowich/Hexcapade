@@ -15,17 +15,20 @@ using namespace cugl;
 using namespace cugl::physics2::distrib;
 using namespace std;
 /**
-* An extension of WheelObstacle to represent spell collision objects.
+* An extension of CapsuleObstacle to represent enemy collision objects.
 */
 class EnemyObstacle : public physics2::CapsuleObstacle {
 protected:
     int _health;
     float _speed;
-public:
-    EnemyObstacle(const cugl::Vec2& pos, float speed, int health, cugl::Size s);
+    float _range;
+    Vec2 _target;
 
-    static shared_ptr<EnemyObstacle> alloc(const cugl::Vec2& pos, float speed, int health, cugl::Size s) {
-        auto f = make_shared<EnemyObstacle>(pos, speed, health, s);
+public:
+    EnemyObstacle(const cugl::Vec2& pos, float speed, int health, float range, cugl::Size s);
+
+    static shared_ptr<EnemyObstacle> alloc(const cugl::Vec2& pos, float speed, int health, float range, cugl::Size s) {
+        auto f = make_shared<EnemyObstacle>(pos, speed, health, range, s);
         f -> createFixtures();
         return f;
     }
@@ -35,7 +38,7 @@ public:
      *
      * @return the speed of this enemy
      */
-    const int getSpeed() const { return _speed; }
+    const float getSpeed() const { return _speed; }
 
     /**
      * Returns the current ship health.
@@ -54,6 +57,12 @@ public:
      * @param value The current ship health.
      */
     void setHealth(int value);
+
+    float getRange() { return _range; }
+
+    void setTarget(const Vec2 targ) { _target = targ; }
+
+    Vec2 getTarget() { return _target; }
 };
 
 /**

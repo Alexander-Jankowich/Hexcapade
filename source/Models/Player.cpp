@@ -52,7 +52,6 @@ void Player::updateAnimationState(PlayerObstacle::AnimationState s) {
         }
         else {
             setFrame(Player::leftFrontFrame);
-            CULog("Frame: %d", Player::leftFrontFrame);
         }
     }
     else {
@@ -63,7 +62,6 @@ void Player::updateAnimationState(PlayerObstacle::AnimationState s) {
             setFrame(Player::rightFrontFrame);
         }
     }
-    //CULog("Frame: %d", getFrame());
 }
 
 void Player::setSpell(SpellType spell) {

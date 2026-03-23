@@ -11,13 +11,14 @@
 using namespace std;
 using namespace cugl;
 
-EnemyObstacle::EnemyObstacle(const cugl::Vec2& pos, float speed, int health, cugl::Size s) {
+EnemyObstacle::EnemyObstacle(const cugl::Vec2& pos, float speed, int health, float range, cugl::Size s) {
     init(pos, s / PHYSICS_SCALE);
     setAwake(true);
     setEnabled(true);
     setBodyType(b2_dynamicBody);
     _health = health;
     _speed = speed;
+    _range = range;
 }
 
 /**
@@ -46,7 +47,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     Size size = image->getSize();
     
     // Create the SpellObstacle
-    auto en = EnemyObstacle::alloc(pos, 2.5, h, size);
+    auto en = EnemyObstacle::alloc(pos, 2.5, h,_assets->get<JsonValue>("constants")->get("enemies")->getFloat("range"), size);
 
 //    pl->setAngleSnap(0); // Snap to the nearest degree
 //
@@ -133,20 +134,17 @@ std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::update(std::vec
         // Update individual enemies
         Vec2 targ = getClosestPlayer((*it)->getPosition(), targets);
 
-        Vec2 vel = targ - (*it)->getPosition();
+        if (targ.distance((*it)->getPosition()) < (*it)->getRange()) {
+            (*it)->setTarget(targ);
+            CULog("%.2f", targ.distance((*it)->getPosition()));
+        }
+
+        // Set velocity to go to target
+        Vec2 vel = (*it)->getTarget() - (*it)->getPosition();
         vel.normalize();
         vel *= (*it)->getSpeed();
         (*it)->setLinearVelocity(vel);
 
-
-        // delete enemies if they fall below 0 hp.
-//        if ((*it)->getHealth() > 0) {
-//            it++;
-//        }
-//        else {
-//            remove.emplace(*it);
-//            it = current.erase(it);
-//        }
         it++;
     }
 
