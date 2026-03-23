@@ -933,8 +933,8 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
                     // FLAG: serena did, unsure if we need all this error checking...
 //                    std::shared_ptr<Texture> hallTexture = _tiledRoomPrefab->getTextureForGid(_hallFloorGid);
 //                    if (hallTexture) {
-                        auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _wallRenderGids[index]);
-                        auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
+                    auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _wallRenderGids[index]);
+                    auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
                         //batch->draw(hallTexture, Color4::WHITE, cell);
 //                    } else {
 //                        batch->setTexture(nullptr);
@@ -989,8 +989,7 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
         return;
     }
 }
-
-std::shared_ptr<cugl::scene2::SceneNode> Map::draw() {
+std::shared_ptr<cugl::scene2::SceneNode> Map::draw2(){
     auto world = scene2::SceneNode::alloc();
     //    Rect backdrop(_worldBounds.origin.x, _worldBounds.origin.y,
     //                  _worldBounds.size.width, _worldBounds.size.height);
@@ -1012,27 +1011,98 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::draw() {
                 Rect cell(0, 0, _tileSize, _tileSize);
                 size_t index = (size_t)toIndex(xx, yy);
                 std::shared_ptr<Texture> tex = _tiledRoomPrefab->getTextureForGid(_hallFloorGid); //default for now
-                if (tile == TileType::HALL_FLOOR) {
-                    tex = _tiledRoomPrefab->getTextureForGid(_hallFloorGid);
-                }
-                else if (tile==TileType::ROOM_FLOOR) {
-                    tex = _tiledRoomPrefab->getTextureForGid(_floorRenderGids[index]);
-                }else if (tile == TileType::OBSTACLE){
-                    tex = _tiledRoomPrefab -> getTextureForGid(_decoRenderGids[index]);
-                }
-                if (!tex){
-                    CULog("missing");
+                tex = _tiledRoomPrefab -> getTextureForGid(_floorRenderGids[index]);
+                if(!tex){
                     continue;
                 }
-                    
                 auto sprite = std::make_shared<cugl::scene2::PolygonNode>();
                 sprite->initWithTexturePoly(tex, cell);
                 sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
                 sprite->setPosition(Vec2(px, py));
-                world->addChild(sprite);
+                world -> addChild(sprite);
+                }
             }
         }
+       
+    return world;
     }
+    
+    
+
+
+std::shared_ptr<cugl::scene2::SceneNode> Map::draw() {
+    auto world = scene2::SceneNode::alloc();
+    //    Rect backdrop(_worldBounds.origin.x, _worldBounds.origin.y,
+    //                  _worldBounds.size.width, _worldBounds.size.height);
+    //    batch->setColor(_config.backdropColor);
+    //    batch->fill(backdrop);
+
+    if (_tiledRoomPrefab && _tiledRoomPrefab->getTileset().texture) {
+        // this is the new tiled-backed draw path. repeated room tiles come from
+        // the real tileset art, while hallways still use a borrowed floor tile.
+        std::vector<std::shared_ptr<cugl::scene2::PolygonNode>> floors;
+        std::vector<std::shared_ptr<cugl::scene2::PolygonNode>> decor;
+        for (int yy = 0; yy < _gridHeight; ++yy) {
+            for (int xx = 0; xx < _gridWidth; ++xx) {
+                TileType tile = getTile(xx, yy);
+                if (tile == TileType::EMPTY) {
+                    continue;
+                }
+                
+                float px = (_origin.x + xx * _tileSize);
+                float py = (_origin.y + yy * _tileSize);
+                Rect cell(0, 0, _tileSize, _tileSize);
+                size_t index = (size_t)toIndex(xx, yy);
+                std::shared_ptr<Texture> tex = _tiledRoomPrefab->getTextureForGid(_hallFloorGid); //default for now
+                if (tile == TileType::HALL_FLOOR) {
+                    tex = _tiledRoomPrefab->getTextureForGid(_hallFloorGid);
+                    auto sprite = std::make_shared<cugl::scene2::PolygonNode>();
+                    sprite->initWithTexturePoly(tex, cell);
+                    sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+                    sprite->setPosition(Vec2(px, py));
+                    floors.push_back(sprite);
+                    continue;
+                }
+                else if (tile==TileType::ROOM_FLOOR) {
+                    tex = _tiledRoomPrefab->getTextureForGid(_floorRenderGids[index]);
+                    auto sprite = std::make_shared<cugl::scene2::PolygonNode>();
+                    sprite->initWithTexturePoly(tex, cell);
+                    sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+                    sprite->setPosition(Vec2(px, py));
+                    floors.push_back(sprite);
+                }else{
+                    tex = _tiledRoomPrefab -> getTextureForGid(_decoRenderGids[index]);
+                    if(!tex){
+                        tex = _tiledRoomPrefab -> getTextureForGid(_visFixRenderGids[index]);
+                        if(!tex){
+                            //tex = _tiledRoomPrefab -> getTextureForGid(_floorRenderGids[index]);
+                            if (!tex){
+                                tex = _tiledRoomPrefab -> getTextureForGid(_wallRenderGids[index]);
+                                if(!tex){
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+                    auto sprite = std::make_shared<cugl::scene2::PolygonNode>();
+                    sprite->initWithTexturePoly(tex, cell);
+                    sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+                    sprite->setPosition(Vec2(px, py));
+                    decor.push_back(sprite);
+                }
+                
+                
+            }
+        }
+        for (const auto& node : decor) {
+            if (node) { world->addChild(node); }
+        }
+        for (const auto& node : floors) {
+            if (node) { world->addChild(node); }
+        }
+        
+    }
+    
     return world;
 }
 
@@ -1575,3 +1645,4 @@ int Map::findNearestWalkableTileIndex(int startX, int startY) const {
 
     return -1;
 }
+

@@ -78,6 +78,7 @@ public:
     const std::vector<cugl::Vec2>& getEnemySpawnPoints() const { return _enemySpawnPoints; }
     cugl::Vec2 getPlayerSpawn() const { return _playerSpawn; }
     std::shared_ptr<cugl::scene2::SceneNode> draw();
+    std::shared_ptr<cugl::scene2::SceneNode> draw2();
 private:
     bool inBounds(int x, int y) const;
     int toIndex(int x, int y) const;

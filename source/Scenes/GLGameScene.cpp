@@ -353,7 +353,15 @@ void GameScene::rebuildMapForRun() {
         CULog("map generation failed for run revision %d", _runRevision);
         return;
     }
-
+    auto n = _map -> draw2();
+    n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    n->setPosition(Vec2::ZERO);
+    _worldnode -> addChild(n);
+    
+    if(_networkCtrl -> isHost()){
+        _map->populateObtacles(_networkCtrl, _rectFact, _rectFactId);
+    }
+    
     _roomController.setMap(_map);
     _appliedRunRevision = _runRevision;
     auto mapNode = _map->draw();
@@ -361,9 +369,8 @@ void GameScene::rebuildMapForRun() {
     mapNode->setPosition(Vec2::ZERO);
 
     _worldnode->addChild(mapNode);
-    if(_networkCtrl -> isHost()){
-        _map->populateObtacles(_networkCtrl, _rectFact, _rectFactId);
-    }
+
+    
     
     _quota = std::max(1, _runConfig.quota);
     _depositPosition = _map->getPlayerSpawn();
