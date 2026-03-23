@@ -218,7 +218,7 @@ void GameScene::preUpdate(float dt)
         if (lastEnemySpawn > 8)
         {
             lastEnemySpawn = 0;
-            _enemy->spawnEnemy(getSize() / 2, 4);
+            //_enemy->spawnEnemy(getSize() / 2, 4);
         }
     }
 

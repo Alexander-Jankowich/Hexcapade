@@ -65,6 +65,101 @@ std::vector<std::vector<Vec2>> X_GESTURE = {
     }
 };
 
+std::vector<std::vector<Vec2>> HEAL_GESTURE = {
+    {
+        {799.082031, 316.132843},
+        {799.679688, 316.734406},
+        {807.484375, 323.906281},
+        {826.242188, 341.160187},
+        {852.984375, 365.937531},
+        {894.757812, 408.417969},
+        {919.265625, 435.593781},
+        {939.195312, 460.546906},
+        {950.011719, 474.015686},
+        {955.183594, 480.449249},
+        {960.617188, 486.992218},
+        {964.894531, 492.007874},
+        {966.800781, 494.242249},
+        {967.921875, 495.601593},
+        {968.675781, 496.359436},
+        {969.109375, 496.761780},
+        {969.109375, 496.761780}
+    },
+    {
+        {795.699219, 403.976593},
+        {796.460938, 405.593781},
+        {801.906250, 412.023468},
+        {808.433594, 419.136749},
+        {835.414062, 447.140686},
+        {848.859375, 459.750000},
+        {860.589844, 470.492249},
+        {872.089844, 480.949249},
+        {882.832031, 490.027405},
+        {892.128906, 497.687531},
+        {899.187500, 503.429749},
+        {904.375000, 507.878937},
+        {910.617188, 513.406311},
+        {912.457031, 515.308655},
+        {913.503906, 516.074280},
+        {913.761719, 516.335938},
+        {913.761719, 516.335938}
+    },
+    {
+        {784.847656, 499.066437},
+        {784.847656, 498.152405},
+        {784.847656, 494.964905},
+        {784.847656, 491.468811},
+        {784.847656, 485.953186},
+        {784.847656, 478.257874},
+        {784.847656, 466.500061},
+        {784.847656, 452.058655},
+        {784.847656, 447.300842},
+        {784.847656, 428.250031},
+        {784.847656, 413.656281},
+        {784.847656, 397.332062},
+        {784.847656, 378.417999},
+        {785.070312, 361.250031},
+        {785.917969, 344.394562},
+        {787.148438, 328.058624},
+        {788.351562, 312.664093},
+        {789.531250, 298.175812},
+        {790.679688, 284.394562},
+        {791.925781, 264.355499},
+        {792.179688, 259.273468},
+        {792.761719, 246.390640},
+        {792.761719, 237.949234},
+        {792.761719, 232.621124},
+        {792.761719, 226.812531},
+        {792.761719, 220.750031},
+        {792.761719, 215.339859},
+        {792.761719, 211.187515},
+        {792.761719, 205.660172},
+        {792.761719, 199.609390},
+        {792.761719, 193.523453},
+        {792.761719, 187.125015},
+        {792.761719, 181.449219},
+        {792.761719, 176.203140},
+        {792.761719, 170.984406},
+        {792.761719, 166.433609},
+        {793.097656, 160.644547},
+        {793.097656, 158.019547},
+        {793.097656, 157.082047},
+        {793.410156, 154.222656},
+        {793.410156, 152.675797},
+        {793.691406, 151.292999},
+        {793.691406, 150.128922},
+        {793.691406, 149.406265},
+        {793.691406, 148.375015},
+        {793.691406, 147.199234},
+        {793.691406, 146.132812},
+        {793.691406, 145.390625},
+        {793.691406, 144.863281},
+        {793.691406, 144.335938},
+        {793.328125, 144.417984}
+    }
+};
+
+
 std::vector<cugl::Vec2> V_GESTURE = {
     {947.566650, 554.066650},
     {955.754150, 544.787476},
@@ -811,7 +906,8 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
                             std::function<cugl::Vec2(const cugl::Vec2&)> screenToWorld) {
     _screenToWorld = screenToWorld;
     recognizer = cugl::PGestureRecognizer::alloc();
-    recognizer -> addGesture("V", { X_GESTURE });
+    recognizer -> addGesture("V",  X_GESTURE );
+    recognizer -> addGesture("Z", HEAL_GESTURE);
 //    recognizer->addGesture("V", { V_GESTURE_1 });
 //    recognizer->addGesture("V", { V_GESTURE_2 });
 //    recognizer->addGesture("V", { V_GESTURE_3 });
@@ -843,15 +939,29 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     _joyradius = values->get("joystick")->getInt("radius");
     _deadzone = values->get("joystick")->getInt("dead_zone");
 
+    
+    //
+#ifndef CU_TOUCH_SCREEN
     _sbounds = bounds;
     //
     Size display = Application::get()->getDisplaySize();
     _tbounds = Rect(0,0,display.width,display.height);
-    
+        
     createZones();
     clearTouchInstance(_ltouch);
     clearTouchInstance(_rtouch);
     clearTouchInstance(_mtouch);
+#else
+    Size display = Application::get()->getDrawableSize();
+    _tbounds = Rect(0,0,display.width,display.height);
+    _sbounds = _tbounds;
+    createZones();
+    clearTouchInstance(_ltouch);
+    clearTouchInstance(_rtouch);
+    clearTouchInstance(_mtouch);
+    
+#endif
+
 
     return true;
 }
@@ -1158,18 +1268,18 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         // Register tap as pickup, to be changed using buttons?
         _pickupPressed = true;
     }
-    CULog("First Stroke points:");
-        for (const auto& p : currentStroke) {
-            CULog("{%f, %f},", p.x, p.y);
-        }
-    CULog("Second Stroke points:");
-        for (const auto& p : secondStroke) {
-            CULog("{%f, %f},", p.x, p.y);
-        }
-    CULog("Third Stroke points:");
-        for (const auto& p : thirdStroke) {
-            CULog("{%f, %f},", p.x, p.y);
-        }
+//    CULog("First Stroke points:");
+//        for (const auto& p : currentStroke) {
+//            CULog("{%f, %f},", p.x, p.y);
+//        }
+//    CULog("Second Stroke points:");
+//        for (const auto& p : secondStroke) {
+//            CULog("{%f, %f},", p.x, p.y);
+//        }
+//    CULog("Third Stroke points:");
+//        for (const auto& p : thirdStroke) {
+//            CULog("{%f, %f},", p.x, p.y);
+//        }
 
     // Clear points
     thirdStroke = secondStroke;
@@ -1196,9 +1306,14 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     _touchDown = true;
     //CULog("Touch began %lld", event.touch);
 
+    _touchDown = true;
     Vec2 pos = event.position;
-    pos = touch2Screen(pos);
     Zone zone = getZone(pos);
+    pos = touch2Screen(pos);
+    
+    CULog("Touch pos world: (%.2f, %.2f), zone: %d", pos.x, pos.y, (int)zone);
+    CULog("lzone: (%.2f,%.2f,%.2f,%.2f)", _lzone.origin.x, _lzone.origin.y, _lzone.size.width, _lzone.size.height);
+    CULog("rzone: (%.2f,%.2f,%.2f,%.2f)", _rzone.origin.x, _rzone.origin.y, _rzone.size.width, _rzone.size.height);
     switch (zone){
         case Zone::LEFT:
             // Only process if no touch in zone
