@@ -55,7 +55,8 @@ public:
      *
      * @return true if the initialization was successful
      */
-    bool init(std::shared_ptr<cugl::JsonValue> values, const cugl::Rect bounds);
+    bool init(std::shared_ptr<JsonValue> values, const Rect bounds,
+              std::function<cugl::Vec2(const cugl::Vec2&)> screenToWorld);
 
     /**
      * Disposes this input controller, deactivating all listeners.
@@ -115,6 +116,8 @@ public:
     * @return current stroke
     */
     std::vector<cugl::Vec2> getCurStroke() { return currentStroke; }
+    std::vector<cugl::Vec2> getsecondStroke() { return secondStroke; }
+    std::vector<cugl::Vec2> getthirdStroke() { return thirdStroke; }
 
     /**
     * Returns the user input for movement
@@ -346,9 +349,15 @@ protected:
     
     /**Movement*/
     cugl::Vec2 _move;
-
+    
     /**A vector of points representing the gesture**/
     std::vector<cugl::Vec2> currentStroke;
+    /**A vector of points representing the last stroke**/
+    std::vector<cugl::Vec2> secondStroke;
+    /**A  vector of points represent eh second to last stroke**/
+    std::vector<cugl::Vec2> thirdStroke;
+    
+    std::function<cugl::Vec2(const cugl::Vec2&)> _screenToWorld;
 
     /**The gesture recognizer*/
     std::shared_ptr<cugl::GestureRecognizer> recognizer;
