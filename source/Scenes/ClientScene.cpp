@@ -13,6 +13,7 @@ using namespace cugl::graphics;
 #pragma mark Init / Dispose
 
 bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
+    canInitGame=false;
     // Initialize the scene to a locked width
     if (assets == nullptr) {
         return false;
@@ -86,10 +87,8 @@ void ClientScene::update(float dt) {
         
     // handle init  event
     if(_networkCtrl->isInAvailable()){
-        CULog("have in event");
         auto e = _networkCtrl->popInEvent();
         if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e)){
-            CULog("INIT EVENT GOT");
             processInitEvent(cse);
         }
     }
@@ -146,4 +145,5 @@ void ClientScene::configureStartButton() {
 void ClientScene::processInitEvent(const std::shared_ptr<GameInitEvent> &e) {
     CULog("client recieved init!");
     _networkCtrl->setRandSeed(e->getSeed());
+    canInitGame = true;
 }

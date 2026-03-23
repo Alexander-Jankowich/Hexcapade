@@ -45,6 +45,7 @@ void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
     attachEventType<GameInitEvent>();
     attachEventType<CastSpellEvent>();
     cugl::physics2::distrib::NetEventController::init(a);
+    _randSeed=0;
 }
 
 bool NetworkController::connectClient(string roomId) {

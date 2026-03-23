@@ -20,6 +20,7 @@ class NetworkController : public NetEventController {
 private:
 #pragma mark Attributes
     unordered_set<string> _players;
+    string uuid;
     string _currHost;
     unsigned int _randSeed;
 //    InputCallback _inputCallback;

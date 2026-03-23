@@ -198,18 +198,10 @@ public:
     bool hasWon() const { return _playerWon; }
     bool hasLost() const { return _playerLost; }
 
-    /**
-     * Returns the network connection (as made by this scene)
-     *
-     * This value will be reset every time the scene is made active.
-     *
-     * @return the network connection (as made by this scene)
-     */
-    void setConnection(std::shared_ptr<NetworkController> network, bool isHost) {
-        _networkCtrl = network;
-        _ishost = isHost;
-    }
-
+    /** initializes the network and physics world */
+    void initNetwork(std::shared_ptr<NetworkController> n);
+    /** initialize map once network is populated with random seed for this round */
+    void initMap();
     /**
      * Returns true if the player is host.
      *
@@ -310,7 +302,7 @@ public:
 
     void setActive(bool value) override;
     
-    void initHost();
+    void initHost(unsigned int randSeed);
 private:
     void processComboEvent(const std::shared_ptr<CastSpellEvent>& e);
     void processInitEvent(const std::shared_ptr<GameInitEvent>& e);

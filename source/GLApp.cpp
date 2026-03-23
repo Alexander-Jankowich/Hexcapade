@@ -392,14 +392,17 @@ void GeometryApp::updateHostScene(float dt) {
         _mainmenu.setActive(true);
         _scene = State::MENU;
         break;
+    case NetworkController::Status::CONNECTED:
+            _gameplay.initNetwork(_hostScene.getNetwork());
+            break;
     case NetworkController::Status::HANDSHAKE:
     case NetworkController::Status::READY:
             CULog("status, sending init: %d", _hostScene.getStatus());
             _hostScene.sendInitMsg();
+            _gameplay.initMap();
             break;
     case NetworkController::Status::INGAME:
             _hostScene.setActive(false);
-            _gameplay.setConnection(_hostScene.getNetwork(), true); // TODO - move this method into init
             // Transfer connection ownership
             _hostScene.release();
             _gameplay.setActive(true);
@@ -412,6 +415,10 @@ void GeometryApp::updateHostScene(float dt) {
 
 void GeometryApp::updateClientScene(float dt) {
     _clientScene.update(dt);
+    if (_clientScene.canInitGame) {
+        _gameplay.initMap();
+        CULog("init client map");
+    }
 
     switch (_clientScene.getStatus()) {
     case NetworkController::Status::NETERROR:
@@ -422,13 +429,15 @@ void GeometryApp::updateClientScene(float dt) {
         _mainmenu.setActive(true);
         _scene = State::MENU;
         break;
-    case NetworkController::Status::HANDSHAKE :
-//            _gameplay.init(_assets);
-//            _gameplay.setSpriteBatch(_batch);
-            break;
+    case NetworkController::Status::CONNECTED:
+        _gameplay.initNetwork(_clientScene.getNetwork());
+        break;
+//    case NetworkController::Status::READY :
+//    case NetworkController::Status::HANDSHAKE:
+//            _gameplay.initMap();
+//            break;
     case NetworkController::Status::INGAME:
             _clientScene.setActive(false);
-            _gameplay.setConnection(_clientScene.getNetwork(), false);
             // Transfer connection ownership
             _clientScene.release();
             _gameplay.setActive(true);

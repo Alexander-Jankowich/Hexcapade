@@ -265,7 +265,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     
     
     
-    _networkCtrl = NetworkController::alloc(_assets);
+    _networkCtrl = nullptr;
     setActive(false);
     return true;
 }
@@ -350,9 +350,6 @@ void GameScene::rebuildMapForRun() {
     n->setPosition(Vec2::ZERO);
     _worldnode -> addChild(n);
     
-    if(_networkCtrl -> isHost()){
-        _map->populateObtacles(_networkCtrl, _rectFact, _rectFactId);
-    }
     
     _roomController.setMap(_map);
     _appliedRunRevision = _runRevision;
@@ -396,10 +393,6 @@ void GameScene::rebuildMapForRun() {
     if(_player){
         updateCameraFollow();
     }
-    
-    // SERENA ADDED: STUFF FOR MAP TO GENERATE ITS NODE FN
-    
-    
 }
 
 void GameScene::updateCameraFollow() {
@@ -1210,6 +1203,31 @@ void GameScene::drawItems()
     }
 }
 
+void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
+    if (_networkCtrl!=nullptr) return;
+    _networkCtrl = n;
+}
+
+void GameScene::initMap() {
+    if (_networkCtrl->getRandSeed()==0) return; // no randSeed
+    if (_mapSeed==_networkCtrl->getRandSeed()) return; // already init
+    // uh ig this also will init network??? yolo
+    std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
+        this->linkSceneToObs(obs, node);
+        };
+    
+    _networkCtrl->enablePhysics(_world, linkSceneToObsFunc);
+    _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
+    _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
+    _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
+    _rectFactId = _networkCtrl->getPhysController()->attachFactory(_rectFact);
+    _mapSeed= _networkCtrl->getRandSeed();
+    CULog("set map seed to : %d", _mapSeed);
+    if (_mapSeed != 0) {
+        rebuildMapForRun();
+    }
+}
+
 void GameScene::setActive(bool value)
 {
     if (isActive() != value)
@@ -1218,31 +1236,14 @@ void GameScene::setActive(bool value)
         if (value)
         {
             _input.activate();
-            _mapSeed = _networkCtrl->getRandSeed();
-            CULog("set map seed to : %d", _mapSeed);
-            // init network and world once we start the game
-            //Make a std::function reference of the linkSceneToObs function in game scene for network controller
             
-            std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
-                this->linkSceneToObs(obs, node);
-                };
-            
-            _networkCtrl->enablePhysics(_world, linkSceneToObsFunc);
-            _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
-            _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
-            _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
-            _rectFactId = _networkCtrl->getPhysController()->attachFactory(_rectFact);
-            
-            if (_mapSeed != 0) {
-                rebuildMapForRun();
-            }
-            
-            auto params = _playerFact->serializeParams(_map -> getPlayerSpawn() / PHYSICS_SCALE, _networkCtrl->getPID());
+    
+            auto params = _playerFact->serializeParams(_map -> getPlayerSpawn() / PHYSICS_SCALE, std::to_string(_networkCtrl->getShortUID()));
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
 
             // set _player to the correct object
             _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-            _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
+            _player = _playerFact->getPlayerByPID(std::to_string(_networkCtrl->getShortUID()));
             
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
@@ -1379,7 +1380,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         return;
     }
     if (player && enemy) {
-        CULog("enemy and player colliison");
+        //CULog("enemy and player colliison");
         // TODO make this actually work?
         player->getBody()->ApplyLinearImpulseToCenter(b2Vec2(20 * enemy->getLinearVelocity().x, 20 * enemy->getLinearVelocity().y), true);
         enemy->getBody()->ApplyLinearImpulseToCenter(b2Vec2(-20 * enemy->getLinearVelocity().x, -20 * enemy->getLinearVelocity().y), true);
