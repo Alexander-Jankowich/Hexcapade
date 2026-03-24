@@ -23,7 +23,7 @@
 #include <cstddef> 
 #include "../Models/GameplayConfig.h"
 #include "../Models/Map.h"
-#include "../Models/ItemSet.h"
+#include "../Models/ItemFactory.h"
 #include "../Controllers/CollisionController.h"
 #include "../Models/Player.h"
 #include "../Models/SpellFactory.h"
@@ -66,6 +66,8 @@ protected:
     Uint32 _enemyFactId;
     std::shared_ptr<RectFactory> _rectFact;
     Uint32 _rectFactId;
+    std::shared_ptr<ItemFactory> _itemFact;
+    Uint32 _itemFactId;
 
     std::shared_ptr<PlayerObstacle> _player;
     
@@ -102,47 +104,7 @@ protected:
     std::shared_ptr<cugl::JsonValue> _gestures;
 
     bool input_down = false;
-
-    /** Architecture-spec world-item owner for pickups, drops, and quota seeding. */
-    ItemSet _itemSet;
-
-    // ga: itemnet old scene-local item prototype kept for reference while
-    // itemset becomes the gameplay source of truth on this branch.
-    // struct ItemData {
-    //     enum class ItemType {
-    //         ARTIFACT,
-    //         SPELL
-    //     };
-    //
-    //     ItemType type;
-    //     std::string name;
-    //     int value;
-    //     cugl::Vec2 position;
-    //     float radius;
-    //     cugl::Color4 color;
-    // };
-    
-  //  class DebugDraw : public b2Draw {
-  //  public:
-   //     void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) override {
-            
-   //     }
-  //      void DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color) override {}
-  //      void DrawCircle(const b2Vec2& center, float radius, const b2Color& color) override {}
-  //      void DrawSolidCircle(const b2Vec2& center, float radius, const b2Vec2& axis, const b2Color& color) override {}
-  //      void DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color) override {}
-   //     void DrawTransform(const b2Transform& xf) override {}
-  //     void DrawPoint(const b2Vec2& p, float size, const b2Color& color) override {}
-   // };
-    //
-    // std::vector<ItemData> _items;
-    /** this tracks if player is close enough to pickup an item */
-    bool _canPickupItem;
-    /** this stores the index for the current pickup target */
-    int _pickupIndex;
-    /** this stores the current prompt text for pickup */
-    std::string _pickupPrompt;
-        /** this tracks whether the player is currently inside the deposit zone */
+    /** this tracks whether the player is currently inside the deposit zone */
     bool _canDeposit;
     /** this stores the prototype origin/deposit interaction position */
     cugl::Vec2 _depositPosition;
@@ -160,7 +122,7 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _playerLost(false), _pickupIndex(-1), _inventoryValue(0), _depositedValue(0), _canPickupItem(false),  _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
+    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _playerLost(false), _inventoryValue(0), _depositedValue(0), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
@@ -303,6 +265,7 @@ public:
     void setActive(bool value) override;
     
     void initHost(unsigned int randSeed);
+
 private:
     void processComboEvent(const std::shared_ptr<CastSpellEvent>& e);
     void processInitEvent(const std::shared_ptr<GameInitEvent>& e);
@@ -311,22 +274,10 @@ private:
     void handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex);
     // this maps the last panel tap to an inventory row index for the upcoming item flow
     int getInventoryPanelIndexAt(const cugl::Vec2& tapPos) const;
-    // this executes pickup against ItemSet and the local player's Inventory
-    bool pickupNearbyItem();
-    // this deposits all currently carried items into the shared quota
-    bool depositAtDropoff();
-    // this drops a specific inventory slot back into world space
-    bool dropInventoryIndex(size_t index);
-    // host-only helper that validates and applies a pickup for the given player
-    bool hostPickupForPlayer(const std::shared_ptr<Player>& player);
-    // host-only helper that validates and applies a drop for the given player
-    bool hostDropInventoryIndex(const std::shared_ptr<Player>& player, size_t index);
-    // host-only helper that validates and applies a deposit for the given player
-    bool hostDepositForPlayer(const std::shared_ptr<Player>& player);
-    // client-side mirror helper that replaces one player's inventory from a host snapshot
-//    void applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player, const std::vector<HostInventoryItemData>& items);
-//    // client-side mirror helper that replaces all world items from a host snapshot
-    //void applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items);
+    // host-only: checks proximity of all players to all items and picks up on overlap
+    void hostCheckItemPickups();
+    // host-only: this spawns physics-backed items at map spawn points
+    void spawnItemsFromMap();
     // this loads map/item quota tuning from json without changing the networking path
     void loadGameplayConfig();
     // this rebuilds the current map from host-owned run metadata
@@ -338,26 +289,8 @@ private:
     // this returns the camera offset used to keep hud elements screen-anchored
     cugl::Vec2 getHUDOffset() const;
 
-    // GA: itemnet old scene-local item prototype kept for reference while
-    // ItemSet/Inventory replace the temporary vector-based path.
-    // ItemData createRandomItem(bool forceArtifact, bool forceSpell);
-    // void spawnInitialItems();
-    // void spawnReplacementItem();
-    // this updates nearest item + pickup prompt state
-    void updateItemPickupState();
-    // this updates whether the player can currently use the prototype deposit zone
-    void updateDepositState();
-    // this handles desktop e key pickup action
-    void tryPickupItem();
-    // this reserves the keyboard/mobile drop path for the inventory-backed item port
-    void tryDropItem();
-    // this reserves the keyboard/mobile deposit path for the inventory-backed item port
-    void tryDepositItems();
-    // this draws all active items
-    void drawItems();
     // this draws the prototype deposit zone so desktop/mobile tests can target it
     void drawDepositZone();
-
 
     void renderHUD();
 
