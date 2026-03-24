@@ -1210,12 +1210,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     if (player && enemy) {
         CULog("enemy and player collison");
-        // TODO make this actually work?
-        //CULog("here");
-        //player->getBody()->ApplyLinearImpulseToCenter(b2Vec2(20 * enemy->getLinearVelocity().x, 20 * enemy->getLinearVelocity().y), true);
-        enemy->getBody()->ApplyLinearImpulseToCenter(b2Vec2(-1 * ATTACK_DELAY * enemy->getLinearVelocity().x, -1 * ATTACK_DELAY * enemy->getLinearVelocity().y), true);
+        enemy->getBody()->SetLinearVelocity((b2Vec2(-1 * ATTACK_DELAY * enemy->getLinearVelocity().x, -1 * ATTACK_DELAY * enemy->getLinearVelocity().y)));
         if (enemy->getState()!=EnemyObstacle::EnemyState::ATTACK_RESET)
-            player->setHealth(player->getHealth() - 2); // TODO: give enemies a damage field
+            player->setHealth(player->getHealth() - 2);
         CULog("health: %d", player->getHealth());
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;

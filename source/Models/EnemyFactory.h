@@ -11,7 +11,7 @@
 #include <cugl/cugl.h>
 #include "Enemy.h"
 
-#define ATTACK_DELAY 15
+#define ATTACK_DELAY 1.5f
 
 using namespace cugl;
 using namespace cugl::physics2::distrib;
