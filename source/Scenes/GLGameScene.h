@@ -93,6 +93,8 @@ protected:
     bool _playerWon;
     /** Whether the player has lost */
     bool _playerLost;
+    /**Timer for end of game**/
+    float _timer = 3600;
 
     std::shared_ptr<cugl::AssetManager> _assets;
     /** Font for rendering HUD text */

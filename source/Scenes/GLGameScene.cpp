@@ -456,6 +456,7 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
+    _timer -= 1;
     _input.update(dt);
     
     if (_input.pressedReset()) {
@@ -604,8 +605,6 @@ void GameScene::preUpdate(float dt)
                 auto params = _enemyFact->serializeParams(pos / PHYSICS_SCALE, Vec2::ZERO, 4);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
             }
-            
-            
         }
 
         // Change to be all player positions
@@ -780,10 +779,15 @@ void GameScene::renderHUD()
     float healthY = screenSize.height - barH - margin;
     drawBox(healthX + hudOffset.x, healthY + hudOffset.y, healthW, barH, boxColor);
 
+
     Rect actionButton = _input.getActionButtonBounds();
     drawBox(actionButton.origin.x + hudOffset.x, actionButton.origin.y + hudOffset.y,
             actionButton.size.width, actionButton.size.height, boxColor);
 
+    float timerX = 20;
+    float timerY = screenSize.height - barH - margin;
+    drawBox(timerX + hudOffset.x, timerY + hudOffset.y, barW, barH, boxColor);
+    
     if (_font)
     {
         _batch->setColor(Color4::WHITE);
@@ -811,6 +815,15 @@ void GameScene::renderHUD()
         Affine2 healthTrans;
         healthTrans.translate(healthX + 10 + hudOffset.x, healthY + 12 + hudOffset.y);
         _batch->drawText(healthLabel, healthTrans);
+        
+        std::shared_ptr<TextLayout> timerLabel = TextLayout::allocWithText(
+            "Time Remaining: " + std::to_string(_timer / 60), _font);
+        timerLabel->layout();
+        Affine2 timerTrans;
+        CULog("timerX: %f, timerY: %f", timerX, timerY);
+        timerTrans.translate(timerX + 10 + hudOffset.x, timerY + 12 + hudOffset.y );
+        _batch->drawText(timerLabel, timerTrans);
+
 
         std::string pickupText = "move close to item";
 #ifdef CU_TOUCH_SCREEN
@@ -1210,6 +1223,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     if (player && enemy) {
         CULog("enemy and player collison");
+        // TODO make this actually work?
+        //CULog("here");
+        //player->getBody()->ApplyLinearImpulseToCenter(b2Vec2(20 * enemy->getLinearVelocity().x, 20 * enemy->getLinearVelocity().y), true);
         enemy->getBody()->SetLinearVelocity((b2Vec2(-1 * ATTACK_DELAY * enemy->getLinearVelocity().x, -1 * ATTACK_DELAY * enemy->getLinearVelocity().y)));
         if (enemy->getState()!=EnemyObstacle::EnemyState::ATTACK_RESET)
             player->setHealth(player->getHealth() - 2);

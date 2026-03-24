@@ -50,12 +50,6 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     case SpellType::HEAL:
         values = _spellConsts->get("heal");
         break;
-    case SpellType::COMBO_FIREBALL:
-        values = _spellConsts->get("fireball");
-        break;
-    case SpellType::COMBO_FREEZE:
-        values = _spellConsts->get("freeze");
-        break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
     default:
@@ -75,7 +69,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     // Set the physics attributes
 
     spell->setShared(true);
-
+    CULog("going to emplace the spell");
     current.emplace(spell);
 
     // Create Spell! Hard code values for now, change later
@@ -84,15 +78,16 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     sprite -> setScale(0.5);
 
     switch (type) {
+    case SpellType::HEAL:
+        sprite->setColor(Color4::GREEN);
+        break;
     case SpellType::FIREBALL:
         sprite->setColor(Color4::RED);
         break;
     case SpellType::FREEZE:
         sprite->setColor(Color4::BLUE);
         break;
-    case SpellType::HEAL:
-        sprite->setColor(Color4::GREEN);
-        break;
+    
     default:
         break;
     }
