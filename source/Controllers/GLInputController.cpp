@@ -33,147 +33,134 @@ using namespace cugl;
 /** How fast a double click must be in milliseconds */
 #define DOUBLE_CLICK    400
 
-std::vector<std::vector<Vec2>> X_GESTURE = {
+std::vector<std::vector<Vec2>> ARROW_GESTURE = {
     {
-        {1026.695312, 544.195312},
-        {1026.695312, 543.953125},
-        {1012.515625, 529.476562},
-        {969.273438, 487.671875},
-        {902.906250, 426.726562},
-        {847.929688, 377.593750},
-        {815.179688, 349.468750},
-        {794.531250, 333.039062},
-        {779.953125, 321.648438},
-        {774.023438, 317.710938},
-        {772.375000, 317.421875},
-        {772.328125, 319.281250},
-        {772.328125, 319.281250}
+        {2033.129883, 749.465759},
+        {2055.725342, 787.938965},
+        {2091.145020, 828.855042},
+        {2128.396973, 863.664185},
+        {2155.267334, 888.702332},
+        {2171.145020, 898.473328},
+        {2176.641357, 899.084045},
+        {2178.473389, 899.084045},
+        {2179.083984, 899.084045},
+        {2179.083984, 897.862671},
+        {2179.694824, 896.641296},
+        {2180.916016, 895.419922},
+        {2182.748047, 894.809204},
+        {2188.244385, 891.755798},
+        {2204.122070, 883.206177},
+        {2231.603027, 862.442810},
+        {2260.305420, 833.740540},
+        {2283.511719, 805.038208},
+        {2298.167969, 783.053467},
+        {2303.664307, 773.282532},
+        {2304.274902, 772.061157},
+        {2304.274902, 773.893188}
     },
     {
-        {786.523438, 544.015625},
-        {788.179688, 543.070312},
-        {813.078125, 526.609375},
-        {864.593750, 501.273438},
-        {943.875000, 457.046875},
-        {988.789062, 430.570312},
-        {1036.046875, 401.820312},
-        {1097.742188, 360.757812},
-        {1111.539062, 351.742188},
-        {1116.757812, 348.515625},
-        {1117.578125, 348.007812},
-        {1117.578125, 348.007812}
+        {2183.969482, 864.885620},
+        {2182.137451, 834.351196},
+        {2182.137451, 812.366516},
+        {2182.137451, 783.053467},
+        {2180.916016, 659.694763},
+        {2190.687256, 605.954285},
+        {2201.679443, 565.038269},
+        {2209.618408, 543.664185},
+        {2210.839844, 536.946655},
+        {2210.839844, 536.335938},
+        {2207.175781, 537.557373}
     }
 };
 
-
-std::vector<std::vector<Vec2>> X_GESTURE_2 = {
+std::vector<std::vector<Vec2>> ARROW_GESTURE_2 = {
     {
-        {1338.625977, 449.465637},
-        {1312.977051, 431.755707},
-        {1301.984741, 419.541992},
-        {1286.106934, 403.053406},
-        {1243.969482, 354.198425},
-        {1200.000000, 294.961823},
-        {1171.297729, 253.435089},
-        {1152.977051, 226.564911},
-        {1141.374023, 210.687042},
-        {1136.488525, 203.358765},
-        {1134.656494, 199.083939},
-        {1134.656494, 196.030563},
-        {1134.656494, 194.198502},
-        {1134.656494, 194.198502}
+        {870.229004, 2021.374023},
+        {881.832031, 2017.709961},
+        {903.206116, 2042.137451},
+        {934.961792, 2076.946533},
+        {967.938965, 2111.145020},
+        {994.198425, 2135.572510},
+        {1007.633545, 2141.679443},
+        {1010.687012, 2141.068604},
+        {1012.519043, 2141.068604},
+        {1013.129761, 2141.068604},
+        {1013.129761, 2140.458008},
+        {1013.129761, 2139.236572},
+        {1013.129761, 2138.015137},
+        {1013.740479, 2135.572510},
+        {1018.625977, 2129.465576},
+        {1037.557251, 2112.977051},
+        {1071.145020, 2085.496094},
+        {1107.175537, 2056.183105},
+        {1138.320679, 2031.755737},
+        {1159.083984, 2015.877930},
+        {1170.687012, 2007.328247},
+        {1175.572510, 2003.053467},
+        {1176.183228, 2002.442749}
     },
     {
-        {1116.335938, 432.366394},
-        {1133.435059, 423.816742},
-        {1147.480835, 398.778564},
-        {1163.358765, 363.358734},
-        {1179.847290, 323.053406},
-        {1198.167969, 283.358765},
-        {1216.488525, 248.549591},
-        {1231.755737, 218.625931},
-        {1243.358765, 195.419876},
-        {1250.076294, 181.374023},
-        {1253.129761, 174.045822},
-        {1253.129761, 171.603043},
-        {1253.129761, 172.213730},
-        {1253.129761, 172.213730}
+        {1012.519043, 2111.145020},
+        {1011.297729, 2107.480957},
+        {1009.465637, 2073.893066},
+        {1009.465637, 2061.068848},
+        {1008.244263, 2015.267212},
+        {1007.022827, 1951.755737},
+        {1007.022827, 1891.297729},
+        {1009.465637, 1837.557373},
+        {1013.129761, 1792.977051},
+        {1013.129761, 1768.549561},
+        {1013.129761, 1762.442749},
+        {1012.519043, 1762.442749},
+        {1011.908325, 1762.442749},
+        {1011.908325, 1762.442749}
     }
 };
 
-
-
-std::vector<std::vector<Vec2>> X_GESTURE_3 = {
+std::vector<std::vector<Vec2>> ARROW_GESTURE_3 =
+{
     {
-        {1313.587769, 451.908356},
-        {1267.786255, 407.938904},
-        {1244.580078, 383.511444},
-        {1225.038086, 359.083954},
-        {1190.839600, 315.725159},
-        {1164.580078, 279.083954},
-        {1146.259521, 250.381653},
-        {1137.099243, 233.893112},
-        {1130.381714, 219.236618},
-        {1124.274780, 204.580139},
-        {1120.610718, 191.755722},
-        {1119.389282, 188.702316},
-        {1119.389282, 188.702316}
+        {1027.786255, 866.530334},
+        {1035.114502, 872.026489},
+        {1057.099243, 892.179199},
+        {1086.412231, 921.492126},
+        {1109.007568, 947.140991},
+        {1135.877808, 985.614258},
+        {1138.320679, 990.499817},
+        {1137.709961, 990.499817},
+        {1137.709961, 989.889099},
+        {1137.709961, 988.057007},
+        {1137.709961, 986.835632},
+        {1137.709961, 986.224976},
+        {1138.320679, 985.614258},
+        {1139.541992, 985.614258},
+        {1143.816772, 983.782166},
+        {1159.083984, 976.453979},
+        {1185.954102, 959.965393},
+        {1215.267090, 938.591370},
+        {1240.916016, 917.828003},
+        {1259.236572, 901.339478},
+        {1270.229004, 890.957764},
+        {1273.893188, 888.515076},
+        {1274.503906, 888.515076}
     },
     {
-        {1092.519043, 404.885498},
-        {1100.458008, 400.000000},
-        {1113.893066, 393.282410},
-        {1123.053467, 385.954193},
-        {1132.824463, 374.961792},
-        {1154.198486, 349.923676},
-        {1174.961792, 321.832031},
-        {1195.114502, 294.351135},
-        {1214.045776, 268.091583},
-        {1229.312988, 244.885468},
-        {1241.526611, 224.122147},
-        {1248.854858, 208.244263},
-        {1251.908447, 199.083939},
-        {1252.519043, 196.030563},
-        {1252.519043, 195.419876},
-        {1252.519043, 195.419876}
+        {1145.038086, 988.057007},
+        {1140.152588, 972.179199},
+        {1140.763306, 942.866211},
+        {1140.763306, 930.652466},
+        {1141.984741, 886.682983},
+        {1147.480835, 824.392883},
+        {1157.862549, 771.263184},
+        {1171.297729, 724.240234},
+        {1180.458008, 693.095215},
+        {1184.732788, 673.553223},
+        {1184.122070, 659.507446},
+        {1178.015259, 658.896729},
+        {1175.572510, 658.896729},
+        {1175.572510, 658.896729}
     }
-};
-
-std::vector<std::vector<Vec2>> X_GESTURE_4 = {
-    {
-        {1116.335938, 459.236572},
-        {1098.625977, 441.526672},
-        {1078.473267, 424.427429},
-        {1049.160278, 395.725189},
-        {1027.175537, 371.297699},
-        {1007.633545, 346.870178},
-        {988.091553, 322.442719},
-        {969.770935, 298.625977},
-        {953.282410, 277.251892},
-        {941.068665, 261.374023},
-        {934.961792, 252.824432},
-        {933.129761, 250.381653},
-        {935.572449, 252.824432},
-        {937.404541, 253.435089},
-        {937.404541, 253.435089}
-    },
-    {
-        {961.221313, 455.572479},
-        {974.045776, 444.580109},
-        {1005.190796, 408.549591},
-        {1024.732788, 386.564880},
-        {1043.053467, 361.526672},
-        {1061.374023, 337.099213},
-        {1079.694580, 313.893097},
-        {1095.572510, 294.351135},
-        {1108.396973, 278.473267},
-        {1117.557251, 264.427460},
-        {1124.274780, 254.045776},
-        {1127.938965, 246.717545},
-        {1129.160278, 243.664093},
-        {1129.160278, 243.053406},
-        {1129.160278, 243.053406}
-    }
+    
 };
 
 
@@ -321,6 +308,53 @@ std::vector<std::vector<Vec2>> HEAL_GESTURE_2 = {
         {1048.549561, 137.404572},
     }
 };
+std::vector<std::vector<Vec2>> FREEZE_GESTURE = {
+    {
+        {1035.725220, 892.234314},
+        {1025.343506, 897.119751},
+        {1006.412231, 908.112122},
+        {980.763367, 924.600647},
+        {949.007568, 944.142639},
+        {920.916016, 960.631165},
+        {900.152710, 974.066284},
+        {890.381653, 981.394531},
+        {888.549683, 985.058655},
+        {888.549683, 985.669373},
+        {888.549683, 983.226624},
+        {894.656494, 977.119751},
+        {900.763306, 971.012878},
+        {906.870178, 960.631165},
+        {909.312988, 930.096802},
+        {909.312988, 868.417480},
+        {916.030518, 795.135010},
+        {928.854980, 740.173218},
+        {939.847290, 710.249512},
+        {944.732788, 694.371704},
+        {945.343506, 684.600647},
+        {945.343506, 674.829712},
+        {945.343506, 667.501465},
+        {945.343506, 663.226685},
+        {945.343506, 661.394592},
+        {944.732788, 660.173218},
+        {943.511475, 659.562500},
+        {941.068665, 659.562500},
+        {938.625977, 659.562500},
+        {935.572449, 659.562500},
+        {931.908325, 659.562500},
+        {927.633545, 659.562500},
+        {920.916016, 661.394592},
+        {909.312988, 668.112183},
+        {889.160278, 680.936523},
+        {861.068726, 703.531982},
+        {834.198425, 724.906006},
+        {812.824402, 740.173218},
+        {802.442749, 747.501404},
+        {801.221375, 748.722778},
+        {807.328186, 748.722778},
+        {820.152588, 747.501404},
+        {827.480896, 746.280090}
+    }
+};
 
 
 
@@ -392,19 +426,20 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
                             std::function<cugl::Vec2(const cugl::Vec2&)> screenToWorld) {
     _screenToWorld = screenToWorld;
     recognizer = cugl::PGestureRecognizer::alloc();
-    recognizer -> addGesture("V",  X_GESTURE );
-    recognizer -> addGesture("Z", HEAL_GESTURE);
-    recognizer -> addGesture("Z", HEAL_GESTURE_2);
-    recognizer -> addGesture("V", X_GESTURE_2);
-    recognizer -> addGesture("V", X_GESTURE_3);
+    recognizer -> addGesture("Fire", ARROW_GESTURE);
+    recognizer -> addGesture("Fire", ARROW_GESTURE_2);
+    recognizer -> addGesture("Fire", ARROW_GESTURE_3);
+    recognizer -> addGesture("Freeze", FREEZE_GESTURE);
+    recognizer -> addGesture("Heal", HEAL_GESTURE);
+    recognizer -> addGesture("Heal", HEAL_GESTURE_2);
 
-    recognizer->set_accuracy(0.80f);
+    recognizer->set_accuracy(0.84f);
 
     // Update the gesturemap with more spells later on
     _gesturemap = {
-        {"V", SpellType::FIREBALL},
-        {"C", SpellType::FREEZE},
-        { "Z", SpellType::HEAL }
+        {"Fire", SpellType::FIREBALL},
+        {"Freeze", SpellType::FREEZE},
+        { "Heal", SpellType::HEAL }
     };
 
     _joyradius = values->get("joystick")->getInt("radius");
@@ -715,42 +750,41 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         //CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
         return;
     }
+    CULog("First Stroke points:");
+        for (const auto& p : currentStroke) {
+            CULog("{%f, %f},", p.x, p.y);
+        }
+    CULog("Second Stroke points:");
+        for (const auto& p : secondStroke) {
+            CULog("{%f, %f},", p.x, p.y);
+        }
+    CULog("Third Stroke points:");
+        for (const auto& p : thirdStroke) {
+            CULog("{%f, %f},", p.x, p.y);
+        }
 
     _spellAngle.setZero();
     currentStroke.push_back(pos);
     if (currentStroke.size() > 3) {
         try {
-            if((currentStroke.size() > 3) & !secondStroke.empty() & !thirdStroke.empty()){
-                std::string gesture = recognizer->match({ currentStroke });
-                std::string gesture2 = recognizer -> match({ currentStroke, secondStroke });
-                std::string gesture3 = recognizer -> match({ currentStroke, secondStroke, thirdStroke });
-                if(recognizer -> similarity(gesture,{ currentStroke }) > recognizer -> similarity(gesture2, {currentStroke, secondStroke})){
-                    if(recognizer -> similarity(gesture,{ currentStroke }) > recognizer -> similarity(gesture3, {currentStroke, secondStroke, thirdStroke})){
-                        _lastGesture = _gesturemap[gesture];
-                    }
-                    _lastGesture = _gesturemap[gesture3];
-                }else{
-                    if(recognizer -> similarity(gesture2,{ currentStroke, secondStroke }) > recognizer -> similarity(gesture3, {currentStroke, secondStroke, thirdStroke})){
-                        _lastGesture = _gesturemap[gesture2];
-                    }
-                    _lastGesture = _gesturemap[gesture3];
-                }
-            }else if((currentStroke.size() > 3) & !secondStroke.empty()){
-                std::string gesture = recognizer->match({ currentStroke });
-                std::string gesture2 = recognizer -> match({ currentStroke, secondStroke });
-                
-                if(recognizer -> similarity(gesture,{ currentStroke }) > recognizer -> similarity(gesture2, {currentStroke, secondStroke})){
-                    _lastGesture = _gesturemap[gesture];
-                }else{
-                    _lastGesture = _gesturemap[gesture2];
-                }
-            }else if (currentStroke.size() > 3){
-                std::string gesture = recognizer->match({ currentStroke });
+            std::string gesture = recognizer->match({ currentStroke });
+            std::string gesture2 = recognizer->match({ currentStroke, secondStroke});
+            std::string gesture3 = recognizer->match({ currentStroke, secondStroke, thirdStroke });
+            float s1 = recognizer->similarity(gesture, {currentStroke});
+            float s2 = recognizer->similarity(gesture2, {secondStroke, currentStroke});
+            float s3 = recognizer->similarity(gesture3, {thirdStroke, secondStroke, currentStroke});
+
+            if (s3 >= s2 && s3 >= s1) {
+                _lastGesture = _gesturemap[gesture3];
+            } else if (s2 >= s1) {
+                _lastGesture = _gesturemap[gesture2];
+            } else {
                 _lastGesture = _gesturemap[gesture];
             }
             _timeSinceCast = 0;
         }
         catch (std::out_of_range) {
+            CULog("here");
             // Not a recognized gesture... probably
             _lastGesture = SpellType::NONE;
         }
@@ -767,18 +801,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         _lastGesture = SpellType::NONE;
         _pickupPressed = true;
     }
-    CULog("First Stroke points:");
-        for (const auto& p : currentStroke) {
-            CULog("{%f, %f},", p.x, p.y);
-        }
-    CULog("Second Stroke points:");
-        for (const auto& p : secondStroke) {
-            CULog("{%f, %f},", p.x, p.y);
-        }
-    CULog("Third Stroke points:");
-        for (const auto& p : thirdStroke) {
-            CULog("{%f, %f},", p.x, p.y);
-        }
+    
 
     // Clear points
     thirdStroke = secondStroke;
@@ -810,9 +833,6 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     Zone zone = getZone(pos);
     pos = touch2Screen(pos);
     
-    CULog("Touch pos world: (%.2f, %.2f), zone: %d", pos.x, pos.y, (int)zone);
-    CULog("lzone: (%.2f,%.2f,%.2f,%.2f)", _lzone.origin.x, _lzone.origin.y, _lzone.size.width, _lzone.size.height);
-    CULog("rzone: (%.2f,%.2f,%.2f,%.2f)", _rzone.origin.x, _rzone.origin.y, _rzone.size.width, _rzone.size.height);
     switch (zone){
         case Zone::LEFT:
             // Only process if no touch in zone
@@ -855,6 +875,7 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
     // Reset all keys that might have been set
     Vec2 pos = touch2Screen(event.position);
     Zone zone = getZone(pos);
+   
 
     if (_ltouch.touchids.find(event.touch) != _ltouch.touchids.end()) {
         _joystick = false;

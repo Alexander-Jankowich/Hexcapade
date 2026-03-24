@@ -823,7 +823,6 @@ void GameScene::renderHUD()
             "Time Remaining: " + std::to_string(_timer / 60), _font);
         timerLabel->layout();
         Affine2 timerTrans;
-        CULog("timerX: %f, timerY: %f", timerX, timerY);
         timerTrans.translate(timerX + 10 + hudOffset.x, timerY + 12 + hudOffset.y );
         _batch->drawText(timerLabel, timerTrans);
 
@@ -1150,7 +1149,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
 
 void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
     if (e->getP2() == _player->getPID()) {
-        CULog("recieved spell combo event for our spell");
         _input.resolveSpell();
         _player->resolveSpell();
     }
@@ -1218,7 +1216,6 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     if (player && spell) {
         if (spell->getCasterUID()==_networkCtrl->getShortUID()) return;
         if (spell->getHealed()) {
-            CULog("here");
             int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
             spell->markRemoved(true);
