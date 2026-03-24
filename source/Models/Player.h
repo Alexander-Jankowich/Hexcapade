@@ -9,20 +9,28 @@
 #define __GP_PLAYER_H__
 #include <cugl/cugl.h>
 #include "Entity.h"
-#include "SpellSet.h"
+#include "SpellFactory.h"
+#include "PlayerObstacle.h"
 
 class Player : public Entity {
 private:
     float _speed;
-    float _playerAngle;
+    bool facingBack;
+    bool facingLeft;
+
     SpellType _curSpell;
     std::string _playerId; // player identifier, rn its the uuid
 
     // Counter for number of spells player has fired, used for spell id generation
     unsigned int _curSpellNum;
     
-    // temp for now
-    int _inventoryVal;
+    static int leftFrontFrame;
+    static int rightFrontFrame;
+    static int leftBackFrame;
+    static int rightBackFrame;
+
+    static int cols;
+    static int rows;
 
 public:
 #pragma mark Constructors
@@ -31,16 +39,25 @@ public:
      * Creates a player
      */
     Player(const cugl::Vec2& pos, float speed, std::string player_id, const std::shared_ptr<cugl::graphics::Texture>& t);
-    
-    Player(const cugl::Vec2& pos, float speed, const std::shared_ptr<cugl::graphics::Texture>& t); // need both
 
 
     /**
-     * Disposes the ship, releasing all resources.
+     * Disposes the player, releasing all resources.
      */
     ~Player() {}
     
 #pragma mark Properties
+    static void setConsts(std::shared_ptr<JsonValue> consts) {
+        //CULog("set consts-------------");
+        Player::leftFrontFrame = consts->getInt("left_forward");
+        Player::rightFrontFrame = consts->getInt("right_forward");
+        Player::leftBackFrame = consts->getInt("left_backward");
+        Player::rightBackFrame = consts->getInt("right_backward");
+
+        Player::cols = consts->getInt("columns");
+        Player::rows = consts->getInt("rows");
+    }
+
     /**
      * Returns the velocity of this ship.
      *
@@ -50,9 +67,6 @@ public:
      */
     const int getSpeed() const { return _speed; }
     
-    void addItem(int val) {_inventoryVal+=val;}
-    int getInventoryValue() {return _inventoryVal;}
-    
     const std::string getPID() const {return _playerId;}
     void setPID(std::string pid) {_playerId = pid;}
     
@@ -61,6 +75,8 @@ public:
         setPosition(getSize() / 2);
         setVelocity(cugl::Vec2::ZERO);
     }
+    
+    void updateAnimationState(PlayerObstacle::AnimationState s);
 
     /**
      * Sets the max speed of the player
@@ -71,11 +87,8 @@ public:
 
     void setVelocity(cugl::Vec2 value) override;
 
-    void updateAngle(float angle);
 
-    float getAngle() { return _playerAngle; }
-
-    cugl::Vec2 getDirection() { return cugl::Vec2(std::cos(_playerAngle), std::sin(_playerAngle)); }
+    cugl::Vec2 getDirection() { return _velocity.normalize(); }
 
     /**
     * Sets the current spell of the player.

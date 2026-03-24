@@ -36,7 +36,6 @@ protected:
     bool _knockback;
     int _knockback_counter;
 
-    cugl::Color4 _color;
 
 public:
 #pragma mark Constructors
@@ -49,7 +48,7 @@ public:
      * @param pos   The ship position
      * @param data  The data defining the physics constants
      */
-    Entity(const cugl::Vec2& pos, int health, std::shared_ptr<cugl::graphics::Texture> tex);
+    Entity(const cugl::Vec2& pos, int health, std::shared_ptr<cugl::graphics::Texture> tex, int rows, int cols);
 
     /**
      * Disposes the ship, releasing all resources.
@@ -126,8 +125,6 @@ public:
      */
     cugl::Size getSize() { return _size; }
 
-    void setColor(cugl::Color4 c) { _color = c; }
-
     virtual void update();
     
     /** Used for networking by clients, updates entity based on data from host. Ensure this works TODO
@@ -144,18 +141,6 @@ public:
     }
 
     /**
-     * Sets the texture for this ship.
-     *
-     * The texture should be formated as a sprite sheet, and the size and
-     * layout of the sprite sheet should already be specified in the
-     * initializing JSON. If so, this method will construct a sprite sheet
-     * from this texture. Otherwise, the texture will be ignored.
-     *
-     * @param texture   The texture for the sprite sheet
-     */
-    void setTexture(const std::shared_ptr<cugl::graphics::Texture>& texture);
-
-    /**
      * Draws this ship to the sprite batch within the given bounds.
      *
      * This drawing code supports "wrap around". If the ship is partly off of
@@ -165,12 +150,12 @@ public:
      * @param batch     The sprite batch to draw to
      * @param size      The size of the window (for wrap around)
      */
-    void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
+    //void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
 
     void setKnockback(cugl::Vec2 target);
 
     void setFrozen() { _frozen = true; }
 };
 
-#endif // !__GP_ENEMY_H__
+#endif // !__ENTITY_H__
 

@@ -13,6 +13,7 @@ using namespace cugl::graphics;
 #pragma mark Init / Dispose
 
 bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
+    canInitGame=false;
     // Initialize the scene to a locked width
     if (assets == nullptr) {
         return false;
@@ -50,13 +51,13 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     
     _gameid->addExitListener([this](const std::string& name, const std::string& value) {
         if (!value.empty()) {
-            _networkCtrl->connect(false, value);
+            _networkCtrl->connectClient(value);
+            
         }
     });
 
     // Create the server configuration
-    auto json = _assets->get<JsonValue>("server");
-    _networkCtrl->init(json, false);
+    _networkCtrl->init(_assets);
     
     addChild(scene);
     setActive(false);
@@ -82,9 +83,19 @@ void ClientScene::updateText(const std::shared_ptr<scene2::Button>& button, cons
 }
 
 void ClientScene::update(float dt) {
-    _networkCtrl->update();
-    _player->setText(std::to_string(_networkCtrl->playerCount()));
+    _networkCtrl->updateNet();
+        
+    // handle init  event
+    if(_networkCtrl->isInAvailable()){
+        auto e = _networkCtrl->popInEvent();
+        if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e)){
+            processInitEvent(cse);
+        }
+    }
+    
+    _player->setText(std::to_string(_networkCtrl->getNumPlayers()));
     configureStartButton();
+    if (_networkCtrl->getRandSeed()>0) _networkCtrl->markReady();
 }
 
 void ClientScene::setActive(bool value) {
@@ -119,14 +130,20 @@ void ClientScene::configureStartButton() {
         case NetworkController::Status::IDLE:
             updateText(_startgame, "Join Game");
             break;
-        case NetworkController::Status::JOIN:
+        case NetworkController::Status::CONNECTING:
             updateText(_startgame, "Connecting");
             _startgame->deactivate();
             break;
-        case NetworkController::Status::WAIT:
-            updateText(_startgame, "Waiting");
+        case NetworkController::Status::CONNECTED:
+            updateText(_startgame, "Waiting for Host");
             break;
         default:
             break;
     }
+}
+
+void ClientScene::processInitEvent(const std::shared_ptr<GameInitEvent> &e) {
+    CULog("client recieved init!");
+    _networkCtrl->setRandSeed(e->getSeed());
+    canInitGame = true;
 }

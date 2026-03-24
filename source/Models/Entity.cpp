@@ -15,8 +15,10 @@ using namespace cugl::graphics;
  * @param pos   The ship position
  * @param data  The data defining the physics constants
  */
-Entity::Entity(const cugl::Vec2& pos, int health, std::shared_ptr<cugl::graphics::Texture> tex) {
-    initWithSheet(tex, 1, 1);
+Entity::Entity(const cugl::Vec2& pos, int health, std::shared_ptr<cugl::graphics::Texture> tex,
+    int rows, int cols) {
+    initWithSheet(tex, rows, cols);
+
     _position = pos;
     _health = health;
 
@@ -24,9 +26,6 @@ Entity::Entity(const cugl::Vec2& pos, int health, std::shared_ptr<cugl::graphics
     _knockback_counter = 0;
     _frozen = false;
     _frozen_counter = 0;
-
-    _size = Size::ZERO;
-    _color = Color4::WHITE;
 }
 
 /**
@@ -75,19 +74,19 @@ void Entity::setKnockback(Vec2 v) {
     _knockback_vel = v;
 }
 
-void Entity::setTexture(const std::shared_ptr<Texture>& value) {
-    if (value) {
-        _size = value->getSize();
-        _texture = value;
-    }
-    else {
-        _size = Size::ZERO;
-        _texture = nullptr;
-    }
-}
+//void Entity::setTexture(const std::shared_ptr<Texture>& value) {
+//    if (value) {
+//        _size = value->getSize();
+//        _texture = value;
+//    }
+//    else {
+//        _size = Size::ZERO;
+//        _texture = nullptr;
+//    }
+//}
 
-void Entity::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) {
-    static Affine2 trans;
-    trans = Affine2::createTranslation(_position);
-    batch->draw(_texture, _color, _size/2, trans);
-}
+//void Entity::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch) {
+//    static Affine2 trans;
+//    trans = Affine2::createTranslation(_position);
+//    batch->draw(_texture, Color4::WHITE, _size/2, trans);
+//}

@@ -358,11 +358,19 @@ _touchID(-1),
 _mouseKey(0),
 _joystick(false),
 _pickupPressed(false),
+_dropPressed(false),
+_depositPressed(false),
+_contextActionPressed(false),
+_inventoryTogglePressed(false),
+_inventoryPanelPressed(false),
+_inventoryPanelOpen(false),
+_lastUITap(Vec2::ZERO),
 _resetPressed(false),
 _lastGesture(SpellType::NONE),
 _isAiming(false),
 _releaseSpell(false),
-_timeSinceCast(0)
+_timeSinceCast(0),
+_spellAngle(Vec2::ZERO)
 {
 }
 
@@ -490,6 +498,14 @@ void InputController::update(float dt) {
  */
 void InputController::readInput(){
 #ifndef CU_TOUCH_SCREEN
+    _pickupPressed = false;
+    _dropPressed = false;
+    _depositPressed = false;
+    _contextActionPressed = false;
+    _inventoryTogglePressed = false;
+    _inventoryPanelPressed = false;
+    _resetPressed = false;
+
     Keyboard* keys = Input::get<Keyboard>();
     if (keys) {
         // Keyboard input for movement
@@ -539,6 +555,24 @@ void InputController::readInput(){
 
         _pickupPressed = pickup && !pickupDown;
         pickupDown = pickup;
+
+        // Keyboard input for dropping and depositing while we prototype items
+        // on the networking branch. These are scene-level requests; the scene
+        // decides whether the action is locally allowed this frame.
+        bool drop = keys->keyDown(KeyCode::Q);
+        bool deposit = keys->keyDown(KeyCode::F);
+        bool inventoryToggle = keys->keyDown(KeyCode::I);
+        static bool dropDown = false;
+        static bool depositDown = false;
+        static bool inventoryToggleDown = false;
+
+        _dropPressed = drop && !dropDown;
+        _depositPressed = deposit && !depositDown;
+        _inventoryTogglePressed = inventoryToggle && !inventoryToggleDown;
+
+        dropDown = drop;
+        depositDown = deposit;
+        inventoryToggleDown = inventoryToggle;
 
 
         // Keyboard inputs for spells
@@ -605,7 +639,7 @@ InputController::Zone InputController::getZone(const Vec2 pos) const {
         return Zone::LEFT;
     } else if (_rzone.contains(pos)) {
         return Zone::RIGHT;
-    } else if (_tbounds.contains(pos)) {
+    } else if (_sbounds.contains(pos)) {
         return Zone::MAIN;
     }
     return Zone::UNDEFINED;
@@ -728,8 +762,9 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         //CULog("%s", gesture.c_str());
     }
     else {
-        // Register tap as pickup, to be changed using buttons?
-        _pickupPressed = true;
+        // Taps in the gesture zone no longer imply pickup now that mobile item
+        // actions live behind explicit HUD buttons.
+        _lastGesture = SpellType::NONE;
     }
     CULog("First Stroke points:");
         for (const auto& p : currentStroke) {
@@ -851,7 +886,7 @@ void InputController::touchMotionCB(const TouchEvent& event, const Vec2& previou
 
 void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
     _touchDown = true;
-    CULog("Mouse press");
+    //CULog("Mouse press");
 
     Vec2 pos = mouse2Screen(event.position);
     Zone zone = getZone(pos);

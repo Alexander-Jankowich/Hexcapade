@@ -18,13 +18,20 @@
 #include <vector>
 #include "../Controllers/GLInputController.h"
 #include "../Controllers/NetworkController.h"
+#include "../Controllers/RoomController.h"
 #include "../Models/InputDisplay.h"
 #include <cstddef> 
-#include "../Models/EnemySet.h"
-#include "../Models/SpellSet.h"
-#include "../Models/PlayerSet.h"
+#include "../Models/GameplayConfig.h"
+#include "../Models/Map.h"
+#include "../Models/ItemFactory.h"
 #include "../Controllers/CollisionController.h"
 #include "../Models/Player.h"
+#include "../Models/SpellFactory.h"
+#include "../Models/PlayerFactory.h"
+#include "../Models/EnemyFactory.h"
+#include "../Models/RectFactory.h"
+#include "../Models/ComboEvent.h"
+#include "../Models/GameInitEvent.h"
 
 /**
  * This class is the primary gameplay constroller for the demo.
@@ -39,31 +46,47 @@ protected:
     std::shared_ptr<NetworkController> _networkCtrl;
     bool _ishost;
     /** uuid to players most recent update*/
-    std::unordered_map<std::string, ClientInput> _clientInputs;
+    //std::unordered_map<std::string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
     InputController _input;
     std::shared_ptr<InputDisplay> _inputDisplay;
+    std::shared_ptr<cugl::Random> _random;
+    /** Reference to the physics root of the scene graph */
+    std::shared_ptr<cugl::scene2::SceneNode> _worldnode;
 
-    // MODELS should be shared pointers or a data structure of shared pointers
-    /** The spline for the exterior circle */
-    cugl::Spline2 _spline;
-    /** The physics world to animate the falling */
-    std::shared_ptr<cugl::physics2::ObstacleWorld> _world;
-    /** The outside "circle" */
-    std::shared_ptr<cugl::physics2::PolygonObstacle> _center;
-    /** The falling star */
+    /** The Box2D world */
+    std::shared_ptr<cugl::physics2::distrib::NetWorld> _world;
 
-    std::shared_ptr<Player> _player;
+    /** Factories */
+    std::shared_ptr<SpellFactory> _spellFact;
+    Uint32 _spellFactId;
+    std::shared_ptr<PlayerFactory> _playerFact;
+    Uint32 _playerFactId;
+    std::shared_ptr<EnemyFactory> _enemyFact;
+    Uint32 _enemyFactId;
+    std::shared_ptr<RectFactory> _rectFact;
+    Uint32 _rectFactId;
+    std::shared_ptr<ItemFactory> _itemFact;
+    Uint32 _itemFactId;
+
+    std::shared_ptr<PlayerObstacle> _player;
     
-    std::shared_ptr<PlayerSet> _players;
-
-    std::shared_ptr<EnemySet> _enemy;
+    std::shared_ptr<Map> _map;
+    RoomController _roomController;
+    RunBalanceConfig _runConfig;
+    cugl::Vec2 _cameraBottomLeft;
+    int _runRevision;
+    int _appliedRunRevision;
+    unsigned int _mapSeed;
+    cugl::Size _mapSceneSize;
     float lastEnemySpawn;
 
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
     CollisionController _collisions;
-    /** The total value of items all players have collected */
-    int _currInventoryScore;
+    /** GA: itemnet legacy scene-local inventory cache kept during the migration. */
+    int _inventoryValue;
+    /** The total value already deposited into the shared quota. */
+    int _depositedValue;
     /** The value the player needs to reach to win */
     int _quota;
     /** Whether the player has won */
@@ -81,52 +104,14 @@ protected:
     std::shared_ptr<cugl::JsonValue> _gestures;
 
     bool input_down = false;
-
-    SpellSet spells;
-
-    struct ItemData {
-        enum class ItemType {
-            ARTIFACT,
-            SPELL
-        };
-
-        ItemType type;
-        std::string name;
-        int value;
-        cugl::Vec2 position;
-        float radius;
-        cugl::Color4 color;
-    };
-
-    /** this stores all items currently on the map */
-    std::vector<ItemData> _items;
-    /** this tracks if player is close enough to pickup an item */
-    bool _canPickupItem;
-    /** this stores the index for the current pickup target */
-    int _pickupIndex;
-    /** this stores the current prompt text for pickup */
-    std::string _pickupPrompt;
-
-
-
-    // Index of the currently selected tangent handle -1 if none
-    size_t _selectedTangent = (size_t)-1;
-
-
-    // Whether a control point is currently selected/being dragged can be inferred from _selectedTangent
-
-    /**
-     * Rebuilds the geometry.
-     *
-     * This method should recreate all the polygons for the spline, the handles
-     * and the falling star. It should also recreate all physics objects.
-     *
-     * However, to cut down on performance overhead, this method should NOT add
-     * those physics objects to the world inside this method (as this method is
-     * called repeatedly while the user moves a handle). Instead, those objects
-     * should not be activated until the state is "stable".
-     */
-    void buildGeometry();
+    /** this tracks whether the player is currently inside the deposit zone */
+    bool _canDeposit;
+    /** this stores the prototype origin/deposit interaction position */
+    cugl::Vec2 _depositPosition;
+    /** this stores the prototype origin/deposit interaction radius */
+    float _depositRadius;
+    /** this tracks local-only inventory panel visibility */
+    bool _inventoryPanelOpen;
 
 public:
 #pragma mark -
@@ -137,7 +122,7 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _currInventoryScore(0), _quota(100), _playerWon(false), _playerLost(false), _canPickupItem(false), _pickupIndex(-1) {}
+    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _playerLost(false), _inventoryValue(0), _depositedValue(0), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
@@ -168,24 +153,17 @@ public:
     
     std::shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
 
-    //void addItem(int value);
-    int getInventoryValue() const { return _currInventoryScore; }
+    void addItem(int value);
+    int getInventoryValue() const;
+    int getDepositedValue() const { return _depositedValue; }
     int getQuota() const { return _quota; }
     bool hasWon() const { return _playerWon; }
     bool hasLost() const { return _playerLost; }
 
-    /**
-     * Returns the network connection (as made by this scene)
-     *
-     * This value will be reset every time the scene is made active.
-     *
-     * @return the network connection (as made by this scene)
-     */
-    void setConnection(std::shared_ptr<NetworkController> network, bool isHost) {
-        _networkCtrl = network;
-        _ishost = isHost;
-    }
-
+    /** initializes the network and physics world */
+    void initNetwork(std::shared_ptr<NetworkController> n);
+    /** initialize map once network is populated with random seed for this round */
+    void initMap();
     /**
      * Returns true if the player is host.
      *
@@ -284,25 +262,64 @@ public:
      */
     void render() override;
 
-    void setActive(bool value);
+    void setActive(bool value) override;
+    
+    void initHost(unsigned int randSeed);
 
 private:
+    void processComboEvent(const std::shared_ptr<CastSpellEvent>& e);
+    void processInitEvent(const std::shared_ptr<GameInitEvent>& e);
 
-    // this builds one random item and returns it
-    ItemData createRandomItem(bool forceArtifact, bool forceSpell);
-    // this respawns the map starter set of items
-    void spawnInitialItems();
-    // this spawns one replacement item after pickup
-    void spawnReplacementItem();
-    // this updates nearest item + pickup prompt state
-    void updateItemPickupState();
-    // this handles desktop e key pickup action
-    void tryPickupItem();
-    // this draws all active items
-    void drawItems();
+    // this maps local HUD input into explicit pickup/drop/deposit requests
+    void handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex);
+    // this maps the last panel tap to an inventory row index for the upcoming item flow
+    int getInventoryPanelIndexAt(const cugl::Vec2& tapPos) const;
+    // host-only: checks proximity of all players to all items and picks up on overlap
+    void hostCheckItemPickups();
+    // host-only: this spawns physics-backed items at map spawn points
+    void spawnItemsFromMap();
+    // this loads map/item quota tuning from json without changing the networking path
+    void loadGameplayConfig();
+    // this rebuilds the current map from host-owned run metadata
+    void rebuildMapForRun();
+    // this keeps the world camera centered on the local player inside map bounds
+    void updateCameraFollow();
+    // this resolves the local player move against generated room/hall walls
+    cugl::Vec2 resolvePlayerMapMove(const cugl::Vec2& startPos, const cugl::Vec2& velocity) const;
+    // this returns the camera offset used to keep hud elements screen-anchored
+    cugl::Vec2 getHUDOffset() const;
 
+    // this draws the prototype deposit zone so desktop/mobile tests can target it
+    void drawDepositZone();
 
     void renderHUD();
+
+    /**
+     * This method links a scene node to the obstacle.
+     *
+     * This method adds a listener so that the sceneNode will move along with the obstacle.
+     */
+    void linkSceneToObs(const std::shared_ptr<cugl::physics2::Obstacle>& obj,
+        const std::shared_ptr<cugl::scene2::SceneNode>& node);
+
+    /**
+     * Adds the physics object to the physics world and loosely couples it to the scene graph
+     *
+     * There are two ways to link a physics object to a scene graph node on the
+     * screen.  One way is to make a subclass of a physics object.
+     * The other is to use callback functions to loosely couple
+     * the two.  This function is an example of the latter.
+     * the two.  This function is an example of the latter.
+     *
+     * param obj    The physics object to add
+     * param node   The scene graph node to attach it to
+     */
+    void addInitObstacle(const std::shared_ptr<cugl::physics2::Obstacle>& obj,
+        const std::shared_ptr<cugl::scene2::SceneNode>& node);
+    
+    void beginContact(b2Contact* contact);
+
+    void beforeSolve(b2Contact* contact, const b2Manifold* oldManifold);
 };
 
 #endif // !__GL_GAME_SCENE_H__

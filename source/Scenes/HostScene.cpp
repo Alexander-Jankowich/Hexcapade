@@ -50,8 +50,11 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     });
     
     // Create the server configuration
-    auto json = _assets->get<JsonValue>("server");
-    _networkCtrl->init(json, true);
+    _networkCtrl->init(_assets);
+    auto rng = Random::alloc();
+    rng->init();
+    _randseed = rng->getUint32();
+    
     
     addChild(scene);
     setActive(false);
@@ -69,9 +72,9 @@ void HostScene::dispose() {
 #pragma mark Update / Render
 
 void HostScene::update(float dt) {
-    _networkCtrl->update();
-    _player->setText(std::to_string(_networkCtrl->playerCount()));
-    if (_networkCtrl->getStatus() == NetworkController::Status::IDLE && _networkCtrl->hasNetwork()) {
+    _networkCtrl->updateNet();
+    _player->setText(std::to_string(_networkCtrl->getNumPlayers()));
+    if (_networkCtrl->getStatus() == NetworkController::Status::CONNECTED && _networkCtrl->hasNetwork()) {
         //_gameid->setText(_networkCtrl.getRoomCode());
         std::string code = _networkCtrl->getRoomCode();
         if (!code.empty()) {              // ← add this guard
@@ -79,6 +82,7 @@ void HostScene::update(float dt) {
         }
     }
     configureStartButton();
+    _networkCtrl -> markReady();
 }
 
 void HostScene::setActive(bool value) {
@@ -88,7 +92,7 @@ void HostScene::setActive(bool value) {
             configureStartButton();
             _backout->activate();
             _startgame->activate();
-            _networkCtrl->connect(true);
+            _networkCtrl->connectAsHost();
         } else {
             _startgame->deactivate();
             _backout->deactivate();
@@ -106,13 +110,24 @@ void HostScene::updateText(const std::shared_ptr<scene2::Button>& button, const 
 }
 
 void HostScene::configureStartButton() {
-    if(_networkCtrl->getStatus()==NetworkController::Status::WAIT) {
+    if(_networkCtrl->getStatus()<=NetworkController::Status::CONNECTING) {
         updateText(_startgame,"Waiting");
         _startgame->deactivate();
 
     }
-    else if(_networkCtrl->getStatus()==NetworkController::Status::IDLE) {
+    else if(_networkCtrl->getStatus()==NetworkController::Status::CONNECTED) {
         updateText(_startgame, "Start Game");
         _startgame->activate();
     }
+    else if (_networkCtrl->getStatus()==NetworkController::Status::HANDSHAKE) {
+        updateText(_startgame, "Starting Game");
+        _startgame->deactivate();
+    }
+}
+
+void HostScene::sendInitMsg() {
+    if(_networkCtrl->getRandSeed()>0) return; // alr sent
+    CULog("host sending init event");
+    _networkCtrl->pushOutEvent(GameInitEvent::allocGameInitEvent(_randseed));
+    _networkCtrl->setRandSeed(_randseed);
 }

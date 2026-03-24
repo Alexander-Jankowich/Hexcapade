@@ -21,7 +21,22 @@
             "file":  "textures/left_arrow.png"
         },
         "player": {
-            "file": "textures/character.png"
+            "file": "textures/playerfox_sheet.png"
+        },
+        "artifact_gem": {
+            "file": "textures/artifact_gem.png"
+        },
+        "artifact_scroll": {
+            "file": "textures/artifact_scroll.png"
+        },
+        "spellbook_fire": {
+            "file": "textures/spellbook_fire.png"
+        },
+        "spellbook_freeze": {
+            "file": "textures/spellbook_freeze.png"
+        },
+        "spellbook_heal": {
+            "file": "textures/spellbook_heal.png"
         }
         
     },

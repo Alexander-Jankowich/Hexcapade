@@ -25,24 +25,30 @@ private:
     std::shared_ptr<cugl::scene2::TextField> _gameid;
     /** The players label (for updating) */
     std::shared_ptr<cugl::scene2::Label> _player;
+    
 
 public:
+    bool canInitGame;
+
     ClientScene() : cugl::scene2::Scene2() {}
     ~ClientScene() { dispose(); }
 
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
     void dispose() override;
+    
 
     void update(float dt) override;
-    void disconnect() {_networkCtrl->disconnect();}
+    void disconnect() { if (_networkCtrl) _networkCtrl->disconnect();}
     void release() { _networkCtrl = nullptr; }
-    NetworkController::Status getStatus(){return _networkCtrl->getStatus();}
+    NetworkController::Status getStatus() { return _networkCtrl->getStatus(); }
     std::shared_ptr<NetworkController> getConnection(){return _networkCtrl;}
     std::shared_ptr<NetworkController> getNetwork() {
         return _networkCtrl;
     }
 
     void resetStatus() { _networkCtrl->resetStatus(); }
+    
+    void processInitEvent(const std::shared_ptr<GameInitEvent>& e);
 
     void reset() {
         _networkCtrl->disconnect();

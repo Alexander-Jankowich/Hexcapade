@@ -6,3 +6,10 @@
 //  Created by Alex Jankowich on 3/16/26.
 //
 
+#include "SpellNode.h"
+
+SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, int rows, int cols, std::shared_ptr<cugl::graphics::Texture> tex) {
+    initWithSheet(tex, rows, cols);
+    _velocity = vel;
+    _position = pos;
+}

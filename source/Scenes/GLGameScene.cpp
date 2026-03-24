@@ -14,26 +14,129 @@
 //
 #include <cugl/cugl.h>
 #include <cugl/core/math/polygon/CUPathFactory.h> // Bug that this is not in <cugl/cugl.h>
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <random> //itemssss
+#include <box2d/b2_draw.h>
+#include <box2d/b2_world.h>
+#include <box2d/b2_contact.h>
+#include <box2d/b2_collision.h>
 
 #include "GLGameScene.h"
-
-using namespace cugl;
-using namespace std;
-using namespace cugl::graphics;
-
-#pragma mark -
-#pragma mark Level Layout
+#include "../Models/Artifact.h"
+#include "../Models/GameplayConfigLoader.h"
+#include "../Models/Inventory.h"
+#include "../Models/SpellBook.h"
 
 // Lock the screen size to fixed height regardless of aspect ratio
 #define SCENE_HEIGHT 720
 
 /** The ratio between the physics world and the screen. */
-#define PHYSICS_SCALE 50
+#define PHYSICS_SCALE 100
+
+#define COMBO_RADIUS 25
 
 #define PI 3.14159265358979323
+
+
+using namespace cugl;
+using namespace std;
+using namespace cugl::graphics;
+
+namespace {
+    constexpr size_t kPrototypeInventoryCapacity = 4;
+    constexpr int kPrototypeQuota = 500;
+    constexpr int kGuaranteedArtifacts = 1;
+    constexpr int kGuaranteedSpellbooks = 1;
+    constexpr float kTargetWorldValueMultiplier = 1.35f;
+    constexpr int kMaxAdditionalPrototypeItems = 40;
+    constexpr float kEnemySpawnDelaySeconds = 15.0f;
+
+//    unsigned int chooseNonZeroSeed() {
+//        unsigned int seed = (unsigned int)std::random_device{}();
+//        return seed == 0 ? 1u : seed;
+//    }
+
+    std::shared_ptr<Item> makePrototypeItem(const std::string& id, int kind,
+                                            const std::string& name, int value) {
+        if (kind == 0) {
+            return std::make_shared<Artifact>(
+                id,
+                name,
+                value,
+                Artifact::Effect::ARTIFACT_EFFECT
+            );
+        }
+
+        return std::make_shared<SpellBook>(
+            id,
+            name,
+            value,
+            SpellBook::Spell::SPELL_EFFECT
+        );
+    }
+
+    // GA: itemnet old delta-path helper retained only as reference while the
+    // first networking item pass uses full host snapshots instead.
+    std::shared_ptr<Item> makePrototypeNetItem(const std::string& itemName, int itemId) {
+        if (itemName == "artifact") {
+            return makePrototypeItem(
+                "net_artifact_" + std::to_string(itemId), 0, "artifact1", 60
+            );
+        }
+        return makePrototypeItem(
+            "net_spellbook_" + std::to_string(itemId), 1, "spellbook1", 25
+        );
+    }
+
+    // item ids and texture stuff
+    std::string getItemTextureKey(const std::shared_ptr<Item>& item) {
+        if (!item) {
+            return "";
+        }
+
+        const std::string& itemId = item->getId();
+        if (itemId.rfind("artifact_scroll", 0) == 0) {
+            return "artifact_scroll";
+        }
+        if (itemId.rfind("artifact_gem", 0) == 0) {
+            return "artifact_gem";
+        }
+        if (itemId.rfind("spellbook_fire", 0) == 0) {
+            return "spellbook_fire";
+        }
+        if (itemId.rfind("spellbook_freeze", 0) == 0) {
+            return "spellbook_freeze";
+        }
+        if (itemId.rfind("spellbook_heal", 0) == 0) {
+            return "spellbook_heal";
+        }
+
+        // keep one tiny fallback so older ids still show something readable.
+        if (item->getKind() == Item::Kind::ARTIFACT) {
+            return "artifact_scroll";
+        }
+        return "spellbook_fire";
+    }
+}
+
+#pragma mark -
+#pragma mark Level Layout
+
+
+/**
+ * Processes the start of a collision
+ *
+ * This method is called when we first get a collision between two objects.
+ * We use this method to test if it is the "right" kind of collision.  In
+ * particular, we use it to test if we make it to the win door.
+ *
+ * @param  contact  The two bodies that collided
+ */
+void GameScene::beginContact(b2Contact* contact){
+    //CULog("made contact");
+}
 
 #pragma mark -
 #pragma mark Constructors
@@ -55,7 +158,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     {
         return false;
     }
-    else if (!Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
+    else if (!cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
     {
         return false;
     }
@@ -65,6 +168,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     // Get constants
     _constants = assets->get<JsonValue>("constants");
     _gestures = assets->get<JsonValue>("gestures");
+    _random = cugl::Random::alloc();
 
     // Start up the input handler
     // This is the size of scene! We want to screenToWorld and worldToScreen
@@ -78,51 +182,98 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
             return cugl::Vec2(world.x, world.y);
         }
     );
+    _input.setInventoryPanelOpen(false);
     _inputDisplay = make_shared<InputDisplay>(&_input, _constants->get("input"));
 
-    // create the player
-    _player = make_shared<Player>(getSize() / 2, 12, assets->get<Texture>("player"));
-
-    _players = make_shared<PlayerSet>();
-    _players->addPlayer(_player);
-
-    // Create enemy with 10 health
-    _enemy = make_shared<EnemySet>();
-    _enemy->setTexture(assets->get<Texture>("enemy"));
-    //    _enemy->spawnEnemy(getSize() / 4, 4);
     lastEnemySpawn = 0;
 
-    // Initialize inventory system
-    _currInventoryScore = 0;
-    _quota = 100;
-    _playerWon = false;
+    _map = std::make_shared<Map>();
+    _map->init(); // initialize with tiled data
+    _roomController.setMap(_map);
+    _runRevision = 0;
+    _appliedRunRevision = -1;
+    _mapSeed = 0;
+    loadGameplayConfig();
 
-    try
-    {
+    // Initialize inventory system
+    _depositedValue = 0;
+    _quota = std::max(1, _runConfig.quota);
+    _playerWon = false;
+    _playerLost = false;
+
+    try {
         _font = assets->get<Font>("OpenSans");
     }
-    catch (...)
-    {
+    catch (...) {
         _font = nullptr;
     }
-
-    spells = SpellSet(_constants->get("spells"));
-    spells.setTexture(assets->get<Texture>("spell"));
-    _collisions.init(getSize());
 
     // this resets pickup prompt state
     _canPickupItem = false;
     _pickupIndex = -1;
     _pickupPrompt = "";
+    _canDeposit = false;
+    _depositRadius = 42.0f;
+    _depositPosition = Vec2::ZERO;
+    _inventoryPanelOpen = false;
 
-    // this spawns one artifact and one spell for prototype startup
-    spawnInitialItems();
+/*
+    // ga: procnet old screen-space bootstrap kept for reference while the map
+    // becomes the shared run layout source.
+    _itemSet.reset();
+    if (kGuaranteedArtifacts > 0 || kGuaranteedSpellbooks > 0) {
+        _itemSet.spawnInitialPrototypeItems();
+    }
+    _itemSet.spawnUntilTotalValueAtLeast(
+        (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
+        kMaxAdditionalPrototypeItems
+    );
+*/
 
-    // Creation of the physics world and star translator
-    cugl::Rect bounds = Rect(0, 0, getSize().width / PHYSICS_SCALE, getSize().height / PHYSICS_SCALE);
-    _world = cugl::physics2::ObstacleWorld::alloc(bounds, Vec2(0, 0));
+    _itemSet.reset();
+    
+    //_mapSeed = chooseNonZeroSeed();
+    _runRevision = 1;
+    
+    
 
-    buildGeometry();
+    _spellFact = SpellFactory::alloc(_assets);
+    _playerFact = PlayerFactory::alloc(_assets);
+    _enemyFact = EnemyFactory::alloc(_assets);
+    _rectFact = RectFactory::alloc(_assets, _map->_tiledRoomPrefab);
+    CULog("did tiled thing load: %d", _map->_tiledRoomPrefab==nullptr);
+
+    // IMPORTANT: SCALING MUST BE UNIFORM
+    // This means that we cannot change the aspect ratio of the physics world
+    // Shift to center if a bad fit
+    Size dimen = getSize();
+    //_scale = dimen.width == SCENE_WIDTH ? dimen.width / rect.size.width : dimen.height / rect.size.height;
+    //Vec2 offset((dimen.width - SCENE_WIDTH) / 2.0f, (dimen.height - SCENE_HEIGHT) / 2.0f);
+    Vec2 offset = Vec2::ZERO;
+
+    // Create the scene graph
+    _worldnode = scene2::SceneNode::alloc();
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(offset);
+    
+
+    addChild(_worldnode);
+
+    _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, dimen.width * 1000 , SCENE_HEIGHT * 1000), Vec2::ZERO);
+    _world -> activateCollisionCallbacks(true);
+    _world -> activateFilterCallbacks(false);
+    _world -> activateDestructionCallbacks(true);
+    //_world->onBeginContact = [this](b2Contact* contact) {
+    //        beginContact(contact);
+    //    };
+    _world->beforeSolve = [this](b2Contact* contact, const b2Manifold* oldManifold) {
+        beforeSolve(contact, oldManifold);
+        };
+    _world->update(1);
+    
+    
+    
+    _networkCtrl = nullptr;
     setActive(false);
     return true;
 }
@@ -133,39 +284,182 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 void GameScene::dispose()
 {
     // NOTHING TO DO THIS TIME
-    spells.dispose();
     _inputDisplay->dispose();
+    _map = nullptr;
     _assets->dispose();
     _assets = nullptr;
 }
 
 void GameScene::reset()
 {
-    _players->reset();
+    loadGameplayConfig();
     _playerLost = false;
     _playerWon = false;
-    _currInventoryScore = 0;
-    _enemy->reset();
+    _depositedValue = 0;
+    _quota = std::max(1, _runConfig.quota);
+    // Match startup behavior on replay: reset clears active enemies and restarts
+    // the host spawn timer instead of forcing one immediate spawn.
     lastEnemySpawn = 0;
+    // TODO unbreak this
+    // for (const std::shared_ptr<Player>& player : _players->current) {
+    //     if (player->getInventory()) {
+    //         player->getInventory()->clear();
+    //     }
+    // }
+    _inventoryValue = 0;
 
-    spells.current.clear();
-    spells.pending.clear();
-    spawnInitialItems();
-    
-    if (_ishost) { // broadcast to all in room
+    _canPickupItem = false;
+    _pickupIndex = -1;
+    _pickupPrompt.clear();
+    _canDeposit = false;
+    _inventoryPanelOpen = false;
+    _input.setInventoryPanelOpen(false);
+
+    _runRevision = std::max(1, _runRevision + 1);
+    rebuildMapForRun();
+    _map -> populateObtacles(_networkCtrl, _rectFact, _rectFactId);
+    if (_networkCtrl->isHost()) {
         _networkCtrl->startGame();
     }
 }
 
 #pragma mark -
 #pragma mark Inventory
-// this has been bumped down to player model but keeping here just in case
-// void GameScene::addItem(int value) {
-//    _inventoryValue += value;
-//    if (_inventoryValue >= _quota) {
-//        _playerWon = true;
-//    }
-//}
+
+void GameScene::addItem(int value) {
+    // GA: itemnet old scene-local carry-value path kept only as a migration
+    // bridge for any remaining call sites while Inventory becomes authoritative.
+    _inventoryValue += value;
+}
+
+int GameScene::getInventoryValue() const {
+    //if (!_player || !_player->getInventory()) {
+    //    return _inventoryValue;
+    //}
+    //return _player->getInventory()->getCarriedValue();
+    return 1;
+}
+
+void GameScene::loadGameplayConfig() {
+    _runConfig = hexcapade::gameplayconfig::loadRunBalanceConfigFromAssets();
+    _itemSet.setSpawnConfig(_runConfig.item);
+}
+
+void GameScene::rebuildMapForRun() {
+    if (!_map) {
+        _map = std::make_shared<Map>();
+    }
+
+    if (!_map->generate(getSize(), _runConfig.map, _mapSeed)) {
+        CULog("map generation failed for run revision %d", _runRevision);
+        return;
+    }
+    _map -> populateObtacles(_networkCtrl, _rectFact, _rectFactId);
+    auto n = _map -> draw2();
+    n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    n->setPosition(Vec2::ZERO);
+    _worldnode -> addChild(n);
+    
+    
+    _roomController.setMap(_map);
+    _appliedRunRevision = _runRevision;
+    auto mapNode = _map->draw();
+    mapNode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    mapNode->setPosition(Vec2::ZERO);
+
+    _worldnode->addChild(mapNode);
+
+    
+    
+    _quota = std::max(1, _runConfig.quota);
+    _depositPosition = _map->getPlayerSpawn();
+
+/*
+    // ga: procnet old random item seeding kept as reference while room spawn
+    // points are the current source for initial item placement.
+    _itemSet.reset();
+    _itemSet.setSpawnBounds(_map->getWorldBounds());
+    if (kGuaranteedArtifacts > 0 || kGuaranteedSpellbooks > 0) {
+        _itemSet.spawnInitialPrototypeItems();
+    }
+    _itemSet.spawnUntilTotalValueAtLeast(
+        (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
+        kMaxAdditionalPrototypeItems
+    );
+*/
+    _itemSet.reset();
+    _itemSet.setSpawnConfig(_runConfig.item);
+    _itemSet.setSpawnBounds(_map->getWorldBounds());
+    const std::vector<Vec2>& itemSpawnPoints = _roomController.getInitialItemSpawnPoints();
+    _itemSet.spawnFromRoomPositions(itemSpawnPoints);
+    _itemSet.spawnUntilTotalValueAtLeast(
+        itemSpawnPoints,
+        (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
+        kMaxAdditionalPrototypeItems
+    );
+
+    //updateItemPickupState();
+    //updateDepositState();
+    if(_player){
+        updateCameraFollow();
+    }
+}
+
+void GameScene::updateCameraFollow() {
+    std::shared_ptr<Camera> camera = this->getCamera();
+    if (!camera) {
+        _cameraBottomLeft = Vec2::ZERO;
+        return;
+    }
+
+    if (!_map) {
+        _cameraBottomLeft = Vec2::ZERO;
+        Vec3 cameraPos = camera->getPosition();
+        cameraPos.x = this->getSize().width * 0.5f;
+        cameraPos.y = this->getSize().height * 0.5f;
+        camera->setPosition(cameraPos);
+        camera->update();
+        return;
+    }
+
+    const Rect& world = _map->getWorldBounds();
+    Size view = this->getSize();
+    float halfW = view.width * 0.5f;
+    float halfH = view.height * 0.5f;
+
+    float minCenterX = world.origin.x + halfW;
+    float maxCenterX = world.getMaxX() - halfW;
+    float minCenterY = world.origin.y + halfH;
+    float maxCenterY = world.getMaxY() - halfH;
+
+    if (maxCenterX < minCenterX) {
+        minCenterX = maxCenterX = world.getMidX();
+    }
+    if (maxCenterY < minCenterY) {
+        minCenterY = maxCenterY = world.getMidY();
+    }
+    float cx = std::clamp(_player->getPosition().x * PHYSICS_SCALE, minCenterX, maxCenterX);
+    float cy = std::clamp(_player->getPosition().y * PHYSICS_SCALE, minCenterY, maxCenterY);
+    _cameraBottomLeft = Vec2(cx - halfW, cy - halfH);
+
+    Vec3 cameraPos = camera->getPosition();
+    
+    cameraPos.x = cx;
+    cameraPos.y = cy;
+    camera->setPosition(cameraPos);
+    camera->update();
+}
+
+Vec2 GameScene::resolvePlayerMapMove(const Vec2& startPos, const Vec2& velocity) const {
+    if (!_map) {
+        return startPos + velocity;
+    }
+    return _map->resolveSlideMove(startPos, velocity, 14.0f);
+}
+
+Vec2 GameScene::getHUDOffset() const {
+    return _cameraBottomLeft;
+}
 
 #pragma mark -
 #pragma mark Gameplay Handling
@@ -192,263 +486,171 @@ void GameScene::reset()
 void GameScene::preUpdate(float dt)
 {
     _input.update(dt);
-
-    if (_networkCtrl && _networkCtrl->hasNetwork())
-    {
-        _networkCtrl->update();
-        if(_networkCtrl->getStatus()==NetworkController::Status::WON) _playerWon=true;
-        if(_networkCtrl->getStatus()==NetworkController::Status::LOST) _playerLost=true;
-    }
-
-    if (_input.pressedReset())
-    {
+    
+    if (_input.pressedReset()) {
         reset();
         _input.resolvedReset();
         return;
     }
 
-    if (_playerLost || _playerWon)
-    {
+    if (_playerLost || _playerWon) {
         return;
-    }
-    // spawn an enemy if host and need to spawn
-    if (_ishost)
-    {
-        lastEnemySpawn += dt;
-        if (lastEnemySpawn > 8)
-        {
-            lastEnemySpawn = 0;
-            //_enemy->spawnEnemy(getSize() / 2, 4);
-        }
     }
 
     // Player movement
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
-    _player->setColor(_input.showAim() ? Color4::BLUE : Color4::WHITE);
-    _player->update();
+    Vec2 pos = _player -> getPosition();
+    //CULog("body active: %d", _player->isAwake());
+    //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
+    _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
+    cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
+    //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
 
-    cugl::Vec2 playerScreenPos = _player->getPosition();
+    //updateItemPickupState();
+    //updateDepositState();
+    _input.setInventoryPanelOpen(_inventoryPanelOpen);
 
-    updateItemPickupState();
-    tryPickupItem();
+    bool pickupRequested = false;
+    bool depositRequested = false;
+    int dropIndex = -1;
+
+    if (_input.pressedPickup()) {
+        pickupRequested = true;
+        _input.resolvedPickup();
+    }
+    //if (_input.pressedDrop()) {
+    //    std::shared_ptr<Inventory> inventory = _player->getInventory();
+     //   if (inventory && !inventory->isEmpty()) {
+     //       dropIndex = (int)inventory->getCount() - 1;
+     //   }
+      //  _input.resolvedDrop();
+   // }
+    if (_input.pressedDeposit()) {
+        depositRequested = true;
+        _input.resolvedDeposit();
+    }
+    handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
+
+    //bool hasNetwork = _networkCtrl && _networkCtrl->hasNetwork();
+   // if (!hasNetwork || _ishost) {
+//        if (pickupRequested) {
+//            pickupNearbyItem();
+//        }
+//        if (dropIndex >= 0) {
+//            dropInventoryIndex((size_t)dropIndex);
+//        }
+//        if (depositRequested) {
+//            depositAtDropoff();
+//        }
+   // }
 
     // Spellcasting
-    if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE)
-    {
+    if (_input.getGesture() != SpellType::NONE) {
         _player->setSpell(_input.getGesture());
+        //CULog("Set spell! %d", _player->getSpell());
     }
 
-    bool sendSpell = false;
     Vec2 angle = _input.getSpellAngle();
-    if (angle.isZero())
-    {
+    if (angle.isZero()) {
         angle = _player->getDirection();
     }
-    if (_input.shouldReleaseSpell())
-    {
-        sendSpell = true;
+    if (_input.shouldReleaseSpell()) {
         CULog("Release spell--------------------------------------------------------");
         // CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
-        if (_ishost)
-        {
-            spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
+        //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
+        // Spawn spell, make host owner of object
+        
+        CULog("Spell type: %d", _player->getSpell());
+        SpellType t = SpellType::NONE;
 
-            _input.resolveSpell();
-            _player->resolveSpell();
-        }
-    }
-    // collision update, only for host!
-    if (_ishost)
-    {
-        float playerRadius = 15.0f;
-        _collisions.resolvePlayersEnemies(_players->current, playerRadius, _enemy);
-        _collisions.resolveEnemiesSpell(spells, _enemy, playerScreenPos * -1.5);
-        _collisions.resolvePlayersSpell(spells, _players->current, 20,_player->getPID());
-    }
-
-    if (!_ishost && _networkCtrl->hasNetwork())
-    {
-        ClientInput ci;
-        ci.joystickAngle = _input.getMove().isZero() ? 0.0f : _input.getMove().getAngle();
-        ci.pickupPressed = _input.pressedPickup();
-        ci.posX = playerScreenPos.x;
-        ci.posY = playerScreenPos.y;
-        ci.spellType = _player->getSpell();
-        if (sendSpell)
-        {
-            ci.sid = _player->getSpellId();
-            ci.spellAngle = angle.getAngle();
-            // CULog("Angle of spell: %f", angle.getAngle());
-        }
-        _networkCtrl->sendInput(ci);
-    }
-
-    // client recieve !!
-    if (!_ishost && _networkCtrl->hasNetwork() && _networkCtrl->hasNewHostInput())
-    {
-        HostInput hi = _networkCtrl->getLatestHostInput();
-        _networkCtrl->clearNewHostInput();
-
-        for (auto &pd : hi.players)
-        {
-//            we need our own data LOL if (pd.uuid == _player->getPID())
-//            {
-//                continue;
-//            }
-            auto p = _players->getPlayerByPID(pd.uuid);
-            if (p)
-            {
-                if (pd.uuid != _player->getPID()) p->setPosition(cugl::Vec2(pd.posX, pd.posY));
-                p->setHealth(pd.health);
-            }
-        }
-        _enemy->reset(); // clear all
-        for (auto &ed : hi.enemies)
-        {
-            _enemy->updateEnemyAsClient(ed.eid, cugl::Vec2(ed.posX, ed.posY), ed.health);
-        }
-
-        spells.current.clear();
-        for (auto &sd : hi.spells)
-        {
-            spells.spawnSpell(sd.id, sd.type, Vec2(sd.posX, sd.posY), sd.velAngle);
-        }
-        spells.update(); // MAYBE?????
-
-        if (spells.contains(_player->getSpellId()))
-        {
-            _input.resolveSpell();
-            _player->resolveSpell();
-        }
-
-        // needs to be changed in the future depending on how we're doing artifact
-        if (!hi.added_items.empty())
-        {
-            _items.clear();
-            for (auto &id : hi.added_items)
-            {
-                ItemData item;
-                item.position = cugl::Vec2(id.posX, id.posY);
-                item.name = id.item;
-                item.radius = 14.0f;
-                item.value = (id.item == "artifact") ? 40 : 25;
-                item.color = (id.item == "artifact") ? Color4(255, 170, 60, 255) : Color4(120, 180, 255, 255);
-                item.type = (id.item == "artifact") ? ItemData::ItemType::ARTIFACT : ItemData::ItemType::SPELL;
-                _items.push_back(item);
-            }
-        }
-    }
-
-    // HOST: broadcast game state to clients
-    if (_ishost && _networkCtrl && _networkCtrl->hasNetwork())
-    {
-        // updates player positions (based on position currently, should change)
-        HostInput hi;
-
-        for (auto &[pid, input] : _clientInputs)
-        {
-            auto p = _players->getPlayerByPID(pid);
-            if (p)
-            {
-                if (p->getHealth() <= 0)
-                {
-                    _playerLost = true;
-                }
-                p->setPosition(cugl::Vec2(input.posX, input.posY));
-
-                if (input.sid.length() > 1)
-                { // a spell WAS cast
-                    if (!spells.contains(input.sid))
-                    { // First time trying to spawn this spell
-                        CULog("Other Spawn-------------------------------------------------");
-                        spells.spawnSpell(input.sid, input.spellType, Vec2(input.posX, input.posY), input.spellAngle);
+        // check for possible combos - serena implemented
+        for (auto p : _playerFact->current) {
+            if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
+                // calc combo spell + send combo event
+                if (_player->getSpell() == SpellType::FIREBALL) {
+                    if (p->getSpell() == SpellType::FIREBALL) {
+                        t = SpellType::COMBO_FIREBALL;
                     }
-                    p->resolveSpell();
+                }
+                else if (_player->getSpell() == SpellType::FREEZE) {
+                    if (p->getSpell() == SpellType::FREEZE) {
+                        t = SpellType::COMBO_FREEZE;
+                    }
                 }
 
+                // Spell is combo-ed!
+                if (t != SpellType::NONE) {
+                    _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
+                    break;
+                }
             }
         }
-        // update enemy positions - just see if they target host atm
-        std::vector<cugl::Vec2> player_pos;
-        for (auto p : _players->current)
-        {
+
+        // Not a combo, use base spell
+        if (t == SpellType::NONE) {
+            t = _player->getSpell();
+        }
+
+        CULog("Casting spell type: %d", t);
+        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, t, _networkCtrl->getShortUID());
+        auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+        _networkCtrl->getPhysController()->releaseObs(pair.first);
+
+        _input.resolveSpell();
+        _player->resolveSpell();
+    }
+
+    if (_networkCtrl->isHost()) {
+        // spawn an enemy if host and need to spawn
+        lastEnemySpawn += dt;
+        if (lastEnemySpawn > 8) {
+            lastEnemySpawn = 0;
+            //_enemy->spawnEnemy(getSize() / 2, 4);
+            
+            
+            auto spawns = _map -> getEnemySpawnPoints();
+            std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
+            if (!spawns.empty()) {
+                std::uint64_t index = rand % spawns.size();
+                Vec2 pos = spawns[index];
+
+                auto params = _enemyFact->serializeParams(pos / PHYSICS_SCALE, Vec2::ZERO, 4);
+                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
+            }
+            
+            
+        }
+
+        // Change to be all player positions
+        std::vector<Vec2> player_pos;
+        for (auto p : _playerFact->current) {
             player_pos.push_back(p->getPosition());
         }
-        _enemy->update(player_pos);
-
-        hi.dt = dt;
-
-        for (auto p : _players->current)
-        {
-            HostPlayerData pd;
-            pd.uuid = p->getPID();
-            pd.posX = p->getPosition().x;
-            pd.posY = p->getPosition().y;
-            pd.speed = p->getVelocity().length();
-            pd.velAngle = p->getVelocity().isZero() ? 0.0f : p->getVelocity().getAngle();
-            pd.curSpell = p->getSpell();
-            pd.health = p->getHealth();
-            hi.players.push_back(pd);
+        auto toRemove = _enemyFact->update(player_pos);
+        for (auto en : toRemove) {
+            _networkCtrl->getPhysController()->removeSharedObstacle(en);
         }
 
-        for (auto enem : _enemy->current)
-        {
-            auto e = std::get<1>(enem);
-            HostEnemyData ed;
-            ed.posX = e->getPosition().x;
-            ed.posY = e->getPosition().y;
-            ed.speed = e->getVelocity().length();
-            ed.velAngle = e->getVelocity().isZero() ? 0.0f : e->getVelocity().getAngle();
-            ed.health = e->getHealth();
-            ed.eid = std::get<0>(enem);
-            hi.enemies.push_back(ed);
+        // Remove spells that have gone out of range
+        auto spellRemove = _spellFact->update();
+        for (auto spell : spellRemove) {
+            _networkCtrl->getPhysController()->removeSharedObstacle(spell);
+            CULog("Remove spell: %d", spell->isRemoved());
         }
-
-        for (auto [sid, sp] : spells.current)
-        {
-            HostSpellData sd;
-            sd.id = sid;
-            sd.posX = sp->_position.x;
-            sd.posY = sp->_position.y;
-            sd.velAngle = sp->velocity.getAngle();
-            sd.type = sp->froze ? SpellType::FREEZE : SpellType::FIREBALL;
-            hi.spells.push_back(sd);
-        }
-
-        for (auto &item : _items)
-        {
-            HostItemData id;
-            id.posX = item.position.x;
-            id.posY = item.position.y;
-            id.itemId = (int)(&item - &_items[0]); // the index is the id for now!
-            id.item = item.name;
-            hi.added_items.push_back(id);
-        }
-
-        auto bytes = MessageSerializer::encodeHostInput(hi);
-        _networkCtrl->getNetwork()->broadcast(bytes);
     }
 
+    playerScreenPos = _player->getPosition();
+    updateCameraFollow();
+    _inputDisplay->setUIOffset(getHUDOffset());
     _inputDisplay->update(playerScreenPos);
-    if (sendSpell)
-    {
-    }
 
-    // collision update, only for host!
-    if (_ishost)
-    {
-        spells.update();
-    }
-
-    if (_player->getHealth() <= 0)
-    {
+    if (_player->getHealth() <= 0) {
         _playerLost = true;
     }
-    if ((_playerLost || _playerWon) && _ishost)
-    {
-        _networkCtrl->endGame(_playerWon);
+    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
+        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
     }
 }
 
@@ -463,7 +665,7 @@ void GameScene::preUpdate(float dt)
  *
  * This method is always invoked in-between a call to {@link #preUpdate}
  * and {@link #postUpdate}. However, to guarantee determinism, it is
- * possible that this method is called multiple times between those two
+ * possible that this method be called multiple times between those two
  * calls. Depending on the value of {@link #getFixedStep}, it can also
  * (periodically) be called zero times, particularly if {@link #getFPS}
  * is much faster.
@@ -480,8 +682,23 @@ void GameScene::preUpdate(float dt)
  */
 void GameScene::fixedUpdate(Uint64 step)
 {
-    // float dt = step / 1000000.0f;
-    //_world->update(dt);
+    // First process incoming events
+    _networkCtrl->updateNet();
+    
+    // handle cast spell event
+    if(_networkCtrl->isInAvailable()){
+        auto e = _networkCtrl->popInEvent();
+        if(auto cse = std::dynamic_pointer_cast<CastSpellEvent>(e)){
+            CULog("COMBO SPELL GOT");
+            processComboEvent(cse);
+        }
+//        else if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e)){
+//            CULog("INIT EVENT GOT");
+//            processInitEvent(cse);
+//        }
+    }
+
+    _world->update(step / 1000000.0f);
 }
 
 /**
@@ -520,33 +737,29 @@ void GameScene::postUpdate(float remain)
  */
 void GameScene::render()
 {
-    // DO NOT DO THIS IN YOUR FINAL GAME
+    
+    Scene2::render();
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
-
-    Color4 original = _batch->getColor();
-
+//    if (_map) {
+//        _map->draw(_batch);
+//    }
+    drawDepositZone();
     drawItems();
-
-    _players->draw(_batch);
-
-    _enemy->draw(_batch);
-
-    spells.draw(_batch);
-
     renderHUD();
-
     _inputDisplay->draw(_batch);
-
-    _batch->setColor(original);
     _batch->end();
+    
+    
+
 }
 
 void GameScene::renderHUD()
 {
-    Size screenSize = getSize();
+    Size screenSize = this->getSize();
+    Vec2 hudOffset = getHUDOffset();
 
-    float barW = 280;
+    float barW = 320;
     float barH = 50;
     float margin = 16;
 
@@ -568,177 +781,465 @@ void GameScene::renderHUD()
 
     Color4 boxColor(30, 30, 30, 255);
 
-    // Inventory box - top left
-    float invX = margin;
-    float invY = screenSize.height - barH - margin;
-    drawBox(invX, invY, barW, barH, boxColor);
+    Rect inventoryHeader = _input.getInventoryHeaderBounds();
+    drawBox(inventoryHeader.origin.x + hudOffset.x, inventoryHeader.origin.y + hudOffset.y,
+            inventoryHeader.size.width, inventoryHeader.size.height, boxColor);
 
     // Quota box - top right
     float quotaX = screenSize.width - barW - margin;
     float quotaY = screenSize.height - barH - margin;
-    drawBox(quotaX, quotaY, barW, barH, boxColor);
+    drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
 
     // Health box - top center
     float healthW = 200;
     float healthX = screenSize.width / 2 - healthW / 2;
     float healthY = screenSize.height - barH - margin;
-    drawBox(healthX, healthY, healthW, barH, boxColor);
+    drawBox(healthX + hudOffset.x, healthY + hudOffset.y, healthW, barH, boxColor);
 
-    // Pickup prompt box - bottom right
-    float pickupX = screenSize.width - barW - margin;
-    float pickupY = margin;
-    drawBox(pickupX, pickupY, barW, barH, boxColor);
+    Rect actionButton = _input.getActionButtonBounds();
+    drawBox(actionButton.origin.x + hudOffset.x, actionButton.origin.y + hudOffset.y,
+            actionButton.size.width, actionButton.size.height, boxColor);
 
     if (_font)
     {
         _batch->setColor(Color4::WHITE);
 
-        std::shared_ptr<TextLayout> invLabel = TextLayout::allocWithText(
-            "Inventory: $" + std::to_string(_player->getInventoryValue()), _font);
-        invLabel->layout();
-        Affine2 invTrans;
-        invTrans.translate(invX + 10, invY + 12);
-        _batch->drawText(invLabel, invTrans);
+        //std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
+        //size_t itemCount = inventory ? inventory->getCount() : 0;
+        //size_t inventoryCapacity = inventory ? inventory->getCapacity() : kPrototypeInventoryCapacity;
+        //std::shared_ptr<TextLayout> invLabel = TextLayout::allocWithText(
+        //    "inventory: " + std::to_string(itemCount) + "/" + std::to_string(inventoryCapacity), _font);
+        //invLabel->layout();
+       // Affine2 invTrans;
+        //invTrans.translate(inventoryHeader.origin.x + 10 + hudOffset.x, inventoryHeader.origin.y + 12 + //hudOffset.y);
+       // _batch->drawText(invLabel, invTrans);
 
         std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
-            "Quota: $" + std::to_string(_quota), _font);
+            "Quota: $" + std::to_string(_depositedValue) + " / $" + std::to_string(_quota), _font);
         quotaLabel->layout();
         Affine2 quotaTrans;
-        quotaTrans.translate(quotaX + 10, quotaY + 12);
+        quotaTrans.translate(quotaX + 10 + hudOffset.x, quotaY + 12 + hudOffset.y);
         _batch->drawText(quotaLabel, quotaTrans);
 
         std::shared_ptr<TextLayout> healthLabel = TextLayout::allocWithText(
             "Health: " + std::to_string(_player->getHealth()), _font);
         healthLabel->layout();
         Affine2 healthTrans;
-        healthTrans.translate(healthX + 10, healthY + 12);
+        healthTrans.translate(healthX + 10 + hudOffset.x, healthY + 12 + hudOffset.y);
         _batch->drawText(healthLabel, healthTrans);
 
-        std::string pickupText = _canPickupItem ? _pickupPrompt : "move close to item";
+        std::string pickupText = "move close to item";
+#ifdef CU_TOUCH_SCREEN
+//        if (_canPickupItem) {
+//            if (inventory && !inventory->canAddItem()) {
+//                pickupText = "inventory full";
+//            } else {
+//                pickupText = "pickup item";
+//            }
+//        } else if (_canDeposit && inventory && !inventory->isEmpty()) {
+//            pickupText = "deposit at origin";
+//        }
+#else
+       // if (_canPickupItem) {
+        //    pickupText = _pickupPrompt;
+      //  } else if (_canDeposit && inventory && !inventory->isEmpty()) {
+       //     pickupText = "press f to deposit carried items";
+       // } else if (inventory && !inventory->isEmpty()) {
+        //    pickupText = "e pickup  q drop  f deposit";
+       // }
+#endif
         std::shared_ptr<TextLayout> pickupLabel = TextLayout::allocWithText(pickupText, _font);
         pickupLabel->layout();
         Affine2 pickupTrans;
-        pickupTrans.translate(pickupX + 10, pickupY + 12);
+        pickupTrans.translate(actionButton.origin.x + 10 + hudOffset.x, actionButton.origin.y + 12 + hudOffset.y);
         _batch->drawText(pickupLabel, pickupTrans);
+
+#ifdef CU_TOUCH_SCREEN
+//        if (_inventoryPanelOpen && inventory) {
+//            Rect panelBounds = _input.getInventoryPanelBounds();
+//            drawBox(panelBounds.origin.x + hudOffset.x, panelBounds.origin.y + hudOffset.y,
+//                    panelBounds.size.width, panelBounds.size.height,
+//                    Color4(20, 20, 20, 230));
+//
+//            float rowH = panelBounds.size.height / 4.0f;
+//            for (int ii = 0; ii < 4; ++ii) {
+//                float rowY = panelBounds.getMaxY() - rowH * (ii + 1);
+//                drawBox(panelBounds.origin.x + 2.0f + hudOffset.x, rowY + 1.0f + hudOffset.y,
+//                        panelBounds.size.width - 4.0f, rowH - 2.0f,
+//                        Color4(40, 40, 40, 220));
+//
+//                std::string rowText = "-";
+//                if ((size_t)ii < inventory->getCount()) {
+//                    rowText = inventory->getItems()[(size_t)ii]->getName();
+//                }
+//
+//                std::shared_ptr<TextLayout> rowLabel = TextLayout::allocWithText(rowText, _font);
+//                rowLabel->layout();
+//                Affine2 rowTrans;
+//                rowTrans.translate(panelBounds.origin.x + 10.0f + hudOffset.x, rowY + 8.0f + hudOffset.y);
+//                _batch->drawText(rowLabel, rowTrans);
+//            }
+//        }
+#endif // CU_TOUCH_SCREEN
     }
 }
 
-GameScene::ItemData GameScene::createRandomItem(bool forceArtifact, bool forceSpell)
-{
-    static std::random_device rd;
-    static std::mt19937 rng(rd());
-
-    std::uniform_real_distribution<float> xdist(80.0f, getSize().width - 80.0f);
-    std::uniform_real_distribution<float> ydist(100.0f, getSize().height - 100.0f);
-    std::uniform_int_distribution<int> kindDist(0, 1);
-
-    ItemData data;
-    bool makeArtifact = forceArtifact || (!forceSpell && kindDist(rng) == 0);
-
-    // this sets item type + values for proto
-    if (makeArtifact)
-    {
-        data.type = ItemData::ItemType::ARTIFACT;
-        data.name = "artifact";
-        data.value = 40;
-        data.color = Color4(255, 170, 60, 255);
+void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex) {
+#ifdef CU_TOUCH_SCREEN
+//    if (_input.pressedInventoryToggle()) {
+//        _inventoryPanelOpen = !_inventoryPanelOpen;
+//        _input.setInventoryPanelOpen(_inventoryPanelOpen);
+//        _input.resolvedInventoryToggle();
+//        CULog("inventory panel toggled: %d", _inventoryPanelOpen ? 1 : 0);
+//    }
+//
+//    if (_input.pressedInventoryPanel()) {
+//        if (_inventoryPanelOpen) {
+//            int index = getInventoryPanelIndexAt(_input.getLastUITap());
+//            if (index >= 0) {
+//                dropIndex = index;
+//            }
+//        }
+//        _input.resolvedInventoryPanel();
+//    }
+//
+//    if (_input.pressedContextAction()) {
+//        _input.resolvedContextAction();
+//        if (_canPickupItem) {
+//            pickupRequested = true;
+//        } else if (_canDeposit) {
+//            depositRequested = true;
+//        }
+//    }
+#else
+    if (_input.pressedInventoryToggle()) {
+        _inventoryPanelOpen = !_inventoryPanelOpen;
+        _input.resolvedInventoryToggle();
     }
-    else
-    {
-        data.type = ItemData::ItemType::SPELL;
-        data.name = "spellbook";
-        data.value = 25;
-        data.color = Color4(120, 180, 255, 255);
-    }
-
-    // this chooses a random point on screen and sets a small pickup radius (can be smaller?)
-    data.position = Vec2(xdist(rng), ydist(rng));
-    data.radius = 14.0f;
-    return data;
+#endif
 }
 
-void GameScene::spawnInitialItems()
-{
-    _items.clear();
-    _items.push_back(createRandomItem(true, false));
-    _items.push_back(createRandomItem(false, true));
-}
+//bool GameScene::pickupNearbyItem() {
+   // return hostPickupForPlayer(_player);
+//}
 
-void GameScene::spawnReplacementItem()
-{
-    _items.push_back(createRandomItem(false, false));
-}
+//bool GameScene::depositAtDropoff() {
+   // return hostDepositForPlayer(_player);
+//}
 
-void GameScene::updateItemPickupState()
-{
-    _canPickupItem = false;
-    _pickupIndex = -1;
-    _pickupPrompt = "";
+//bool GameScene::dropInventoryIndex(size_t index) {
+   // return hostDropInventoryIndex(_player, index);
+//}
 
-    // this converts player center from physics units into screen units
-    for (size_t ii = 0; ii < _items.size(); ++ii)
-    {
-        if (_collisions.resolvePlayerItem(_player, _items[ii].position, _items[ii].radius))
-        {
-            _canPickupItem = true;
-            _pickupIndex = (int)ii;
-            // Can't use CU_TOUCH_SCREEN in this manner, since it just isn't defined on PC
-            //_pickupPrompt = CU_TOUCH_SCREEN ? "tap to pickup " + _items[ii].name : "press e to pickup " + _items[ii].name;
-            return;
-        }
-    }
-}
+//bool GameScene::hostPickupForPlayer(const std::shared_ptr<PlayerObstacle>& player) {
+    // Host-authoritative item pickup. The host validates overlap and capacity
+    // before moving an item from ItemSet into the player's Inventory.
+    //if (!player) {
+    //    return false;
+    //}
 
-void GameScene::tryPickupItem()
-{
-    if (!_input.pressedPickup())
+    //int pickupIndex = _itemSet.findNearestPickupIndex(player->getPosition(), player->getSize());
+    //if (pickupIndex < 0) {
+    //    return false;
+  //  }
+
+   // std::shared_ptr<Inventory> inventory = player->getInventory();
+    //if (!inventory || !inventory->canAddItem()) {
+     //   if (player == _player) {
+#ifdef CU_TOUCH_SCREEN
+           // _pickupPrompt = "inventory full";
+#else
+        //    _pickupPrompt = "inventory full, press q to drop";
+#endif
+      //  }
+      //  return false;
+    //}
+
+   // std::shared_ptr<Item> item = _itemSet.takeAt((size_t)pickupIndex);
+   // if (!item) {
+   //     return false;
+   // }
+
+   // if (!inventory->addItem(item)) {
+   //     _itemSet.addDroppedItem(item, player->getPosition());
+    ///    return false;
+    //}
+
+   // if (player == _player) {
+   //     _inventoryValue = inventory->getCarriedValue();
+    //    updateItemPickupState();
+    //    updateDepositState();
+   // }
+   // return true;
+//}
+
+//bool GameScene::hostDropInventoryIndex(const std::shared_ptr<Player>& player, size_t index) {
+//    // Host-authoritative drop. The host verifies slot ownership before putting
+//    // the item back into ItemSet near the player.
+//    if (!player) {
+//        return false;
+//    }
+//
+//    std::shared_ptr<Inventory> inventory = player->getInventory();
+//    if (!inventory) {
+//        return false;
+//    }
+//
+//    std::shared_ptr<Item> dropped = inventory->dropItemAt(index);
+//    if (!dropped) {
+//        return false;
+//    }
+//
+//    Vec2 dropDir = player->getDirection();
+//    if (dropDir.isZero()) {
+//        dropDir = Vec2(1, 0);
+//    }
+//
+//    Vec2 dropPos = player->getPosition() + dropDir.getNormalization() * 26.0f;
+//    _itemSet.addDroppedItem(dropped, dropPos);
+//
+//    if (player == _player) {
+//        _inventoryValue = inventory->getCarriedValue();
+//        updateItemPickupState();
+//        updateDepositState();
+//    }
+//    return true;
+//}
+//
+//bool GameScene::hostDepositForPlayer(const std::shared_ptr<Player>& player) {
+//    // Host-authoritative deposit. The host checks deposit-zone overlap and then
+//    // moves carried value into the shared team quota total.
+//    if (!player) {
+//        return false;
+//    }
+//
+//    if (!_collisions.resolvePlayerItem(player, _depositPosition, _depositRadius)) {
+//        return false;
+//    }
+//
+//    std::shared_ptr<Inventory> inventory = player->getInventory();
+//    if (!inventory || inventory->isEmpty()) {
+//        return false;
+//    }
+//
+//    _depositedValue += inventory->depositAllItems();
+//    if (_depositedValue >= _quota) {
+//        _playerWon = true;
+//    }
+//
+//    if (player == _player) {
+//        _inventoryValue = inventory->getCarriedValue();
+//        updateDepositState();
+//    }
+//    return true;
+//}
+//
+//void GameScene::applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player,
+//                                               const std::vector<HostInventoryItemData>& items) {
+//    if (!player) {
+//        return;
+//    }
+//
+//    if (!player->getInventory()) {
+//        player->setInventory(std::make_shared<Inventory>(kPrototypeInventoryCapacity));
+//    }
+//
+//    std::shared_ptr<Inventory> inventory = player->getInventory();
+//    inventory->clear();
+//    for (const HostInventoryItemData& item : items) {
+//        inventory->addItem(makePrototypeItem(item.id, item.kind, item.name, item.value));
+//    }
+//}
+
+//void GameScene::applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items) {
+//    _itemSet.reset();
+///*
+//    // ga: procnet old screen-space item bounds kept as reference during the
+//    // move to map-owned world bounds.
+//    _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
+//*/
+//    if (_map) {
+//        _itemSet.setSpawnBounds(_map->getWorldBounds());
+//    } else {
+//        _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
+//    }
+//    for (const HostWorldItemData& item : items) {
+//        _itemSet.addDroppedItem(
+//            makePrototypeItem(item.id, item.kind, item.name, item.value),
+//            Vec2(item.posX, item.posY),
+//            item.radius
+//        );
+//    }
+//}
+//
+//int GameScene::getInventoryPanelIndexAt(const Vec2& tapPos) const {
+//    Rect panel = _input.getInventoryPanelBounds();
+//    if (!panel.contains(tapPos)) {
+//        return -1;
+//    }
+//
+//    std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
+//    if (!inventory || inventory->isEmpty()) {
+//        return -1;
+//    }
+//
+//    float rowH = panel.size.height / 4.0f;
+//    float fromTop = panel.getMaxY() - tapPos.y;
+//    int index = (int)(fromTop / rowH);
+//    if (index < 0 || index >= (int)inventory->getCount()) {
+//        return -1;
+//    }
+//    return index;
+//}
+//
+//void GameScene::updateDepositState() {
+//    _canDeposit = _collisions.resolvePlayerItem(_player, _depositPosition, _depositRadius);
+//}
+//
+//void GameScene::tryDropItem() {
+//    if (!_input.pressedDrop()) {
+//        return;
+//    }
+//    _input.resolvedDrop();
+//
+//    std::shared_ptr<Inventory> inventory = _player->getInventory();
+//    if (!inventory || inventory->isEmpty()) {
+//        return;
+//    }
+//
+//    dropInventoryIndex(inventory->getCount() - 1);
+//}
+
+//void GameScene::tryDepositItems() {
+//    if (!_input.pressedDeposit()) {
+//        return;
+//    }
+//    _input.resolvedDeposit();
+//    depositAtDropoff();
+//}
+
+void GameScene::drawDepositZone() {
+    if (!_map || _appliedRunRevision <= 0) {
         return;
-    _input.resolvedPickup();
-
-    if (!_canPickupItem || _pickupIndex < 0)
-        return;
-
-    if (_pickupIndex < (int)_items.size())
-    {
-        _player->addItem(_items[_pickupIndex].value);
-        _items.erase(_items.begin() + _pickupIndex);
-        spawnReplacementItem();
-
-        // this refreshes prompt state right away after pickup
-        updateItemPickupState();
     }
+
+    _batch->setTexture(nullptr);
+
+    Color4 color = _canDeposit ? Color4(70, 180, 95, 220) : Color4(60, 120, 70, 200);
+    Rect zone(_depositPosition.x - _depositRadius, _depositPosition.y - _depositRadius,
+              _depositRadius * 2.0f, _depositRadius * 2.0f);
+
+    _batch->setColor(color);
+    _batch->fill(zone);
 }
+
+// GA: itemnet old scene-local item prototype kept for reference while ItemSet
+// and Inventory replace it as the gameplay source of truth.
+/*
+GameScene::ItemData GameScene::createRandomItem(bool forceArtifact, bool forceSpell) {
+    ...
+}
+
+void GameScene::spawnInitialItems() {
+    ...
+}
+
+void GameScene::spawnReplacementItem() {
+    ...
+}
+*/
+
+//void GameScene::updateItemPickupState()
+//{
+//    _canPickupItem = false;
+//    _pickupIndex = -1;
+//    _pickupPrompt = "";
+//
+//    _pickupIndex = _itemSet.findNearestPickupIndex(_player->getPosition(), _player->getSize());
+//    if (_pickupIndex < 0) {
+//        return;
+//    }
+//
+//    const std::vector<ItemSet::WorldItem>& items = _itemSet.getItems();
+//    if (_pickupIndex >= (int)items.size()) {
+//        _pickupIndex = -1;
+//        return;
+//    }
+//
+//    _canPickupItem = true;
+//    std::shared_ptr<Inventory> inventory = _player->getInventory();
+//    if (inventory && !inventory->canAddItem()) {
+//#ifdef CU_TOUCH_SCREEN
+//        _pickupPrompt = "inventory full";
+//#else
+//        _pickupPrompt = "inventory full, press q to drop";
+//#endif
+//    } else {
+//#ifdef CU_TOUCH_SCREEN
+//        _pickupPrompt = "pickup item";
+//#else
+//        _pickupPrompt = "press e to pickup " + items[(size_t)_pickupIndex].item->getName();
+//#endif
+//    }
+//}
+//
+//void GameScene::tryPickupItem() {
+//    if (!_input.pressedPickup()) {
+//        return;
+//    }
+//    _input.resolvedPickup();
+//    pickupNearbyItem();
+//}
 
 void GameScene::drawItems()
 {
-    _batch->setTexture(nullptr);
-    for (const auto &item : _items)
-    {
-        // this draws a small rectangle so we do not need extra textures yet
-        Rect body(item.position.x - item.radius, item.position.y - item.radius,
-                  item.radius * 2.0f, item.radius * 2.0f);
-        _batch->setColor(item.color);
+    for (const ItemSet::WorldItem& world : _itemSet.getItems()) {
+        Rect body(world.position.x - world.radius, world.position.y - world.radius,
+                  world.radius * 2.0f, world.radius * 2.0f);
+
+        std::string textureKey = getItemTextureKey(world.item);
+        std::shared_ptr<Texture> itemTexture = textureKey.empty() ? nullptr : _assets->get<Texture>(textureKey);
+        if (itemTexture) {
+            // textured pickups are back. we draw them in the same world rect the
+            // debug circles used before so networking/item positions stay unchanged.
+            _batch->draw(itemTexture, Color4::WHITE, body);
+            continue;
+        }
+
+        // keep the old debug fill as a last resort if a texture asset is missing.
         _batch->setTexture(nullptr);
+        _batch->setColor(world.item->getDebugColor());
         _batch->fill(body);
     }
 }
 
-/**
- * Rebuilds the geometry.
- *
- * This method should recreate all the polygons for the spline, the handles
- * and the falling star. It should also recreate all physics objects.
- *
- * However, to cut down on performance overhead, this method should NOT add
- * those physics objects to the world inside this method (as this method is
- * called repeatedly while the user moves a handle). Instead, those objects
- * should not be activated until the state is "stable".
- */
-void GameScene::buildGeometry()
-{
-    //_world -> clear();
+void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
+    if (_networkCtrl!=nullptr) return;
+    _networkCtrl = n;
+    _map->init();
+}
 
-    //_player->addTo(_world);
+void GameScene::initMap() {
+    if (_networkCtrl->getRandSeed()==0) return; // no randSeed
+    if (_mapSeed==_networkCtrl->getRandSeed()) return; // already init
+    // uh ig this also will init network??? yolo
+    std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
+        this->linkSceneToObs(obs, node);
+        };
+    
+    _networkCtrl->enablePhysics(_world, linkSceneToObsFunc);
+    _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
+    _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
+    _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
+    _rectFactId = _networkCtrl->getPhysController()->attachFactory(_rectFact);
+    _mapSeed= _networkCtrl->getRandSeed();
+    CULog("set map seed to : %d", _mapSeed);
+    
+    if (_mapSeed != 0) {
+        rebuildMapForRun();
+        
+    }
+    
 }
 
 void GameScene::setActive(bool value)
@@ -749,27 +1250,15 @@ void GameScene::setActive(bool value)
         if (value)
         {
             _input.activate();
-            // Host registers callback to collect client inputs each frame
-            if (_ishost)
-            {
-                _networkCtrl->setInputCallback(
-                    [this](const std::string &playerId, const ClientInput &input)
-                    {
-                        _clientInputs[playerId] = input;
-                    });
-            }
-            // create the OTHER players (both host n client do this) - must do once game scene takes over network handling
-            _player->setPID(_networkCtrl->getPID());
-            CULog("num players acc to game network: %d", _networkCtrl->getPlayers().size());
-            for (auto p : _networkCtrl->getPlayers())
-            {
-                if (p != _networkCtrl->getPID())
-                {
-                    CULog("adding ANOTHER player");
-                    _players->addPlayer(make_shared<Player>(cugl::Vec2(2 + getSize().width / 2, 2 + getSize().height / 2), 12, p, _assets->get<Texture>("player")));
-                }
-            }
-            CULog("num players in set: %d", _players->numPlayers());
+            
+    
+            auto params = _playerFact->serializeParams(_map -> getPlayerSpawn() / PHYSICS_SCALE, std::to_string(_networkCtrl->getShortUID()));
+            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
+
+            // set _player to the correct object
+            _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+            _player = _playerFact->getPlayerByPID(std::to_string(_networkCtrl->getShortUID()));
+            
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
         }
@@ -779,3 +1268,169 @@ void GameScene::setActive(bool value)
         }
     }
 }
+
+
+
+void GameScene::addInitObstacle(const std::shared_ptr<physics2::Obstacle>& obj,
+    const std::shared_ptr<scene2::SceneNode>& node) {
+    _world->initObstacle(obj);
+    if (_networkCtrl->isHost()) {
+        _world->getOwnedObstacles().insert({ obj,0 });
+    }
+    linkSceneToObs(obj, node);
+}
+
+void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
+    const std::shared_ptr<scene2::SceneNode>& node) {
+
+    node->setPosition(obj->getPosition() * PHYSICS_SCALE);
+    _worldnode->addChild(node);
+
+    // Dynamic objects need constant updating
+    if (obj->getBodyType() == b2_dynamicBody) {
+        scene2::SceneNode* weak = node.get(); // No need for smart pointer in callback
+        
+        // i do not know how else to check if it is a player...
+
+        if (typeid(*obj) == typeid(PlayerObstacle)) {
+            std::shared_ptr<Player> p_node = std::dynamic_pointer_cast<Player>(node);
+            obj->setListener([=, this](physics2::Obstacle* obs) {
+                PlayerObstacle* p = dynamic_cast<PlayerObstacle*>(obs);
+                p_node->updateAnimationState(p->getState());
+                float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+                Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+                float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+                p_node->setPosition(pos * PHYSICS_SCALE);
+                p_node->setAngle(angle);
+                p_node->setVelocity(p->getLinearVelocity() * PHYSICS_SCALE);
+            });
+            
+        } else {
+            obj->setListener([=, this](physics2::Obstacle* obs) {
+                float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+                Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+                float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+                weak->setPosition(pos * PHYSICS_SCALE);
+                weak->setAngle(angle);
+            });
+        }
+    }
+}
+
+void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
+    if (e->getP2() == _player->getPID()) {
+        CULog("recieved spell combo event for our spell");
+        _input.resolveSpell();
+        _player->resolveSpell();
+    }
+}
+
+//void GameScene::processInitEvent(const std::shared_ptr<GameInitEvent>& e) {
+//    _mapSeed = e->getSeed();
+//    rebuildMapForRun();
+//}
+
+/**
+ * Handles any modifications necessary before collision resolution
+ *
+ * This method is called just before Box2D resolves a collision.  We use this method
+ * to implement sound on contact, using the algorithms outlined in Ian Parberry's
+ * "Introduction to Game Physics with Box2D".
+ *
+ * @param  contact  	The two bodies that collided
+ * @param  oldManfold  	The collision manifold before contact
+ */
+void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
+    if (!_networkCtrl->isHost()) return;
+    
+    b2Body* body1 = contact->GetFixtureA()->GetBody();
+    b2Body* body2 = contact->GetFixtureB()->GetBody();
+
+    physics2::Obstacle* obs1 = reinterpret_cast<physics2::Obstacle*>(body1->GetUserData().pointer);
+    physics2::Obstacle* obs2 = reinterpret_cast<physics2::Obstacle*>(body2->GetUserData().pointer);
+
+    if (obs1->isRemoved() || obs2->isRemoved()) {
+        return;
+    }
+
+    SpellObstacle* spell = nullptr;
+    PlayerObstacle* player = nullptr;
+    EnemyObstacle* enemy = nullptr;
+    RectObstacle* wall = nullptr;
+
+    // Get types of the 2 obstacles; only care about collisions between different types of obstacles
+    if (typeid(*obs1) == typeid(SpellObstacle)) {
+        spell = reinterpret_cast<SpellObstacle*> (obs1);
+    }
+    else if (typeid(*obs1) == typeid(PlayerObstacle)) {
+        player = reinterpret_cast<PlayerObstacle*> (obs1);
+    }
+    else if (typeid(*obs1) == typeid(EnemyObstacle)) {
+        enemy = reinterpret_cast<EnemyObstacle*> (obs1);
+    }else if (typeid(*obs1) == typeid(RectObstacle)) {
+        wall = reinterpret_cast<RectObstacle*> (obs1);
+    }
+
+    if (typeid(*obs2) == typeid(SpellObstacle)) {
+        spell = reinterpret_cast<SpellObstacle*> (obs2);
+    }
+    else if (typeid(*obs2) == typeid(PlayerObstacle)) {
+        player = reinterpret_cast<PlayerObstacle*> (obs2);
+    }
+    else if (typeid(*obs2) == typeid(EnemyObstacle)) {
+        enemy = reinterpret_cast<EnemyObstacle*> (obs2);
+    }else if (typeid(*obs2) == typeid(RectObstacle)) {
+        wall = reinterpret_cast<RectObstacle*> (obs2);
+    }
+
+    // Checking for collisions
+    if (player && spell) {
+        if (player->getPID()==_networkCtrl->getPID() && spell->getCasterUID()==_networkCtrl->getShortUID()) return;
+        if (spell->getHealed()) {
+            int nh = player->getHealth() + HEAL_AMT;
+            player->setHealth(nh);
+            spell->markRemoved(true);
+        }
+        return;
+    }
+    if (player && enemy) {
+        //CULog("enemy and player colliison");
+        // TODO make this actually work?
+        //CULog("here");
+        player->getBody()->ApplyLinearImpulseToCenter(b2Vec2(20 * enemy->getLinearVelocity().x, 20 * enemy->getLinearVelocity().y), true);
+        enemy->getBody()->ApplyLinearImpulseToCenter(b2Vec2(-20 * enemy->getLinearVelocity().x, -20 * enemy->getLinearVelocity().y), true);
+        // TODO - get enemy to pause after attack
+       
+        return;
+    }
+    if (enemy && spell) {
+        enemy->setHealth(enemy->getHealth() - spell->getDamage());
+        // TODO implement freezing
+        spell->markRemoved(true);
+        if (enemy->getHealth()==0) enemy->markRemoved(true);
+        CULog("spell and enemy collision: %d", enemy->getHealth());
+        return;
+    }
+    if(wall && player){
+        
+        b2WorldManifold manifold;
+            contact->GetWorldManifold(&manifold);
+
+            b2Vec2 normal = manifold.normal;
+
+            b2Vec2 vel = player->getBody()->GetLinearVelocity();
+
+            float dot = vel.x * normal.x + vel.y * normal.y;
+            if (dot < 0) {
+                b2Vec2 newVel = vel - dot * normal;
+                player->getBody()->SetLinearVelocity(newVel);
+            }
+    }
+    if(wall && enemy){
+        //CULog("here wall and enemy");
+        contact -> SetEnabled(false);
+    }
+}
+
+
+
