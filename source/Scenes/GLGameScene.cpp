@@ -39,6 +39,8 @@
 
 #define PI 3.14159265358979323
 
+#define ITEM_PICKUP_RADIUS 0.5f
+
 
 using namespace cugl;
 using namespace std;
@@ -209,28 +211,10 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     }
 
     // this resets pickup prompt state
-    _canPickupItem = false;
-    _pickupIndex = -1;
-    _pickupPrompt = "";
     _canDeposit = false;
     _depositRadius = 42.0f;
     _depositPosition = Vec2::ZERO;
     _inventoryPanelOpen = false;
-
-/*
-    // ga: procnet old screen-space bootstrap kept for reference while the map
-    // becomes the shared run layout source.
-    _itemSet.reset();
-    if (kGuaranteedArtifacts > 0 || kGuaranteedSpellbooks > 0) {
-        _itemSet.spawnInitialPrototypeItems();
-    }
-    _itemSet.spawnUntilTotalValueAtLeast(
-        (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
-        kMaxAdditionalPrototypeItems
-    );
-*/
-
-    _itemSet.reset();
     
     //_mapSeed = chooseNonZeroSeed();
     _runRevision = 1;
@@ -241,6 +225,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _playerFact = PlayerFactory::alloc(_assets);
     _enemyFact = EnemyFactory::alloc(_assets);
     _rectFact = RectFactory::alloc(_assets, _map->_tiledRoomPrefab);
+    _itemFact = ItemFactory::alloc(_assets);
     CULog("did tiled thing load: %d", _map->_tiledRoomPrefab==nullptr);
 
     // IMPORTANT: SCALING MUST BE UNIFORM
@@ -307,10 +292,6 @@ void GameScene::reset()
     //     }
     // }
     _inventoryValue = 0;
-
-    _canPickupItem = false;
-    _pickupIndex = -1;
-    _pickupPrompt.clear();
     _canDeposit = false;
     _inventoryPanelOpen = false;
     _input.setInventoryPanelOpen(false);
@@ -342,7 +323,6 @@ int GameScene::getInventoryValue() const {
 
 void GameScene::loadGameplayConfig() {
     _runConfig = hexcapade::gameplayconfig::loadRunBalanceConfigFromAssets();
-    _itemSet.setSpawnConfig(_runConfig.item);
 }
 
 void GameScene::rebuildMapForRun() {
@@ -368,41 +348,32 @@ void GameScene::rebuildMapForRun() {
     mapNode->setPosition(Vec2::ZERO);
 
     _worldnode->addChild(mapNode);
-
-    
     
     _quota = std::max(1, _runConfig.quota);
     _depositPosition = _map->getPlayerSpawn();
 
-/*
-    // ga: procnet old random item seeding kept as reference while room spawn
-    // points are the current source for initial item placement.
-    _itemSet.reset();
-    _itemSet.setSpawnBounds(_map->getWorldBounds());
-    if (kGuaranteedArtifacts > 0 || kGuaranteedSpellbooks > 0) {
-        _itemSet.spawnInitialPrototypeItems();
+    if (_networkCtrl && _networkCtrl->isHost()) {
+        spawnItemsFromMap();
     }
-    _itemSet.spawnUntilTotalValueAtLeast(
-        (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
-        kMaxAdditionalPrototypeItems
-    );
-*/
-    _itemSet.reset();
-    _itemSet.setSpawnConfig(_runConfig.item);
-    _itemSet.setSpawnBounds(_map->getWorldBounds());
-    const std::vector<Vec2>& itemSpawnPoints = _roomController.getInitialItemSpawnPoints();
-    _itemSet.spawnFromRoomPositions(itemSpawnPoints);
-    _itemSet.spawnUntilTotalValueAtLeast(
-        itemSpawnPoints,
-        (int)std::ceil((float)_quota * kTargetWorldValueMultiplier),
-        kMaxAdditionalPrototypeItems
-    );
-
     //updateItemPickupState();
     //updateDepositState();
     if(_player){
         updateCameraFollow();
     }
+}
+
+void GameScene::spawnItemsFromMap() {
+    const std::vector<Vec2>& spawnPts = _roomController.getInitialItemSpawnPoints();
+    if (spawnPts.empty()) {
+        CULog("ItemFactory: no item spawn points found on map");
+        return;
+    }
+    for (const Vec2& worldPt : spawnPts) {
+        Vec2 physPos = worldPt / PHYSICS_SCALE;
+        auto params = _itemFact->serializeParams(physPos, 60, "artifact_scroll");
+        _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
+    }
+    CULog("ItemFactory: spawned %zu items", spawnPts.size());
 }
 
 void GameScene::updateCameraFollow() {
@@ -516,10 +487,6 @@ void GameScene::preUpdate(float dt)
     bool depositRequested = false;
     int dropIndex = -1;
 
-    if (_input.pressedPickup()) {
-        pickupRequested = true;
-        _input.resolvedPickup();
-    }
     //if (_input.pressedDrop()) {
     //    std::shared_ptr<Inventory> inventory = _player->getInventory();
      //   if (inventory && !inventory->isEmpty()) {
@@ -527,11 +494,25 @@ void GameScene::preUpdate(float dt)
      //   }
       //  _input.resolvedDrop();
    // }
+    _canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
+
     if (_input.pressedDeposit()) {
         depositRequested = true;
         _input.resolvedDeposit();
     }
     handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
+
+    // host only for now
+    if (_networkCtrl->isHost() && depositRequested && _canDeposit) {
+        if (_inventoryValue > 0) {
+            _depositedValue += _inventoryValue;
+            CULog("Deposited %d, total: %d / %d", _inventoryValue, _depositedValue, _quota);
+            _inventoryValue = 0;
+            if (_depositedValue >= _quota) {
+                _playerWon = true;
+            }
+        }
+    }
 
     //bool hasNetwork = _networkCtrl && _networkCtrl->hasNetwork();
    // if (!hasNetwork || _ishost) {
@@ -603,6 +584,10 @@ void GameScene::preUpdate(float dt)
     }
 
     if (_networkCtrl->isHost()) {
+        if (_input.pressedPickup()) {
+            hostCheckItemPickups();
+            _input.resolvedPickup();
+        }
         // spawn an enemy if host and need to spawn
         lastEnemySpawn += dt;
         if (lastEnemySpawn > 8) {
@@ -745,7 +730,6 @@ void GameScene::render()
 //        _map->draw(_batch);
 //    }
     drawDepositZone();
-    drawItems();
     renderHUD();
     _inputDisplay->draw(_batch);
     _batch->end();
@@ -919,93 +903,24 @@ void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequest
 #endif
 }
 
-//bool GameScene::pickupNearbyItem() {
-   // return hostPickupForPlayer(_player);
-//}
+void GameScene::hostCheckItemPickups() {
+    for (auto& item : _itemFact->current) {
+        if (item->isRemoved()) continue;
+        for (auto& playerObs : _playerFact->current) {
+            float dist = item->getPosition().distance(playerObs->getPosition());
+            if (dist <= ITEM_PICKUP_RADIUS) {
+                _inventoryValue += item->getValue();
+                CULog("Picked up %s worth %d (total carrying: %d)",
+                    item->getItemType().c_str(), item->getValue(), _inventoryValue);
+                playerObs->addItem(item->getValue());
+                _networkCtrl->getPhysController()->removeSharedObstacle(item);
+                break;
+            }
+        }
+    }
+    _itemFact->update();
+}
 
-//bool GameScene::depositAtDropoff() {
-   // return hostDepositForPlayer(_player);
-//}
-
-//bool GameScene::dropInventoryIndex(size_t index) {
-   // return hostDropInventoryIndex(_player, index);
-//}
-
-//bool GameScene::hostPickupForPlayer(const std::shared_ptr<PlayerObstacle>& player) {
-    // Host-authoritative item pickup. The host validates overlap and capacity
-    // before moving an item from ItemSet into the player's Inventory.
-    //if (!player) {
-    //    return false;
-    //}
-
-    //int pickupIndex = _itemSet.findNearestPickupIndex(player->getPosition(), player->getSize());
-    //if (pickupIndex < 0) {
-    //    return false;
-  //  }
-
-   // std::shared_ptr<Inventory> inventory = player->getInventory();
-    //if (!inventory || !inventory->canAddItem()) {
-     //   if (player == _player) {
-#ifdef CU_TOUCH_SCREEN
-           // _pickupPrompt = "inventory full";
-#else
-        //    _pickupPrompt = "inventory full, press q to drop";
-#endif
-      //  }
-      //  return false;
-    //}
-
-   // std::shared_ptr<Item> item = _itemSet.takeAt((size_t)pickupIndex);
-   // if (!item) {
-   //     return false;
-   // }
-
-   // if (!inventory->addItem(item)) {
-   //     _itemSet.addDroppedItem(item, player->getPosition());
-    ///    return false;
-    //}
-
-   // if (player == _player) {
-   //     _inventoryValue = inventory->getCarriedValue();
-    //    updateItemPickupState();
-    //    updateDepositState();
-   // }
-   // return true;
-//}
-
-//bool GameScene::hostDropInventoryIndex(const std::shared_ptr<Player>& player, size_t index) {
-//    // Host-authoritative drop. The host verifies slot ownership before putting
-//    // the item back into ItemSet near the player.
-//    if (!player) {
-//        return false;
-//    }
-//
-//    std::shared_ptr<Inventory> inventory = player->getInventory();
-//    if (!inventory) {
-//        return false;
-//    }
-//
-//    std::shared_ptr<Item> dropped = inventory->dropItemAt(index);
-//    if (!dropped) {
-//        return false;
-//    }
-//
-//    Vec2 dropDir = player->getDirection();
-//    if (dropDir.isZero()) {
-//        dropDir = Vec2(1, 0);
-//    }
-//
-//    Vec2 dropPos = player->getPosition() + dropDir.getNormalization() * 26.0f;
-//    _itemSet.addDroppedItem(dropped, dropPos);
-//
-//    if (player == _player) {
-//        _inventoryValue = inventory->getCarriedValue();
-//        updateItemPickupState();
-//        updateDepositState();
-//    }
-//    return true;
-//}
-//
 //bool GameScene::hostDepositForPlayer(const std::shared_ptr<Player>& player) {
 //    // Host-authoritative deposit. The host checks deposit-zone overlap and then
 //    // moves carried value into the shared team quota total.
@@ -1051,27 +966,6 @@ void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequest
 //    }
 //}
 
-//void GameScene::applyWorldItemSnapshot(const std::vector<HostWorldItemData>& items) {
-//    _itemSet.reset();
-///*
-//    // ga: procnet old screen-space item bounds kept as reference during the
-//    // move to map-owned world bounds.
-//    _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
-//*/
-//    if (_map) {
-//        _itemSet.setSpawnBounds(_map->getWorldBounds());
-//    } else {
-//        _itemSet.setSpawnBounds(Rect(60, 80, this->getSize().width - 120, this->getSize().height - 170));
-//    }
-//    for (const HostWorldItemData& item : items) {
-//        _itemSet.addDroppedItem(
-//            makePrototypeItem(item.id, item.kind, item.name, item.value),
-//            Vec2(item.posX, item.posY),
-//            item.radius
-//        );
-//    }
-//}
-//
 //int GameScene::getInventoryPanelIndexAt(const Vec2& tapPos) const {
 //    Rect panel = _input.getInventoryPanelBounds();
 //    if (!panel.contains(tapPos)) {
@@ -1133,86 +1027,6 @@ void GameScene::drawDepositZone() {
     _batch->fill(zone);
 }
 
-// GA: itemnet old scene-local item prototype kept for reference while ItemSet
-// and Inventory replace it as the gameplay source of truth.
-/*
-GameScene::ItemData GameScene::createRandomItem(bool forceArtifact, bool forceSpell) {
-    ...
-}
-
-void GameScene::spawnInitialItems() {
-    ...
-}
-
-void GameScene::spawnReplacementItem() {
-    ...
-}
-*/
-
-//void GameScene::updateItemPickupState()
-//{
-//    _canPickupItem = false;
-//    _pickupIndex = -1;
-//    _pickupPrompt = "";
-//
-//    _pickupIndex = _itemSet.findNearestPickupIndex(_player->getPosition(), _player->getSize());
-//    if (_pickupIndex < 0) {
-//        return;
-//    }
-//
-//    const std::vector<ItemSet::WorldItem>& items = _itemSet.getItems();
-//    if (_pickupIndex >= (int)items.size()) {
-//        _pickupIndex = -1;
-//        return;
-//    }
-//
-//    _canPickupItem = true;
-//    std::shared_ptr<Inventory> inventory = _player->getInventory();
-//    if (inventory && !inventory->canAddItem()) {
-//#ifdef CU_TOUCH_SCREEN
-//        _pickupPrompt = "inventory full";
-//#else
-//        _pickupPrompt = "inventory full, press q to drop";
-//#endif
-//    } else {
-//#ifdef CU_TOUCH_SCREEN
-//        _pickupPrompt = "pickup item";
-//#else
-//        _pickupPrompt = "press e to pickup " + items[(size_t)_pickupIndex].item->getName();
-//#endif
-//    }
-//}
-//
-//void GameScene::tryPickupItem() {
-//    if (!_input.pressedPickup()) {
-//        return;
-//    }
-//    _input.resolvedPickup();
-//    pickupNearbyItem();
-//}
-
-void GameScene::drawItems()
-{
-    for (const ItemSet::WorldItem& world : _itemSet.getItems()) {
-        Rect body(world.position.x - world.radius, world.position.y - world.radius,
-                  world.radius * 2.0f, world.radius * 2.0f);
-
-        std::string textureKey = getItemTextureKey(world.item);
-        std::shared_ptr<Texture> itemTexture = textureKey.empty() ? nullptr : _assets->get<Texture>(textureKey);
-        if (itemTexture) {
-            // textured pickups are back. we draw them in the same world rect the
-            // debug circles used before so networking/item positions stay unchanged.
-            _batch->draw(itemTexture, Color4::WHITE, body);
-            continue;
-        }
-
-        // keep the old debug fill as a last resort if a texture asset is missing.
-        _batch->setTexture(nullptr);
-        _batch->setColor(world.item->getDebugColor());
-        _batch->fill(body);
-    }
-}
-
 void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
     if (_networkCtrl!=nullptr) return;
     _networkCtrl = n;
@@ -1232,6 +1046,7 @@ void GameScene::initMap() {
     _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
     _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
     _rectFactId = _networkCtrl->getPhysController()->attachFactory(_rectFact);
+    _itemFactId = _networkCtrl->getPhysController()->attachFactory(_itemFact);
     _mapSeed= _networkCtrl->getRandSeed();
     CULog("set map seed to : %d", _mapSeed);
     

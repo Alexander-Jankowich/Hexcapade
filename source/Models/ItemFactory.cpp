@@ -31,13 +31,17 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> ItemFactory:
 
     // Grab the item's texture based on itemType 
     auto texture = _assets->get<graphics::Texture>(itemType);
-    auto sprite = std::make_shared<scene2::PolygonNode>();
-    if (texture) {
-        float halfPx = ITEM_SIZE * PHYSICS_SCALE * 0.5f;
-        cugl::Rect rect(-halfPx, -halfPx, halfPx * 2.0f, halfPx * 2.0f);
-        sprite->initWithTexturePoly(texture, rect);
-    }
 
+    std::shared_ptr<scene2::PolygonNode> sprite;
+    if (texture) {
+        sprite = scene2::PolygonNode::allocWithTexture(texture);
+        sprite->setScale(0.25f);
+    }
+    else {
+        // Fallback with solid colored rect
+        sprite = scene2::PolygonNode::allocWithPoly(Rect(0, 0, 48, 48));
+        sprite->setColor(Color4(255, 170, 60, 255));
+    }
     return std::make_pair(item, sprite);
 }
 
