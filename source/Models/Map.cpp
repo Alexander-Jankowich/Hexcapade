@@ -921,7 +921,7 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
 //                    if (hallTexture) {
                     auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _wallRenderGids[index]);
                     auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
-                    CULog("creating an obstacle");
+                    //CULog("creating an obstacle");
                         //batch->draw(hallTexture, Color4::WHITE, cell);
 //                    } else {
 //                        batch->setTexture(nullptr);

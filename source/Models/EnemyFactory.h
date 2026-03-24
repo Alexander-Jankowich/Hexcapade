@@ -11,18 +11,29 @@
 #include <cugl/cugl.h>
 #include "Enemy.h"
 
+#define ATTACK_DELAY 15
+
 using namespace cugl;
 using namespace cugl::physics2::distrib;
 using namespace std;
+
 /**
 * An extension of CapsuleObstacle to represent enemy collision objects.
 */
 class EnemyObstacle : public physics2::CapsuleObstacle {
+    public:
+        enum class EnemyState : int  {
+            IDLE=0,
+            CHASING=1,
+            ATTACK_RESET=2
+        };
 protected:
     int _health;
     float _speed;
     float _range;
     Vec2 _target;
+    EnemyState _state;
+    int _attackCounter;
 
 public:
     EnemyObstacle(const cugl::Vec2& pos, float speed, int health, float range, cugl::Size s);
@@ -39,6 +50,10 @@ public:
      * @return the speed of this enemy
      */
     const float getSpeed() const { return _speed; }
+    
+    EnemyState getState() {return _state;}
+    void setState(EnemyState s) {_state=s;}
+    void updateAttackCounter();
 
     /**
      * Returns the current ship health.
@@ -60,7 +75,7 @@ public:
 
     float getRange() { return _range; }
 
-    void setTarget(const Vec2 targ) { _target = targ; }
+    void setTarget(const Vec2 targ) { _target = targ; _state = EnemyState::CHASING;}
 
     Vec2 getTarget() { return _target; }
 };

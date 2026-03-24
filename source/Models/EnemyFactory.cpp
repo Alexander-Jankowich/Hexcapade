@@ -21,23 +21,30 @@ EnemyObstacle::EnemyObstacle(const cugl::Vec2& pos, float speed, int health, flo
     _speed = speed;
     _range = range;
     _target = pos;
+    _state = EnemyState::IDLE;
 }
 
 /**
- * Sets the current ship health.
+ * Sets the current enemy health.
  *
- * When the health of the ship is 0, it is "dead"
+ * When the health of the enemy is 0, it is "dead"
  *
- * @param value The current ship health.
+ * @param value The current enemy health.
  */
 void EnemyObstacle::setHealth(int value) {
-    if (value >= 0) {
-        // Do not allow health to go negative
-        _health = value;
-    }
+    _health = value >= 0 ? value : 0;
+}
+
+/**
+ * Tracks this enemy's "reset" window after an attack. Once the time is up, sets enemy back to IDLE.
+ */
+void EnemyObstacle::updateAttackCounter() {
+    if (_attackCounter < ATTACK_DELAY) _attackCounter++;
     else {
-        _health = 0;
+        _attackCounter=0;
+        _state = EnemyState::IDLE;
     }
+    CULog("attack counter: %d", _attackCounter);
 }
 
 /**
@@ -132,21 +139,25 @@ std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::update(std::vec
             it = current.erase(it);
             continue;
         }
+        
+        if((*it)->getState()==EnemyObstacle::EnemyState::ATTACK_RESET) (*it)->updateAttackCounter();
+        else {
+            // Update individual enemies
+            Vec2 targ = getClosestPlayer((*it)->getPosition(), targets);
 
-        // Update individual enemies
-        Vec2 targ = getClosestPlayer((*it)->getPosition(), targets);
-
-        if (targ.distance((*it)->getPosition()) < (*it)->getRange()) {
-            (*it)->setTarget(targ);
-            CULog("%.2f", targ.distance((*it)->getPosition()));
+            if (targ.distance((*it)->getPosition()) < (*it)->getRange()) {
+                (*it)->setTarget(targ);
+                //CULog("%.2f", targ.distance((*it)->getPosition()));
+            }
+            // if chasing
+            if ((*it)->getState()==EnemyObstacle::EnemyState::CHASING) {
+                // Set velocity to go to target
+                Vec2 vel = (*it)->getTarget() - (*it)->getPosition();
+                vel.normalize();
+                vel *= (*it)->getSpeed();
+                (*it)->setLinearVelocity(vel);
+            }
         }
-
-        // Set velocity to go to target
-        Vec2 vel = (*it)->getTarget() - (*it)->getPosition();
-        vel.normalize();
-        vel *= (*it)->getSpeed();
-        (*it)->setLinearVelocity(vel);
-
         it++;
     }
 
