@@ -456,7 +456,10 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
-    _timer -= 1;
+    if(_timer > 0){
+        _timer -= 1;
+    }
+    
     _input.update(dt);
     
     if (_input.pressedReset()) {
@@ -1213,8 +1216,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
     // Checking for collisions
     if (player && spell) {
-        if (player->getPID()==_networkCtrl->getPID() && spell->getCasterUID()==_networkCtrl->getShortUID()) return;
+        if (spell->getCasterUID()==_networkCtrl->getShortUID()) return;
         if (spell->getHealed()) {
+            CULog("here");
             int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
             spell->markRemoved(true);
