@@ -57,14 +57,13 @@ void InputDisplay::update(Vec2 playerPos) {
 	_showJoystick = _input->showJoystick();
 	if (_showJoystick) {
 		// keep the on-screen joystick anchored to the camera-adjusted hud space
-		_jbaseTrans = Affine2::createTranslation(_input->getJoystickCenter() + _uiOffset);
-		_jstickTrans = Affine2::createTranslation(_input->getJoystickPos() + _uiOffset);
+		_jbaseTrans = Affine2::createTranslation(_input->getJoystickCenter());
+		_jstickTrans = Affine2::createTranslation(_input->getJoystickPos());
 	}
 
 	_gesture = _input->getCurStroke();
-	for (Vec2& vertex : _gesture.vertices) {
-		vertex += _uiOffset;
-	}
+    _gesture.set(_input->getCurStroke());
+    extruder.set(_gesture);
 	extruder.set(_gesture);
 	extruder.calculate(_gestureWidth);
 	_gestureDisplay = extruder.getPolygon();
