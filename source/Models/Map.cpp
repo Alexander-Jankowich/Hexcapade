@@ -95,7 +95,7 @@ _tiledRoomPrefab(nullptr) {
 
 // FLAG: Serena added
 void Map::init() {
-    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("tiles/example_2.tmj");
+    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("example_2.tmj");
     if (!_tiledRoomPrefab) {
         CULog("tiled room load failed: tiles/example_2.tmj :(");
     }

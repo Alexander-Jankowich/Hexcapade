@@ -171,9 +171,17 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _random = cugl::Random::alloc();
 
     // Start up the input handler
-    // this keeps main's json-driven input setup while preserving the
-    // item hud hooks already used on this branch
-    _input.init(_constants->get("input"), cugl::Rect(0, 0, this->getSize().width, this->getSize().height));
+    // This is the size of scene! We want to screenToWorld and worldToScreen
+    // Factor out conversion with lambda gamescene -> input
+    cugl::Size display = cugl::Application::get()->getDisplaySize();
+    _input.init(
+        _constants->get("input"),
+        cugl::Rect(0, 0, display.width, display.height),
+        [this](const cugl::Vec2& screenCoords) -> cugl::Vec2 {
+            cugl::Vec3 world = screenToWorldCoords(screenCoords);
+            return cugl::Vec2(world.x, world.y);
+        }
+    );
     _input.setInventoryPanelOpen(false);
     _inputDisplay = make_shared<InputDisplay>(&_input, _constants->get("input"));
 
@@ -1208,6 +1216,7 @@ void GameScene::drawItems()
 void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
     if (_networkCtrl!=nullptr) return;
     _networkCtrl = n;
+    _map->init();
 }
 
 void GameScene::initMap() {

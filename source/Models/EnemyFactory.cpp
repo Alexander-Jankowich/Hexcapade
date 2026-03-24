@@ -16,9 +16,11 @@ EnemyObstacle::EnemyObstacle(const cugl::Vec2& pos, float speed, int health, flo
     setAwake(true);
     setEnabled(true);
     setBodyType(b2_dynamicBody);
+
     _health = health;
     _speed = speed;
     _range = range;
+    _target = pos;
 }
 
 /**
