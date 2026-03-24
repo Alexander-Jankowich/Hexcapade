@@ -765,6 +765,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         // Taps in the gesture zone no longer imply pickup now that mobile item
         // actions live behind explicit HUD buttons.
         _lastGesture = SpellType::NONE;
+        _pickupPressed = true;
     }
     CULog("First Stroke points:");
         for (const auto& p : currentStroke) {
