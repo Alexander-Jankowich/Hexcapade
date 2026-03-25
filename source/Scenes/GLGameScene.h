@@ -83,6 +83,7 @@ protected:
 
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
     CollisionController _collisions;
+    std::vector<std::pair<ItemObstacle*, std::shared_ptr<cugl::scene2::SceneNode>>> _itemNodes;
     /** GA: itemnet legacy scene-local inventory cache kept during the migration. */
     int _inventoryValue;
     /** The total value already deposited into the shared quota. */
@@ -277,7 +278,9 @@ private:
     // this maps the last panel tap to an inventory row index for the upcoming item flow
     int getInventoryPanelIndexAt(const cugl::Vec2& tapPos) const;
     // host-only: checks proximity of all players to all items and picks up on overlap
-    void hostCheckItemPickups();
+    bool hostCheckItemPickups();
+    // this removes the world node for an item after the item obstacle is deleted
+    void removeItemNode(const std::shared_ptr<ItemObstacle>& item);
     // host-only: this spawns physics-backed items at map spawn points
     void spawnItemsFromMap();
     // this loads map/item quota tuning from json without changing the networking path

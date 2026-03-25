@@ -48,7 +48,10 @@ protected:
     /** The angle the enity is facing */
     cugl::Vec2 _angle;
 
+    /** carried item values for the current pickup/deposit flow */
     vector<int> _inventory;
+    /** max carried item count for the current inventory flow */
+    size_t _inventoryLimit;
 
 public:
     PlayerObstacle(Vec2 pos, string pid, cugl::Size s);
@@ -66,10 +69,23 @@ public:
     void setAniState(AnimationState s) {_state = s;}
     
     cugl::Vec2 getDirection() { return _angle; }
-    int getInventoryVal() {
+    #pragma mark PO_Inventory
+    int getInventoryVal() const {
         int sum = 0;
         for (auto i : _inventory) sum +=i;
         return sum;
+    }
+    
+    size_t getInventoryCount() const { return _inventory.size(); }
+    size_t getInventoryLimit() const { return _inventoryLimit; }
+    void setInventoryLimit(size_t limit) { _inventoryLimit = limit; }
+    bool canAddItem() const { return _inventory.size() < _inventoryLimit; }
+    bool hasInventory() const { return !_inventory.empty(); }
+    void clearInventory() { _inventory.clear(); }
+    int depositItems() {
+        int deposited = getInventoryVal();
+        _inventory.clear();
+        return deposited;
     }
 
     void setVelocity(Vec2 v);
@@ -88,5 +104,11 @@ public:
     const std::string getPID() const { return _pid; }
     void setPID(std::string pid) { _pid = pid; }
     
-    void addItem(int item_val) {_inventory.push_back(item_val);}
+    bool addItem(int item_val) {
+        if (!canAddItem()) {
+            return false;
+        }
+        _inventory.push_back(item_val);
+        return true;
+    }
 };

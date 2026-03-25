@@ -12,6 +12,7 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
     _pid = pid;
     _speed = 6;
     _health = 10;
+    _inventoryLimit = 4;
 }
 
 void PlayerObstacle::setVelocity(Vec2 v) {

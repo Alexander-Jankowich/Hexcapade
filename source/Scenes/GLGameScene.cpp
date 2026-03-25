@@ -291,6 +291,13 @@ void GameScene::reset()
     //         player->getInventory()->clear();
     //     }
     // }
+    for (auto& playerObs : _playerFact->current) {
+        if (playerObs) {
+            playerObs->clearInventory();
+        }
+    }
+    // clear any tracked item visuals so the next run can relink fresh world items
+    _itemNodes.clear();
     _inventoryValue = 0;
     _canDeposit = false;
     _inventoryPanelOpen = false;
@@ -318,7 +325,30 @@ int GameScene::getInventoryValue() const {
     //    return _inventoryValue;
     //}
     //return _player->getInventory()->getCarriedValue();
-    return 1;
+    // return 1;
+    
+    if (_player) {
+        return _player->getInventoryVal();
+    }
+    return _inventoryValue;
+}
+
+void GameScene::removeItemNode(const std::shared_ptr<ItemObstacle>& item) {
+    if (!item) {
+        return;
+    }
+
+    for (auto it = _itemNodes.begin(); it != _itemNodes.end(); ++it) {
+        if (it->first != item.get()) {
+            continue;
+        }
+
+        if (it->second) {
+            it->second->removeFromParent();
+        }
+        _itemNodes.erase(it);
+        return;
+    }
 }
 
 void GameScene::loadGameplayConfig() {
@@ -506,12 +536,13 @@ void GameScene::preUpdate(float dt)
     }
     handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
 
-    // host only for now
+    // EDIT host only for now
     if (_networkCtrl->isHost() && depositRequested && _canDeposit) {
-        if (_inventoryValue > 0) {
-            _depositedValue += _inventoryValue;
-            CULog("Deposited %d, total: %d / %d", _inventoryValue, _depositedValue, _quota);
-            _inventoryValue = 0;
+        if (_player && _player->hasInventory()) {
+            int deposited = _player->depositItems();
+            _depositedValue += deposited;
+            _inventoryValue = _player->getInventoryVal();
+            CULog("Deposited %d, total: %d / %d", deposited, _depositedValue, _quota);
             if (_depositedValue >= _quota) {
                 _playerWon = true;
             }
@@ -590,6 +621,20 @@ void GameScene::preUpdate(float dt)
     if (_networkCtrl->isHost()) {
         if (_input.pressedPickup()) {
             hostCheckItemPickups();
+            bool pickedUpItem = hostCheckItemPickups();
+#ifdef CU_TOUCH_SCREEN
+            if (!pickedUpItem && _canDeposit && _player && _player->hasInventory()) {
+                int deposited = _player->depositItems();
+                _depositedValue += deposited;
+                _inventoryValue = _player->getInventoryVal();
+                CULog("Deposited %d, total: %d / %d", deposited, _depositedValue, _quota);
+                if (_depositedValue >= _quota) {
+                    _playerWon = true;
+                }
+            }
+#else
+            (void)pickedUpItem;
+#endif
             _input.resolvedPickup();
         }
         // spawn an enemy if host and need to spawn
@@ -918,22 +963,35 @@ void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequest
 #endif
 }
 
-void GameScene::hostCheckItemPickups() {
+bool GameScene::hostCheckItemPickups() {
+    bool pickedUpItem = false;
     for (auto& item : _itemFact->current) {
         if (item->isRemoved()) continue;
         for (auto& playerObs : _playerFact->current) {
             float dist = item->getPosition().distance(playerObs->getPosition());
             if (dist <= ITEM_PICKUP_RADIUS) {
-                _inventoryValue += item->getValue();
+                if (!playerObs->addItem(item->getValue())) {
+                    if (_player && playerObs == _player) {
+                        CULog("Inventory full");
+                    }
+                    continue;
+                }
+                item->markRemoved(true);
+                // the carried item value now lives on the player until a later deposit call clears it
                 CULog("Picked up %s worth %d (total carrying: %d)",
-                    item->getItemType().c_str(), item->getValue(), _inventoryValue);
-                playerObs->addItem(item->getValue());
+                    item->getItemType().c_str(), item->getValue(), playerObs->getInventoryVal());
                 _networkCtrl->getPhysController()->removeSharedObstacle(item);
+                removeItemNode(item);
+                if (_player && playerObs == _player) {
+                    _inventoryValue = _player->getInventoryVal();
+                }
+                pickedUpItem = true;
                 break;
             }
         }
     }
     _itemFact->update();
+    return pickedUpItem;
 }
 
 //bool GameScene::hostDepositForPlayer(const std::shared_ptr<Player>& player) {
@@ -1115,6 +1173,9 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
 
     node->setPosition(obj->getPosition() * PHYSICS_SCALE);
     _worldnode->addChild(node);
+    if (auto item = std::dynamic_pointer_cast<ItemObstacle>(obj)) {
+        _itemNodes.push_back({ item.get(), node });
+    }
 
     // Dynamic objects need constant updating
     if (obj->getBodyType() == b2_dynamicBody) {
