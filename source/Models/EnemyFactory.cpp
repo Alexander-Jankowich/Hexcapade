@@ -173,7 +173,7 @@ std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::update(std::vec
                 desiredVel.normalize();
                 desiredVel *= (*it)->getSpeed();
 
-                float recovery = 0.1f;
+                float recovery = 0.2f;
                 Vec2 newVel = currentVel * (1 - recovery) + desiredVel * recovery;
 
                 (*it)->setLinearVelocity(newVel);
