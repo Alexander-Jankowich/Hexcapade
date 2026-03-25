@@ -60,67 +60,73 @@ namespace {
 //        return seed == 0 ? 1u : seed;
 //    }
 
-    std::shared_ptr<Item> makePrototypeItem(const std::string& id, int kind,
-                                            const std::string& name, int value) {
-        if (kind == 0) {
-            return std::make_shared<Artifact>(
-                id,
-                name,
-                value,
-                Artifact::Effect::ARTIFACT_EFFECT
-            );
-        }
+//std::shared_ptr<Item> makePrototypeItem(const std::string& id, int kind,
+//                                        const std::string& name, int value) {
+//    if (kind == 0) {
+//        return std::make_shared<Artifact>(
+//                                          id,
+//                                          name,
+//                                          value,
+//                                          Artifact::Effect::ARTIFACT_EFFECT
+//                                          );
+//    }
+//    
+//    return std::make_shared<SpellBook>(
+//                                       id,
+//                                       name,
+//                                       value,
+//                                       SpellBook::Spell::SPELL_EFFECT
+//                                       );
+//}
 
-        return std::make_shared<SpellBook>(
-            id,
-            name,
-            value,
-            SpellBook::Spell::SPELL_EFFECT
-        );
+
+// item ids and texture stuff
+//std::string getItemTextureKey(const std::shared_ptr<Item>& item) {
+//    if (!item) {
+//        return "";
+//    }
+//    
+//    const std::string& itemId = item->getId();
+//    if (itemId.rfind("artifact_scroll", 0) == 0) {
+//        return "artifact_scroll";
+//    }
+//    if (itemId.rfind("artifact_gem", 0) == 0) {
+//        return "artifact_gem";
+//    }
+//    if (itemId.rfind("spellbook_fire", 0) == 0) {
+//        return "spellbook_fire";
+//    }
+//    if (itemId.rfind("spellbook_freeze", 0) == 0) {
+//        return "spellbook_freeze";
+//    }
+//    if (itemId.rfind("spellbook_heal", 0) == 0) {
+//        return "spellbook_heal";
+//    }
+//    
+//    // keep one tiny fallback so older ids still show something readable.
+//    if (item->getKind() == Item::Kind::ARTIFACT) {
+//        return "artifact_scroll";
+//    }
+//    return "spellbook_fire";
+//}
+
+const ItemCatalogEntryConfig* chooseWeight( const std::vector<ItemCatalogEntryConfig>& entries, const std::shared_ptr<cugl::Random>& random) {
+    
+    float totalWeight = 0.0f;
+    for (const auto& item : entries) {
+        totalWeight += item.weight;
     }
-
-    // GA: itemnet old delta-path helper retained only as reference while the
-    // first networking item pass uses full host snapshots instead.
-    std::shared_ptr<Item> makePrototypeNetItem(const std::string& itemName, int itemId) {
-        if (itemName == "artifact") {
-            return makePrototypeItem(
-                "net_artifact_" + std::to_string(itemId), 0, "artifact1", 60
-            );
+    
+    float roll = random->getClosedFloat(0.0f, totalWeight);
+    
+    for (const auto& item : entries) {
+        if ((roll -= item.weight) <= 0.0f) {
+            return &item;
         }
-        return makePrototypeItem(
-            "net_spellbook_" + std::to_string(itemId), 1, "spellbook1", 25
-        );
     }
-
-    // item ids and texture stuff
-    std::string getItemTextureKey(const std::shared_ptr<Item>& item) {
-        if (!item) {
-            return "";
-        }
-
-        const std::string& itemId = item->getId();
-        if (itemId.rfind("artifact_scroll", 0) == 0) {
-            return "artifact_scroll";
-        }
-        if (itemId.rfind("artifact_gem", 0) == 0) {
-            return "artifact_gem";
-        }
-        if (itemId.rfind("spellbook_fire", 0) == 0) {
-            return "spellbook_fire";
-        }
-        if (itemId.rfind("spellbook_freeze", 0) == 0) {
-            return "spellbook_freeze";
-        }
-        if (itemId.rfind("spellbook_heal", 0) == 0) {
-            return "spellbook_heal";
-        }
-
-        // keep one tiny fallback so older ids still show something readable.
-        if (item->getKind() == Item::Kind::ARTIFACT) {
-            return "artifact_scroll";
-        }
-        return "spellbook_fire";
-    }
+    
+    return &entries.back();
+}
 }
 
 #pragma mark -
@@ -398,9 +404,21 @@ void GameScene::spawnItemsFromMap() {
         CULog("ItemFactory: no item spawn points found on map");
         return;
     }
+
+    const std::vector<ItemCatalogEntryConfig>& entries = _runConfig.item.entries;
     for (const Vec2& worldPt : spawnPts) {
         Vec2 physPos = worldPt / PHYSICS_SCALE;
-        auto params = _itemFact->serializeParams(physPos, 60, "artifact_scroll");
+        const ItemCatalogEntryConfig* item = chooseWeight(entries, _random);
+
+        int itemValue = 60;
+        std::string itemType = "artifact_scroll";
+        
+        if (item) {
+            itemValue = std::max(1, item->value);
+            itemType = item->textureAsset.empty() ? item->id : item->textureAsset;
+        }
+
+        auto params = _itemFact->serializeParams(physPos, itemValue, itemType);
         _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
     }
     CULog("ItemFactory: spawned %zu items", spawnPts.size());
