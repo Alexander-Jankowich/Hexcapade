@@ -1316,6 +1316,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     if (enemy && spell) {
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
         // TODO implement freezing
+        if(spell -> getFroze()){
+            CULog("here");
+            enemy -> setFrozen(true);
+        }
         spell->markRemoved(true);
         if (enemy->getHealth()==0) enemy->markRemoved(true);
         CULog("spell and enemy collision: %d", enemy->getHealth());
