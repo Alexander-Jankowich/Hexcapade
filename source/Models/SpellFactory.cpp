@@ -34,7 +34,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, floa
  */
 pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 angle, SpellType type, int c_uid) {
     auto image = _assets->get<graphics::Texture>("spell");
-    float radius(image->getSize().width / 4.f);
+    float radius(image->getSize().width / 2.f);
     
     // Create the SpellObstacle
     cugl::Vec2 norm = angle.getNormalization();
@@ -75,7 +75,6 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     // Create Spell! Hard code values for now, change later
     auto sprite = std::make_shared<SpellNode>(pos, vel, 1, 1,
         _assets->get<graphics::Texture>("spell"));
-    sprite -> setScale(0.5);
 
     switch (type) {
     case SpellType::HEAL:
