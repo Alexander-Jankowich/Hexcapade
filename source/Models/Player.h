@@ -28,6 +28,7 @@ private:
     static int rightFrontFrame;
     static int leftBackFrame;
     static int rightBackFrame;
+    static int deadFrame;
 
     static int cols;
     static int rows;
@@ -53,6 +54,7 @@ public:
         Player::rightFrontFrame = consts->getInt("right_forward");
         Player::leftBackFrame = consts->getInt("left_backward");
         Player::rightBackFrame = consts->getInt("right_backward");
+        Player::deadFrame = consts->getInt("dead");
 
         Player::cols = consts->getInt("columns");
         Player::rows = consts->getInt("rows");

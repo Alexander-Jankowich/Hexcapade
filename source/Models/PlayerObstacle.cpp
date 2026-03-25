@@ -22,3 +22,15 @@ void PlayerObstacle::setVelocity(Vec2 v) {
         _angle = v.getNormalization();
     }
 }
+
+void PlayerObstacle::setHealth(int h) {
+    _health = min(h, MAX_HEALTH);
+
+    if (_health <= 0) {
+        _health = 0;
+        _state = AnimationState::DEAD;
+    }
+    else if (_state == AnimationState::DEAD && _health > 0) {
+        _state = AnimationState::IDLE;
+    }
+}

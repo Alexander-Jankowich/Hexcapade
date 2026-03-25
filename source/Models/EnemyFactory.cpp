@@ -152,10 +152,16 @@ std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::update(std::vec
             // if chasing
             if ((*it)->getState()==EnemyObstacle::EnemyState::CHASING) {
                 // Set velocity to go to target
-                Vec2 vel = (*it)->getTarget() - (*it)->getPosition();
-                vel.normalize();
-                vel *= (*it)->getSpeed();
-                (*it)->setLinearVelocity(vel);
+                Vec2 currentVel = (*it)->getLinearVelocity();
+
+                Vec2 desiredVel = (*it)->getTarget() - (*it)->getPosition();
+                desiredVel.normalize();
+                desiredVel *= (*it)->getSpeed();
+
+                float recovery = 0.1f;
+                Vec2 newVel = currentVel * (1 - recovery) + desiredVel * recovery;
+
+                (*it)->setLinearVelocity(newVel);
             }
         }
         it++;
