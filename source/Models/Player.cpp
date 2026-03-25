@@ -19,6 +19,7 @@ int Player::leftFrontFrame = 0;
 int Player::rightFrontFrame = 0;
 int Player::leftBackFrame = 0;
 int Player::rightBackFrame = 0;
+int Player::deadFrame = 0;
 
 Player::Player(const cugl::Vec2& pos, float speed, std::string pid, const std::shared_ptr<cugl::graphics::Texture>& tex) :
 Entity(pos, 100, tex, rows, cols) {
@@ -39,6 +40,10 @@ void Player::setVelocity(cugl::Vec2 value) {
 }
 
 void Player::updateAnimationState(PlayerObstacle::AnimationState s) {
+    if (s == PlayerObstacle::AnimationState::DEAD) {
+        setFrame(Player::deadFrame);
+        return;
+    }
     if (s==PlayerObstacle::AnimationState::CASTING) {
         setColor(Color4::BLUE);
     }

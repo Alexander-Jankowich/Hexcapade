@@ -1,11 +1,12 @@
 {
     "player": {
-        "columns": 4,
+        "columns": 5,
         "rows": 1,
         "right_forward": 0,
         "left_forward": 1,
         "right_backward": 3,
-        "left_backward": 2
+        "left_backward": 2,
+        "dead": 4
     },
     "input": {
         "aim_time": 1,

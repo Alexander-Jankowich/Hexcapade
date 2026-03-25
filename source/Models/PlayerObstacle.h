@@ -28,7 +28,8 @@ public:
         /** hit by enemy idk */
         ATTACKED = 3,
         /** frozen  */
-        FROZEN = 4
+        FROZEN = 4,
+        DEAD = 5
     };
     
 protected:
@@ -96,7 +97,7 @@ public:
     */
     void setSpell(SpellType spell) {_curSpell = spell;}
     void resolveSpell() { _curSpell = SpellType::NONE; }
-    void setHealth(int h) {_health = min(h, MAX_HEALTH);}
+    void setHealth(int h);
     void setSpeed(float s) {_speed = s;}
 
     SpellType getSpell() { return _curSpell; }

@@ -1303,22 +1303,21 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         CULog("spell and enemy collision: %d", enemy->getHealth());
         return;
     }
-    if(wall && player){
-        
+    if (wall && player){
         b2WorldManifold manifold;
-            contact->GetWorldManifold(&manifold);
+        contact->GetWorldManifold(&manifold);
 
-            b2Vec2 normal = manifold.normal;
+        b2Vec2 normal = manifold.normal;
 
-            b2Vec2 vel = player->getBody()->GetLinearVelocity();
+        b2Vec2 vel = player->getBody()->GetLinearVelocity();
 
-            float dot = vel.x * normal.x + vel.y * normal.y;
-            if (dot < 0) {
-                b2Vec2 newVel = vel - dot * normal;
-                player->getBody()->SetLinearVelocity(newVel);
-            }
+        float dot = vel.x * normal.x + vel.y * normal.y;
+        if (dot < 0) {
+            b2Vec2 newVel = vel - dot * normal;
+            player->getBody()->SetLinearVelocity(newVel);
+        }
     }
-    if(wall && enemy){
+    if (wall && enemy){
         //CULog("here wall and enemy");
         contact -> SetEnabled(false);
     }
