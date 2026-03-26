@@ -690,11 +690,11 @@ InputController::Zone InputController::getZone(const Vec2 pos) const {
  * @return the scene location of a touch
  */
 Vec2 InputController::touch2Screen(const Vec2 pos) const {
-    return _screenToWorld(pos);
+    return _screenToWorld(pos) - _cameraOffset;
 }
 
 Vec2 InputController::mouse2Screen(const Vec2 pos) const {
-    return _screenToWorld(pos);
+    return _screenToWorld(pos) - _cameraOffset;
 }
 
 /**

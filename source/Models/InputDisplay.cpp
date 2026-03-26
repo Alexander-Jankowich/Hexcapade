@@ -89,23 +89,23 @@ void InputDisplay::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batc
 
 	if (_showJoystick) {
 		batch->setColor(_baseColor);
-		batch->fill(_joybase, Vec2::ZERO, _jbaseTrans);
+		batch->fill(_joybase, Vec2::ZERO, _jbaseTrans.translate(_uiOffset));
 
 		batch->setColor(_joystickColor);
-		batch->fill(_joystick, Vec2::ZERO, _jstickTrans);
+		batch->fill(_joystick, Vec2::ZERO, _jstickTrans.translate(_uiOffset));
 	}
 
 	if (_gesture.size() > 3) {
 		batch->setColor(_gestureColor);
-		batch->fill(_gestureDisplay);
+		batch->fill(_gestureDisplay, _uiOffset);
 	}
     if(_gesture2.size() > 3){
         batch -> setColor(_gestureColor);
-        batch -> fill(_secondDisplay);
+        batch -> fill(_secondDisplay, _uiOffset);
     }
     if(_gesture3.size() > 3){
         batch -> setColor(_gestureColor);
-        batch -> fill(_thirdDisplay);
+        batch -> fill(_thirdDisplay, _uiOffset);
     }
 
 	if (_showAim) {

@@ -531,6 +531,19 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
     //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
 
+    updateCameraFollow();
+    Vec2 offset = getHUDOffset();
+    _input.setCameraOffset(offset);
+    _inputDisplay->setUIOffset(offset);
+    _inputDisplay->update(playerScreenPos);
+
+    if (_player->getHealth() <= 0) {
+        _playerLost = true;
+    }
+    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
+        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
+    }
+
     //updateItemPickupState();
     //updateDepositState();
     _input.setInventoryPanelOpen(_inventoryPanelOpen);
@@ -689,18 +702,6 @@ void GameScene::preUpdate(float dt)
             _networkCtrl->getPhysController()->removeSharedObstacle(spell);
             CULog("Remove spell: %d", spell->isRemoved());
         }
-    }
-
-    playerScreenPos = _player->getPosition();
-    updateCameraFollow();
-    _inputDisplay->setUIOffset(getHUDOffset());
-    _inputDisplay->update(playerScreenPos);
-
-    if (_player->getHealth() <= 0) {
-        _playerLost = true;
-    }
-    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
-        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
     }
 }
 

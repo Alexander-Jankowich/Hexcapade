@@ -95,6 +95,11 @@ public:
     bool isActive() const { return _active; }
 
     /**
+    * Updates the offset for the camera
+    */
+    void setCameraOffset(Vec2 offset) { _cameraOffset = offset; }
+
+    /**
     * Returns the last gesture the user has done.
     * 
     * Should call {@link #resolvedGesture} once the gesture has been
@@ -301,6 +306,9 @@ public:
 protected:
     /** Whether the input device was successfully initialized */
     bool _active;
+
+    /** The amount to subtract from user input to account for camera movement */
+    cugl::Vec2 _cameraOffset;
 
     /** The current touch/mouse position */
     cugl::Vec2 _currPos;
