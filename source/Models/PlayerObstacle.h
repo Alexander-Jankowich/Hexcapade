@@ -31,6 +31,11 @@ public:
         FROZEN = 4,
         DEAD = 5
     };
+
+    struct CarriedItem {
+        std::string itemType;
+        int value;
+    };
     
 protected:
 
@@ -49,8 +54,8 @@ protected:
     /** The angle the enity is facing */
     cugl::Vec2 _angle;
 
-    /** carried item values for the current pickup/deposit flow */
-    vector<int> _inventory;
+    /** carried items for the current pickup/deposit flow */
+    vector<CarriedItem> _inventory;
     /** max carried item count for the current inventory flow */
     size_t _inventoryLimit;
 
@@ -73,10 +78,11 @@ public:
     #pragma mark PO_Inventory
     int getInventoryVal() const {
         int sum = 0;
-        for (auto i : _inventory) sum +=i;
+        for (const auto& item : _inventory) sum += item.value;
         return sum;
     }
     
+    const vector<CarriedItem>& getInventory() const { return _inventory; }
     size_t getInventoryCount() const { return _inventory.size(); }
     size_t getInventoryLimit() const { return _inventoryLimit; }
     void setInventoryLimit(size_t limit) { _inventoryLimit = limit; }
@@ -105,11 +111,19 @@ public:
     const std::string getPID() const { return _pid; }
     void setPID(std::string pid) { _pid = pid; }
     
+    bool addItem(const std::string& itemType, int item_val) {
+        if (!canAddItem()) {
+            return false;
+        }
+        _inventory.push_back({ itemType, item_val });
+        return true;
+    }
+
     bool addItem(int item_val) {
         if (!canAddItem()) {
             return false;
         }
-        _inventory.push_back(item_val);
+        _inventory.push_back({ "", item_val });
         return true;
     }
 };
