@@ -161,6 +161,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     // we use the tiled tile size as the real map tile size so the rendered art,
     // collision grid, and world positions stay aligned (ask deisgners)
     _tileSize = std::max(8.0f, (float)_tiledRoomPrefab->getTileWidth());
+    CULog("TIle Size %f", _tileSize);
     //int clampedMinRooms = std::max(1, _config.roomCountMin);
 //    int clampedMaxRooms = std::max(clampedMinRooms, _config.roomCountMax);
 //    std::uniform_int_distribution<int> roomCountDist(clampedMinRooms, clampedMaxRooms);
@@ -183,9 +184,8 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     _origin = Vec2::ZERO;
     _worldBounds = Rect(_origin.x, _origin.y, _gridWidth * _tileSize, _gridHeight * _tileSize);
     
-    // FLAG: TILE GRID
-    for (int col = 0; col <_gridWidth * _tileSize; col++){
-        std::vector<TileType> v(_gridHeight*_tileSize);
+    for (int col = 0; col < _gridWidth; col++){
+        std::vector<TileType> v(_gridHeight);
         _tileGrid.push_back(v);
     }
 

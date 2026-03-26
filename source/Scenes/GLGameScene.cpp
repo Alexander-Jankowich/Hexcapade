@@ -1304,7 +1304,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     if (player && enemy) {
         CULog("enemy and player collison");
-        float knockbackSpeed = 10.0f; 
+        float knockbackSpeed = 10.0f;
         b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
         b2Vec2 dir = vel;
         float len = dir.Length();
@@ -1321,14 +1321,11 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
     if (enemy && spell) {
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
-        // TODO implement freezing
         if(spell -> getFroze()){
-            CULog("here");
             enemy -> setFrozen(true);
         }
         spell->markRemoved(true);
         if (enemy->getHealth()==0) enemy->markRemoved(true);
-        CULog("spell and enemy collision: %d", enemy->getHealth());
         return;
     }
     if (wall && player){
