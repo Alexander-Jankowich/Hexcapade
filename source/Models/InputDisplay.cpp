@@ -48,6 +48,8 @@ InputDisplay::InputDisplay(InputController* input, std::shared_ptr<JsonValue> va
 	// Set gesture constants
 	_gestureWidth = values->get("gesture_trail")->getInt("width");
 	_gestureColor = colorFromVec(values->get("gesture_trail")->get("color")->asIntArray());
+	_gestureColorCorrect = colorFromVec(values->get("gesture_trail")->get("correct-color")->asIntArray());
+	_gestureColorWrong = colorFromVec(values->get("gesture_trail")->get("incorrect-color")->asIntArray());
 }
 
 void InputDisplay::update(Vec2 playerPos) {
@@ -60,20 +62,25 @@ void InputDisplay::update(Vec2 playerPos) {
 		_jstickTrans = Affine2::createTranslation(_input->getJoystickPos());
 	}
 
-	_gesture = _input->getCurStroke();
-    _gesture.set(_input->getCurStroke());
-    extruder.set(_gesture);
-	extruder.set(_gesture);
-	extruder.calculate(_gestureWidth);
-	_gestureDisplay = extruder.getPolygon();
-    _gesture2.set(_input -> getsecondStroke());
-    extruder.set(_gesture2);
-    extruder.calculate(_gestureWidth);
-    _secondDisplay = extruder.getPolygon();
-    _gesture3.set(_input -> getthirdStroke());
-    extruder.set(_gesture3);
-    extruder.calculate(_gestureWidth);
-    _thirdDisplay = extruder.getPolygon();
+	_numStrokes = _input->getNumStrokes();
+	_gestureTime = _input->getTimeSinceLastStroke();
+	_gestureCorrect = _input->wasGestureRecognized();
+	if (!_gestureCorrect && _numStrokes < 3) {
+		_gesture = _input->getCurStroke();
+		_gesture.set(_input->getCurStroke());
+		extruder.set(_gesture);
+		extruder.set(_gesture);
+		extruder.calculate(_gestureWidth);
+		_gestureDisplay = extruder.getPolygon();
+		_gesture2.set(_input->getsecondStroke());
+		extruder.set(_gesture2);
+		extruder.calculate(_gestureWidth);
+		_secondDisplay = extruder.getPolygon();
+		_gesture3.set(_input->getthirdStroke());
+		extruder.set(_gesture3);
+		extruder.calculate(_gestureWidth);
+		_thirdDisplay = extruder.getPolygon();
+	}
 
 	_showAim = _input->showAim() && !_input->getSpellAngle().isZero();
 	if (_showAim) {
@@ -94,23 +101,47 @@ void InputDisplay::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batc
 		batch->fill(_joystick, Vec2::ZERO, _jstickTrans.translate(_uiOffset));
 	}
 
-	if (_gesture.size() > 3) {
-		batch->setColor(_gestureColor);
-		batch->fill(_gestureDisplay, _uiOffset);
+	if (_gestureCorrect) {
+		if (_gestureTime < 0.5) {
+			batch->setColor(_gestureColorCorrect);
+			if (_gestureDisplay.size() > 3) {
+				batch->fill(_gestureDisplay, _uiOffset);
+			}
+			if (_secondDisplay.size() > 3) {
+				batch->fill(_secondDisplay, _uiOffset);
+			}
+			if (_thirdDisplay.size() > 3) {
+				batch->fill(_thirdDisplay, _uiOffset);
+			}
+		}
 	}
-    if(_gesture2.size() > 3){
-        batch -> setColor(_gestureColor);
-        batch -> fill(_secondDisplay, _uiOffset);
-    }
-    if(_gesture3.size() > 3){
-        batch -> setColor(_gestureColor);
-        batch -> fill(_thirdDisplay, _uiOffset);
-    }
+	else if (_numStrokes > 2) {
+		if (_gestureTime < 0.25) {
+			batch->setColor(_gestureColorWrong);
+			batch->fill(_gestureDisplay, _uiOffset);
+			batch->fill(_secondDisplay, _uiOffset);
+			batch->fill(_thirdDisplay, _uiOffset);
+		}
+	}
+	else if (_gestureTime < 1 || _gestureDisplay.size() > 3) {
+		batch->setColor(_gestureColor);
+		if (_gestureDisplay.size() > 3) {
+			batch->fill(_gestureDisplay, _uiOffset);
+		}
+		if (_secondDisplay.size() > 3) {
+			batch->fill(_secondDisplay, _uiOffset);
+		}
+		if (_thirdDisplay.size() > 3) {
+			batch->fill(_thirdDisplay, _uiOffset);
+		}
+	}
 
 	if (_showAim) {
 		batch->setColor(_arrowColor);
 		batch->fill(_arrow, Vec2::ZERO, _arrowTrans);
 	}
+
+	batch->setColor(Color4::WHITE);
 }
 
 void InputDisplay::dispose() {

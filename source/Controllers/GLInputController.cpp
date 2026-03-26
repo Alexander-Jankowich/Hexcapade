@@ -404,7 +404,10 @@ _lastGesture(SpellType::NONE),
 _isAiming(false),
 _releaseSpell(false),
 _timeSinceCast(0),
-_spellAngle(Vec2::ZERO)
+_spellAngle(Vec2::ZERO),
+_timeSinceLastStroke(0),
+_curStrokes(0),
+_gestureRecognized(false)
 {
 }
 
@@ -445,11 +448,9 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     _joyradius = values->get("joystick")->getInt("radius");
     _deadzone = values->get("joystick")->getInt("dead_zone");
 
-    
-    //
 #ifndef CU_TOUCH_SCREEN
     _sbounds = bounds;
-    //
+
     Size display = Application::get()->getDisplaySize();
     _tbounds = Rect(0,0,display.width,display.height);
         
@@ -519,7 +520,17 @@ void InputController::update(float dt) {
         _isAiming = false;
         _releaseSpell = true;
         currentStroke.clear();
-        //CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
+    }
+
+    // Update time since last gesture movement
+    _timeSinceLastStroke += dt;
+    if (_curStrokes > 0 && _timeSinceLastStroke > 1 && currentStroke.size() == 0) {
+        // Too long has passed since the last stroke, clear gesture
+        CULog("Spell drawing took too long!");
+        thirdStroke.clear();
+        secondStroke.clear();
+        currentStroke.clear();
+        _curStrokes = 0;
     }
 }
 
@@ -750,47 +761,73 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         //CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
         return;
     }
-    CULog("First Stroke points:");
-        for (const auto& p : currentStroke) {
-            CULog("{%f, %f},", p.x, p.y);
-        }
-    CULog("Second Stroke points:");
-        for (const auto& p : secondStroke) {
-            CULog("{%f, %f},", p.x, p.y);
-        }
-    CULog("Third Stroke points:");
-        for (const auto& p : thirdStroke) {
-            CULog("{%f, %f},", p.x, p.y);
-        }
+    //CULog("First Stroke points:");
+    //for (const auto& p : currentStroke) {
+    //    CULog("{%f, %f},", p.x, p.y);
+    //}
+    //CULog("Second Stroke points:");
+    //for (const auto& p : secondStroke) {
+    //    CULog("{%f, %f},", p.x, p.y);
+    //}
+    //CULog("Third Stroke points:");
+    //for (const auto& p : thirdStroke) {
+    //    CULog("{%f, %f},", p.x, p.y);
+    //}
+    _timeSinceLastStroke = 0;
+    _curStrokes++;
+    if (_curStrokes > 3) {
+        _curStrokes -= 3;
+    }
 
     _spellAngle.setZero();
     currentStroke.push_back(pos);
+
+    // Only check if it's larger than a certain size
     if (currentStroke.size() > 3) {
         try {
-            std::string gesture = recognizer->match({ currentStroke });
-            std::string gesture2 = recognizer->match({ currentStroke, secondStroke});
-            std::string gesture3 = recognizer->match({ currentStroke, secondStroke, thirdStroke });
-            float s1 = recognizer->similarity(gesture, {currentStroke});
-            float s2 = recognizer->similarity(gesture2, {secondStroke, currentStroke});
-            float s3 = recognizer->similarity(gesture3, {thirdStroke, secondStroke, currentStroke});
-
-            if (s3 >= s2 && s3 >= s1) {
-                _lastGesture = _gesturemap[gesture3];
-            } else if (s2 >= s1) {
-                _lastGesture = _gesturemap[gesture2];
-            } else {
-                _lastGesture = _gesturemap[gesture];
+            // Check all the strokes currently on the screen!
+            if (_curStrokes == 1) {
+                _lastGesture = _gesturemap[recognizer->match({ currentStroke })];
+            }
+            else if (_curStrokes == 2) {
+                _lastGesture = _gesturemap[recognizer->match({ currentStroke, secondStroke })];
+            }
+            else if (_curStrokes == 3) {
+                _lastGesture = _gesturemap[recognizer->match({ currentStroke, secondStroke, thirdStroke })];
+            }
+            else {
+                CULog("Error! Number of strokes recorded is more than 3???");
             }
             _timeSinceCast = 0;
         }
         catch (std::out_of_range) {
-            CULog("here");
             // Not a recognized gesture... probably
             _lastGesture = SpellType::NONE;
         }
 
         if (_lastGesture != SpellType::NONE) {
+            CULog("Correct spell!");
             _isAiming = true;
+            thirdStroke.clear();
+            secondStroke.clear();
+            currentStroke.clear();
+            _gestureRecognized = true;
+            _curStrokes = 0;
+        }
+        else if (_curStrokes >= 3) {
+            CULog("Not Correct spell! --------------------------------");
+            // Clear all strokes if number is greater than 3
+            thirdStroke.clear();
+            secondStroke.clear();
+            currentStroke.clear();
+            _gestureRecognized = false;
+        }
+        else {
+            CULog("Still searching...");
+            thirdStroke = secondStroke;
+            secondStroke = currentStroke;
+            currentStroke.clear();
+            _gestureRecognized = false;
         }
 
         //CULog("%s", gesture.c_str());
@@ -801,12 +838,6 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         _lastGesture = SpellType::NONE;
         _pickupPressed = true;
     }
-    
-
-    // Clear points
-    thirdStroke = secondStroke;
-    secondStroke = currentStroke;
-    currentStroke.clear();
 }
 
 void InputController::processDrag(const cugl::Vec2 pos) {
@@ -854,6 +885,12 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
             currentStroke.clear();
             currentStroke.push_back(pos);
             _rtouch.touchids.insert(event.touch);
+            if (!_isAiming) {
+                _gestureRecognized = false;
+                if (_curStrokes >= 3) {
+                    _curStrokes = 0;
+                }
+            }
             break;
         case Zone::MAIN:
             //not possible hopefully lol
@@ -929,6 +966,12 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
         currentStroke.push_back(pos);
         //_rtouch.touchids.insert(event.touch);
         _mouseDownZone = Zone::RIGHT;
+        if (!_isAiming) {
+            _gestureRecognized = false;
+            if (_curStrokes >= 3) {
+                _curStrokes = 0;
+            }
+        }
         break;
     case Zone::MAIN:
         //not possible hopefully lol

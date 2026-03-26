@@ -62,6 +62,11 @@ private:
     cugl::Poly2 _thirdDisplay;
 	int _gestureWidth;
 	cugl::Color4 _gestureColor;
+	cugl::Color4 _gestureColorWrong;
+	cugl::Color4 _gestureColorCorrect;
+	int _numStrokes;
+	float _gestureTime;
+	bool _gestureCorrect;
 
 	// this stores the current camera offset for screen-space ui visuals
 	cugl::Vec2 _uiOffset;

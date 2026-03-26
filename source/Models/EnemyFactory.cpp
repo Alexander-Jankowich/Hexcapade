@@ -47,7 +47,7 @@ void EnemyObstacle::updateAttackCounter() {
         _attackCounter=0;
         _state = EnemyState::IDLE;
     }
-    CULog("attack counter: %d", _attackCounter);
+    //CULog("attack counter: %d", _attackCounter);
 }
 
 /**
