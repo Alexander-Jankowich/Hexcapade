@@ -127,6 +127,16 @@ const ItemCatalogEntryConfig* chooseWeight( const std::vector<ItemCatalogEntryCo
     
     return &entries.back();
 }
+
+std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entries,
+                               const PlayerObstacle::CarriedItem& item) {
+    for (const auto& itemEntry : entries) {
+        if (itemEntry.textureAsset == item.itemType || itemEntry.id == item.itemType) {
+            return itemEntry.name;
+        }
+    }
+    return item.itemType;
+}
 }
 
 #pragma mark -
@@ -531,6 +541,19 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
     //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
 
+    updateCameraFollow();
+    Vec2 offset = getHUDOffset();
+    _input.setCameraOffset(offset);
+    _inputDisplay->setUIOffset(offset);
+    _inputDisplay->update(playerScreenPos);
+
+    if (_player->getHealth() <= 0) {
+        _playerLost = true;
+    }
+    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
+        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
+    }
+
     //updateItemPickupState();
     //updateDepositState();
     _input.setInventoryPanelOpen(_inventoryPanelOpen);
@@ -638,7 +661,6 @@ void GameScene::preUpdate(float dt)
 
     if (_networkCtrl->isHost()) {
         if (_input.pressedPickup()) {
-            hostCheckItemPickups();
             bool pickedUpItem = hostCheckItemPickups();
 #ifdef CU_TOUCH_SCREEN
             if (!pickedUpItem && _canDeposit && _player && _player->hasInventory()) {
@@ -689,18 +711,6 @@ void GameScene::preUpdate(float dt)
             _networkCtrl->getPhysController()->removeSharedObstacle(spell);
             CULog("Remove spell: %d", spell->isRemoved());
         }
-    }
-
-    playerScreenPos = _player->getPosition();
-    updateCameraFollow();
-    _inputDisplay->setUIOffset(getHUDOffset());
-    _inputDisplay->update(playerScreenPos);
-
-    if (_player->getHealth() <= 0) {
-        _playerLost = true;
-    }
-    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
-        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
     }
 }
 
@@ -834,7 +844,7 @@ void GameScene::renderHUD()
     drawBox(inventoryHeader.origin.x + hudOffset.x, inventoryHeader.origin.y + hudOffset.y,
             inventoryHeader.size.width, inventoryHeader.size.height, boxColor);
 
-    // Quota box - top right
+    // Inventory box - top right
     float quotaX = screenSize.width - barW - margin;
     float quotaY = screenSize.height - barH - margin;
     drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
@@ -854,6 +864,15 @@ void GameScene::renderHUD()
     float timerY = screenSize.height - barH - margin;
     drawBox(timerX + hudOffset.x, timerY + hudOffset.y, barW, barH, boxColor);
     
+    float slotHeight = 48;
+    size_t slotCount = _player->getInventoryLimit();
+
+    float slotY = quotaY - slotHeight;
+        for (size_t slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
+            drawBox(quotaX + hudOffset.x, slotY + hudOffset.y, barW, slotHeight, Color4(72, 120, 124, 220));
+            slotY -= slotHeight + 2;
+        }
+
     if (_font)
     {
         _batch->setColor(Color4::WHITE);
@@ -869,7 +888,7 @@ void GameScene::renderHUD()
        // _batch->drawText(invLabel, invTrans);
 
         std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
-            "Quota: $" + std::to_string(_depositedValue) + " / $" + std::to_string(_quota), _font);
+            "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
         quotaLabel->layout();
         Affine2 quotaTrans;
         quotaTrans.translate(quotaX + 10 + hudOffset.x, quotaY + 12 + hudOffset.y);
@@ -889,6 +908,21 @@ void GameScene::renderHUD()
         timerTrans.translate(timerX + 10 + hudOffset.x, timerY + 12 + hudOffset.y );
         _batch->drawText(timerLabel, timerTrans);
 
+        if (_player) {
+            // show the carried item slots under the deposit box so players can see limit
+            const auto& carriedItems = _player->getInventory();
+            float rowY = quotaY - slotHeight;
+
+            for (size_t slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
+                std::string rowText = "No Item in Slot";
+                if (slotIndex < carriedItems.size()) {
+                    const auto& carriedItem = carriedItems[slotIndex];
+                    auto texture = _assets->get<graphics::Texture>(carriedItem.itemType);
+                    if (texture) {
+                        _batch->draw(texture, Color4::WHITE, Rect(quotaX + hudOffset.x, rowY + hudOffset.y, 40, 40));
+                    }
+                    rowText = getCarriedItemName(_runConfig.item.entries, carriedItem) + " " + std::to_string(carriedItem.value);
+                }
 
         std::string pickupText = "move close to item";
 #ifdef CU_TOUCH_SCREEN
@@ -910,11 +944,11 @@ void GameScene::renderHUD()
         //    pickupText = "e pickup  q drop  f deposit";
        // }
 #endif
-        std::shared_ptr<TextLayout> pickupLabel = TextLayout::allocWithText(pickupText, _font);
-        pickupLabel->layout();
-        Affine2 pickupTrans;
-        pickupTrans.translate(actionButton.origin.x + 10 + hudOffset.x, actionButton.origin.y + 12 + hudOffset.y);
-        _batch->drawText(pickupLabel, pickupTrans);
+        // std::shared_ptr<TextLayout> pickupLabel = TextLayout::allocWithText(pickupText, _font);
+        // pickupLabel->layout();
+        // Affine2 pickupTrans;
+        // pickupTrans.translate(actionButton.origin.x + 10 + hudOffset.x, actionButton.origin.y + 12 + hudOffset.y);
+       // _batch->drawText(pickupLabel, pickupTrans);
 
 #ifdef CU_TOUCH_SCREEN
 //        if (_inventoryPanelOpen && inventory) {
@@ -943,6 +977,15 @@ void GameScene::renderHUD()
 //            }
 //        }
 #endif // CU_TOUCH_SCREEN
+                _batch->setColor(Color4::WHITE);
+                std::shared_ptr<TextLayout> rowLabel = TextLayout::allocWithText(rowText, _font);
+                rowLabel->layout();
+                Affine2 rowTrans;
+                rowTrans.translate(quotaX + 40 + hudOffset.x, rowY + 12 + hudOffset.y);
+                _batch->drawText(rowLabel, rowTrans);
+                rowY -= slotHeight + 4;
+            }
+        }
     }
 }
 
@@ -988,7 +1031,7 @@ bool GameScene::hostCheckItemPickups() {
         for (auto& playerObs : _playerFact->current) {
             float dist = item->getPosition().distance(playerObs->getPosition());
             if (dist <= ITEM_PICKUP_RADIUS) {
-                if (!playerObs->addItem(item->getValue())) {
+                if (!playerObs->addItem(item->getItemType(), item->getValue())) {
                     if (_player && playerObs == _player) {
                         CULog("Inventory full");
                     }
@@ -1303,26 +1346,28 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     if (player && enemy) {
         CULog("enemy and player collison");
-        // TODO make this actually work?
-        //CULog("here");
-        //player->getBody()->ApplyLinearImpulseToCenter(b2Vec2(20 * enemy->getLinearVelocity().x, 20 * enemy->getLinearVelocity().y), true);
-        enemy->getBody()->SetLinearVelocity((b2Vec2(-1 * ATTACK_DELAY * enemy->getLinearVelocity().x, -1 * ATTACK_DELAY * enemy->getLinearVelocity().y)));
-        if (enemy->getState()!=EnemyObstacle::EnemyState::ATTACK_RESET)
+        float knockbackSpeed = 10.0f;
+        b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
+        b2Vec2 dir = vel;
+        float len = dir.Length();
+        if (len > 0.001f) {
+            dir.x /= len;
+            dir.y /= len;
+        }
+        enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
+
+        if (enemy->getState() != EnemyObstacle::EnemyState::ATTACK_RESET)
             player->setHealth(player->getHealth() - 2);
-        CULog("health: %d", player->getHealth());
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;
-    }
+        }
     if (enemy && spell) {
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
-        // TODO implement freezing
         if(spell -> getFroze()){
-            CULog("here");
             enemy -> setFrozen(true);
         }
         spell->markRemoved(true);
         if (enemy->getHealth()==0) enemy->markRemoved(true);
-        CULog("spell and enemy collision: %d", enemy->getHealth());
         return;
     }
     if (wall && player){

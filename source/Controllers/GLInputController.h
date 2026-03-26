@@ -95,6 +95,11 @@ public:
     bool isActive() const { return _active; }
 
     /**
+    * Updates the offset for the camera
+    */
+    void setCameraOffset(Vec2 offset) { _cameraOffset = offset; }
+
+    /**
     * Returns the last gesture the user has done.
     * 
     * Should call {@link #resolvedGesture} once the gesture has been
@@ -118,6 +123,16 @@ public:
     std::vector<cugl::Vec2> getCurStroke() { return currentStroke; }
     std::vector<cugl::Vec2> getsecondStroke() { return secondStroke; }
     std::vector<cugl::Vec2> getthirdStroke() { return thirdStroke; }
+
+    /**
+    * Returns whether the most recent gesture was recognized (for display purposes)
+    * @return true if the gesture was recognized, false in all other cases
+    */
+    bool wasGestureRecognized() { return _gestureRecognized; }
+
+    int getNumStrokes() { return _curStrokes; }
+
+    float getTimeSinceLastStroke() { return _timeSinceLastStroke; }
 
     /**
     * Returns the user input for movement
@@ -281,6 +296,8 @@ public:
     */
     cugl::Vec2 getJoystickPos() { return _joystickpos; }
 
+#pragma mark Spell/aim attributes
+
     void clearSpell() { _lastGesture = SpellType::NONE; }
 
     bool shouldReleaseSpell() { return _releaseSpell; }
@@ -301,6 +318,11 @@ public:
 protected:
     /** Whether the input device was successfully initialized */
     bool _active;
+
+    /** The amount to subtract from user input to account for camera movement */
+    cugl::Vec2 _cameraOffset;
+
+#pragma mark Touch/mouse variables
 
     /** The current touch/mouse position */
     cugl::Vec2 _currPos;
@@ -350,6 +372,8 @@ protected:
     /**Movement*/
     cugl::Vec2 _move;
     
+#pragma mark Gesture variables
+
     /**A vector of points representing the gesture**/
     std::vector<cugl::Vec2> currentStroke;
     /**A vector of points representing the last stroke**/
@@ -365,10 +389,23 @@ protected:
     /** Mapping of gesture strings to the correct Gesture */
     std::unordered_map<std::string, SpellType> _gesturemap;
 
+    /** The time since the last gesture thing */
+    float _timeSinceLastStroke;
+
+    /** Number of strokes in the current gesture */
+    int _curStrokes;
+
+    bool _gestureRecognized;
+    
+#pragma mark Spell aim variables
+
     bool _isAiming;
     float _timeSinceCast;
     bool _releaseSpell;
     cugl::Vec2 _spellAngle;
+
+#pragma mark HUD button variables
+
     /** Bottom-right mobile context button bounds shared with HUD rendering. */
     cugl::Rect _actionButtonBounds;
     /** Top-left inventory header bounds shared with HUD rendering. */
@@ -415,7 +452,7 @@ protected:
     /** The current touch location for the bottom zone */
     TouchInstance _mtouch;
     
-
+#pragma mark Joystick variables
 
     /** Whether the virtual joystick is active */
     bool _joystick;
@@ -425,6 +462,7 @@ protected:
     cugl::Vec2 _joystickpos;
     /** Radius of joystick */
     int _joyradius;
+    /** Area around joystick center where movement will not count */
     int _deadzone;
 
     /** The timestamp for a double tap on the right */

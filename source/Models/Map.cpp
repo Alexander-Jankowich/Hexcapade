@@ -10,6 +10,7 @@
 #include <queue>
 #include <unordered_set>
 #include <utility>
+#include "TiledRoomLoader.h"
 
 #define PHYSICS_SCALE 100
 
@@ -100,6 +101,44 @@ void Map::init() {
         CULog("tiled room load failed: tiles/example_2.tmj :(");
     }
 }
+//Alex flood- literally # islands leetcode esque 
+void floodFill(std::vector<std::vector<Map::TileType>>& tileGrid) {
+    std::queue<cugl::Vec2> queue;
+
+    bool found = false;
+    for (int i = 0; i < tileGrid.size() && !found; ++i) {
+        for (int j = 0; j < tileGrid[i].size() && !found; ++j) {
+            if (tileGrid[i][j] == Map::TileType::EMPTY) {
+                queue.push(cugl::Vec2(i, j));
+                tileGrid[i][j] = Map::TileType::HALL_FLOOR;
+                found = true;
+            }
+        }
+    }
+
+    if (!found) return;
+
+    const int dx[4] = {-1, 1, 0, 0};
+    const int dy[4] = {0, 0, -1, 1};
+
+    while (!queue.empty()) {
+        cugl::Vec2 node = queue.front();
+        queue.pop();
+
+        for (int dir = 0; dir < 4; ++dir) {
+            int nx = node.x + dx[dir];
+            int ny = node.y + dy[dir];
+
+            if (nx >= 0 && nx < tileGrid.size() &&
+                ny >= 0 && ny < tileGrid[nx].size() &&
+                tileGrid[nx][ny] == Map::TileType::EMPTY)
+            {
+                tileGrid[nx][ny] = Map::TileType::HALL_FLOOR;
+                queue.push(cugl::Vec2(nx, ny));
+            }
+        }
+    }
+}
 
 bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsigned int seed) {
     CULog("seed: %d", seed);
@@ -122,6 +161,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     // we use the tiled tile size as the real map tile size so the rendered art,
     // collision grid, and world positions stay aligned (ask deisgners)
     _tileSize = std::max(8.0f, (float)_tiledRoomPrefab->getTileWidth());
+    CULog("TIle Size %f", _tileSize);
     //int clampedMinRooms = std::max(1, _config.roomCountMin);
 //    int clampedMaxRooms = std::max(clampedMinRooms, _config.roomCountMax);
 //    std::uniform_int_distribution<int> roomCountDist(clampedMinRooms, clampedMaxRooms);
@@ -144,9 +184,8 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     _origin = Vec2::ZERO;
     _worldBounds = Rect(_origin.x, _origin.y, _gridWidth * _tileSize, _gridHeight * _tileSize);
     
-    // FLAG: TILE GRID
-    for (int col = 0; col <_gridWidth * _tileSize; col++){
-        std::vector<TileType> v(_gridHeight*_tileSize);
+    for (int col = 0; col < _gridWidth; col++){
+        std::vector<TileType> v(_gridHeight);
         _tileGrid.push_back(v);
     }
 
@@ -228,37 +267,7 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
         stampTiledRoom(generatedRooms[ii], (int)ii);
     }
     
-    // flood the rest of the map with hallway tiles
-    std::queue<cugl::Vec2> queue;
-    // something dumb to find first non-empty tile
-    for (int i=0; i<_tileGrid.size(); i++) {
-        for (int j=0; j<_tileGrid.at(i).size(); j++){
-            if (_tileGrid.at(i).at(j)==TileType::EMPTY) {
-                queue.push(Vec2(i, j));
-                goto floodfill;
-                
-            }
-        }
-    }
-// TODO: update to utilize spans for efficiency
-floodfill:
-    while(!queue.empty()) {
-        cugl::Vec2 node = queue.front(); // REMEMBER THESE ARE ARRAY INDEXES
-
-        queue.pop();
-        if (_tileGrid.at(node.x).at(node.y) != TileType::EMPTY) continue;
-        // set to hallway
-        _tileGrid.at(node.x).at(node.y) = TileType::HALL_FLOOR;
-        
-        // add up
-        if(node.x > 0 && _tileGrid.at(node.x - 1).at(node.y) == TileType::EMPTY) queue.push(cugl::Vec2(node.x-1, node.y));
-        // add down
-        if(node.x < _tileGrid.size()-1 && _tileGrid.at(node.x + 1).at(node.y) == TileType::EMPTY) queue.push(cugl::Vec2(node.x+1, node.y));
-        // add left
-        if(node.y > 0 && _tileGrid.at(node.x).at(node.y-1) == TileType::EMPTY) queue.push(cugl::Vec2(node.x, node.y-1));
-        // add right
-        if(node.y < _tileGrid.at(0).size()-1 && _tileGrid.at(node.x).at(node.y+1) == TileType::EMPTY) queue.push(cugl::Vec2(node.x, node.y+1));
-    }
+    floodFill(_tileGrid);
         
     
 //    std::vector<std::pair<int, int>> roomLinks;
