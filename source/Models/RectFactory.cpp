@@ -15,6 +15,7 @@ RectObstacle::RectObstacle(const cugl::Vec2 pos, float w, float h) {
     _dimens = Size(w / PHYSICS_SCALE, h / PHYSICS_SCALE);
     init(pos, _dimens);
     createFixtures();
+    setSensor(true);
     setBodyType(b2_staticBody);
     _pos = pos;
     
