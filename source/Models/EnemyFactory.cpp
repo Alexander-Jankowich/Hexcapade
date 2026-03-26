@@ -7,6 +7,7 @@
 
 #include "EnemyFactory.h"
 #define PHYSICS_SCALE 100
+#define FROZEN_FRAMES 60
 
 using namespace std;
 using namespace cugl;
@@ -22,6 +23,8 @@ EnemyObstacle::EnemyObstacle(const cugl::Vec2& pos, float speed, int health, flo
     _range = range;
     _target = pos;
     _state = EnemyState::IDLE;
+    _frozen = false;
+    _frozenTimer = 0;
 }
 
 /**
@@ -44,7 +47,7 @@ void EnemyObstacle::updateAttackCounter() {
         _attackCounter=0;
         _state = EnemyState::IDLE;
     }
-    CULog("attack counter: %d", _attackCounter);
+    //CULog("attack counter: %d", _attackCounter);
 }
 
 /**
@@ -134,6 +137,18 @@ std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::update(std::vec
 
     for (auto it = current.begin(); it != current.end(); ) {
         // Remove from set if removed from scene
+        if ((*it) -> isFroze()) {
+            (*it)->setLinearVelocity(Vec2::ZERO);
+            CULog("i am frozen af");
+            int i = (*it) -> getFrozenTimer() + 1;
+            (*it) -> setFrozenTimer(i);
+            if ((*it) -> getFrozenTimer() >= FROZEN_FRAMES) {
+                (*it) -> setFrozen(false);
+                (*it) -> setFrozenTimer(0);
+            }
+            it++;
+            continue;
+        }
         if ((*it)->isRemoved()) {
             remove.emplace(*it);
             it = current.erase(it);
@@ -158,7 +173,7 @@ std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::update(std::vec
                 desiredVel.normalize();
                 desiredVel *= (*it)->getSpeed();
 
-                float recovery = 0.1f;
+                float recovery = 0.2f;
                 Vec2 newVel = currentVel * (1 - recovery) + desiredVel * recovery;
 
                 (*it)->setLinearVelocity(newVel);

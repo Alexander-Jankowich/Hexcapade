@@ -26,6 +26,7 @@ Entity::Entity(const cugl::Vec2& pos, int health, std::shared_ptr<cugl::graphics
     _knockback_counter = 0;
     _frozen = false;
     _frozen_counter = 0;
+    
 }
 
 /**

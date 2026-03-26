@@ -11,7 +11,7 @@
 #include <cugl/cugl.h>
 #include "Enemy.h"
 
-#define ATTACK_DELAY 1.5f
+#define ATTACK_DELAY 1.3f
 
 using namespace cugl;
 using namespace cugl::physics2::distrib;
@@ -34,6 +34,8 @@ protected:
     Vec2 _target;
     EnemyState _state;
     int _attackCounter;
+    bool _frozen;
+    int _frozenTimer;
 
 public:
     EnemyObstacle(const cugl::Vec2& pos, float speed, int health, float range, cugl::Size s);
@@ -63,6 +65,8 @@ public:
      * @return the current ship health.
      */
     int getHealth() const { return _health; }
+    
+    bool isFroze () { return _frozen; }
 
     /**
      * Sets the current ship health.
@@ -78,6 +82,12 @@ public:
     void setTarget(const Vec2 targ) { _target = targ; _state = EnemyState::CHASING;}
 
     Vec2 getTarget() { return _target; }
+    
+    void setFrozenTimer(int i) { _frozenTimer = i; }
+    
+    int getFrozenTimer() { return _frozenTimer; }
+    
+    void setFrozen(bool b) { _frozen = b; }
 };
 
 /**

@@ -541,6 +541,19 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
     //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
 
+    updateCameraFollow();
+    Vec2 offset = getHUDOffset();
+    _input.setCameraOffset(offset);
+    _inputDisplay->setUIOffset(offset);
+    _inputDisplay->update(playerScreenPos);
+
+    if (_player->getHealth() <= 0) {
+        _playerLost = true;
+    }
+    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
+        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
+    }
+
     //updateItemPickupState();
     //updateDepositState();
     _input.setInventoryPanelOpen(_inventoryPanelOpen);
@@ -698,18 +711,6 @@ void GameScene::preUpdate(float dt)
             _networkCtrl->getPhysController()->removeSharedObstacle(spell);
             CULog("Remove spell: %d", spell->isRemoved());
         }
-    }
-
-    playerScreenPos = _player->getPosition();
-    updateCameraFollow();
-    _inputDisplay->setUIOffset(getHUDOffset());
-    _inputDisplay->update(playerScreenPos);
-
-    if (_player->getHealth() <= 0) {
-        _playerLost = true;
-    }
-    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
-        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
     }
 }
 
@@ -1345,22 +1346,28 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     if (player && enemy) {
         CULog("enemy and player collison");
-        // TODO make this actually work?
-        //CULog("here");
-        //player->getBody()->ApplyLinearImpulseToCenter(b2Vec2(20 * enemy->getLinearVelocity().x, 20 * enemy->getLinearVelocity().y), true);
-        enemy->getBody()->SetLinearVelocity((b2Vec2(-1 * ATTACK_DELAY * enemy->getLinearVelocity().x, -1 * ATTACK_DELAY * enemy->getLinearVelocity().y)));
-        if (enemy->getState()!=EnemyObstacle::EnemyState::ATTACK_RESET)
+        float knockbackSpeed = 10.0f;
+        b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
+        b2Vec2 dir = vel;
+        float len = dir.Length();
+        if (len > 0.001f) {
+            dir.x /= len;
+            dir.y /= len;
+        }
+        enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
+
+        if (enemy->getState() != EnemyObstacle::EnemyState::ATTACK_RESET)
             player->setHealth(player->getHealth() - 2);
-        CULog("health: %d", player->getHealth());
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;
-    }
+        }
     if (enemy && spell) {
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
-        // TODO implement freezing
+        if(spell -> getFroze()){
+            enemy -> setFrozen(true);
+        }
         spell->markRemoved(true);
         if (enemy->getHealth()==0) enemy->markRemoved(true);
-        CULog("spell and enemy collision: %d", enemy->getHealth());
         return;
     }
     if (wall && player){
