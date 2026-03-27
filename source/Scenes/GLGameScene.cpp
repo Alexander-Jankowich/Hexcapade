@@ -905,10 +905,8 @@ void GameScene::renderHUD()
         Affine2 healthTrans;
         healthTrans.translate(healthX + 10 + hudOffset.x, healthY + 12 + hudOffset.y);
         _batch->drawText(healthLabel, healthTrans);
-        char* timetext; // iphone doesnt support std::format, DO NOT CHANGE
-        sprintf(timetext, "Time Remaining: %.2f", _timer/60);
         std::shared_ptr<TextLayout> timerLabel = TextLayout::allocWithText(
-                    timetext, _font);
+                    "Time Remaining: " + std::to_string(_timer/60), _font);
         timerLabel->layout();
         Affine2 timerTrans;
         timerTrans.translate(timerX + 10 + hudOffset.x, timerY + 12 + hudOffset.y );
