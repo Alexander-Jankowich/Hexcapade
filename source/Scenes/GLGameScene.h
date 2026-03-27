@@ -22,7 +22,6 @@
 #include "../Controllers/RoomController.h"
 #include "../Controllers/CollisionController.h"
 
-#include "../Models/InputDisplay.h"
 #include "../Models/GameplayConfig.h"
 #include "../Models/Map.h"
 #include "../Models/Items.h"
@@ -32,6 +31,9 @@
 #include "../Models/Events.h"
 
 #include "../Models/GameplayConfigLoader.h"
+
+#include "InputDisplay.h"
+
 /**
  * This class is the primary gameplay constroller for the demo.
  *
