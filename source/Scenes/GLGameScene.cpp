@@ -239,7 +239,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _enemyFact = EnemyFactory::alloc(_assets);
     _rectFact = RectFactory::alloc(_assets, _map->_tiledRoomPrefab);
     _itemFact = ItemFactory::alloc(_assets);
-    CULog("did tiled thing load: %d", _map->_tiledRoomPrefab==nullptr);
+    //CULog("did tiled thing load: %d", _map->_tiledRoomPrefab==nullptr);
 
     // IMPORTANT: SCALING MUST BE UNIFORM
     // This means that we cannot change the aspect ratio of the physics world
@@ -290,6 +290,7 @@ void GameScene::dispose()
 
 void GameScene::reset()
 {
+    CULog("reset game");
     loadGameplayConfig();
     _gameEnded = false;
     _playerWon = false;
@@ -553,7 +554,6 @@ void GameScene::preUpdate(float dt)
             }
         }
 
-        // Change to be all player positions
         std::vector<Vec2> player_pos;
         for (auto p : _playerFact->current) {
             if (p->getHealth() > 0)
@@ -624,13 +624,13 @@ void GameScene::preUpdate(float dt)
 
     // EDIT host only for now
     if (depositRequested && _canDeposit) {
-            if (_player && _player->hasInventory()) {
+        if (_player && _player->hasInventory()) {
             int deposited = _player->depositItems();
-                if (deposited > 0) {
-                    _depositedValue += deposited;
-                    _inventoryValue = _player->getInventoryVal();
-                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(deposited));
-                    CULog("Deposited %d, total: %d / %d", deposited, _depositedValue, _quota);
+            if (deposited > 0) {
+                _depositedValue += deposited;
+                _inventoryValue = _player->getInventoryVal();
+                _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(deposited));
+                CULog("Deposited %d, total: %d / %d", deposited, _depositedValue, _quota);
             }
         }
     }
@@ -705,9 +705,9 @@ void GameScene::preUpdate(float dt)
     }
 
     if (_input.pressedPickup()) {
-            _networkCtrl->pushOutEvent(PickupEvent::allocPickupEvent(_player->getPID()));
-            _input.resolvedPickup();
-        }
+        _networkCtrl->pushOutEvent(PickupEvent::allocPickupEvent(_player->getPID()));
+        _input.resolvedPickup();
+    }
 
 }
 
@@ -750,20 +750,20 @@ void GameScene::fixedUpdate(Uint64 step)
             processComboEvent(cse);
         }
         else if (auto cse = std::dynamic_pointer_cast<EndGameEvent>(e))
-                {
-                    CULog("END GAME GOT");
-                    processEndEvent(cse);
-                }
+        {
+            CULog("END GAME GOT");
+            processEndEvent(cse);
+        }
         else if (auto de = std::dynamic_pointer_cast<DepositEvent>(e))
-                {
-                    CULog("DEPOSIT GOT");
-                    _depositedValue += de->getAmount();
-                }
+        {
+            CULog("DEPOSIT GOT");
+            _depositedValue += de->getAmount();
+        }
         else if (auto pre = std::dynamic_pointer_cast<PickupEvent>(e)) {
-                    if (_networkCtrl->isHost()) {
-                        hostCheckItemPickupForPlayer(pre->getPID());
-                    }
-                }
+            if (_networkCtrl->isHost()) {
+                hostCheckItemPickupForPlayer(pre->getPID());
+            }
+        }
         
 //        else if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e)){
 //            CULog("INIT EVENT GOT");
@@ -810,7 +810,6 @@ void GameScene::postUpdate(float remain)
  */
 void GameScene::render()
 {
-    
     Scene2::render();
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
@@ -821,9 +820,6 @@ void GameScene::render()
     renderHUD();
     _inputDisplay->draw(_batch);
     _batch->end();
-    
-    
-
 }
 
 void GameScene::renderHUD()
@@ -1165,6 +1161,9 @@ void GameScene::initMap() {
     _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
     _rectFactId = _networkCtrl->getPhysController()->attachFactory(_rectFact);
     _itemFactId = _networkCtrl->getPhysController()->attachFactory(_itemFact);
+    CULog("Enemy factory ID: %u", _enemyFactId);
+    CULog("Item factory ID: %u", _itemFactId);
+
     _mapSeed= _networkCtrl->getRandSeed();
     CULog("set map seed to : %d", _mapSeed);
     
@@ -1187,7 +1186,6 @@ void GameScene::setActive(bool value)
         if (value)
         {
             _input.activate();
-            
     
             auto params = _playerFact->serializeParams(_map -> getPlayerSpawn() / PHYSICS_SCALE, std::to_string(_networkCtrl->getShortUID()));
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
@@ -1205,8 +1203,6 @@ void GameScene::setActive(bool value)
         }
     }
 }
-
-
 
 void GameScene::addInitObstacle(const std::shared_ptr<physics2::Obstacle>& obj,
     const std::shared_ptr<scene2::SceneNode>& node) {
@@ -1233,7 +1229,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         // i do not know how else to check if it is a player...
 
         if (auto p = dynamic_pointer_cast<PlayerObstacle>(obj)) {
-            std::shared_ptr<Player> p_node = std::dynamic_pointer_cast<Player>(node);
+            std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 p_node->updateAnimationState(p->getState());
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
@@ -1330,7 +1326,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         return;
     }
     if (player && enemy && _networkCtrl->isHost()) {
-        CULog("enemy and player collison");
+        //CULog("enemy and player collison");
         float knockbackSpeed = 10.0f;
         b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
         b2Vec2 dir = vel;

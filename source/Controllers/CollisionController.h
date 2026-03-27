@@ -8,7 +8,7 @@
 #define __COLLISION_CONTROLLER_H__
 
 #include <cugl/cugl.h>
-#include "../Models/Player.h"
+//#include "../Models/Player.h"
 
 class CollisionController {
 private:

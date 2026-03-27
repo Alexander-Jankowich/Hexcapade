@@ -389,20 +389,20 @@ void GeometryApp::updateHostScene(float dt) {
         _scene = State::MENU;
         break;
     case NetworkController::Status::CONNECTED:
-            _gameplay.initNetwork(_hostScene.getNetwork());
-            break;
+        _gameplay.initNetwork(_hostScene.getNetwork());
+        break;
     case NetworkController::Status::HANDSHAKE:
     case NetworkController::Status::READY:
-            CULog("status, sending init: %d", _hostScene.getStatus());
-            _hostScene.sendInitMsg();
-            _gameplay.initMap();
-            break;
+        CULog("status, sending init: %d", _hostScene.getStatus());
+        _hostScene.sendInitMsg();
+        _gameplay.initMap();
+        break;
     case NetworkController::Status::INGAME:
-            _hostScene.setActive(false);
-            // Transfer connection ownership
-            _hostScene.release();
-            _gameplay.setActive(true);
-            _scene = State::GAME;
+        _hostScene.setActive(false);
+        // Transfer connection ownership
+        _hostScene.release();
+        _gameplay.setActive(true);
+        _scene = State::GAME;
         break;
     default: // should not happen but whatever
         break;
