@@ -1314,8 +1314,6 @@ void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
  * @param  oldManfold  	The collision manifold before contact
  */
 void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
-    if (!_networkCtrl->isHost()) return;
-    
     b2Body* body1 = contact->GetFixtureA()->GetBody();
     b2Body* body2 = contact->GetFixtureB()->GetBody();
 
@@ -1357,7 +1355,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
 
     // Checking for collisions
-    if (player && spell) {
+    if (player && spell && _networkCtrl->isHost()) {
         if (spell->getCasterUID()==_networkCtrl->getShortUID()) return;
         if (spell->getHealed()) {
             int nh = player->getHealth() + HEAL_AMT;
@@ -1366,7 +1364,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
         return;
     }
-    if (player && enemy) {
+    if (player && enemy && _networkCtrl->isHost()) {
         CULog("enemy and player collison");
         float knockbackSpeed = 10.0f;
         b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
@@ -1383,7 +1381,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;
         }
-    if (enemy && spell) {
+    if (enemy && spell && _networkCtrl->isHost()) {
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
         if(spell -> getFroze()){
             enemy -> setFrozen(true);
