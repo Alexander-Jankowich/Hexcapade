@@ -905,9 +905,10 @@ void GameScene::renderHUD()
         Affine2 healthTrans;
         healthTrans.translate(healthX + 10 + hudOffset.x, healthY + 12 + hudOffset.y);
         _batch->drawText(healthLabel, healthTrans);
-        
+        char* timetext; // iphone doesnt support std::format, DO NOT CHANGE
+        sprintf(timetext, "Time Remaining: %.2f", _timer/60);
         std::shared_ptr<TextLayout> timerLabel = TextLayout::allocWithText(
-            "Time Remaining: " + std::to_string(_timer / 60), _font);
+                    timetext, _font);
         timerLabel->layout();
         Affine2 timerTrans;
         timerTrans.translate(timerX + 10 + hudOffset.x, timerY + 12 + hudOffset.y );
@@ -1193,7 +1194,7 @@ void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
 void GameScene::initMap() {
     if (_networkCtrl->getRandSeed()==0) return; // no randSeed
     if (_mapSeed==_networkCtrl->getRandSeed()) return; // already init
-    // uh ig this also will init network??? yolo
+    // initialize physics here, since this should be called post HANDSHAKE
     std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
         this->linkSceneToObs(obs, node);
         };

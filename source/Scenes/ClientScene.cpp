@@ -85,10 +85,10 @@ void ClientScene::updateText(const std::shared_ptr<scene2::Button>& button, cons
 void ClientScene::update(float dt) {
     _networkCtrl->updateNet();
         
-    // handle init  event
-    if(_networkCtrl->isInAvailable()){
+    // handle init event iff handshake is completed
+    if(_networkCtrl->isInAvailable() && _networkCtrl->getShortUID()!=0){
         auto e = _networkCtrl->popInEvent();
-        if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e)){
+        if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e) ){
             processInitEvent(cse);
         }
     }
