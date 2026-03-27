@@ -19,6 +19,16 @@ sources:                            # The list of the source code files
     - source/Models/*.h
     - source/Models/Events/*.cpp
     - source/Models/Events/*.h
+    - source/Models/Players/*.cpp
+    - source/Models/Players/*.h
+    - source/Models/Enemies/*.cpp
+    - source/Models/Enemies/*.h
+    - source/Models/Spells/*.cpp
+    - source/Models/Spells/*.h
+    - source/Models/Map/*.cpp
+    - source/Models/Map/*.h
+    - source/Models/Items/*.cpp
+    - source/Models/Items/*.h
     - source/Scenes/*.cpp
     - source/Scenes/*.h
 

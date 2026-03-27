@@ -9,7 +9,7 @@
 #define __NP_CAST_SPELL_EVENT_H__
 
 #include <cugl/cugl.h>
-#include "../SpellFactory.h"
+#include "../Spells.h"
 using namespace cugl;
 using namespace cugl::physics2::distrib;
 

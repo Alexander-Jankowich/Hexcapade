@@ -9,7 +9,6 @@
 #define __PLAYER_FACTORY_H__
 
 #include <cugl/cugl.h>
-//#include "PlayerObstacle.h"
 #include "PlayerNode.h"
 
 using namespace cugl;
