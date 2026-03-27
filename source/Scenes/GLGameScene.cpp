@@ -537,58 +537,140 @@ void GameScene::preUpdate(float dt)
         return;
     }
 
-    // ONLY UPDATE PLAYER IF NOT DEAD!
-    if (_player->getState() != PlayerObstacle::AnimationState::DEAD) {
-        // Player movement
-        cugl::Vec2 input = _input.getMove();
-        cugl::Vec2 velocity = input * _player->getSpeed();
-        _player->setVelocity(velocity);
-        Vec2 pos = _player->getPosition();
-        //CULog("body active: %d", _player->isAwake());
-        //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
-        _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
-        cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
-        //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
+    // Player movement
+    cugl::Vec2 input = _input.getMove();
+    cugl::Vec2 velocity = input * _player->getSpeed();
+    _player->setVelocity(velocity);
+    Vec2 pos = _player -> getPosition();
+    //CULog("body active: %d", _player->isAwake());
+    //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
+    _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
+    cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
+    //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
 
-        updateCameraFollow();
-        Vec2 offset = getHUDOffset();
-        _input.setCameraOffset(offset);
-        _inputDisplay->setUIOffset(offset);
-        _inputDisplay->update(playerScreenPos);
+    updateCameraFollow();
+    Vec2 offset = getHUDOffset();
+    _input.setCameraOffset(offset);
+    _inputDisplay->setUIOffset(offset);
+    _inputDisplay->update(playerScreenPos);
 
-        //    if (_player->getHealth() <= 0) {
-        //        _playerLost = true;
-        //    }
-        //    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
-        //        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
-        //    }
+//    if (_player->getHealth() <= 0) {
+//        _playerLost = true;
+//    }
+//    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
+//        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
+//    }
 
-            //updateItemPickupState();
-            //updateDepositState();
-        _input.setInventoryPanelOpen(_inventoryPanelOpen);
+    //updateItemPickupState();
+    //updateDepositState();
+    _input.setInventoryPanelOpen(_inventoryPanelOpen);
 
-        bool pickupRequested = false;
-        bool depositRequested = false;
-        int dropIndex = -1;
+    bool pickupRequested = false;
+    bool depositRequested = false;
+    int dropIndex = -1;
 
-        //if (_input.pressedDrop()) {
-        //    std::shared_ptr<Inventory> inventory = _player->getInventory();
-         //   if (inventory && !inventory->isEmpty()) {
-         //       dropIndex = (int)inventory->getCount() - 1;
-         //   }
-          //  _input.resolvedDrop();
-       // }
-        _canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
+    //if (_input.pressedDrop()) {
+    //    std::shared_ptr<Inventory> inventory = _player->getInventory();
+     //   if (inventory && !inventory->isEmpty()) {
+     //       dropIndex = (int)inventory->getCount() - 1;
+     //   }
+      //  _input.resolvedDrop();
+   // }
+    _canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
 
-        if (_input.pressedDeposit()) {
-            depositRequested = true;
-            _input.resolvedDeposit();
+    if (_input.pressedDeposit()) {
+        depositRequested = true;
+        _input.resolvedDeposit();
+    }
+    handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
+
+    // EDIT host only for now
+    if (_networkCtrl->isHost() && depositRequested && _canDeposit) {
+        if (_player && _player->hasInventory()) {
+            int deposited = _player->depositItems();
+            _depositedValue += deposited;
+            _inventoryValue = _player->getInventoryVal();
+            CULog("Deposited %d, total: %d / %d", deposited, _depositedValue, _quota);
+            if (_depositedValue >= _quota) {
+                _playerWon = true;
+            }
         }
-        handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
+    }
 
-        // EDIT host only for now
-        if (_networkCtrl->isHost()) {
-            if (depositRequested && _canDeposit && _player && _player->hasInventory()) {
+    //bool hasNetwork = _networkCtrl && _networkCtrl->hasNetwork();
+   // if (!hasNetwork || _ishost) {
+//        if (pickupRequested) {
+//            pickupNearbyItem();
+//        }
+//        if (dropIndex >= 0) {
+//            dropInventoryIndex((size_t)dropIndex);
+//        }
+//        if (depositRequested) {
+//            depositAtDropoff();
+//        }
+   // }
+
+    // Spellcasting
+    if (_input.getGesture() != SpellType::NONE) {
+        _player->setSpell(_input.getGesture());
+        //CULog("Set spell! %d", _player->getSpell());
+    }
+
+    Vec2 angle = _input.getSpellAngle();
+    if (angle.isZero()) {
+        angle = _player->getDirection();
+    }
+    if (_input.shouldReleaseSpell()) {
+        CULog("Release spell--------------------------------------------------------");
+        // CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
+        //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
+        // Spawn spell, make host owner of object
+        
+        CULog("Spell type: %d", _player->getSpell());
+        SpellType t = SpellType::NONE;
+
+        // check for possible combos - serena implemented
+        for (auto p : _playerFact->current) {
+            if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
+                // calc combo spell + send combo event
+                if (_player->getSpell() == SpellType::FIREBALL) {
+                    if (p->getSpell() == SpellType::FIREBALL) {
+                        t = SpellType::COMBO_FIREBALL;
+                    }
+                }
+                else if (_player->getSpell() == SpellType::FREEZE) {
+                    if (p->getSpell() == SpellType::FREEZE) {
+                        t = SpellType::COMBO_FREEZE;
+                    }
+                }
+
+                // Spell is combo-ed!
+                if (t != SpellType::NONE) {
+                    _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
+                    break;
+                }
+            }
+        }
+
+        // Not a combo, use base spell
+        if (t == SpellType::NONE) {
+            t = _player->getSpell();
+        }
+
+        CULog("Casting spell type: %d", t);
+        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, t, _networkCtrl->getShortUID());
+        auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+        _networkCtrl->getPhysController()->releaseObs(pair.first);
+
+        _input.resolveSpell();
+        _player->resolveSpell();
+    }
+
+    if (_networkCtrl->isHost()) {
+        if (_input.pressedPickup()) {
+            bool pickedUpItem = hostCheckItemPickups();
+#ifdef CU_TOUCH_SCREEN
+            if (!pickedUpItem && _canDeposit && _player && _player->hasInventory()) {
                 int deposited = _player->depositItems();
                 _depositedValue += deposited;
                 _inventoryValue = _player->getInventoryVal();
@@ -597,97 +679,11 @@ void GameScene::preUpdate(float dt)
                     _playerWon = true;
                 }
             }
-
-            if (_input.pressedPickup()) {
-                bool pickedUpItem = hostCheckItemPickups();
-#ifdef CU_TOUCH_SCREEN
-                if (!pickedUpItem && _canDeposit && _player && _player->hasInventory()) {
-                    int deposited = _player->depositItems();
-                    _depositedValue += deposited;
-                    _inventoryValue = _player->getInventoryVal();
-                    CULog("Deposited %d, total: %d / %d", deposited, _depositedValue, _quota);
-                    if (_depositedValue >= _quota) {
-                        _playerWon = true;
-                    }
-                }
 #else
-                (void)pickedUpItem;
+            (void)pickedUpItem;
 #endif
-                _input.resolvedPickup();
-            }
+            _input.resolvedPickup();
         }
-
-        //bool hasNetwork = _networkCtrl && _networkCtrl->hasNetwork();
-       // if (!hasNetwork || _ishost) {
-    //        if (pickupRequested) {
-    //            pickupNearbyItem();
-    //        }
-    //        if (dropIndex >= 0) {
-    //            dropInventoryIndex((size_t)dropIndex);
-    //        }
-    //        if (depositRequested) {
-    //            depositAtDropoff();
-    //        }
-       // }
-
-        // Spellcasting
-        if (_input.getGesture() != SpellType::NONE) {
-            _player->setSpell(_input.getGesture());
-            //CULog("Set spell! %d", _player->getSpell());
-        }
-
-        Vec2 angle = _input.getSpellAngle();
-        if (angle.isZero()) {
-            angle = _player->getDirection();
-        }
-        if (_input.shouldReleaseSpell()) {
-            CULog("Release spell--------------------------------------------------------");
-            // CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
-            //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
-            // Spawn spell, make host owner of object
-
-            CULog("Spell type: %d", _player->getSpell());
-            SpellType t = SpellType::NONE;
-
-            // check for possible combos - serena implemented
-            for (auto p : _playerFact->current) {
-                if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
-                    // calc combo spell + send combo event
-                    if (_player->getSpell() == SpellType::FIREBALL) {
-                        if (p->getSpell() == SpellType::FIREBALL) {
-                            t = SpellType::COMBO_FIREBALL;
-                        }
-                    }
-                    else if (_player->getSpell() == SpellType::FREEZE) {
-                        if (p->getSpell() == SpellType::FREEZE) {
-                            t = SpellType::COMBO_FREEZE;
-                        }
-                    }
-
-                    // Spell is combo-ed!
-                    if (t != SpellType::NONE) {
-                        _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
-                        break;
-                    }
-                }
-            }
-
-            // Not a combo, use base spell
-            if (t == SpellType::NONE) {
-                t = _player->getSpell();
-            }
-
-            CULog("Casting spell type: %d", t);
-            auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle * 2, t, _networkCtrl->getShortUID());
-            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-            _networkCtrl->getPhysController()->releaseObs(pair.first);
-
-            _input.resolveSpell();
-            _player->resolveSpell();
-        }
-    }
-
-    if (_networkCtrl->isHost()) {
         // spawn an enemy if host and need to spawn
         lastEnemySpawn += dt;
         if (lastEnemySpawn > 8) {
@@ -709,9 +705,7 @@ void GameScene::preUpdate(float dt)
         // Change to be all player positions
         std::vector<Vec2> player_pos;
         for (auto p : _playerFact->current) {
-            if (p->getState() != PlayerObstacle::AnimationState::DEAD) {
-                player_pos.push_back(p->getPosition());
-            }
+            player_pos.push_back(p->getPosition());
         }
         auto toRemove = _enemyFact->update(player_pos);
         for (auto en : toRemove) {
