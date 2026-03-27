@@ -10,8 +10,6 @@
 using namespace cugl;
 using namespace cugl::graphics;
 
-#define PI 3.14159265358979323
-
 int PlayerNode::rows = 1;
 int PlayerNode::cols = 1;
 
@@ -30,6 +28,7 @@ PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
 }
 
 void PlayerNode::setVelocity(cugl::Vec2 value) {
+    _velocity = value;
     if (_velocity.x != 0) {
         facingLeft = _velocity.x < 0;
     }
