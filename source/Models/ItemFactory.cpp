@@ -14,20 +14,22 @@
 using namespace std;
 using namespace cugl;
 
-ItemObstacle::ItemObstacle(const cugl::Vec2& pos, int value, const std::string& itemType) {
+ItemObstacle::ItemObstacle(const cugl::Vec2& pos, int value, const std::string& itemType, int i) {
     init(pos, cugl::Size(ITEM_SIZE, ITEM_SIZE));
     setBodyType(b2_staticBody);
     setAwake(true);
     setEnabled(true);
     _value = value;
     _itemType = itemType;
+    _itemID = i;
 }
 
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> ItemFactory::createObstacle(Vec2 pos, int value, const string& itemType) {
-    auto item = ItemObstacle::alloc(pos, value, itemType);
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> ItemFactory::createObstacle(Vec2 pos, int value, const string& itemType, int i) {
+    
+    auto item = ItemObstacle::alloc(pos, value, itemType, i);
     item->setShared(true);
 
-    current.emplace(item);
+    current.insert(std::pair<int, std::shared_ptr<ItemObstacle>>(i, item));
 
     // Grab the item's texture based on itemType 
     auto texture = _assets->get<graphics::Texture>(itemType);
@@ -42,6 +44,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> ItemFactory:
         sprite = scene2::PolygonNode::allocWithPoly(Rect(0, 0, 48, 48));
         sprite->setColor(Color4(255, 170, 60, 255));
     }
+    
     return std::make_pair(item, sprite);
 }
 
@@ -51,6 +54,8 @@ shared_ptr<vector<byte>> ItemFactory::serializeParams(Vec2 pos, int value, const
     _serializer.writeFloat(pos.y);
     _serializer.writeSint32(value);
     _serializer.writeString(itemType);
+    _serializer.writeUint32(_count);
+    _count++;
     return make_shared<vector<byte>>(_serializer.serialize());
 }
 
@@ -61,15 +66,16 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> ItemFactory:
     float y = _deserializer.readFloat();
     int   value = _deserializer.readSint32();
     string itemType = _deserializer.readString();
-    return createObstacle(Vec2(x, y), value, itemType);
+    int i = _deserializer.readUint32();
+    return createObstacle(Vec2(x, y), value, itemType, i);
 }
 
 unordered_set<shared_ptr<ItemObstacle>> ItemFactory::update() {
     unordered_set<shared_ptr<ItemObstacle>> remove;
 
     for (auto it = current.begin(); it != current.end(); ) {
-        if ((*it)->isRemoved()) {
-            remove.emplace(*it);
+        if ((*it).second->isRemoved()) {
+            remove.emplace((*it).second);
             it = current.erase(it);
         }
         else {

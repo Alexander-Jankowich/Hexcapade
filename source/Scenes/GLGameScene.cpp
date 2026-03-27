@@ -704,10 +704,12 @@ void GameScene::preUpdate(float dt)
         _player->resolveSpell();
     }
 
-    if (_input.pressedPickup()) {
-            _networkCtrl->pushOutEvent(PickupEvent::allocPickupEvent(_player->getPID()));
-            _input.resolvedPickup();
-        }
+    if (_input.pressedPickup() && _currOverlappedItem>0) {
+        _networkCtrl->pushOutEvent(PickupEvent::allocPickupEvent(_player->getPID(), _currOverlappedItem));
+        _input.resolvedPickup();
+        _currOverlappedItem = -1;
+        _itemFact->getItem(_currOverlappedItem)->markRemoved(true);
+    }
 
 }
 
@@ -743,32 +745,25 @@ void GameScene::fixedUpdate(Uint64 step)
     _networkCtrl->updateNet();
     
     // handle cast spell event
-    if(_networkCtrl->isInAvailable()){
+    while (_networkCtrl->isInAvailable()){
         auto e = _networkCtrl->popInEvent();
         if(auto cse = std::dynamic_pointer_cast<CastSpellEvent>(e)){
             CULog("COMBO SPELL GOT");
             processComboEvent(cse);
+        } else if (auto cse = std::dynamic_pointer_cast<EndGameEvent>(e)){
+            CULog("END GAME GOT");
+            processEndEvent(cse);
+        } else if (auto de = std::dynamic_pointer_cast<DepositEvent>(e)) {
+            CULog("DEPOSIT GOT");
+            _depositedValue += de->getAmount();
+        } else if (auto pre = std::dynamic_pointer_cast<PickupEvent>(e)) {
+            if (_itemFact->getItem(pre->getItemID()) != nullptr) {
+                CULog("pickup event got!");
+                _itemFact->getItem(pre->getItemID())->markRemoved(true);
+            }
+            
         }
-        else if (auto cse = std::dynamic_pointer_cast<EndGameEvent>(e))
-                {
-                    CULog("END GAME GOT");
-                    processEndEvent(cse);
-                }
-        else if (auto de = std::dynamic_pointer_cast<DepositEvent>(e))
-                {
-                    CULog("DEPOSIT GOT");
-                    _depositedValue += de->getAmount();
-                }
-        else if (auto pre = std::dynamic_pointer_cast<PickupEvent>(e)) {
-                    if (_networkCtrl->isHost()) {
-                        hostCheckItemPickupForPlayer(pre->getPID());
-                    }
-                }
         
-//        else if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e)){
-//            CULog("INIT EVENT GOT");
-//            processInitEvent(cse);
-//        }
     }
 
     _world->update(step / 1000000.0f);
@@ -814,9 +809,6 @@ void GameScene::render()
     Scene2::render();
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
-//    if (_map) {
-//        _map->draw(_batch);
-//    }
     drawDepositZone();
     renderHUD();
     _inputDisplay->draw(_batch);
@@ -1033,39 +1025,39 @@ void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequest
 #endif
 }
 
-bool GameScene::hostCheckItemPickupForPlayer(const std::string& pid) {
-    std::shared_ptr<PlayerObstacle> requestingPlayer = nullptr;
-    for (auto& p : _playerFact->current) {
-        if (p->getPID() == pid) {
-            requestingPlayer = p;
-            break;
-        }
-    }
-    if (!requestingPlayer) return false;
-
-    for (auto& item : _itemFact->current) {
-        if (item->isRemoved()) continue;
-        float dist = item->getPosition().distance(requestingPlayer->getPosition());
-        if (dist <= ITEM_PICKUP_RADIUS) {
-            if (!requestingPlayer->addItem(item->getItemType(), item->getValue())) {
-                CULog("Inventory full for player %s", pid.c_str());
-                continue;
-            }
-            item->markRemoved(true);
-            CULog("Picked up %s worth %d (total carrying: %d)",
-                item->getItemType().c_str(), item->getValue(), requestingPlayer->getInventoryVal());
-//            _networkCtrl->getPhysController()->removeSharedObstacle(item);
-//            removeItemNode(item);
-            if (_player && requestingPlayer == _player) {
-                _inventoryValue = _player->getInventoryVal();
-            }
-//            _itemFact->update();
-            return true;
-        }
-    }
-//    _itemFact->update();
-    return false;
-}
+//bool GameScene::hostCheckItemPickupForPlayer(const std::string& pid) {
+//    std::shared_ptr<PlayerObstacle> requestingPlayer = nullptr;
+//    for (auto& p : _playerFact->current) {
+//        if (p->getPID() == pid) {
+//            requestingPlayer = p;
+//            break;
+//        }
+//    }
+//    if (!requestingPlayer) return false;
+//
+//    for (auto& item : _itemFact->current) {
+//        if (item->isRemoved()) continue;
+//        float dist = item->getPosition().distance(requestingPlayer->getPosition());
+//        if (dist <= ITEM_PICKUP_RADIUS) {
+//            if (!requestingPlayer->addItem(item->getItemType(), item->getValue())) {
+//                CULog("Inventory full for player %s", pid.c_str());
+//                continue;
+//            }
+//            item->markRemoved(true);
+//            CULog("Picked up %s worth %d (total carrying: %d)",
+//                item->getItemType().c_str(), item->getValue(), requestingPlayer->getInventoryVal());
+////            _networkCtrl->getPhysController()->removeSharedObstacle(item);
+////            removeItemNode(item);
+//            if (_player && requestingPlayer == _player) {
+//                _inventoryValue = _player->getInventoryVal();
+//            }
+////            _itemFact->update();
+//            return true;
+//        }
+//    }
+////    _itemFact->update();
+//    return false;
+//}
 
 //void GameScene::applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player,
 //                                               const std::vector<HostInventoryItemData>& items) {
@@ -1172,6 +1164,7 @@ void GameScene::initMap() {
         rebuildMapForRun();
         
     }
+    
     if (!_networkCtrl->isHost()) {
         _networkCtrl->markReady();
         CULog("client ready - init map");
@@ -1187,15 +1180,11 @@ void GameScene::setActive(bool value)
         if (value)
         {
             _input.activate();
-            
-    
             auto params = _playerFact->serializeParams(_map -> getPlayerSpawn() / PHYSICS_SCALE, std::to_string(_networkCtrl->getShortUID()));
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
-
             // set _player to the correct object
             _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             _player = _playerFact->getPlayerByPID(std::to_string(_networkCtrl->getShortUID()));
-            
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
         }
@@ -1293,6 +1282,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     PlayerObstacle* player = nullptr;
     EnemyObstacle* enemy = nullptr;
     RectObstacle* wall = nullptr;
+    ItemObstacle* item = nullptr;
 
     // Get types of the 2 obstacles; only care about collisions between different types of obstacles
     if (typeid(*obs1) == typeid(SpellObstacle)) {
@@ -1305,6 +1295,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy = reinterpret_cast<EnemyObstacle*> (obs1);
     }else if (typeid(*obs1) == typeid(RectObstacle)) {
         wall = reinterpret_cast<RectObstacle*> (obs1);
+    } else if (typeid(*obs1) == typeid(ItemObstacle)) {
+        item = reinterpret_cast<ItemObstacle*> (obs1);
     }
 
     if (typeid(*obs2) == typeid(SpellObstacle)) {
@@ -1317,6 +1309,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy = reinterpret_cast<EnemyObstacle*> (obs2);
     }else if (typeid(*obs2) == typeid(RectObstacle)) {
         wall = reinterpret_cast<RectObstacle*> (obs2);
+    }else if (typeid(*obs2) == typeid(ItemObstacle)) {
+        item = reinterpret_cast<ItemObstacle*> (obs2);
     }
 
     // Checking for collisions
@@ -1372,6 +1366,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     if (wall && enemy){
         //CULog("here wall and enemy");
         contact -> SetEnabled(false);
+    }
+    if (item && player) {
+        _currOverlappedItem = item->getID();
     }
 }
 

@@ -18,14 +18,17 @@ protected:
 
 public:
     std::string _pid;
+    int _itemid;
 
     std::shared_ptr<NetEvent> newEvent() override;
-    static std::shared_ptr<NetEvent> allocPickupEvent(const std::string& pid);
+    static std::shared_ptr<NetEvent> allocPickupEvent(const std::string& pid, int itemid);
 
     std::vector<std::byte> serialize() override;
     void deserialize(const std::vector<std::byte>& data) override;
 
     std::string getPID() const { return _pid; }
+    int getItemID() const { return _itemid; }
+
 };
 
 #endif // !__NP_PICKUP_EVENT_H__

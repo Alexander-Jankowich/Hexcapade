@@ -119,6 +119,8 @@ protected:
     float _depositRadius;
     /** this tracks local-only inventory panel visibility */
     bool _inventoryPanelOpen;
+    /** id of item player is on, if they are on an item */
+    int _currOverlappedItem = -1;
 
 public:
 #pragma mark -

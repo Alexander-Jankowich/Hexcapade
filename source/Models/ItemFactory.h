@@ -23,19 +23,21 @@ protected:
     int _value;
     /** Asset manager key for the item's texture */
     std::string _itemType;
+    int _itemID;
 
 public:
     /** Constructs an ItemObstacle at the given position. */
-    ItemObstacle(const cugl::Vec2& pos, int value, const std::string& itemType);
+    ItemObstacle(const cugl::Vec2& pos, int value, const std::string& itemType, int i);
 
-    static std::shared_ptr<ItemObstacle> alloc(const cugl::Vec2& pos, int value, const std::string& itemType) {
-        auto f = std::make_shared<ItemObstacle>(pos, value, itemType);
+    static std::shared_ptr<ItemObstacle> alloc(const cugl::Vec2& pos, int value, const std::string& itemType, int i) {
+        auto f = std::make_shared<ItemObstacle>(pos, value, itemType, i);
         f->createFixtures();
         return f;
     }
 
     int getValue() const { return _value; }
     const std::string& getItemType() const { return _itemType; }
+    int getID() const {return _itemID;}
 };
 
 /**
@@ -51,17 +53,18 @@ protected:
     cugl::netcode::NetcodeSerializer _serializer;
     /** Deserializer for supporting parameters */
     cugl::netcode::NetcodeDeserializer _deserializer;
+    int _count =0;
 
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>,std::shared_ptr<scene2::SceneNode>> createObstacle(cugl::Vec2 pos, int value, const std::string& itemType);
+    std::pair<std::shared_ptr<physics2::Obstacle>,std::shared_ptr<scene2::SceneNode>> createObstacle(cugl::Vec2 pos, int value, const std::string& itemType, int i);
 
 public:
     ItemFactory() {};
 
     /** All currently live item obstacles in the world */
-    std::unordered_set<std::shared_ptr<ItemObstacle>> current;
+    std::map<int, std::shared_ptr<ItemObstacle>> current;
 
     static std::shared_ptr<ItemFactory> alloc(std::shared_ptr<cugl::AssetManager>& assets) {
         auto f = std::make_shared<ItemFactory>();
@@ -72,6 +75,8 @@ public:
     void init(std::shared_ptr<cugl::AssetManager>& assets) {
         _assets = assets;
     }
+    
+    std::shared_ptr<ItemObstacle> getItem(int i) {return current.contains(i) ? current.at(i) : nullptr;}
 
     std::shared_ptr<std::vector<std::byte>> serializeParams(cugl::Vec2 pos, int value, const std::string& itemType);
     
