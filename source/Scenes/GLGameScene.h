@@ -90,10 +90,10 @@ protected:
     int _depositedValue;
     /** The value the player needs to reach to win */
     int _quota;
-    /** Whether the player has won */
+    /** Whether the player has won/lost - only valid when _gameEnded is true */
     bool _playerWon;
-    /** Whether the player has lost */
-    bool _playerLost;
+    /** Whether thegame has ended */
+    bool _gameEnded;
     /**Timer for end of game**/
     float _timer = 3600;
 
@@ -125,7 +125,7 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _playerLost(false), _inventoryValue(0), _depositedValue(0), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
+    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _gameEnded(false), _inventoryValue(0), _depositedValue(0), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
@@ -140,6 +140,8 @@ public:
      */
     void dispose() override;
     void reset();
+    
+    bool gameEnded() {return _gameEnded;}
 
     /**
      * Initializes the controller contents, and starts the game
@@ -161,7 +163,6 @@ public:
     int getDepositedValue() const { return _depositedValue; }
     int getQuota() const { return _quota; }
     bool hasWon() const { return _playerWon; }
-    bool hasLost() const { return _playerLost; }
 
     /** initializes the network and physics world */
     void initNetwork(std::shared_ptr<NetworkController> n);

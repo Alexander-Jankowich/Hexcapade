@@ -14,8 +14,8 @@ using namespace cugl::physics2::distrib;
 
 class DepositEvent : public NetEvent {
 protected:
-    cugl::netcode::NetcodeSerializer _serializer;
-    cugl::netcode::NetcodeDeserializer _deserializer;
+    LWSerializer _serializer;
+    LWDeserializer _deserializer;
 
 public:
     int _amount;

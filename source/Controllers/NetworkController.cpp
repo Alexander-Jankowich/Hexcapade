@@ -44,6 +44,8 @@ std::string NetworkController::hex2dec(const std::string& hex) {
 void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
     attachEventType<GameInitEvent>();
     attachEventType<CastSpellEvent>();
+    attachEventType<EndGameEvent>();
+    attachEventType<DepositEvent>();
     cugl::physics2::distrib::NetEventController::init(a);
     _randSeed=0;
 }

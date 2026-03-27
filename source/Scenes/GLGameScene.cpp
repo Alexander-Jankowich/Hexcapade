@@ -217,7 +217,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _depositedValue = 0;
     _quota = std::max(1, _runConfig.quota);
     _playerWon = false;
-    _playerLost = false;
+    _gameEnded = false;
 
     try {
         _font = assets->get<Font>("OpenSans");
@@ -294,7 +294,7 @@ void GameScene::dispose()
 void GameScene::reset()
 {
     loadGameplayConfig();
-    _playerLost = false;
+    _gameEnded = false;
     _playerWon = false;
     _depositedValue = 0;
     _quota = std::max(1, _runConfig.quota);
@@ -517,6 +517,13 @@ void GameScene::preUpdate(float dt)
     if(_timer > 0){
         _timer -= 1;
     }
+    if (_timer==0) {
+        _gameEnded=true;
+        bool won = _quota <= _depositedValue;
+        _playerWon = won;
+        _networkCtrl->pushOutEvent(EndGameEvent::allocEndGameEvent(won));
+        return;
+    }
     
     _input.update(dt);
     
@@ -526,7 +533,7 @@ void GameScene::preUpdate(float dt)
         return;
     }
 
-    if (_playerLost || _playerWon) {
+    if (_gameEnded) {
         return;
     }
 
@@ -547,12 +554,12 @@ void GameScene::preUpdate(float dt)
     _inputDisplay->setUIOffset(offset);
     _inputDisplay->update(playerScreenPos);
 
-    if (_player->getHealth() <= 0) {
-        _playerLost = true;
-    }
-    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
-        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
-    }
+//    if (_player->getHealth() <= 0) {
+//        _playerLost = true;
+//    }
+//    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
+//        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
+//    }
 
     //updateItemPickupState();
     //updateDepositState();

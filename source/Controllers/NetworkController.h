@@ -7,6 +7,8 @@
 #include <cugl/cugl.h>
 #include "../Models/GameInitEvent.h"
 #include "../Models/ComboEvent.h"
+#include "../Models/DepositEvent.h"
+#include "../Models/EndGameEvent.h"
 
 #ifndef __NETWORK_CONTROLLER_H__
 #define __NETWORK_CONTROLLER_H__

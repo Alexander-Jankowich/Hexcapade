@@ -222,13 +222,9 @@ void GeometryApp::preUpdate(float dt) {
 
     _gameplay.preUpdate(dt);
 
-    if (_gameplay.hasWon()) { //TODO make this keyed on one bool in gameScene
-        _endScene.setNetwork(_gameplay.getNetwork());
-        _endScene.show(true);
-    }
-    else if (_gameplay.hasLost()) {
-        _endScene.setNetwork(_gameplay.getNetwork());
-        _endScene.show(false);
+    if (_gameplay.gameEnded()) { //TODO make this keyed on one bool in gameScene
+            _endScene.setNetwork(_gameplay.getNetwork());
+            _endScene.show(_gameplay.hasWon());
     }
 }
 
