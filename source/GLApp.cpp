@@ -428,11 +428,14 @@ void GeometryApp::updateClientScene(float dt) {
     case NetworkController::Status::CONNECTED:
         _gameplay.initNetwork(_clientScene.getNetwork());
         break;
-//    case NetworkController::Status::READY :
+    case NetworkController::Status::READY :
+            CULog("ready freddy");
+            break;
 //    case NetworkController::Status::HANDSHAKE:
 //            _gameplay.initMap();
 //            break;
     case NetworkController::Status::INGAME:
+            CULog("in game");
             _clientScene.setActive(false);
             // Transfer connection ownership
             _clientScene.release();

@@ -31,8 +31,12 @@
 #include "../Models/EnemyFactory.h"
 #include "../Models/RectFactory.h"
 #include "../Models/ComboEvent.h"
-#include "../Models/GameInitEvent.h"
-
+#include "../Models/DepositEvent.h"
+#include "../Models/PickupEvent.h"
+#include "../Models/Artifact.h"
+#include "../Models/GameplayConfigLoader.h"
+#include "../Models/Inventory.h"
+#include "../Models/SpellBook.h"
 /**
  * This class is the primary gameplay constroller for the demo.
  *
@@ -272,14 +276,16 @@ public:
 
 private:
     void processComboEvent(const std::shared_ptr<CastSpellEvent>& e);
-    void processInitEvent(const std::shared_ptr<GameInitEvent>& e);
+    void processEndEvent(const std::shared_ptr<EndGameEvent>& e);
 
     // this maps local HUD input into explicit pickup/drop/deposit requests
     void handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex);
     // this maps the last panel tap to an inventory row index for the upcoming item flow
     int getInventoryPanelIndexAt(const cugl::Vec2& tapPos) const;
-    // host-only: checks proximity of all players to all items and picks up on overlap
-    bool hostCheckItemPickups();
+    /**
+     * on recieving a pickup event from player, checks if it is valid.
+     */
+    bool hostCheckItemPickupForPlayer(const std::string& pid);
     // this removes the world node for an item after the item obstacle is deleted
     void removeItemNode(const std::shared_ptr<ItemObstacle>& item);
     // host-only: this spawns physics-backed items at map spawn points

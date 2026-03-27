@@ -95,7 +95,7 @@ void ClientScene::update(float dt) {
     
     _player->setText(std::to_string(_networkCtrl->getNumPlayers()));
     configureStartButton();
-    if (_networkCtrl->getRandSeed()>0) _networkCtrl->markReady();
+    //if (_networkCtrl->getRandSeed()>0) _networkCtrl->markReady();
 }
 
 void ClientScene::setActive(bool value) {

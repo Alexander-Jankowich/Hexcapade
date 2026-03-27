@@ -46,6 +46,7 @@ void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
     attachEventType<CastSpellEvent>();
     attachEventType<EndGameEvent>();
     attachEventType<DepositEvent>();
+    attachEventType<PickupEvent>();
     cugl::physics2::distrib::NetEventController::init(a);
     _randSeed=0;
 }
@@ -53,15 +54,3 @@ void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
 bool NetworkController::connectClient(string roomId) {
     return connectAsClient(dec2hex(roomId)); // this will become custom translate fn later
 }
-
-
-void NetworkController::endGame(bool won) {
-//        if (_network) {
-//            CULog("broadcasting end game");
-//            std::byte data = won ? std::byte(101) : std::byte(102);
-//            std::vector<std::byte> msg =  { data };
-//            _network->broadcast(msg);
-//        }
-//        _status = won ? Status::WON : Status::LOST;
-}
-

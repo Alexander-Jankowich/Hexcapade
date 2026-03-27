@@ -837,6 +837,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         // actions live behind explicit HUD buttons.
         _lastGesture = SpellType::NONE;
         _pickupPressed = true;
+        _depositPressed = true;
     }
 }
 

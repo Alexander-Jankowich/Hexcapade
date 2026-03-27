@@ -24,10 +24,7 @@
 #include <box2d/b2_collision.h>
 
 #include "GLGameScene.h"
-#include "../Models/Artifact.h"
-#include "../Models/GameplayConfigLoader.h"
-#include "../Models/Inventory.h"
-#include "../Models/SpellBook.h"
+
 
 // Lock the screen size to fixed height regardless of aspect ratio
 #define SCENE_HEIGHT 720
@@ -514,6 +511,10 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
+    if (_gameEnded) {
+        return;
+    }
+    
     if(_timer > 0){
         _timer -= 1;
     }
@@ -532,10 +533,52 @@ void GameScene::preUpdate(float dt)
         _input.resolvedReset();
         return;
     }
+    
+    if (_networkCtrl->isHost()) {
+        // spawn an enemy if host and need to spawn
+        lastEnemySpawn += dt;
+        if (lastEnemySpawn > 8) {
+            lastEnemySpawn = 0;
+            //_enemy->spawnEnemy(getSize() / 2, 4);
+            
+            
+            auto spawns = _map -> getEnemySpawnPoints();
+            std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
+            if (!spawns.empty()) {
+                std::uint64_t index = rand % spawns.size();
+                Vec2 pos = spawns[index];
 
-    if (_gameEnded) {
-        return;
+                auto params = _enemyFact->serializeParams(pos / PHYSICS_SCALE, Vec2::ZERO, 4);
+                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
+            }
+        }
+
+        // Change to be all player positions
+        std::vector<Vec2> player_pos;
+        for (auto p : _playerFact->current) {
+            if (p->getHealth() > 0)
+                player_pos.push_back(p->getPosition());
+        }
+        auto toRemove = _enemyFact->update(player_pos);
+        for (auto en : toRemove) {
+            _networkCtrl->getPhysController()->removeSharedObstacle(en);
+        }
+        
+        auto itRemove = _itemFact->update();
+        for (auto item : itRemove) {
+            _networkCtrl->getPhysController()->removeSharedObstacle(item);
+        }
+
+        // Remove spells that have gone out of range
+        auto spellRemove = _spellFact->update();
+        for (auto spell : spellRemove) {
+            _networkCtrl->getPhysController()->removeSharedObstacle(spell);
+            CULog("Remove spell: %d", spell->isRemoved());
+        }
+        
     }
+    
+    if (_player->getHealth()==0) return; // if dead ignore updates
 
     // Player movement
     cugl::Vec2 input = _input.getMove();
@@ -554,12 +597,6 @@ void GameScene::preUpdate(float dt)
     _inputDisplay->setUIOffset(offset);
     _inputDisplay->update(playerScreenPos);
 
-//    if (_player->getHealth() <= 0) {
-//        _playerLost = true;
-//    }
-//    if ((_playerLost || _playerWon) && _networkCtrl->isHost()) {
-//        _networkCtrl->endGame(_playerWon); // RN DOES NOTHING
-//    }
 
     //updateItemPickupState();
     //updateDepositState();
@@ -578,21 +615,22 @@ void GameScene::preUpdate(float dt)
    // }
     _canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
 
+    
     if (_input.pressedDeposit()) {
         depositRequested = true;
         _input.resolvedDeposit();
     }
-    handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
+    //handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
 
     // EDIT host only for now
-    if (_networkCtrl->isHost() && depositRequested && _canDeposit) {
-        if (_player && _player->hasInventory()) {
+    if (depositRequested && _canDeposit) {
+            if (_player && _player->hasInventory()) {
             int deposited = _player->depositItems();
-            _depositedValue += deposited;
-            _inventoryValue = _player->getInventoryVal();
-            CULog("Deposited %d, total: %d / %d", deposited, _depositedValue, _quota);
-            if (_depositedValue >= _quota) {
-                _playerWon = true;
+                if (deposited > 0) {
+                    _depositedValue += deposited;
+                    _inventoryValue = _player->getInventoryVal();
+                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(deposited));
+                    CULog("Deposited %d, total: %d / %d", deposited, _depositedValue, _quota);
             }
         }
     }
@@ -666,59 +704,11 @@ void GameScene::preUpdate(float dt)
         _player->resolveSpell();
     }
 
-    if (_networkCtrl->isHost()) {
-        if (_input.pressedPickup()) {
-            bool pickedUpItem = hostCheckItemPickups();
-#ifdef CU_TOUCH_SCREEN
-            if (!pickedUpItem && _canDeposit && _player && _player->hasInventory()) {
-                int deposited = _player->depositItems();
-                _depositedValue += deposited;
-                _inventoryValue = _player->getInventoryVal();
-                CULog("Deposited %d, total: %d / %d", deposited, _depositedValue, _quota);
-                if (_depositedValue >= _quota) {
-                    _playerWon = true;
-                }
-            }
-#else
-            (void)pickedUpItem;
-#endif
+    if (_input.pressedPickup()) {
+            _networkCtrl->pushOutEvent(PickupEvent::allocPickupEvent(_player->getPID()));
             _input.resolvedPickup();
         }
-        // spawn an enemy if host and need to spawn
-        lastEnemySpawn += dt;
-        if (lastEnemySpawn > 8) {
-            lastEnemySpawn = 0;
-            //_enemy->spawnEnemy(getSize() / 2, 4);
-            
-            
-            auto spawns = _map -> getEnemySpawnPoints();
-            std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
-            if (!spawns.empty()) {
-                std::uint64_t index = rand % spawns.size();
-                Vec2 pos = spawns[index];
 
-                auto params = _enemyFact->serializeParams(pos / PHYSICS_SCALE, Vec2::ZERO, 4);
-                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
-            }
-        }
-
-        // Change to be all player positions
-        std::vector<Vec2> player_pos;
-        for (auto p : _playerFact->current) {
-            player_pos.push_back(p->getPosition());
-        }
-        auto toRemove = _enemyFact->update(player_pos);
-        for (auto en : toRemove) {
-            _networkCtrl->getPhysController()->removeSharedObstacle(en);
-        }
-
-        // Remove spells that have gone out of range
-        auto spellRemove = _spellFact->update();
-        for (auto spell : spellRemove) {
-            _networkCtrl->getPhysController()->removeSharedObstacle(spell);
-            CULog("Remove spell: %d", spell->isRemoved());
-        }
-    }
 }
 
 /**
@@ -759,6 +749,22 @@ void GameScene::fixedUpdate(Uint64 step)
             CULog("COMBO SPELL GOT");
             processComboEvent(cse);
         }
+        else if (auto cse = std::dynamic_pointer_cast<EndGameEvent>(e))
+                {
+                    CULog("END GAME GOT");
+                    processEndEvent(cse);
+                }
+        else if (auto de = std::dynamic_pointer_cast<DepositEvent>(e))
+                {
+                    CULog("DEPOSIT GOT");
+                    _depositedValue += de->getAmount();
+                }
+        else if (auto pre = std::dynamic_pointer_cast<PickupEvent>(e)) {
+                    if (_networkCtrl->isHost()) {
+                        hostCheckItemPickupForPlayer(pre->getPID());
+                    }
+                }
+        
 //        else if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e)){
 //            CULog("INIT EVENT GOT");
 //            processInitEvent(cse);
@@ -950,32 +956,6 @@ void GameScene::renderHUD()
                     rowText = std::to_string(remainingCount) + (remainingCount == 1 ? " Slot Remaining" : " Slots Remaining");
                 }
 
-        // std::string pickupText = "move close to item";
-#ifdef CU_TOUCH_SCREEN
-//        if (_canPickupItem) {
-//            if (inventory && !inventory->canAddItem()) {
-//                pickupText = "inventory full";
-//            } else {
-//                pickupText = "pickup item";
-//            }
-//        } else if (_canDeposit && inventory && !inventory->isEmpty()) {
-//            pickupText = "deposit at origin";
-//        }
-#else
-       // if (_canPickupItem) {
-        //    pickupText = _pickupPrompt;
-      //  } else if (_canDeposit && inventory && !inventory->isEmpty()) {
-       //     pickupText = "press f to deposit carried items";
-       // } else if (inventory && !inventory->isEmpty()) {
-        //    pickupText = "e pickup  q drop  f deposit";
-       // }
-#endif
-        // std::shared_ptr<TextLayout> pickupLabel = TextLayout::allocWithText(pickupText, _font);
-        // pickupLabel->layout();
-        // Affine2 pickupTrans;
-        // pickupTrans.translate(actionButton.origin.x + 10 + hudOffset.x, actionButton.origin.y + 12 + hudOffset.y);
-       // _batch->drawText(pickupLabel, pickupTrans);
-
 #ifdef CU_TOUCH_SCREEN
 //        if (_inventoryPanelOpen && inventory) {
 //            Rect panelBounds = _input.getInventoryPanelBounds();
@@ -1053,65 +1033,40 @@ void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequest
 #endif
 }
 
-bool GameScene::hostCheckItemPickups() {
-    bool pickedUpItem = false;
-    for (auto& item : _itemFact->current) {
-        if (item->isRemoved()) continue;
-        for (auto& playerObs : _playerFact->current) {
-            float dist = item->getPosition().distance(playerObs->getPosition());
-            if (dist <= ITEM_PICKUP_RADIUS) {
-                if (!playerObs->addItem(item->getItemType(), item->getValue())) {
-                    if (_player && playerObs == _player) {
-                        CULog("Inventory full");
-                    }
-                    continue;
-                }
-                item->markRemoved(true);
-                // the carried item value now lives on the player until a later deposit call clears it
-                CULog("Picked up %s worth %d (total carrying: %d)",
-                    item->getItemType().c_str(), item->getValue(), playerObs->getInventoryVal());
-                _networkCtrl->getPhysController()->removeSharedObstacle(item);
-                removeItemNode(item);
-                if (_player && playerObs == _player) {
-                    _inventoryValue = _player->getInventoryVal();
-                }
-                pickedUpItem = true;
-                break;
-            }
+bool GameScene::hostCheckItemPickupForPlayer(const std::string& pid) {
+    std::shared_ptr<PlayerObstacle> requestingPlayer = nullptr;
+    for (auto& p : _playerFact->current) {
+        if (p->getPID() == pid) {
+            requestingPlayer = p;
+            break;
         }
     }
-    _itemFact->update();
-    return pickedUpItem;
+    if (!requestingPlayer) return false;
+
+    for (auto& item : _itemFact->current) {
+        if (item->isRemoved()) continue;
+        float dist = item->getPosition().distance(requestingPlayer->getPosition());
+        if (dist <= ITEM_PICKUP_RADIUS) {
+            if (!requestingPlayer->addItem(item->getItemType(), item->getValue())) {
+                CULog("Inventory full for player %s", pid.c_str());
+                continue;
+            }
+            item->markRemoved(true);
+            CULog("Picked up %s worth %d (total carrying: %d)",
+                item->getItemType().c_str(), item->getValue(), requestingPlayer->getInventoryVal());
+//            _networkCtrl->getPhysController()->removeSharedObstacle(item);
+//            removeItemNode(item);
+            if (_player && requestingPlayer == _player) {
+                _inventoryValue = _player->getInventoryVal();
+            }
+//            _itemFact->update();
+            return true;
+        }
+    }
+//    _itemFact->update();
+    return false;
 }
 
-//bool GameScene::hostDepositForPlayer(const std::shared_ptr<Player>& player) {
-//    // Host-authoritative deposit. The host checks deposit-zone overlap and then
-//    // moves carried value into the shared team quota total.
-//    if (!player) {
-//        return false;
-//    }
-//
-//    if (!_collisions.resolvePlayerItem(player, _depositPosition, _depositRadius)) {
-//        return false;
-//    }
-//
-//    std::shared_ptr<Inventory> inventory = player->getInventory();
-//    if (!inventory || inventory->isEmpty()) {
-//        return false;
-//    }
-//
-//    _depositedValue += inventory->depositAllItems();
-//    if (_depositedValue >= _quota) {
-//        _playerWon = true;
-//    }
-//
-//    if (player == _player) {
-//        _inventoryValue = inventory->getCarriedValue();
-//        updateDepositState();
-//    }
-//    return true;
-//}
-//
 //void GameScene::applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player,
 //                                               const std::vector<HostInventoryItemData>& items) {
 //    if (!player) {
@@ -1217,6 +1172,10 @@ void GameScene::initMap() {
         rebuildMapForRun();
         
     }
+    if (!_networkCtrl->isHost()) {
+        _networkCtrl->markReady();
+        CULog("client ready - init map");
+    }
     
 }
 
@@ -1273,10 +1232,9 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         
         // i do not know how else to check if it is a player...
 
-        if (typeid(*obj) == typeid(PlayerObstacle)) {
+        if (auto p = dynamic_pointer_cast<PlayerObstacle>(obj)) {
             std::shared_ptr<Player> p_node = std::dynamic_pointer_cast<Player>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                PlayerObstacle* p = dynamic_cast<PlayerObstacle*>(obs);
                 p_node->updateAnimationState(p->getState());
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
                 Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
@@ -1304,11 +1262,11 @@ void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
         _player->resolveSpell();
     }
 }
-
-//void GameScene::processInitEvent(const std::shared_ptr<GameInitEvent>& e) {
-//    _mapSeed = e->getSeed();
-//    rebuildMapForRun();
-//}
+void GameScene::processEndEvent(const std::shared_ptr<EndGameEvent> &e)
+{
+    _playerWon = e->getResult();
+    _gameEnded = true;
+}
 
 /**
  * Handles any modifications necessary before collision resolution

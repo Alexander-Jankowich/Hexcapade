@@ -9,6 +9,7 @@
 #include "../Models/ComboEvent.h"
 #include "../Models/DepositEvent.h"
 #include "../Models/EndGameEvent.h"
+#include "../Models/PickupEvent.h"
 
 #ifndef __NETWORK_CONTROLLER_H__
 #define __NETWORK_CONTROLLER_H__
@@ -25,17 +26,12 @@ private:
     string uuid;
     string _currHost;
     unsigned int _randSeed;
-//    InputCallback _inputCallback;
-//    bool _handlerAttached = false;
-//    void attachReceiptHandler();
-//    HostInput _latestHostInput;
-//    bool _hasNewHostInput = false;
+
 
 #pragma mark Helpers
     static string dec2hex(const string& dec);
     static string hex2dec(const string& hex);
 
-// TODO clean of all the methods that netevent controller already provides
 
 public:
     NetworkController() {}
@@ -68,7 +64,5 @@ public:
         string room = getRoomID();
         return hex2dec(room);
     }
-
-    void endGame(bool won);
 };
 #endif // !__NETWORK_CONTROLLER_H__
