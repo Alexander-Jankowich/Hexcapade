@@ -321,7 +321,7 @@ void GameScene::reset()
 
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
-    _map -> populateObtacles(_networkCtrl, _rectFact, _rectFactId);
+    _map -> populateObtacles(_world);
     if (_networkCtrl->isHost()) {
         _networkCtrl->startGame();
     }
@@ -380,7 +380,8 @@ void GameScene::rebuildMapForRun() {
         CULog("map generation failed for run revision %d", _runRevision);
         return;
     }
-    _map -> populateObtacles(_networkCtrl, _rectFact, _rectFactId);
+    _map -> populateObtacles(_world);
+    
     auto n = _map -> draw2();
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
@@ -514,6 +515,13 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
+    CULog("my player factory is this big %d", _playerFact->current.size());
+    if (!_player) {
+            // Try to find our player now that replication may have run
+            _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
+            if (!_player) return; // still not replicated yet, skip frame
+        }
+    _networkCtrl -> getPhysController() -> acquireObs(_player, 0);
     if(_timer > 0){
         _timer -= 1;
     }
@@ -534,7 +542,8 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
-    Vec2 pos = _player -> getPosition();
+    
+    
     //CULog("body active: %d", _player->isAwake());
     //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
@@ -757,6 +766,7 @@ void GameScene::fixedUpdate(Uint64 step)
 //            processInitEvent(cse);
 //        }
     }
+    
 
     _world->update(step / 1000000.0f);
 }
@@ -805,7 +815,10 @@ void GameScene::render()
 //        _map->draw(_batch);
 //    }
     drawDepositZone();
-    renderHUD();
+    if(_player){
+        renderHUD();
+    }
+    
     _inputDisplay->draw(_batch);
     _batch->end();
     
@@ -1208,10 +1221,24 @@ void GameScene::initMap() {
     
     if (_mapSeed != 0) {
         rebuildMapForRun();
-        
+    }
+    if(_networkCtrl -> isHost()){
+        auto players = _networkCtrl -> getPlayers();
+        for(auto& p : players){
+            CULog("i am making a player with the following id %s", p.c_str());
+            auto params = _playerFact->serializeParams(
+                            _map->getPlayerSpawn() / PHYSICS_SCALE,
+                            p
+                        );
+            _networkCtrl->getPhysController()
+                            ->addSharedObstacle(_playerFactId, params);
+                    }
+        }
     }
     
-}
+
+    
+
 
 void GameScene::setActive(bool value)
 {
@@ -1221,15 +1248,10 @@ void GameScene::setActive(bool value)
         if (value)
         {
             _input.activate();
+            CULog("I am trying to get a player using this id %s", _networkCtrl -> getPID().c_str());
+            _player = _playerFact->getPlayerByPID(_networkCtrl -> getPID());
             
-    
-            auto params = _playerFact->serializeParams(_map -> getPlayerSpawn() / PHYSICS_SCALE, std::to_string(_networkCtrl->getShortUID()));
-            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_playerFactId, params);
-
-            // set _player to the correct object
-            _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-            _player = _playerFact->getPlayerByPID(std::to_string(_networkCtrl->getShortUID()));
-            
+           
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
         }
@@ -1254,19 +1276,34 @@ void GameScene::addInitObstacle(const std::shared_ptr<physics2::Obstacle>& obj,
 void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     const std::shared_ptr<scene2::SceneNode>& node) {
 
+    if (node->getParent() != nullptr) {
+            return;
+        }
     node->setPosition(obj->getPosition() * PHYSICS_SCALE);
     _worldnode->addChild(node);
     if (auto item = std::dynamic_pointer_cast<ItemObstacle>(obj)) {
         _itemNodes.push_back({ item.get(), node });
     }
-
+    if (auto playerObs = std::dynamic_pointer_cast<PlayerObstacle>(obj)) {
+           bool alreadyTracked = false;
+           for (const auto& p : _playerFact->current) {
+               if (p == playerObs) {
+                   alreadyTracked = true;
+                   break;
+               }
+           }
+           if (!alreadyTracked) {
+               _playerFact -> addCurrent(playerObs);
+           }
+       }
     // Dynamic objects need constant updating
     if (obj->getBodyType() == b2_dynamicBody) {
         scene2::SceneNode* weak = node.get(); // No need for smart pointer in callback
         
         // i do not know how else to check if it is a player...
 
-        if (typeid(*obj) == typeid(PlayerObstacle)) {
+        if (auto pobj = dynamic_cast<PlayerObstacle*>(obj.get())) {
+            (void)pobj; // suppress unused variable warning; pobj used to assert type
             std::shared_ptr<Player> p_node = std::dynamic_pointer_cast<Player>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 PlayerObstacle* p = dynamic_cast<PlayerObstacle*>(obs);
@@ -1278,7 +1315,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                 p_node->setAngle(angle);
                 p_node->setVelocity(p->getLinearVelocity() * PHYSICS_SCALE);
             });
-            
         } else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
@@ -1326,36 +1362,39 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
     SpellObstacle* spell = nullptr;
     PlayerObstacle* player = nullptr;
+    PlayerObstacle* player2 = nullptr;
     EnemyObstacle* enemy = nullptr;
     RectObstacle* wall = nullptr;
 
     // Get types of the 2 obstacles; only care about collisions between different types of obstacles
-    if (typeid(*obs1) == typeid(SpellObstacle)) {
-        spell = reinterpret_cast<SpellObstacle*> (obs1);
-    }
-    else if (typeid(*obs1) == typeid(PlayerObstacle)) {
-        player = reinterpret_cast<PlayerObstacle*> (obs1);
-    }
-    else if (typeid(*obs1) == typeid(EnemyObstacle)) {
-        enemy = reinterpret_cast<EnemyObstacle*> (obs1);
-    }else if (typeid(*obs1) == typeid(RectObstacle)) {
-        wall = reinterpret_cast<RectObstacle*> (obs1);
+    if (auto s = dynamic_cast<SpellObstacle*>(obs1)) {
+        spell = s;
+    } else if (auto p = dynamic_cast<PlayerObstacle*>(obs1)) {
+        player = p;
+    } else if (auto e = dynamic_cast<EnemyObstacle*>(obs1)) {
+        enemy = e;
+    } else if (auto w = dynamic_cast<RectObstacle*>(obs1)) {
+        wall = w;
     }
 
-    if (typeid(*obs2) == typeid(SpellObstacle)) {
-        spell = reinterpret_cast<SpellObstacle*> (obs2);
-    }
-    else if (typeid(*obs2) == typeid(PlayerObstacle)) {
-        player = reinterpret_cast<PlayerObstacle*> (obs2);
-    }
-    else if (typeid(*obs2) == typeid(EnemyObstacle)) {
-        enemy = reinterpret_cast<EnemyObstacle*> (obs2);
-    }else if (typeid(*obs2) == typeid(RectObstacle)) {
-        wall = reinterpret_cast<RectObstacle*> (obs2);
+    if (auto s = dynamic_cast<SpellObstacle*>(obs2)) {
+        spell = s;
+    } else if (auto p = dynamic_cast<PlayerObstacle*>(obs2)) {
+        if(player){
+            player2 = p;
+        }else{
+            player = p;
+        }
+        
+    } else if (auto e = dynamic_cast<EnemyObstacle*>(obs2)) {
+        enemy = e;
+    } else if (auto w = dynamic_cast<RectObstacle*>(obs2)) {
+        wall = w;
     }
 
     // Checking for collisions
-    if (player && spell && _networkCtrl->isHost()) {
+    if (player && spell) {
+        contact -> SetEnabled(false);
         if (spell->getCasterUID()==_networkCtrl->getShortUID()) return;
         if (spell->getHealed()) {
             int nh = player->getHealth() + HEAL_AMT;
@@ -1364,8 +1403,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
         return;
     }
-    if (player && enemy && _networkCtrl->isHost()) {
-        CULog("enemy and player collison");
+    if (player && enemy) {
+        contact -> SetEnabled(false);
         float knockbackSpeed = 10.0f;
         b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
         b2Vec2 dir = vel;
@@ -1381,7 +1420,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;
         }
-    if (enemy && spell && _networkCtrl->isHost()) {
+    if (enemy && spell) {
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
         if(spell -> getFroze()){
             enemy -> setFrozen(true);
@@ -1391,24 +1430,15 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         return;
     }
     if (wall && player){
-        b2WorldManifold manifold;
-        contact->GetWorldManifold(&manifold);
-
-        b2Vec2 normal = manifold.normal;
-
-        b2Vec2 vel = player->getBody()->GetLinearVelocity();
-
-        float dot = vel.x * normal.x + vel.y * normal.y;
-        if (dot < 0) {
-            b2Vec2 newVel = vel - dot * normal;
-            player->getBody()->SetLinearVelocity(newVel);
-        }
+        return;
     }
     if (wall && enemy){
         //CULog("here wall and enemy");
         contact -> SetEnabled(false);
     }
+    if(player && player2){
+        contact -> SetEnabled(false);
+    }
 }
-
 
 

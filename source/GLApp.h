@@ -38,6 +38,8 @@ protected:
     HostScene   _hostScene;
     ClientScene _clientScene;
     GameScene   _gameplay;
+    bool _hostactive = false;
+    bool _clientactive = false;
     EndScene    _endScene;
 
 public:

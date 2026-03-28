@@ -93,6 +93,7 @@ void GeometryApp::onStartup() {
     _assets->attach<WidgetValue>(WidgetLoader::alloc()->getHook());
     _assets->attach<scene2::SceneNode>(Scene2Loader::alloc()->getHook());
     _assets->loadDirectory("json/loading.json");
+    setFixedStep(_fixstep / 2);
 
     // Create a "loading" screen
     _loaded = false;
@@ -219,8 +220,10 @@ void GeometryApp::preUpdate(float dt) {
         }
         return;
     }
-
-    _gameplay.preUpdate(dt);
+    if(_gameplay.isActive()){
+        _gameplay.preUpdate(dt);
+    }
+    
 
     if (_gameplay.hasWon()) { //TODO make this keyed on one bool in gameScene
         _endScene.setNetwork(_gameplay.getNetwork());
@@ -404,6 +407,7 @@ void GeometryApp::updateHostScene(float dt) {
     case NetworkController::Status::INGAME:
             _hostScene.setActive(false);
             // Transfer connection ownership
+            _hostactive = true;
             _hostScene.release();
             _gameplay.setActive(true);
             _scene = State::GAME;
