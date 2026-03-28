@@ -11,10 +11,11 @@
 using namespace std;
 using namespace cugl;
 
-SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, float range, bool freeze, bool heal, int c) {
+SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, float range, bool freeze, bool heal, std::string c) {
     init(pos, 10.0f / PHYSICS_SCALE);
     setAwake(true);
     setEnabled(true);
+    setBullet(true);
     setBodyType(b2_dynamicBody);
 
     _damage = dmg;
@@ -32,7 +33,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, floa
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 angle, SpellType type, int c_uid) {
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 angle, SpellType type, std::string c_uid) {
     auto image = _assets->get<graphics::Texture>("spell");
     float radius(image->getSize().width / 2.f);
     
@@ -97,7 +98,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 /**
  * Helper method for converting normal parameters into byte vectors used for syncing.
  */
-std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, Vec2 angle, SpellType type, int c) {
+std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, Vec2 angle, SpellType type, string c) {
     /**
      * TODO: Use _serializer to serialize pos and scale (remember to make a
      * shared copy of the serializer reference, otherwise it will be lost if
@@ -108,8 +109,8 @@ std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, 
     _serializer.writeFloat(pos.y);
     _serializer.writeFloat(angle.x);
     _serializer.writeFloat(angle.y);
-    _serializer.writeUint16((uint16_t)type);
-    _serializer.writeUint32(c);
+    _serializer.writeUint32((uint32_t)type);
+    _serializer.writeString(c);
     return std::make_shared<std::vector<std::byte>>(_serializer.serialize());
 }
 
@@ -130,8 +131,8 @@ std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode
     float vx = _deserializer.readFloat();
     float vy = _deserializer.readFloat();
     Vec2 velocity = Vec2(vx, vy);
-    SpellType type = (SpellType) _deserializer.readUint16();
-    int c = _deserializer.readUint32();
+    SpellType type = (SpellType) _deserializer.readUint32();
+    string c = _deserializer.readString();
     return createObstacle(pos, velocity, type, c);
 }
 

@@ -513,13 +513,14 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
-
-    CULog("my player factory is this big %d", _playerFact->current.size());
     if (!_player) {
             // Try to find our player now that replication may have run
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
-            if (!_player) return; // still not replicated yet, skip frame
+            //Have we set our player yet / received signal
+            if (!_player) return;
         }
+    //We have to acquire ourselves before we attempt to move
+    //it is a little weird to do this every frame but this allows host to acquire themselves
     _networkCtrl -> getPhysController() -> acquireObs(_player, 0);
 
     if (_gameEnded) {
@@ -561,6 +562,8 @@ void GameScene::preUpdate(float dt)
 
                 auto params = _enemyFact->serializeParams(pos / PHYSICS_SCALE, Vec2::ZERO, 4);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
+                //If we create it we MUST acquire it
+                _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
             }
         }
 
@@ -707,9 +710,11 @@ void GameScene::preUpdate(float dt)
         }
 
         CULog("Casting spell type: %d", t);
-        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, t, _networkCtrl->getShortUID());
+        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, t, _networkCtrl->getPID());
         auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-        _networkCtrl->getPhysController()->releaseObs(pair.first);
+        //We must acquire an object if we create it if we fail to do so the network
+        //will consistently try to reset its position.
+        _networkCtrl->getPhysController()->acquireObs(pair.first,0);
 
         _input.resolveSpell();
         _player->resolveSpell();
@@ -1263,10 +1268,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     // Dynamic objects need constant updating
     if (obj->getBodyType() == b2_dynamicBody) {
         scene2::SceneNode* weak = node.get(); // No need for smart pointer in callback
-        
-        // i do not know how else to check if it is a player...
-
-
         if (auto p = dynamic_pointer_cast<PlayerObstacle>(obj)) {
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
@@ -1358,7 +1359,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     // Checking for collisions
     if (player && spell) {
         contact -> SetEnabled(false);
-        if (spell->getCasterUID()==_networkCtrl->getShortUID()) return;
+        if (spell->getCasterUID()==_networkCtrl->getPID()) return;
         if (spell->getHealed()) {
             int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
@@ -1393,7 +1394,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         return;
     }
     if (wall && player){
-        return;
+        contact->SetEnabled(true);
+    }
+    if(wall && spell){
+        contact->SetEnabled(false);
     }
     if (wall && enemy){
         //CULog("here wall and enemy");
