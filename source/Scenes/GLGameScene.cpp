@@ -556,7 +556,6 @@ void GameScene::preUpdate(float dt)
             
             auto spawns = _map -> getEnemySpawnPoints();
             std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
-            CULog("spawn size : %d",spawns.size());
             if (!spawns.empty()) {
                 std::uint64_t index = rand % spawns.size();
                 Vec2 pos = spawns[index];
@@ -1330,6 +1329,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     PlayerObstacle* player2 = nullptr;
     EnemyObstacle* enemy = nullptr;
     RectObstacle* wall = nullptr;
+    ItemObstacle* item = nullptr;
 
     // Get types of the 2 obstacles; only care about collisions between different types of obstacles
     if (auto s = dynamic_cast<SpellObstacle*>(obs1)) {
@@ -1340,6 +1340,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy = e;
     } else if (auto w = dynamic_cast<RectObstacle*>(obs1)) {
         wall = w;
+    } else if (auto w = dynamic_cast<ItemObstacle*>(obs1)){
+        item = w;
     }
 
     if (auto s = dynamic_cast<SpellObstacle*>(obs2)) {
@@ -1355,6 +1357,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy = e;
     } else if (auto w = dynamic_cast<RectObstacle*>(obs2)) {
         wall = w;
+    } else if (auto w = dynamic_cast<ItemObstacle*>(obs2)){
+        item = w;
     }
 
     // Checking for collisions
@@ -1405,6 +1409,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact -> SetEnabled(false);
     }
     if(player && player2){
+        contact -> SetEnabled(false);
+    }
+    if(player && item){
+        contact -> SetEnabled(false);
+    }
+    if(enemy && item){
         contact -> SetEnabled(false);
     }
 }
