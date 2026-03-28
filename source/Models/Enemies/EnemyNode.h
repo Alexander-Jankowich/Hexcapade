@@ -20,13 +20,12 @@
 #ifndef __GP_ENEMY_H__
 #define __GP_ENEMY_H__
 #include <cugl/cugl.h>
-#include "Entity.h"
 
 
 /**
  * Model class representing an alien ship.
  */
-class Enemy : public Entity {
+class EnemyNode : public cugl::scene2::SpriteNode {
 private:
     float _speed;
 
@@ -41,41 +40,14 @@ public:
      * @param pos   The ship position
      * @param data  The data defining the physics constants
      */
-    Enemy(const cugl::Vec2& pos, float speed, int health, std::shared_ptr<cugl::graphics::Texture>& tex);
+    EnemyNode(std::shared_ptr<cugl::graphics::Texture>& tex);
     
     /**
      * Disposes the ship, releasing all resources.
      */
-    ~Enemy() {}
-
-    /**
-     * Returns the speed of this enemy.
-     *
-     * @return the speed of this enemy
-     */
-    const int getSpeed() const { return _speed; }
-
-    /**
-     * Sets the speed of this enemy.
-     *
-     * @param value the speed of this enemy
-     */
-    void setSpeed(int value) { _speed = value; }
-
-    bool update(cugl::Vec2 target);
+    ~EnemyNode() {}
     
 #pragma mark Graphics
-    /**
-     * Draws this ship to the sprite batch within the given bounds.
-     *
-     * This drawing code supports "wrap around". If the ship is partly off of
-     * one edge, then it will also be drawn across the edge on the opposite
-     * side.
-     *
-     * @param batch     The sprite batch to draw to
-     * @param size      The size of the window (for wrap around)
-     */
-    //void draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batch);
 };
 
 #endif // !__GP_ENEMY_H__

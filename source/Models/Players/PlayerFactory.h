@@ -9,8 +9,7 @@
 #define __PLAYER_FACTORY_H__
 
 #include <cugl/cugl.h>
-//#include "PlayerObstacle.h"
-#include "Player.h"
+#include "PlayerNode.h"
 
 using namespace cugl;
 using namespace std;
@@ -56,7 +55,7 @@ public:
      */
     void init(shared_ptr<AssetManager>& assets) {
         _assets = assets;
-        Player::setConsts(_assets->get<JsonValue>("constants")->get("player"));
+        PlayerNode::setConsts(_assets->get<JsonValue>("constants")->get("player"));
     }
 
     /**

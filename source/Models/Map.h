@@ -1,3 +1,4 @@
+
 // this model generates and stores the shared room/hall map for one run
 
 #ifndef __HEXCAPADE_MAP_H__
@@ -11,7 +12,7 @@
 #include "Room.h"
 #include "TiledRoomLoader.h"
 #include "../Controllers/NetworkController.h"
-#include "../Models/RectFactory.h"
+#include "RectFactory.h"
 
 class Map {
 public:
@@ -144,3 +145,6 @@ private:
 };
 
 #endif // __HEXCAPADE_MAP_H__
+#include "Map/Map.h"
+#include "Map/RectFactory.h"
+

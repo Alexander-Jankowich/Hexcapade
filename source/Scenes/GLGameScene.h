@@ -16,22 +16,23 @@
 #define __GL_GAME_SCENE_H__
 #include <cugl/cugl.h>
 #include <vector>
+#include <cstddef> 
 #include "../Controllers/GLInputController.h"
 #include "../Controllers/NetworkController.h"
 #include "../Controllers/RoomController.h"
-#include "../Models/InputDisplay.h"
-#include <cstddef> 
+#include "../Controllers/CollisionController.h"
+
 #include "../Models/GameplayConfig.h"
 #include "../Models/Map.h"
-#include "../Models/ItemFactory.h"
-#include "../Controllers/CollisionController.h"
-#include "../Models/Player.h"
-#include "../Models/SpellFactory.h"
-#include "../Models/PlayerFactory.h"
-#include "../Models/EnemyFactory.h"
-#include "../Models/RectFactory.h"
-#include "../Models/ComboEvent.h"
-#include "../Models/GameInitEvent.h"
+#include "../Models/Items.h"
+#include "../Models/Players.h"
+#include "../Models/Spells.h"
+#include "../Models/Enemies.h"
+#include "../Models/Events.h"
+
+#include "../Models/GameplayConfigLoader.h"
+
+#include "InputDisplay.h"
 
 /**
  * This class is the primary gameplay constroller for the demo.
@@ -90,10 +91,10 @@ protected:
     int _depositedValue;
     /** The value the player needs to reach to win */
     int _quota;
-    /** Whether the player has won */
+    /** Whether the player has won/lost - only valid when _gameEnded is true */
     bool _playerWon;
-    /** Whether the player has lost */
-    bool _playerLost;
+    /** Whether thegame has ended */
+    bool _gameEnded;
     /**Timer for end of game**/
     float _timer = 3600;
 
@@ -125,7 +126,7 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _playerLost(false), _inventoryValue(0), _depositedValue(0), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
+    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _gameEnded(false), _inventoryValue(0), _depositedValue(0), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
@@ -140,6 +141,8 @@ public:
      */
     void dispose() override;
     void reset();
+    
+    bool gameEnded() {return _gameEnded;}
 
     /**
      * Initializes the controller contents, and starts the game
@@ -161,7 +164,6 @@ public:
     int getDepositedValue() const { return _depositedValue; }
     int getQuota() const { return _quota; }
     bool hasWon() const { return _playerWon; }
-    bool hasLost() const { return _playerLost; }
 
     /** initializes the network and physics world */
     void initNetwork(std::shared_ptr<NetworkController> n);
@@ -271,14 +273,16 @@ public:
 
 private:
     void processComboEvent(const std::shared_ptr<CastSpellEvent>& e);
-    void processInitEvent(const std::shared_ptr<GameInitEvent>& e);
+    void processEndEvent(const std::shared_ptr<EndGameEvent>& e);
 
     // this maps local HUD input into explicit pickup/drop/deposit requests
     void handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex);
     // this maps the last panel tap to an inventory row index for the upcoming item flow
     int getInventoryPanelIndexAt(const cugl::Vec2& tapPos) const;
-    // host-only: checks proximity of all players to all items and picks up on overlap
-    bool hostCheckItemPickups();
+    /**
+     * on recieving a pickup event from player, checks if it is valid.
+     */
+    bool hostCheckItemPickupForPlayer(const std::string& pid);
     // this removes the world node for an item after the item obstacle is deleted
     void removeItemNode(const std::shared_ptr<ItemObstacle>& item);
     // host-only: this spawns physics-backed items at map spawn points

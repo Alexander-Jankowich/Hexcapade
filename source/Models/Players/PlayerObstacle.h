@@ -4,7 +4,7 @@
 //
 //  Created by Serena Duncan on 3/18/26.
 //
-#include "SpellFactory.h"
+#include "../Spells.h"
 
 using namespace cugl;
 using namespace std;

@@ -9,7 +9,7 @@
 #define __ENEMY_FACTORY_H__
 
 #include <cugl/cugl.h>
-#include "Enemy.h"
+#include "EnemyNode.h"
 
 #define ATTACK_DELAY 1.3f
 

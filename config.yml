@@ -1,8 +1,8 @@
 ---
 name:   GP-Prototype             # The application display name
-short:  tech_final             # A shortened name for reference
-appid:  edu.cornell.gdiac.code2     # Application identifier for Mac, iOS, Android
-suffix: GDBFBEBF
+short:  alpha_final             # A shortened name for reference
+appid:  HEXCAPADE    # Application identifier for Mac, iOS, Android
+suffix: alpha_final
 
 build:  build                       # The build directory (targets are each a subdirectory)
 assets: assets                      # The folder with the game assets (do not list asset)
@@ -17,6 +17,18 @@ sources:                            # The list of the source code files
     - source/Controllers/*.h
     - source/Models/*.cpp
     - source/Models/*.h
+    - source/Models/Events/*.cpp
+    - source/Models/Events/*.h
+    - source/Models/Players/*.cpp
+    - source/Models/Players/*.h
+    - source/Models/Enemies/*.cpp
+    - source/Models/Enemies/*.h
+    - source/Models/Spells/*.cpp
+    - source/Models/Spells/*.h
+    - source/Models/Map/*.cpp
+    - source/Models/Map/*.h
+    - source/Models/Items/*.cpp
+    - source/Models/Items/*.h
     - source/Scenes/*.cpp
     - source/Scenes/*.h
 

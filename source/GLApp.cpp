@@ -225,13 +225,9 @@ void GeometryApp::preUpdate(float dt) {
     }
     
 
-    if (_gameplay.hasWon()) { //TODO make this keyed on one bool in gameScene
-        _endScene.setNetwork(_gameplay.getNetwork());
-        _endScene.show(true);
-    }
-    else if (_gameplay.hasLost()) {
-        _endScene.setNetwork(_gameplay.getNetwork());
-        _endScene.show(false);
+    if (_gameplay.gameEnded()) { //TODO make this keyed on one bool in gameScene
+            _endScene.setNetwork(_gameplay.getNetwork());
+            _endScene.show(_gameplay.hasWon());
     }
 }
 
@@ -396,21 +392,23 @@ void GeometryApp::updateHostScene(float dt) {
         _scene = State::MENU;
         break;
     case NetworkController::Status::CONNECTED:
-            _gameplay.initNetwork(_hostScene.getNetwork());
-            break;
+        _gameplay.initNetwork(_hostScene.getNetwork());
+        break;
     case NetworkController::Status::HANDSHAKE:
     case NetworkController::Status::READY:
-            CULog("status, sending init: %d", _hostScene.getStatus());
-            _hostScene.sendInitMsg();
-            _gameplay.initMap();
-            break;
+        CULog("status, sending init: %d", _hostScene.getStatus());
+        _hostScene.sendInitMsg();
+        _gameplay.initMap();
+        break;
     case NetworkController::Status::INGAME:
-            _hostScene.setActive(false);
-            // Transfer connection ownership
-            _hostactive = true;
-            _hostScene.release();
-            _gameplay.setActive(true);
-            _scene = State::GAME;
+
+
+        _hostScene.setActive(false);
+        // Transfer connection ownership
+        _hostScene.release();
+        _gameplay.setActive(true);
+        _scene = State::GAME;
+
         break;
     default: // should not happen but whatever
         break;
@@ -436,11 +434,14 @@ void GeometryApp::updateClientScene(float dt) {
     case NetworkController::Status::CONNECTED:
         _gameplay.initNetwork(_clientScene.getNetwork());
         break;
-//    case NetworkController::Status::READY :
+    case NetworkController::Status::READY :
+            CULog("ready freddy");
+            break;
 //    case NetworkController::Status::HANDSHAKE:
 //            _gameplay.initMap();
 //            break;
     case NetworkController::Status::INGAME:
+            CULog("in game");
             _clientScene.setActive(false);
             // Transfer connection ownership
             _clientScene.release();

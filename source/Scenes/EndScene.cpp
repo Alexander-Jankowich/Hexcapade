@@ -118,7 +118,7 @@ void EndScene::render() {
     _batch->fill(_buttonRect);
 
     if (_font) {
-        std::string msg = won ? "QUOTA MET!  YOU WIN!" : "YOU DIED!";
+        std::string msg = won ? "QUOTA MET!  YOU WIN!" : "YOU LOST!";
         auto label = TextLayout::allocWithText(msg, _font);
         label->layout();
         Affine2 msgTrans;
