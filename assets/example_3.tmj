@@ -200,7 +200,7 @@
                 {
                  "draworder":"topdown",
                  "id":9,
-                 "name":"enemy_spawns",
+                 "name":"enemy_spawn",
                  "objects":[
                         {
                          "height":0,

@@ -556,6 +556,7 @@ void GameScene::preUpdate(float dt)
             
             auto spawns = _map -> getEnemySpawnPoints();
             std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
+            CULog("spawn size : %d",spawns.size());
             if (!spawns.empty()) {
                 std::uint64_t index = rand % spawns.size();
                 Vec2 pos = spawns[index];
