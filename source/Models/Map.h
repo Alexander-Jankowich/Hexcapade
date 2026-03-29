@@ -1,3 +1,4 @@
+
 // this model generates and stores the shared room/hall map for one run
 
 #ifndef __HEXCAPADE_MAP_H__
@@ -11,7 +12,7 @@
 #include "Room.h"
 #include "TiledRoomLoader.h"
 #include "../Controllers/NetworkController.h"
-#include "../Models/RectFactory.h"
+#include "RectFactory.h"
 
 class Map {
 public:
@@ -63,8 +64,7 @@ public:
 
 
     bool generate(const cugl::Size& viewSize, const MapGenerationConfig& config, unsigned int seed);
-    void populateObtacles(const std::shared_ptr<NetworkController> network, std::shared_ptr<RectFactory> rectFact,  Uint32 rectFactId);
-
+    void populateObtacles(std::shared_ptr<NetWorld>& world);
     bool canOccupy(const cugl::Vec2& worldPos, float radius) const;
     cugl::Vec2 resolveSlideMove(const cugl::Vec2& startPos, const cugl::Vec2& velocity, float radius) const;
     cugl::Vec2 getNextWaypoint(const cugl::Vec2& fromWorld, const cugl::Vec2& toWorld) const;
@@ -145,3 +145,6 @@ private:
 };
 
 #endif // __HEXCAPADE_MAP_H__
+#include "Map/Map.h"
+#include "Map/RectFactory.h"
+

@@ -72,7 +72,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     current.emplace(en);
 
     // Create enemy
-    auto sprite = make_shared<Enemy>(pos, 2.5, h, image);
+    auto sprite = make_shared<EnemyNode>(image);
     sprite -> setScale(0.5);
 
     return std::make_pair(en, sprite);

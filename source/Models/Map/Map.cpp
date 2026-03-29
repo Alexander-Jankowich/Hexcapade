@@ -11,6 +11,7 @@
 #include <unordered_set>
 #include <utility>
 #include "TiledRoomLoader.h"
+#include "RectFactory.h"
 
 #define PHYSICS_SCALE 100
 
@@ -96,7 +97,7 @@ _tiledRoomPrefab(nullptr) {
 
 // FLAG: Serena added
 void Map::init() {
-    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("tiles/example_2.tmj");
+    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("example_3.tmj");
     if (!_tiledRoomPrefab) {
         CULog("tiled room load failed: tiles/example_2.tmj :(");
     }
@@ -461,7 +462,7 @@ void Map::seedTiledRoomSpawns(const std::vector<GridRoom>& rooms) {
     // come from tiled markers instead of random points inside the room.
     _itemSpawnPoints.clear();
     _enemySpawnPoints.clear();
-
+    CULog("item spawn markers in prefab: %zu", _tiledRoomPrefab->getItemSpawns().size());
     if (!_tiledRoomPrefab) {
         return;
     }
@@ -470,7 +471,7 @@ void Map::seedTiledRoomSpawns(const std::vector<GridRoom>& rooms) {
         const GridRoom& room = rooms[ii];
 
         for (const TiledRoomData::ObjectMarker& marker : _tiledRoomPrefab->getItemSpawns()) {
-            Vec2 world = findNearestWalkableWorld(roomLocalToWorld(room, marker.localPosition));
+            Vec2 world = roomLocalToWorld(room, marker.localPosition);  // remove findNearestWalkableWorld
             _itemSpawnPoints.push_back(world);
             if (ii < _rooms.size()) {
                 _rooms[ii].addItemSpawn(world);
@@ -891,7 +892,7 @@ void Map::pruneHallArtifacts() {
     }
 }
 
-void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shared_ptr<RectFactory> rectFact, Uint32 rectFactId) {
+void Map::populateObtacles(std::shared_ptr<NetWorld>& world) {
 //    if (!batch || _tiles.empty()) {
 //        return;
 //    }
@@ -928,8 +929,8 @@ void Map::populateObtacles(std::shared_ptr<NetworkController> network, std::shar
                     // FLAG: serena did, unsure if we need all this error checking...
 //                    std::shared_ptr<Texture> hallTexture = _tiledRoomPrefab->getTextureForGid(_hallFloorGid);
 //                    if (hallTexture) {
-                    auto params = rectFact->serializeParams(cugl::Vec2(px, py), _tileSize, _tileSize, _wallRenderGids[index]);
-                    auto pair = network->getPhysController()->addSharedObstacle(rectFactId, params);
+                    std::shared_ptr<RectObstacle> r = RectObstacle::alloc(cugl::Vec2(px, py), _tileSize, _tileSize);
+                    world -> addObstacle(r);
                     //CULog("creating an obstacle");
                         //batch->draw(hallTexture, Color4::WHITE, cell);
 //                    } else {

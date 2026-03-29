@@ -16,27 +16,24 @@
 #define __GL_GAME_SCENE_H__
 #include <cugl/cugl.h>
 #include <vector>
+#include <cstddef> 
 #include "../Controllers/GLInputController.h"
 #include "../Controllers/NetworkController.h"
 #include "../Controllers/RoomController.h"
-#include "../Models/InputDisplay.h"
-#include <cstddef> 
+#include "../Controllers/CollisionController.h"
+
 #include "../Models/GameplayConfig.h"
 #include "../Models/Map.h"
-#include "../Models/ItemFactory.h"
-#include "../Controllers/CollisionController.h"
-#include "../Models/Player.h"
-#include "../Models/SpellFactory.h"
-#include "../Models/PlayerFactory.h"
-#include "../Models/EnemyFactory.h"
-#include "../Models/RectFactory.h"
-#include "../Models/ComboEvent.h"
-#include "../Models/DepositEvent.h"
-#include "../Models/PickupEvent.h"
-#include "../Models/Artifact.h"
+#include "../Models/Items.h"
+#include "../Models/Players.h"
+#include "../Models/Spells.h"
+#include "../Models/Enemies.h"
+#include "../Models/Events.h"
+
 #include "../Models/GameplayConfigLoader.h"
-#include "../Models/Inventory.h"
-#include "../Models/SpellBook.h"
+
+#include "InputDisplay.h"
+
 /**
  * This class is the primary gameplay constroller for the demo.
  *

@@ -12,7 +12,7 @@
 #include <memory>
 #include <random>
 #include <vector>
-#include "GameplayConfig.h"
+#include "../GameplayConfig.h"
 #include "Item.h"
 
 class ItemSet {
