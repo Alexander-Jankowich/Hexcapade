@@ -32,16 +32,16 @@ protected:
     float _damage;
     bool _froze;
     bool _healed;
-    int _caster;
+    std::string _caster;
 
     cugl::Vec2 _start;
     float _range;
 
 public:
-    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed, int c);
+    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed, std::string c);
 
     static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos,
-        cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed, int c) {
+        cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed, std::string c) {
         auto f = std::make_shared<SpellObstacle>(pos, vel, dmg, range, freeze, healed, c);
         f->createFixtures();
         return f;
@@ -50,7 +50,7 @@ public:
     bool getHealed() { return _healed; }
     bool getFroze() { return _froze; }
     float getDamage() { return _damage; }
-    int getCasterUID() {return _caster;}
+    std::string getCasterUID() {return _caster;}
     float getRange() { return _range; }
     float getTraveled() { return getPosition().distance(_start); }
 };
@@ -67,16 +67,16 @@ protected:
     /** Pointer to the AssetManager for texture access, etc. */
     std::shared_ptr<cugl::AssetManager> _assets;
     /** Serializer for supporting parameters */
-    LWSerializer _serializer;
+    cugl::netcode::NetcodeSerializer  _serializer;
     /** Deserializer for supporting parameters */
-    LWDeserializer _deserializer;
+    cugl::netcode::NetcodeDeserializer _deserializer;
 
     std::shared_ptr<cugl::JsonValue> _spellConsts;
 
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, SpellType type, int c_uid);
+    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, SpellType type, std::string c_uid);
 
 
 public:
@@ -105,7 +105,7 @@ public:
     /**
      * Helper method for converting normal parameters into byte vectors used for syncing.
      */
-    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, Vec2 velocity, SpellType type, int c);
+    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, Vec2 velocity, SpellType type, std::string c);
 
     /**
      * Generate a pair of Obstacle and SceneNode using serialized parameters.
