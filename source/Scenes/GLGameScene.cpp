@@ -720,11 +720,15 @@ void GameScene::preUpdate(float dt)
         _player->resolveSpell();
     }
 
-    if (_input.pressedPickup() && _currOverlappedItem>0) {
-        _networkCtrl->pushOutEvent(PickupEvent::allocPickupEvent(_player->getPID(), _currOverlappedItem));
+    if (_input.pressedPickup() && _currOverlappedItem > 0) {
+        auto item = _itemFact->getItem(_currOverlappedItem);
+        if (item && !item->isRemoved()) {
+            _networkCtrl->pushOutEvent(
+                PickupEvent::allocPickupEvent(_player->getPID(), _currOverlappedItem)
+            );
+        }
         _input.resolvedPickup();
         _currOverlappedItem = -1;
-        _itemFact->getItem(_currOverlappedItem)->markRemoved(true);
     }
 
 }
@@ -775,14 +779,27 @@ void GameScene::fixedUpdate(Uint64 step)
         } else if (auto pre = std::dynamic_pointer_cast<PickupEvent>(e)) {
             if (_itemFact->getItem(pre->getItemID()) != nullptr) {
                 CULog("pickup event got!");
-                _itemFact->getItem(pre->getItemID())->markRemoved(true);
+                auto item = _itemFact->getItem(pre->getItemID());
+                if (item && !item->isRemoved()) {
+                    for (auto& p : _playerFact->current) {
+                        if (p->getPID() == pre->getPID()) {
+                            p->addItem(item->getItemType(), item->getValue());
+                            if (_player && p == _player) {
+                                _inventoryValue = _player->getInventoryVal();
+                            }
+                            break;
+                        }
+                    }
+                    _itemFact->getItem(pre->getItemID())->markRemoved(true);
+                }
+                
             }
             
         }
         
+        
+        
     }
-    
-
     _world->update(step / 1000000.0f);
 }
 
