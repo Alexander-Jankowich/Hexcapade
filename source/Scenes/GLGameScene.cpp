@@ -636,15 +636,19 @@ void GameScene::preUpdate(float dt)
     }
     //handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
 
-    // EDIT host only for now
     if (depositRequested && _canDeposit) {
         if (_player && _player->hasInventory()) {
-            int deposited = _player->depositItems();
-            if (deposited > 0) {
-                _depositedValue += deposited;
-                _inventoryValue = _player->getInventoryVal();
-                _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(deposited));
-                CULog("Deposited %d, total: %d / %d", deposited, _depositedValue, _quota);
+            if (_networkCtrl->isHost()) {
+                int deposited = _player->depositItems();
+                if (deposited > 0) {
+                    _inventoryValue = _player->getInventoryVal();
+                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true));
+                }
+            } else {
+                // Clients only send a request here. The host checks the
+                // position and inventory before sending back the result
+                _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID()));
+                CULog("CLIENT deposit request");
             }
         }
     }
@@ -720,9 +724,10 @@ void GameScene::preUpdate(float dt)
         _player->resolveSpell();
     }
 
-    if (_input.pressedPickup() && _currOverlappedItem > 0) {
+    if (_input.pressedPickup() && _currOverlappedItem >= 0) {
         auto item = _itemFact->getItem(_currOverlappedItem);
-        if (item && !item->isRemoved()) {
+        // Checks if player can pick up anything so inventory doesn't overflow
+        if (_player && _player->canAddItem() && item && !item->isRemoved()) {
             _networkCtrl->pushOutEvent(
                 PickupEvent::allocPickupEvent(_player->getPID(), _currOverlappedItem)
             );
@@ -774,8 +779,56 @@ void GameScene::fixedUpdate(Uint64 step)
             CULog("END GAME GOT");
             processEndEvent(cse);
         } else if (auto de = std::dynamic_pointer_cast<DepositEvent>(e)) {
-            CULog("DEPOSIT GOT");
-            _depositedValue += de->getAmount();
+            // 1. Host recieve 2. Host applies deposit 3. Client applies deposit
+            if (_networkCtrl->isHost()) {
+                if (!de->isSync()) {
+                    // Clients send deposit request and the host sends back the
+                    // final synced amount after checking zone and inventory
+                    CULog("HOST deposit request");
+                    for (auto& p : _playerFact->current) {
+                        if (p->getPID() == de->getPID()) {
+                            Vec2 playerScreenPos = p->getPosition() * PHYSICS_SCALE;
+                            bool canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
+                            if (canDeposit && p->hasInventory()) {
+                                int deposited = p->depositItems();
+                                if (deposited > 0) {
+                                    if (_player && p == _player) {
+                                        _inventoryValue = _player->getInventoryVal();
+                                    }
+                                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true));
+                                }
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    // Synced deposit amounts apply to everyone including the host
+                    for (auto& p : _playerFact->current) {
+                        if (p->getPID() == de->getPID()) {
+                            p->clearInventory();
+                            if (_player && p == _player) {
+                                _inventoryValue = _player->getInventoryVal();
+                            }
+                            break;
+                        }
+                    }
+                    _depositedValue += de->getAmount();
+                    CULog("HOST deposit: amount=%d total=%d / %d", de->getAmount(), _depositedValue, _quota);
+                }
+            } else if (de->isSync()) {
+                // Clients only apply deposit updates that came back from host
+                for (auto& p : _playerFact->current) {
+                    if (p->getPID() == de->getPID()) {
+                        p->clearInventory();
+                        if (_player && p == _player) {
+                            _inventoryValue = _player->getInventoryVal();
+                        }
+                        break;
+                    }
+                }
+                _depositedValue += de->getAmount();
+                CULog("CLIENT deposit: amount=%d total=%d / %d", de->getAmount(), _depositedValue, _quota);
+            }
         } else if (auto pre = std::dynamic_pointer_cast<PickupEvent>(e)) {
             if (_itemFact->getItem(pre->getItemID()) != nullptr) {
                 CULog("pickup event got!");
@@ -783,14 +836,15 @@ void GameScene::fixedUpdate(Uint64 step)
                 if (item && !item->isRemoved()) {
                     for (auto& p : _playerFact->current) {
                         if (p->getPID() == pre->getPID()) {
-                            p->addItem(item->getItemType(), item->getValue());
-                            if (_player && p == _player) {
-                                _inventoryValue = _player->getInventoryVal();
+                            if (p->addItem(item->getItemType(), item->getValue())) {
+                                if (_player && p == _player) {
+                                    _inventoryValue = _player->getInventoryVal();
+                                }
+                                _itemFact->getItem(pre->getItemID())->markRemoved(true);
                             }
                             break;
                         }
                     }
-                    _itemFact->getItem(pre->getItemID())->markRemoved(true);
                 }
                 
             }

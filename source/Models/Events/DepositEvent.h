@@ -14,19 +14,23 @@ using namespace cugl::physics2::distrib;
 
 class DepositEvent : public NetEvent {
 protected:
-    LWSerializer _serializer;
-    LWDeserializer _deserializer;
+    cugl::netcode::NetcodeSerializer _serializer;
+    cugl::netcode::NetcodeDeserializer _deserializer;
 
 public:
+    std::string _pid;
     int _amount;
+    bool _sync;
 
     std::shared_ptr<NetEvent> newEvent() override;
-    static std::shared_ptr<NetEvent> allocDepositEvent(int amount);
+    static std::shared_ptr<NetEvent> allocDepositEvent(const std::string& pid, int amount = 0, bool sync = false);
 
     std::vector<std::byte> serialize() override;
     void deserialize(const std::vector<std::byte>& data) override;
 
+    std::string getPID() const { return _pid; }
     int getAmount() const { return _amount; }
+    bool isSync() const { return _sync; }
 };
 
 #endif // !__NP_DEPOSIT_EVENT_H__
