@@ -23,7 +23,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int
     setEnabled(true);
     setBullet(true);
     setBodyType(b2_dynamicBody);
-    setAngle(vel.getAngle() + 3.14/2.f);
+    setAngle(vel.getAngle());
     setFixedRotation(true);
     
     _damage = dmg;
@@ -42,7 +42,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
 pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos,float rad, Vec2 angle, SpellType type, std::string c_uid) {
-    auto image = _assets->get<graphics::Texture>("spell");
+    auto image = _assets->get<graphics::Texture>("fireball"); // default?
     
     // Create the SpellObstacle
     cugl::Vec2 norm = angle.getNormalization();
@@ -57,9 +57,11 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::COMBO_FREEZE:
         values = _spellConsts->get("combo_freeze");
+        image = _assets->get<graphics::Texture>("freeze");
         break;
     case SpellType::FREEZE:
         values = _spellConsts->get("freeze");
+        image = _assets->get<graphics::Texture>("freeze");
         break;
     case SpellType::HEAL:
         values = _spellConsts->get("heal");
@@ -88,24 +90,24 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 
     // Create Spell! Hard code values for now, change later
     auto sprite = std::make_shared<SpellNode>(pos, vel, 1, 1,type,
-        _assets->get<graphics::Texture>("spell"));
+        image);
 
-    switch (type) {
-    case SpellType::HEAL:
-        sprite->setColor(Color4::GREEN);
-        break;
-    case SpellType::FIREBALL:
-    case SpellType::COMBO_FIREBALL:
-        sprite->setColor(Color4::RED);
-        break;
-    case SpellType::FREEZE:
-    case SpellType::COMBO_FREEZE:
-        sprite->setColor(Color4::BLUE);
-        break;
-    
-    default:
-        break;
-    }
+//    switch (type) {
+//    case SpellType::HEAL:
+//        sprite->setColor(Color4::GREEN);
+//        break;
+//    case SpellType::FIREBALL:
+//    case SpellType::COMBO_FIREBALL:
+//        sprite->setColor(Color4::RED);
+//        break;
+//    case SpellType::FREEZE:
+//    case SpellType::COMBO_FREEZE:
+//        sprite->setColor(Color4::BLUE);
+//        break;
+//    
+//    default:
+//        break;
+//    }
 
     return std::make_pair(spell, sprite);
 }

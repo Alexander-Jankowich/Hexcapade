@@ -8,8 +8,11 @@
         "enemy": {
             "file": "textures/enemy.png"
         },
-        "spell": {
+        "fireball": {
             "file": "textures/fireballv2.png"
+        },
+        "freeze": {
+            "file": "textures/freeze.png"
         },
         "button": {
             "file":  "textures/button.png"
