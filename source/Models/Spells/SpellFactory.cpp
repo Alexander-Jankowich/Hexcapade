@@ -11,8 +11,14 @@
 using namespace std;
 using namespace cugl;
 
-SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int dmg, float range, bool freeze, bool heal, std::string c) {
-    init(pos, rad/PHYSICS_SCALE);
+SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int dmg, float range, bool freeze, bool heal,SpellType type, std::string c) {
+    if (type == SpellType::COMBO_FREEZE or type == SpellType::COMBO_FIREBALL){
+        CULog("this works for making bigger");
+        init(pos, (rad*2)/PHYSICS_SCALE);
+    }else{
+        init(pos, rad/PHYSICS_SCALE);
+    }
+    
     setAwake(true);
     setEnabled(true);
     setBullet(true);
@@ -43,8 +49,14 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     std::shared_ptr<JsonValue> values;
 
     switch (type) {
+    case SpellType::COMBO_FIREBALL:
+        values = _spellConsts->get("combo_fireball");
+        break;
     case SpellType::FIREBALL:
         values = _spellConsts->get("fireball");
+        break;
+    case SpellType::COMBO_FREEZE:
+        values = _spellConsts->get("combo_freeze");
         break;
     case SpellType::FREEZE:
         values = _spellConsts->get("freeze");
@@ -63,7 +75,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         values->getInt("damage"),
         values->getFloat("range"),
         values->getBool("freeze", false),
-        values->getBool("heal", false), c_uid);
+        values->getBool("heal", false), type,c_uid);
     //auto spell = SpellObstacle::alloc(pos, type);
 
     spell->setAngleSnap(0); // Snap to the nearest degree
@@ -75,7 +87,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     current.emplace(spell);
 
     // Create Spell! Hard code values for now, change later
-    auto sprite = std::make_shared<SpellNode>(pos, vel, 1, 1,
+    auto sprite = std::make_shared<SpellNode>(pos, vel, 1, 1,type,
         _assets->get<graphics::Texture>("spell"));
 
     switch (type) {
@@ -83,9 +95,11 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         sprite->setColor(Color4::GREEN);
         break;
     case SpellType::FIREBALL:
+    case SpellType::COMBO_FIREBALL:
         sprite->setColor(Color4::RED);
         break;
     case SpellType::FREEZE:
+    case SpellType::COMBO_FREEZE:
         sprite->setColor(Color4::BLUE);
         break;
     

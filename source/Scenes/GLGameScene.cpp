@@ -668,8 +668,12 @@ void GameScene::preUpdate(float dt)
 
     // Spellcasting
     if (_input.getGesture() != SpellType::NONE) {
-        _player->setSpell(_input.getGesture());
-        //CULog("Set spell! %d", _player->getSpell());
+        SpellType newSpell = _input.getGesture();
+        if (newSpell != _player->getSpell()) {
+            _player->setSpell(newSpell);
+            _networkCtrl->pushOutEvent(
+                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
+        }
     }
 
     Vec2 angle = _input.getSpellAngle();
@@ -687,16 +691,26 @@ void GameScene::preUpdate(float dt)
 
         // check for possible combos - serena implemented
         for (auto p : _playerFact->current) {
+            CULog("pLayer fact size: %zu",_playerFact->current.size());
+            CULog("This is the spell %d",p->getSpell());
             if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
                 // calc combo spell + send combo event
+                CULog("combo potential");
                 if (_player->getSpell() == SpellType::FIREBALL) {
                     if (p->getSpell() == SpellType::FIREBALL) {
                         t = SpellType::COMBO_FIREBALL;
+                        p->resolveSpell();
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        CULog("combo fireball");
                     }
                 }
                 else if (_player->getSpell() == SpellType::FREEZE) {
                     if (p->getSpell() == SpellType::FREEZE) {
                         t = SpellType::COMBO_FREEZE;
+                        p->resolveSpell();
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
                     }
                 }
 
@@ -722,6 +736,8 @@ void GameScene::preUpdate(float dt)
 
         _input.resolveSpell();
         _player->resolveSpell();
+        _networkCtrl->pushOutEvent(
+            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
     }
 
     if (_input.pressedPickup() && _currOverlappedItem >= 0) {
@@ -778,6 +794,14 @@ void GameScene::fixedUpdate(Uint64 step)
         } else if (auto cse = std::dynamic_pointer_cast<EndGameEvent>(e)){
             CULog("END GAME GOT");
             processEndEvent(cse);
+        }else if (auto sse = std::dynamic_pointer_cast<SetSpellEvent>(e)){
+            CULog("SET SPELL GOT");
+            for (auto& p : _playerFact->current) {
+                    if (p->getPID() == sse->getPID()) {
+                        p->setSpell(sse->getSpell());
+                        break;
+                    }
+                }
         } else if (auto de = std::dynamic_pointer_cast<DepositEvent>(e)) {
             // 1. Host recieve 2. Host applies deposit 3. Client applies deposit
             if (_networkCtrl->isHost()) {
@@ -1334,13 +1358,19 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         if (auto p = dynamic_pointer_cast<PlayerObstacle>(obj)) {
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                p_node->updateAnimationState(p->getState());
-                float leftover = Application::get()->getFixedRemainder() / 1000000.f;
-                Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
-                float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
-                p_node->setPosition(pos * PHYSICS_SCALE);
-                p_node->setAngle(angle);
-                p_node->setVelocity(p->getLinearVelocity() * PHYSICS_SCALE);
+                    PlayerObstacle::AnimationState state = p->getState();
+                    if (p->getSpell() != SpellType::NONE) {
+                        state = PlayerObstacle::AnimationState::CASTING;
+                    } else if (state == PlayerObstacle::AnimationState::CASTING) {
+                        state = PlayerObstacle::AnimationState::IDLE;
+                    }
+                    p_node->updateAnimationState(state);
+                    float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+                    Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+                    float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+                    p_node->setPosition(pos * PHYSICS_SCALE);
+                    p_node->setAngle(angle);
+                    p_node->setVelocity(p->getLinearVelocity() * PHYSICS_SCALE);
             });
         } else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
