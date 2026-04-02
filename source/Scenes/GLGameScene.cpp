@@ -714,7 +714,7 @@ void GameScene::preUpdate(float dt)
         }
 
         CULog("Casting spell type: %d", t);
-        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, t, _networkCtrl->getPID());
+        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE,_assets->get<graphics::Texture>("spell") -> getSize().height/4.f, angle*2, t, _networkCtrl->getPID());
         auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
         //We must acquire an object if we create it if we fail to do so the network
         //will consistently try to reset its position.

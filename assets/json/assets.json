@@ -9,7 +9,7 @@
             "file": "textures/enemy.png"
         },
         "spell": {
-            "file": "textures/photon.png"
+            "file": "textures/fireballv2.png"
         },
         "button": {
             "file":  "textures/button.png"

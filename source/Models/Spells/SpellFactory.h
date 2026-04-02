@@ -38,11 +38,11 @@ protected:
     float _range;
 
 public:
-    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed, std::string c);
+    SpellObstacle(const cugl::Vec2 pos, float rad, cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed, std::string c);
 
-    static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos,
+    static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos,float rad,
         cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed, std::string c) {
-        auto f = std::make_shared<SpellObstacle>(pos, vel, dmg, range, freeze, healed, c);
+        auto f = std::make_shared<SpellObstacle>(pos, rad,vel, dmg, range, freeze, healed, c);
         f->createFixtures();
         return f;
     }
@@ -76,7 +76,7 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, SpellType type, std::string c_uid);
+    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos,float rad, Vec2 velocity, SpellType type, std::string c_uid);
 
 
 public:
@@ -105,7 +105,7 @@ public:
     /**
      * Helper method for converting normal parameters into byte vectors used for syncing.
      */
-    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, Vec2 velocity, SpellType type, std::string c);
+    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos,float rad,Vec2 velocity, SpellType type, std::string c);
 
     /**
      * Generate a pair of Obstacle and SceneNode using serialized parameters.
