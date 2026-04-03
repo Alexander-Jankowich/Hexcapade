@@ -1,6 +1,6 @@
 {
   "_comment": "procedural map tuning for the current tiled room path",
-  "quota": 500,
+  "quota": 300,
   "map": {
     "_comment": "values here are read into mapgenerationconfig and applied every run build and reset",
     "room_count_min": 6,
