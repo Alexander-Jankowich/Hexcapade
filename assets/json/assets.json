@@ -14,6 +14,9 @@
         "freeze": {
             "file": "textures/freeze.png"
         },
+        "heal": {
+            "file": "textures/heal.png"
+        },
         "button": {
             "file":  "textures/button.png"
         },

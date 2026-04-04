@@ -65,6 +65,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::HEAL:
         values = _spellConsts->get("heal");
+        image = _assets->get<graphics::Texture>("heal");
         break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
