@@ -47,6 +47,7 @@ void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
     attachEventType<EndGameEvent>();
     attachEventType<DepositEvent>();
     attachEventType<PickupEvent>();
+    attachEventType<SetSpellEvent>();
     cugl::physics2::distrib::NetEventController::init(a);
     _randSeed=0;
 }

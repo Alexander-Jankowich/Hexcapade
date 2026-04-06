@@ -126,7 +126,7 @@ void HostScene::configureStartButton() {
 }
 
 void HostScene::sendInitMsg() {
-    if(_networkCtrl->getRandSeed()>0) return; // alr sent
+    if(_networkCtrl->getRandSeed()!=0) return; // alr sent
     CULog("host sending init event");
     _networkCtrl->pushOutEvent(GameInitEvent::allocGameInitEvent(_randseed));
     _networkCtrl->setRandSeed(_randseed);

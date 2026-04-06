@@ -125,6 +125,27 @@ const ItemCatalogEntryConfig* chooseWeight( const std::vector<ItemCatalogEntryCo
     return &entries.back();
 }
 
+float getTypicalItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
+    // Estimating the average item value from the weighted itemd so spawn count can scale with quota
+    float totalWeight = 0.0f;
+    float totalValue = 0.0f;
+    for (const auto& item : entries) {
+        totalWeight += item.weight;
+        totalValue += item.weight * item.value;
+    }
+
+    return totalValue / totalWeight;
+}
+
+// Goal: enough item value to cover quota, but never spawn more than
+// the authored spawn points we actually have on the map
+size_t chooseSpawnCount(size_t totalSpawn, size_t roomCount, int quota,
+                            float typicalItemValue, float quotaCoverageRatio) {
+    int valueNeeded = (int)std::ceil((float)quota * quotaCoverageRatio);
+    size_t itemsNeeded = (size_t)std::ceil((float)valueNeeded / typicalItemValue);
+    return std::min(totalSpawn, std::max(roomCount, itemsNeeded));
+}
+
 std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entries,
                                const PlayerObstacle::CarriedItem& item) {
     for (const auto& itemEntry : entries) {
@@ -409,29 +430,47 @@ void GameScene::rebuildMapForRun() {
 }
 
 void GameScene::spawnItemsFromMap() {
-    const std::vector<Vec2>& spawnPts = _roomController.getInitialItemSpawnPoints();
-    if (spawnPts.empty()) {
+    const std::vector<Vec2>& spawnPoints = _roomController.getInitialItemSpawnPoints();
+    if (spawnPoints.empty()) {
         CULog("ItemFactory: no item spawn points found on map");
         return;
     }
 
     const std::vector<ItemCatalogEntryConfig>& entries = _runConfig.item.entries;
-    for (const Vec2& worldPt : spawnPts) {
+
+    size_t roomCount = _map->getRooms().size();
+    float typicalItemValue = getTypicalItemValue(entries);
+    size_t spawnCount = chooseSpawnCount(
+        spawnPoints.size(), roomCount, _quota,
+        typicalItemValue, _runConfig.item.quotaCoverageRatio
+    );
+
+    // Start with every spawn point, then randomly* remove from this
+    // list as we choose which points to actually use for run
+    std::vector<size_t> spawnIndices(spawnPoints.size());
+    for (size_t spawnIndex = 0; spawnIndex < spawnPoints.size(); ++spawnIndex) {
+        spawnIndices[spawnIndex] = spawnIndex;
+    }
+
+    for (size_t spawned = 0; spawned < spawnCount && !spawnIndices.empty(); ++spawned) {
+        size_t pickIndex = 0;
+        if (spawnIndices.size() > 1) {
+            pickIndex = (size_t)(_random->getUint32() % spawnIndices.size());
+        }
+
+        const Vec2& worldPt = spawnPoints[spawnIndices[pickIndex]];
+        spawnIndices[pickIndex] = spawnIndices.back();
+        spawnIndices.pop_back();
+
         Vec2 physPos = worldPt / PHYSICS_SCALE;
         const ItemCatalogEntryConfig* item = chooseWeight(entries, _random);
-
-        int itemValue = 60;
-        std::string itemType = "artifact_scroll";
-        
-        if (item) {
-            itemValue = std::max(1, item->value);
-            itemType = item->textureAsset.empty() ? item->id : item->textureAsset;
-        }
+        int itemValue = item->value;
+        std::string itemType = item->textureAsset.empty() ? item->id : item->textureAsset;
 
         auto params = _itemFact->serializeParams(physPos, itemValue, itemType);
         _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
     }
-    CULog("ItemFactory: spawned %zu items", spawnPts.size());
+    CULog("ItemFactory: spawned %zu items", spawnPoints.size());
 }
 
 void GameScene::updateCameraFollow() {
@@ -630,15 +669,19 @@ void GameScene::preUpdate(float dt)
     }
     //handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
 
-    // EDIT host only for now
     if (depositRequested && _canDeposit) {
         if (_player && _player->hasInventory()) {
-            int deposited = _player->depositItems();
-            if (deposited > 0) {
-                _depositedValue += deposited;
-                _inventoryValue = _player->getInventoryVal();
-                _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(deposited));
-                CULog("Deposited %d, total: %d / %d", deposited, _depositedValue, _quota);
+            if (_networkCtrl->isHost()) {
+                int deposited = _player->depositItems();
+                if (deposited > 0) {
+                    _inventoryValue = _player->getInventoryVal();
+                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true));
+                }
+            } else {
+                // Clients only send a request here. The host checks the
+                // position and inventory before sending back the result
+                _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID()));
+                CULog("CLIENT deposit request");
             }
         }
     }
@@ -658,8 +701,12 @@ void GameScene::preUpdate(float dt)
 
     // Spellcasting
     if (_input.getGesture() != SpellType::NONE) {
-        _player->setSpell(_input.getGesture());
-        //CULog("Set spell! %d", _player->getSpell());
+        SpellType newSpell = _input.getGesture();
+        if (newSpell != _player->getSpell()) {
+            _player->setSpell(newSpell);
+            _networkCtrl->pushOutEvent(
+                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
+        }
     }
 
     Vec2 angle = _input.getSpellAngle();
@@ -674,16 +721,26 @@ void GameScene::preUpdate(float dt)
 
         // check for possible combos - serena implemented
         for (auto p : _playerFact->current) {
+            CULog("pLayer fact size: %zu",_playerFact->current.size());
+            CULog("This is the spell %d",p->getSpell());
             if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
                 // calc combo spell + send combo event
+                CULog("combo potential");
                 if (_player->getSpell() == SpellType::FIREBALL) {
                     if (p->getSpell() == SpellType::FIREBALL) {
                         t = SpellType::COMBO_FIREBALL;
+                        p->resolveSpell();
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        CULog("combo fireball");
                     }
                 }
                 else if (_player->getSpell() == SpellType::FREEZE) {
                     if (p->getSpell() == SpellType::FREEZE) {
                         t = SpellType::COMBO_FREEZE;
+                        p->resolveSpell();
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
                     }
                 }
 
@@ -701,7 +758,8 @@ void GameScene::preUpdate(float dt)
         }
 
         //CULog("Casting spell type: %d", t);
-        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, t, _networkCtrl->getPID());
+        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball") -> getSize().height/4.f, angle*2, t, _networkCtrl->getPID());
+
         auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
         //We must acquire an object if we create it if we fail to do so the network
         //will consistently try to reset its position.
@@ -709,11 +767,14 @@ void GameScene::preUpdate(float dt)
 
         _input.resolveSpell();
         _player->resolveSpell();
+        _networkCtrl->pushOutEvent(
+            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
     }
 
-    if (_input.pressedPickup() && _currOverlappedItem > 0) {
+    if (_input.pressedPickup() && _currOverlappedItem >= 0) {
         auto item = _itemFact->getItem(_currOverlappedItem);
-        if (item && !item->isRemoved()) {
+        // Checks if player can pick up anything so inventory doesn't overflow
+        if (_player && _player->canAddItem() && item && !item->isRemoved()) {
             _networkCtrl->pushOutEvent(
                 PickupEvent::allocPickupEvent(_player->getPID(), _currOverlappedItem)
             );
@@ -764,9 +825,65 @@ void GameScene::fixedUpdate(Uint64 step)
         } else if (auto cse = std::dynamic_pointer_cast<EndGameEvent>(e)){
             CULog("END GAME GOT");
             processEndEvent(cse);
+        }else if (auto sse = std::dynamic_pointer_cast<SetSpellEvent>(e)){
+            CULog("SET SPELL GOT");
+            for (auto& p : _playerFact->current) {
+                    if (p->getPID() == sse->getPID()) {
+                        p->setSpell(sse->getSpell());
+                        break;
+                    }
+                }
         } else if (auto de = std::dynamic_pointer_cast<DepositEvent>(e)) {
-            CULog("DEPOSIT GOT");
-            _depositedValue += de->getAmount();
+            // 1. Host recieve 2. Host applies deposit 3. Client applies deposit
+            if (_networkCtrl->isHost()) {
+                if (!de->isSync()) {
+                    // Clients send deposit request and the host sends back the
+                    // final synced amount after checking zone and inventory
+                    CULog("HOST deposit request");
+                    for (auto& p : _playerFact->current) {
+                        if (p->getPID() == de->getPID()) {
+                            Vec2 playerScreenPos = p->getPosition() * PHYSICS_SCALE;
+                            bool canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
+                            if (canDeposit && p->hasInventory()) {
+                                int deposited = p->depositItems();
+                                if (deposited > 0) {
+                                    if (_player && p == _player) {
+                                        _inventoryValue = _player->getInventoryVal();
+                                    }
+                                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true));
+                                }
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    // Synced deposit amounts apply to everyone including the host
+                    for (auto& p : _playerFact->current) {
+                        if (p->getPID() == de->getPID()) {
+                            p->clearInventory();
+                            if (_player && p == _player) {
+                                _inventoryValue = _player->getInventoryVal();
+                            }
+                            break;
+                        }
+                    }
+                    _depositedValue += de->getAmount();
+                    CULog("HOST deposit: amount=%d total=%d / %d", de->getAmount(), _depositedValue, _quota);
+                }
+            } else if (de->isSync()) {
+                // Clients only apply deposit updates that came back from host
+                for (auto& p : _playerFact->current) {
+                    if (p->getPID() == de->getPID()) {
+                        p->clearInventory();
+                        if (_player && p == _player) {
+                            _inventoryValue = _player->getInventoryVal();
+                        }
+                        break;
+                    }
+                }
+                _depositedValue += de->getAmount();
+                CULog("CLIENT deposit: amount=%d total=%d / %d", de->getAmount(), _depositedValue, _quota);
+            }
         } else if (auto pre = std::dynamic_pointer_cast<PickupEvent>(e)) {
             if (_itemFact->getItem(pre->getItemID()) != nullptr) {
                 CULog("pickup event got!");
@@ -774,14 +891,15 @@ void GameScene::fixedUpdate(Uint64 step)
                 if (item && !item->isRemoved()) {
                     for (auto& p : _playerFact->current) {
                         if (p->getPID() == pre->getPID()) {
-                            p->addItem(item->getItemType(), item->getValue());
-                            if (_player && p == _player) {
-                                _inventoryValue = _player->getInventoryVal();
+                            if (p->addItem(item->getItemType(), item->getValue())) {
+                                if (_player && p == _player) {
+                                    _inventoryValue = _player->getInventoryVal();
+                                }
+                                _itemFact->getItem(pre->getItemID())->markRemoved(true);
                             }
                             break;
                         }
                     }
-                    _itemFact->getItem(pre->getItemID())->markRemoved(true);
                 }
                 
             }
@@ -1271,13 +1389,19 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         if (auto p = dynamic_pointer_cast<PlayerObstacle>(obj)) {
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                p_node->updateAnimationState(p->getState());
-                float leftover = Application::get()->getFixedRemainder() / 1000000.f;
-                Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
-                float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
-                p_node->setPosition(pos * PHYSICS_SCALE);
-                p_node->setAngle(angle);
-                p_node->setVelocity(p->getLinearVelocity() * PHYSICS_SCALE);
+                    PlayerObstacle::AnimationState state = p->getState();
+                    if (p->getSpell() != SpellType::NONE) {
+                        state = PlayerObstacle::AnimationState::CASTING;
+                    } else if (state == PlayerObstacle::AnimationState::CASTING) {
+                        state = PlayerObstacle::AnimationState::IDLE;
+                    }
+                    p_node->updateAnimationState(state);
+                    float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+                    Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+                    float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+                    p_node->setPosition(pos * PHYSICS_SCALE);
+                    p_node->setAngle(angle);
+                    p_node->setVelocity(p->getLinearVelocity() * PHYSICS_SCALE);
             });
         } else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
@@ -1422,5 +1546,4 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact -> SetEnabled(false);
     }
 }
-
 
