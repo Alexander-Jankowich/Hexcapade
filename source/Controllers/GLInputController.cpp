@@ -629,12 +629,18 @@ void InputController::readInput(){
         if (space && !spacePressed) {
             _lastGesture = SpellType::FIREBALL;
             _spellAngle.setZero();
+            _isAiming = true;
+            _gestureRecognized = true;
+            _curStrokes = 0;
         }
         spacePressed = space;
 
         if (shift && !shiftPressed) {
             _lastGesture = SpellType::FREEZE;
             _spellAngle.setZero();
+            _isAiming = true;
+            _gestureRecognized = true;
+            _curStrokes = 0;
         }
         shiftPressed = shift;
 
