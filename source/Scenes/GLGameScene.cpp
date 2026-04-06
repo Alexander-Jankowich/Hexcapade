@@ -232,14 +232,15 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     //_mapSeed = chooseNonZeroSeed();
     _runRevision = 1;
     
-    
-
+    // Create all the factories
     _spellFact = SpellFactory::alloc(_assets);
     _playerFact = PlayerFactory::alloc(_assets);
     _enemyFact = EnemyFactory::alloc(_assets);
     _rectFact = RectFactory::alloc(_assets, _map->_tiledRoomPrefab);
     _itemFact = ItemFactory::alloc(_assets);
-    //CULog("did tiled thing load: %d", _map->_tiledRoomPrefab==nullptr);
+
+    // Create other controllers
+    _pathfinder = Pathfinder();
 
     // IMPORTANT: SCALING MUST BE UNIFORM
     // This means that we cannot change the aspect ratio of the physics world
@@ -514,11 +515,11 @@ Vec2 GameScene::getHUDOffset() const {
 void GameScene::preUpdate(float dt)
 {
     if (!_player) {
-            // Try to find our player now that replication may have run
-            _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
-            //Have we set our player yet / received signal
-            if (!_player) return;
-        }
+        // Try to find our player now that replication may have run
+        _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
+        //Have we set our player yet / received signal
+        if (!_player) return;
+    }
     //We have to acquire ourselves before we attempt to move
     //it is a little weird to do this every frame but this allows host to acquire themselves
     _networkCtrl -> getPhysController() -> acquireObs(_player, 0);
@@ -551,31 +552,28 @@ void GameScene::preUpdate(float dt)
         lastEnemySpawn += dt;
         if (lastEnemySpawn > 8) {
             lastEnemySpawn = 0;
-            //_enemy->spawnEnemy(getSize() / 2, 4);
-            
-            
+
             auto spawns = _map -> getEnemySpawnPoints();
             std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
             if (!spawns.empty()) {
                 std::uint64_t index = rand % spawns.size();
                 Vec2 pos = spawns[index];
 
-                auto params = _enemyFact->serializeParams(pos / PHYSICS_SCALE, Vec2::ZERO, 4);
+                auto params = _enemyFact->serializeParams(EnemyType::GHOST, pos / PHYSICS_SCALE);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
+                // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
                 _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
             }
         }
 
-        std::vector<Vec2> player_pos;
-        for (auto p : _playerFact->current) {
-            if (p->getHealth() > 0)
-                player_pos.push_back(p->getPosition());
-        }
-        auto toRemove = _enemyFact->update(player_pos);
+        auto toRemove = _enemyFact->getRemoved();
         for (auto en : toRemove) {
             _networkCtrl->getPhysController()->removeSharedObstacle(en);
         }
+
+        // Update enemy movement
+        _pathfinder.updateEnemies(_enemyFact, _playerFact);
         
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
@@ -586,7 +584,7 @@ void GameScene::preUpdate(float dt)
         auto spellRemove = _spellFact->update();
         for (auto spell : spellRemove) {
             _networkCtrl->getPhysController()->removeSharedObstacle(spell);
-            CULog("Remove spell: %d", spell->isRemoved());
+            //CULog("Remove spell: %d", spell->isRemoved());
         }
         
     }
@@ -598,12 +596,8 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
     
-    
-    //CULog("body active: %d", _player->isAwake());
-    //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
-    //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
 
     updateCameraFollow();
     Vec2 offset = getHUDOffset();
@@ -673,12 +667,9 @@ void GameScene::preUpdate(float dt)
         angle = _player->getDirection();
     }
     if (_input.shouldReleaseSpell()) {
-        CULog("Release spell--------------------------------------------------------");
-        // CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
-        //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
-        // Spawn spell, make host owner of object
+        //CULog("Release spell--------------------------------------------------------");
         
-        CULog("Spell type: %d", _player->getSpell());
+        //CULog("Spell type: %d", _player->getSpell());
         SpellType t = SpellType::NONE;
 
         // check for possible combos - serena implemented
@@ -709,7 +700,7 @@ void GameScene::preUpdate(float dt)
             t = _player->getSpell();
         }
 
-        CULog("Casting spell type: %d", t);
+        //CULog("Casting spell type: %d", t);
         auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, angle*2, t, _networkCtrl->getPID());
         auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
         //We must acquire an object if we create it if we fail to do so the network
@@ -1415,7 +1406,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     if (wall && enemy){
         //CULog("here wall and enemy");
-        contact -> SetEnabled(false);
+        if (enemy->TYPE == EnemyType::GHOST) {
+            contact->SetEnabled(false);
+            return;
+        }
     }
     if(player && player2){
         contact -> SetEnabled(false);

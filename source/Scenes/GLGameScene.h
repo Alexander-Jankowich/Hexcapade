@@ -21,6 +21,7 @@
 #include "../Controllers/NetworkController.h"
 #include "../Controllers/RoomController.h"
 #include "../Controllers/CollisionController.h"
+#include "../Controllers/Pathfinder.h"
 
 #include "../Models/GameplayConfig.h"
 #include "../Models/Map.h"
@@ -84,6 +85,9 @@ protected:
 
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
     CollisionController _collisions;
+
+    Pathfinder _pathfinder;
+
     std::vector<std::pair<ItemObstacle*, std::shared_ptr<cugl::scene2::SceneNode>>> _itemNodes;
     /** GA: itemnet legacy scene-local inventory cache kept during the migration. */
     int _inventoryValue;

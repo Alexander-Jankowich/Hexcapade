@@ -17,34 +17,63 @@ using namespace cugl;
 using namespace cugl::physics2::distrib;
 using namespace std;
 
+enum class EnemyType {
+    GHOST = 0
+};
+
 /**
 * An extension of CapsuleObstacle to represent enemy collision objects.
 */
 class EnemyObstacle : public physics2::CapsuleObstacle {
-    public:
-        enum class EnemyState : int  {
-            IDLE=0,
-            CHASING=1,
-            ATTACK_RESET=2
-        };
+public:
+    enum class EnemyState : int  {
+        IDLE=0,
+        CHASING=1,
+        ATTACK_RESET=2
+    };
+
 protected:
+    // Current of hp the enemy has
     int _health;
+
+    // Max speed of the enemy
     float _speed;
+
+    // Distance at which the enemy can see players
     float _range;
+
+    // The target position the enemy is trying to go to
     Vec2 _target;
+
+    // The current action/state the enemy is in
     EnemyState _state;
+
+    // Time since the last attack
     int _attackCounter;
+
+    // Whether the enemy is frozen
     bool _frozen;
+
+    // The time since the enemy was frozen
     int _frozenTimer;
 
 public:
-    EnemyObstacle(const cugl::Vec2& pos, float speed, int health, float range, cugl::Size s);
+    EnemyObstacle(EnemyType type, const Vec2& pos, const shared_ptr<JsonValue> consts, Size s);
 
-    static shared_ptr<EnemyObstacle> alloc(const cugl::Vec2& pos, float speed, int health, float range, cugl::Size s) {
-        auto f = make_shared<EnemyObstacle>(pos, speed, health, range, s);
+    // The type of enemy this enemy is, can be public bc it is a constant
+    const EnemyType TYPE;
+
+    static shared_ptr<EnemyObstacle> alloc(EnemyType type, const Vec2& pos, const shared_ptr<JsonValue> consts, Size s) {
+        auto f = make_shared<EnemyObstacle>(type, pos, consts, s);
         f -> createFixtures();
         return f;
     }
+
+    /**
+    * Sets the acceleration of the enemy to reach the intended velocity
+    * This method makes it so that the enemy will still collide with walls and players
+    */
+    void setVelocity(Vec2 vel);
 
     /**
      * Returns the speed of this enemy.
@@ -58,22 +87,22 @@ public:
     void updateAttackCounter();
 
     /**
-     * Returns the current ship health.
+     * Returns the current enemy health.
      *
-     * When the health of the ship is 0, it is "dead"
+     * When the health of the enemy is 0, it is "dead"
      *
-     * @return the current ship health.
+     * @return the current enemy health.
      */
     int getHealth() const { return _health; }
     
     bool isFroze () { return _frozen; }
 
     /**
-     * Sets the current ship health.
+     * Sets the current enemy health.
      *
-     * When the health of the ship is 0, it is "dead"
+     * When the health of the enemy is 0, it is "dead"
      *
-     * @param value The current ship health.
+     * @param value The current enemy health.
      */
     void setHealth(int value);
 
@@ -106,12 +135,12 @@ protected:
     /** Deserializer for supporting parameters */
     LWDeserializer _deserializer;
 
+    std::shared_ptr<cugl::JsonValue> _enemyConsts;
+
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, int h);
-
-    Vec2 getClosestPlayer(Vec2 enemPos, std::vector<Vec2> targs);
+    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(EnemyType type, Vec2 pos);
 
 public:
     EnemyFactory() {}
@@ -133,12 +162,13 @@ public:
      */
     void init(shared_ptr<AssetManager>& assets) {
         _assets = assets;
+        _enemyConsts = _assets->get<JsonValue>("constants")->get("enemies");
     }
 
     /**
      * Helper method for converting normal parameters into byte vectors used for syncing.
      */
-    shared_ptr<vector<byte>> serializeParams(Vec2 pos, Vec2 velocity, int h);
+    shared_ptr<vector<byte>> serializeParams(EnemyType type, Vec2 pos);
 
     /**
      * Generate a pair of Obstacle and SceneNode using serialized parameters.
@@ -146,13 +176,12 @@ public:
     pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(const vector<byte>& params) override;
 
     /**
-    * Updates all enemies to go to nearest target
-    * 
-    * TODO: change to a proper AI
+    * Returns a set of enemies that have been flagged for garbage collection and removes them from
+    * the current enemy set. Should be called every update frame
     * 
     * @return a set of all enemies to be removed from the world
     */
-    std::unordered_set<std::shared_ptr<EnemyObstacle>> update(std::vector<cugl::Vec2> targets);
+    std::unordered_set<std::shared_ptr<EnemyObstacle>> getRemoved();
 };
 
 #endif // !__ENEMY_FACTORY_H__

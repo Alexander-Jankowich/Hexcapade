@@ -1,3 +1,4 @@
+
 // this model generates and stores the shared room/hall map for one run
 
 #ifndef __HEXCAPADE_MAP_H__
@@ -47,7 +48,7 @@ private:
     unsigned int _hallFloorGid;
 
     std::vector<Room> _rooms;
-    
+
     std::vector<cugl::Vec2> _itemSpawnPoints;
     std::vector<cugl::Vec2> _enemySpawnPoints;
     cugl::Vec2 _playerSpawn;
@@ -58,13 +59,12 @@ private:
 public:
     Map();
     std::shared_ptr<TiledRoomData> _tiledRoomPrefab;
-    
+
     void init();
 
 
     bool generate(const cugl::Size& viewSize, const MapGenerationConfig& config, unsigned int seed);
     void populateObtacles(std::shared_ptr<NetWorld>& world);
-
     bool canOccupy(const cugl::Vec2& worldPos, float radius) const;
     cugl::Vec2 resolveSlideMove(const cugl::Vec2& startPos, const cugl::Vec2& velocity, float radius) const;
     cugl::Vec2 getNextWaypoint(const cugl::Vec2& fromWorld, const cugl::Vec2& toWorld) const;
@@ -90,7 +90,7 @@ private:
     cugl::Vec2 tileToWorldCenter(int x, int y) const;
 
     bool overlapsExistingRoom(const GridRoom& candidate, const std::vector<GridRoom>& rooms) const;
-    
+
     // this clears the per-tile gid layers used to render repeated tiled rooms
     void clearRenderLayers();
     // this writes one gid into one map-wide tiled render layer.
@@ -109,7 +109,7 @@ private:
     // this converts a room-edge doorway tile into the first hallway tile just
     // outside the room so the hall does not start on top of room art.
     cugl::Vec2 getExteriorHallTileForAnchor(const GridRoom& room,
-                                            const cugl::Vec2& anchorTile) const;
+        const cugl::Vec2& anchorTile) const;
     // this carves a one-tile doorway so hall entrances do not shave off extra decor.
     void carveDoorTile(int x, int y);
     // this carves one hallway step using the current hall width rules.
@@ -119,19 +119,19 @@ private:
     // this compares the two possible l-shaped hallway routes so we can keep
     // the room art intact as much as possible
     int scoreHallwayRoute(const cugl::Vec2& from, const cugl::Vec2& to,
-                          bool horizontalFirst, int fromRoomIndex, int toRoomIndex) const;
+        bool horizontalFirst, int fromRoomIndex, int toRoomIndex) const;
     // this opens a short doorway from the hall anchor into the room interior;
     // it keeps every repeated room enterable even if the prefab edge is walled
     void openDoorwayForHallAnchor(const GridRoom& room, const GridRoom& otherRoom,
-                                  const cugl::Vec2& anchorTile);
-    
+        const cugl::Vec2& anchorTile);
+
     // this removes stray one-tile hall tabs that can appear next to a room
     // without actually connecting to the hallway network (doublecheck)
     void pruneHallArtifacts();
 
     void carveHallway(const cugl::Vec2& from, const cugl::Vec2& to,
-                      int fromRoomIndex = -1, int toRoomIndex = -1);
-  
+        int fromRoomIndex = -1, int toRoomIndex = -1);
+
     /*
     // old random-room helpers kept here as reference from the pre-tiled map path.
     void carveRoom(const GridRoom& room, int roomIndex);
@@ -145,3 +145,4 @@ private:
 };
 
 #endif // __HEXCAPADE_MAP_H__
+
