@@ -9,10 +9,10 @@
 #include <vector>
 
 #include "GameplayConfig.h"
-#include "Room.h"
-#include "TiledRoomLoader.h"
+#include "Map/Room.h"
+#include "Map/TiledRoomLoader.h"
 #include "../Controllers/NetworkController.h"
-#include "RectFactory.h"
+#include "Map/RectFactory.h"
 
 class Map {
 public:
