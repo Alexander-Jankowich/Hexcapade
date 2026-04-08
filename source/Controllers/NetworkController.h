@@ -10,7 +10,7 @@
 #include "../Models/Players.h"
 #include "../Models/Spells.h"
 #include "../Models/Enemies.h"
-#include "InputDisplay.h"
+#include "../Scenes/InputDisplay.h"
 
 #ifndef __NETWORK_CONTROLLER_H__
 #define __NETWORK_CONTROLLER_H__

@@ -4,48 +4,51 @@
         "constants": "json/constants.json",
         "gestures":  "json/gestures.json"
     },
-    "textures": {
-        "enemy": {
-            "file": "textures/enemy.png"
-        },
-        "fireball": {
-            "file": "textures/fireballv2.png"
-        },
-        "freeze": {
-            "file": "textures/freeze.png"
-        },
-        "heal": {
-            "file": "textures/heal.png"
-        },
-        "button": {
-            "file":  "textures/button.png"
-        },
-        "frame": {
-            "file":  "textures/frame.png"
-        },
-        "left": {
-            "file":  "textures/left_arrow.png"
-        },
-        "player": {
-            "file": "textures/playerfox_sheet.png"
-        },
-        "artifact_gem": {
-            "file": "textures/artifact_gem.png"
-        },
-        "artifact_scroll": {
-            "file": "textures/artifact_scroll.png"
-        },
-        "spellbook_fire": {
-            "file": "textures/spellbook_fire.png"
-        },
-        "spellbook_freeze": {
-            "file": "textures/spellbook_freeze.png"
-        },
-        "spellbook_heal": {
-            "file": "textures/spellbook_heal.png"
-        }
-        
+  "textures": {
+    "enemy": {
+      "file": "textures/enemy.png"
     },
+    "fireball": {
+      "file": "textures/fireballv2.png"
+    },
+    "freeze": {
+      "file": "textures/freeze.png"
+    },
+    "heal": {
+      "file": "textures/heal.png"
+    },
+    "button": {
+      "file": "textures/button.png"
+    },
+    "frame": {
+      "file": "textures/frame.png"
+    },
+    "item_box": {
+      "file": "textures/inventory_box.png"
+    },
+    "left": {
+      "file": "textures/left_arrow.png"
+    },
+    "player": {
+      "file": "textures/playerfox_sheet.png"
+    },
+    "artifact_gem": {
+      "file": "textures/artifact_gem.png"
+    },
+    "artifact_scroll": {
+      "file": "textures/artifact_scroll.png"
+    },
+    "spellbook_fire": {
+      "file": "textures/spellbook_fire.png"
+    },
+    "spellbook_freeze": {
+      "file": "textures/spellbook_freeze.png"
+    },
+    "spellbook_heal": {
+      "file": "textures/spellbook_heal.png"
+    }
+
+  },
     "fonts": {
         "OpenSans": {
             "file": "fonts/OpenSans-Regular.ttf",

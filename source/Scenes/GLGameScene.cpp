@@ -44,7 +44,7 @@ using namespace std;
 using namespace cugl::graphics;
 
 namespace {
-    constexpr size_t kPrototypeInventoryCapacity = 4;
+    constexpr size_t kPrototypeInventoryCapacity = 5;
     constexpr int kPrototypeQuota = 500;
     constexpr int kGuaranteedArtifacts = 1;
     constexpr int kGuaranteedSpellbooks = 1;
@@ -899,9 +899,9 @@ void GameScene::renderHUD()
 
     Color4 boxColor(30, 30, 30, 255);
 
-    Rect inventoryHeader = _input.getInventoryHeaderBounds();
-    drawBox(inventoryHeader.origin.x + hudOffset.x, inventoryHeader.origin.y + hudOffset.y,
-            inventoryHeader.size.width, inventoryHeader.size.height, boxColor);
+    //Rect inventoryHeader = _input.getInventoryHeaderBounds();
+    //drawBox(inventoryHeader.origin.x + hudOffset.x, inventoryHeader.origin.y + hudOffset.y,
+    //        inventoryHeader.size.width, inventoryHeader.size.height, boxColor);
 
     // Inventory box - top right
     float quotaX = screenSize.width - barW - margin;
@@ -924,18 +924,18 @@ void GameScene::renderHUD()
     drawBox(timerX + hudOffset.x, timerY + hudOffset.y, barW, barH, boxColor);
     
     // individual slots under inventory
-    float slotHeight = 48;
-    size_t slotCount = _player->getInventoryLimit();
-    size_t rowCount = _player->getInventory().size();
-    if (rowCount < slotCount) {
-        rowCount += 1;
-    }
+    //float slotHeight = 48;
+    //size_t slotCount = _player->getInventoryLimit();
+    //size_t rowCount = _player->getInventory().size();
+    //if (rowCount < slotCount) {
+    //    rowCount += 1;
+    //}
 
-    float slotY = quotaY - slotHeight;
-        for (size_t slotIndex = 0; slotIndex < rowCount; ++slotIndex) {
-            drawBox(quotaX + hudOffset.x, slotY + hudOffset.y, barW, slotHeight, Color4(72, 120, 124, 220));
-            slotY -= slotHeight + 2;
-        }
+    //float slotY = quotaY - slotHeight;
+    //    for (size_t slotIndex = 0; slotIndex < rowCount; ++slotIndex) {
+    //        drawBox(quotaX + hudOffset.x, slotY + hudOffset.y, barW, slotHeight, Color4(72, 120, 124, 220));
+    //        slotY -= slotHeight + 2;
+    //    }
 
     if (_font)
     {
@@ -961,74 +961,41 @@ void GameScene::renderHUD()
         timerTrans.translate(timerX + 10 + hudOffset.x, timerY + 12 + hudOffset.y );
         _batch->drawText(timerLabel, timerTrans);
 
-        if (_player) {
-            // show the carried item slots under the deposit box so players can see limit
+        auto boxTex = _assets->get<graphics::Texture>("item_box");
+        if (boxTex) {
+            constexpr size_t kSlotCount = 5;
+            // Scale 112x112 box to a specific size (tbd)
+            float boxSize = 80.0f;
+            float boxGap = 8.0f;
+            float totalW = kSlotCount * boxSize + (kSlotCount - 1) * boxGap; // full inventory bar width
+
+            // Center the row in the right half of the screen
+            float startX = (screenSize.width * 0.5f) + (screenSize.width * 0.25f) - (totalW * 0.5f);
+            float topY = screenSize.height - margin - boxSize;
+
             const auto& carriedItems = _player->getInventory();
-            size_t slotCount = _player->getInventoryLimit();
-            size_t rowCount = carriedItems.size();
-            if (rowCount < slotCount) {
-                rowCount += 1;
-            }
-            float rowY = quotaY - slotHeight;
 
-            for (size_t rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
-                Rect slotRect(quotaX + hudOffset.x, rowY + hudOffset.y, barW, slotHeight);
-                std::string rowText;
-                float textX = slotRect.origin.x + 14;
+            for (size_t i = 0; i < kSlotCount; ++i) {
+                float boxX = startX + i * (boxSize + boxGap) + hudOffset.x;
+                float boxY = topY + hudOffset.y;
 
-                if (rowIndex < carriedItems.size()) {
-                    const auto& carriedItem = carriedItems[rowIndex];
-                    auto texture = _assets->get<graphics::Texture>(carriedItem.itemType);
-                    if (texture) {
-                        //items were getting stretched out in inventory so fixing to row
-                        float iconHeight = slotHeight - 10;
-                        float iconWidth = iconHeight * texture->getWidth() / texture->getHeight();
-                        _batch->draw(texture, Color4::WHITE, Rect(quotaX + 6 + hudOffset.x, rowY + (slotHeight - iconHeight) / 2 + hudOffset.y, iconWidth, iconHeight));
-                        textX = quotaX + 6 + hudOffset.x + iconWidth + 10;
-                    }
-                    rowText = getCarriedItemName(_runConfig.item.entries, carriedItem) + " " + std::to_string(carriedItem.value);
-                } else {
-                    size_t remainingCount = slotCount - carriedItems.size();
-                    rowText = std::to_string(remainingCount) + (remainingCount == 1 ? " Slot Remaining" : " Slots Remaining");
-                }
-
-#ifdef CU_TOUCH_SCREEN
-//        if (_inventoryPanelOpen && inventory) {
-//            Rect panelBounds = _input.getInventoryPanelBounds();
-//            drawBox(panelBounds.origin.x + hudOffset.x, panelBounds.origin.y + hudOffset.y,
-//                    panelBounds.size.width, panelBounds.size.height,
-//                    Color4(20, 20, 20, 230));
-//
-//            float rowH = panelBounds.size.height / 4.0f;
-//            for (int ii = 0; ii < 4; ++ii) {
-//                float rowY = panelBounds.getMaxY() - rowH * (ii + 1);
-//                drawBox(panelBounds.origin.x + 2.0f + hudOffset.x, rowY + 1.0f + hudOffset.y,
-//                        panelBounds.size.width - 4.0f, rowH - 2.0f,
-//                        Color4(40, 40, 40, 220));
-//
-//                std::string rowText = "-";
-//                if ((size_t)ii < inventory->getCount()) {
-//                    rowText = inventory->getItems()[(size_t)ii]->getName();
-//                }
-//
-//                std::shared_ptr<TextLayout> rowLabel = TextLayout::allocWithText(rowText, _font);
-//                rowLabel->layout();
-//                Affine2 rowTrans;
-//                rowTrans.translate(panelBounds.origin.x + 10.0f + hudOffset.x, rowY + 8.0f + hudOffset.y);
-//                _batch->drawText(rowLabel, rowTrans);
-//            }
-//        }
-#endif // CU_TOUCH_SCREEN
+                // Draw the frame
                 _batch->setColor(Color4::WHITE);
-                std::shared_ptr<TextLayout> rowLabel = TextLayout::allocWithText(rowText, _font);
-                rowLabel->layout();
-                Affine2 rowTrans;
-                // rowTrans.translate(quotaX + 40 + hudOffset.x, rowY + 12 + hudOffset.y);
-                // keep label spacing tied to tecture width so text looks nice
-                float textY = slotRect.getMidY() - rowLabel->getBounds().size.height / 2;
-                rowTrans.translate(textX, textY);
-                _batch->drawText(rowLabel, rowTrans);
-                rowY -= slotHeight + 2;
+                _batch->draw(boxTex, Rect(boxX, boxY, boxSize, boxSize));
+
+                // Draw item texture centered inside the frame
+                if (i < carriedItems.size()) {
+                    const auto& carried = carriedItems[i];
+                    auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
+                    if (itemTex) {
+                        float padding = 10.0f;
+                        float iconSize = boxSize - padding * 2;
+                        float iconX = boxX + padding;
+                        float iconY = boxY + padding;
+                        _batch->setColor(Color4::WHITE);
+                        _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
+                    }
+                }
             }
         }
     }
