@@ -816,99 +816,11 @@ void GameScene::fixedUpdate(Uint64 step)
     // First process incoming events
     _networkCtrl->updateNet();
     
-    // handle cast spell event
-    while (_networkCtrl->isInAvailable()){
-        auto e = _networkCtrl->popInEvent();
-        if(auto cse = std::dynamic_pointer_cast<CastSpellEvent>(e)){
-            CULog("COMBO SPELL GOT");
-            processComboEvent(cse);
-        } else if (auto cse = std::dynamic_pointer_cast<EndGameEvent>(e)){
-            CULog("END GAME GOT");
-            processEndEvent(cse);
-        }else if (auto sse = std::dynamic_pointer_cast<SetSpellEvent>(e)){
-            CULog("SET SPELL GOT");
-            for (auto& p : _playerFact->current) {
-                    if (p->getPID() == sse->getPID()) {
-                        p->setSpell(sse->getSpell());
-                        break;
-                    }
-                }
-        } else if (auto de = std::dynamic_pointer_cast<DepositEvent>(e)) {
-            // 1. Host recieve 2. Host applies deposit 3. Client applies deposit
-            if (_networkCtrl->isHost()) {
-                if (!de->isSync()) {
-                    // Clients send deposit request and the host sends back the
-                    // final synced amount after checking zone and inventory
-                    CULog("HOST deposit request");
-                    for (auto& p : _playerFact->current) {
-                        if (p->getPID() == de->getPID()) {
-                            Vec2 playerScreenPos = p->getPosition() * PHYSICS_SCALE;
-                            bool canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
-                            if (canDeposit && p->hasInventory()) {
-                                int deposited = p->depositItems();
-                                if (deposited > 0) {
-                                    if (_player && p == _player) {
-                                        _inventoryValue = _player->getInventoryVal();
-                                    }
-                                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true));
-                                }
-                            }
-                            break;
-                        }
-                    }
-                } else {
-                    // Synced deposit amounts apply to everyone including the host
-                    for (auto& p : _playerFact->current) {
-                        if (p->getPID() == de->getPID()) {
-                            p->clearInventory();
-                            if (_player && p == _player) {
-                                _inventoryValue = _player->getInventoryVal();
-                            }
-                            break;
-                        }
-                    }
-                    _depositedValue += de->getAmount();
-                    CULog("HOST deposit: amount=%d total=%d / %d", de->getAmount(), _depositedValue, _quota);
-                }
-            } else if (de->isSync()) {
-                // Clients only apply deposit updates that came back from host
-                for (auto& p : _playerFact->current) {
-                    if (p->getPID() == de->getPID()) {
-                        p->clearInventory();
-                        if (_player && p == _player) {
-                            _inventoryValue = _player->getInventoryVal();
-                        }
-                        break;
-                    }
-                }
-                _depositedValue += de->getAmount();
-                CULog("CLIENT deposit: amount=%d total=%d / %d", de->getAmount(), _depositedValue, _quota);
-            }
-        } else if (auto pre = std::dynamic_pointer_cast<PickupEvent>(e)) {
-            if (_itemFact->getItem(pre->getItemID()) != nullptr) {
-                CULog("pickup event got!");
-                auto item = _itemFact->getItem(pre->getItemID());
-                if (item && !item->isRemoved()) {
-                    for (auto& p : _playerFact->current) {
-                        if (p->getPID() == pre->getPID()) {
-                            if (p->addItem(item->getItemType(), item->getValue())) {
-                                if (_player && p == _player) {
-                                    _inventoryValue = _player->getInventoryVal();
-                                }
-                                _itemFact->getItem(pre->getItemID())->markRemoved(true);
-                            }
-                            break;
-                        }
-                    }
-                }
-                
-            }
-            
-        }
-        
-        
-        
-    }
+    std::tuple<int,int> values = _networkCtrl->customEvents(_itemFact, _playerFact,
+                                 _player, _input, &_playerWon, &_gameEnded, _depositPosition, _depositRadius);
+    _inventoryValue = std::get<0>(values);
+    _depositedValue = std::max(_depositedValue,std::get<1>(values));
+    
     _world->update(step / 1000000.0f);
 }
 
@@ -1028,16 +940,6 @@ void GameScene::renderHUD()
     if (_font)
     {
         _batch->setColor(Color4::WHITE);
-
-        //std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
-        //size_t itemCount = inventory ? inventory->getCount() : 0;
-        //size_t inventoryCapacity = inventory ? inventory->getCapacity() : kPrototypeInventoryCapacity;
-        //std::shared_ptr<TextLayout> invLabel = TextLayout::allocWithText(
-        //    "inventory: " + std::to_string(itemCount) + "/" + std::to_string(inventoryCapacity), _font);
-        //invLabel->layout();
-       // Affine2 invTrans;
-        //invTrans.translate(inventoryHeader.origin.x + 10 + hudOffset.x, inventoryHeader.origin.y + 12 + //hudOffset.y);
-       // _batch->drawText(invLabel, invTrans);
 
         std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
             "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
@@ -1167,102 +1069,6 @@ void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequest
 #endif
 }
 
-//bool GameScene::hostCheckItemPickupForPlayer(const std::string& pid) {
-//    std::shared_ptr<PlayerObstacle> requestingPlayer = nullptr;
-//    for (auto& p : _playerFact->current) {
-//        if (p->getPID() == pid) {
-//            requestingPlayer = p;
-//            break;
-//        }
-//    }
-//    if (!requestingPlayer) return false;
-//
-//    for (auto& item : _itemFact->current) {
-//        if (item->isRemoved()) continue;
-//        float dist = item->getPosition().distance(requestingPlayer->getPosition());
-//        if (dist <= ITEM_PICKUP_RADIUS) {
-//            if (!requestingPlayer->addItem(item->getItemType(), item->getValue())) {
-//                CULog("Inventory full for player %s", pid.c_str());
-//                continue;
-//            }
-//            item->markRemoved(true);
-//            CULog("Picked up %s worth %d (total carrying: %d)",
-//                item->getItemType().c_str(), item->getValue(), requestingPlayer->getInventoryVal());
-////            _networkCtrl->getPhysController()->removeSharedObstacle(item);
-////            removeItemNode(item);
-//            if (_player && requestingPlayer == _player) {
-//                _inventoryValue = _player->getInventoryVal();
-//            }
-////            _itemFact->update();
-//            return true;
-//        }
-//    }
-////    _itemFact->update();
-//    return false;
-//}
-
-//void GameScene::applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player,
-//                                               const std::vector<HostInventoryItemData>& items) {
-//    if (!player) {
-//        return;
-//    }
-//
-//    if (!player->getInventory()) {
-//        player->setInventory(std::make_shared<Inventory>(kPrototypeInventoryCapacity));
-//    }
-//
-//    std::shared_ptr<Inventory> inventory = player->getInventory();
-//    inventory->clear();
-//    for (const HostInventoryItemData& item : items) {
-//        inventory->addItem(makePrototypeItem(item.id, item.kind, item.name, item.value));
-//    }
-//}
-
-//int GameScene::getInventoryPanelIndexAt(const Vec2& tapPos) const {
-//    Rect panel = _input.getInventoryPanelBounds();
-//    if (!panel.contains(tapPos)) {
-//        return -1;
-//    }
-//
-//    std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
-//    if (!inventory || inventory->isEmpty()) {
-//        return -1;
-//    }
-//
-//    float rowH = panel.size.height / 4.0f;
-//    float fromTop = panel.getMaxY() - tapPos.y;
-//    int index = (int)(fromTop / rowH);
-//    if (index < 0 || index >= (int)inventory->getCount()) {
-//        return -1;
-//    }
-//    return index;
-//}
-//
-//void GameScene::updateDepositState() {
-//    _canDeposit = _collisions.resolvePlayerItem(_player, _depositPosition, _depositRadius);
-//}
-//
-//void GameScene::tryDropItem() {
-//    if (!_input.pressedDrop()) {
-//        return;
-//    }
-//    _input.resolvedDrop();
-//
-//    std::shared_ptr<Inventory> inventory = _player->getInventory();
-//    if (!inventory || inventory->isEmpty()) {
-//        return;
-//    }
-//
-//    dropInventoryIndex(inventory->getCount() - 1);
-//}
-
-//void GameScene::tryDepositItems() {
-//    if (!_input.pressedDeposit()) {
-//        return;
-//    }
-//    _input.resolvedDeposit();
-//    depositAtDropoff();
-//}
 
 void GameScene::drawDepositZone() {
     if (!_map || _appliedRunRevision <= 0) {
@@ -1413,18 +1219,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             });
         }
     }
-}
-
-void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
-    if (e->getP2() == _player->getPID()) {
-        _input.resolveSpell();
-        _player->resolveSpell();
-    }
-}
-void GameScene::processEndEvent(const std::shared_ptr<EndGameEvent> &e)
-{
-    _playerWon = e->getResult();
-    _gameEnded = true;
 }
 
 /**

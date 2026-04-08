@@ -98,7 +98,7 @@ protected:
     /** Whether the player has won/lost - only valid when _gameEnded is true */
     bool _playerWon;
     /** Whether thegame has ended */
-    bool _gameEnded;
+    bool  _gameEnded;
     /**Timer for end of game**/
     float _timer = 3600;
 
@@ -148,7 +148,7 @@ public:
     void dispose() override;
     void reset();
     
-    bool gameEnded() {return _gameEnded;}
+    bool gameEnded() { return _gameEnded && _gameEnded; }
 
     /**
      * Initializes the controller contents, and starts the game
@@ -169,7 +169,7 @@ public:
     int getInventoryValue() const;
     int getDepositedValue() const { return _depositedValue; }
     int getQuota() const { return _quota; }
-    bool hasWon() const { return _playerWon; }
+    bool hasWon() const { return _playerWon && _playerWon; }
 
     /** initializes the network and physics world */
     void initNetwork(std::shared_ptr<NetworkController> n);
