@@ -43,7 +43,7 @@ protected:
     std::string _pid;
 
     float _speed;
-    SpellType _curSpell;
+    SpellType _curSpell = SpellType::NONE;
 
     /** Velocity of entity */
     cugl::Vec2 _velocity;
