@@ -819,7 +819,7 @@ void GameScene::fixedUpdate(Uint64 step)
     std::tuple<int,int> values = _networkCtrl->customEvents(_itemFact, _playerFact,
                                  _player, _input, &_playerWon, &_gameEnded, _depositPosition, _depositRadius);
     _inventoryValue = std::get<0>(values);
-    _depositedValue = std::max(_depositedValue,std::get<1>(values));
+    _depositedValue += std::get<1>(values);
     
     _world->update(step / 1000000.0f);
 }
