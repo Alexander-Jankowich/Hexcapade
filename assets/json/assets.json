@@ -26,6 +26,18 @@
     "item_box": {
       "file": "textures/inventory_box.png"
     },
+    "health_full": {
+      "file": "textures/health_full.png"
+    },
+    "health_half": {
+      "file": "textures/health_half.png"
+    },
+    "health_empty": {
+      "file": "textures/health_empty.png"
+    },
+    "health_bar": {
+      "file": "textures/health_bg.png"
+    },
     "left": {
       "file": "textures/left_arrow.png"
     },

@@ -12,7 +12,7 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
     setFixedRotation(true);
     _pid = pid;
     _speed = 5;
-    _health = 10;
+    _health = 6;
     _inventoryLimit = 5;
 }
 

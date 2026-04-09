@@ -903,24 +903,19 @@ void GameScene::renderHUD()
     //drawBox(inventoryHeader.origin.x + hudOffset.x, inventoryHeader.origin.y + hudOffset.y,
     //        inventoryHeader.size.width, inventoryHeader.size.height, boxColor);
 
-    // Inventory box - top right
-    float quotaX = screenSize.width - barW - margin;
-    float quotaY = screenSize.height - barH - margin;
-    drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
-
-    // Health box - top center
-    float healthW = 200;
-    float healthX = screenSize.width / 2 - healthW / 2;
-    float healthY = screenSize.height - barH - margin;
-    drawBox(healthX + hudOffset.x, healthY + hudOffset.y, healthW, barH, boxColor);
+    //// Health box - top center
+    //float healthW = 200;
+    //float healthX = screenSize.width / 2 - healthW / 2;
+    //float healthY = screenSize.height - barH - margin;
+    //drawBox(healthX + hudOffset.x, healthY + hudOffset.y, healthW, barH, boxColor);
 
 
     Rect actionButton = _input.getActionButtonBounds();
     drawBox(actionButton.origin.x + hudOffset.x, actionButton.origin.y + hudOffset.y,
             actionButton.size.width, actionButton.size.height, boxColor);
 
-    float timerX = 20;
-    float timerY = screenSize.height - barH - margin;
+    float timerX = screenSize.width / 2 - barW * 0.5f;
+    float timerY = margin;
     drawBox(timerX + hudOffset.x, timerY + hudOffset.y, barW, barH, boxColor);
     
     // individual slots under inventory
@@ -940,20 +935,6 @@ void GameScene::renderHUD()
     if (_font)
     {
         _batch->setColor(Color4::WHITE);
-
-        std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
-            "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
-        quotaLabel->layout();
-        Affine2 quotaTrans;
-        quotaTrans.translate(quotaX + 10 + hudOffset.x, quotaY + 12 + hudOffset.y);
-        _batch->drawText(quotaLabel, quotaTrans);
-
-        std::shared_ptr<TextLayout> healthLabel = TextLayout::allocWithText(
-            "Health: " + std::to_string(_player->getHealth()), _font);
-        healthLabel->layout();
-        Affine2 healthTrans;
-        healthTrans.translate(healthX + 10 + hudOffset.x, healthY + 12 + hudOffset.y);
-        _batch->drawText(healthLabel, healthTrans);
         std::shared_ptr<TextLayout> timerLabel = TextLayout::allocWithText(
                     "Time Remaining: " + std::to_string(_timer/60), _font);
         timerLabel->layout();
@@ -970,7 +951,7 @@ void GameScene::renderHUD()
             float totalW = kSlotCount * boxSize + (kSlotCount - 1) * boxGap; // full inventory bar width
 
             // Center the row in the right half of the screen
-            float startX = (screenSize.width * 0.5f) + (screenSize.width * 0.25f) - (totalW * 0.5f);
+            float startX = (screenSize.width * 0.5f) - (totalW * 0.5f);
             float topY = screenSize.height - margin - boxSize;
 
             const auto& carriedItems = _player->getInventory();
@@ -998,6 +979,61 @@ void GameScene::renderHUD()
                 }
             }
         }
+
+        auto texContainer = _assets->get<graphics::Texture>("health_bar");
+        auto texFull = _assets->get<graphics::Texture>("health_full");
+        auto texHalf = _assets->get<graphics::Texture>("health_half");
+        auto texEmpty = _assets->get<graphics::Texture>("health_empty");
+
+        // Scale container with 269x79 aspect ratio (only need to change container cause actualy heart size is based on container)
+        float containerH = 79.0f * 0.8f;
+        float containerW = 269.0f * 0.8f;
+        float containerX = margin + hudOffset.x;
+        float containerY = screenSize.height - containerH - margin + hudOffset.y;
+
+        if (texContainer && texFull && texHalf && texEmpty) {
+            // Draw the health bar
+            _batch->setColor(Color4::WHITE);
+            _batch->draw(texContainer, Rect(containerX, containerY, containerW, containerH));
+
+            // Scale hearts to fit inside container with 83x78 aspect ratio
+            float heartH = containerH * 0.75f;
+            float heartW = heartH * (83.0f / 78.0f);
+
+            // Space 3 hearts equally
+            float totalHeartsW = containerW / 3.0f;
+            int hp = _player->getHealth();
+
+            for (int i = 0; i < 3; ++i) {
+                int heartPoints = hp - i * 2;
+                std::shared_ptr<graphics::Texture> tex;
+                if (heartPoints >= 2)   
+                    tex = texFull;
+                else if (heartPoints == 1) 
+                    tex = texHalf;
+                else                       
+                    tex = texEmpty;
+
+                // Center each heart in its section
+                float slotCenterX = containerX + totalHeartsW * i + totalHeartsW * 0.5f;
+                float hx = slotCenterX - heartW * 0.5f;
+                float hy = containerY + (containerH - heartH) * 0.5f;
+                _batch->setColor(Color4::WHITE);
+                _batch->draw(tex, Rect(hx, hy, heartW, heartH));
+            }
+        }
+
+        // quota
+        float quotaX = margin;
+        float quotaY = screenSize.height - containerH - margin - barH - margin;
+        drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
+
+        std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
+            "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
+        quotaLabel->layout();
+        Affine2 quotaTrans;
+        quotaTrans.translate(quotaX + 10 + hudOffset.x, quotaY + 12 + hudOffset.y);
+        _batch->drawText(quotaLabel, quotaTrans);
     }
 }
 
@@ -1270,7 +1306,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
 
         if (enemy->getState() != EnemyObstacle::EnemyState::ATTACK_RESET)
-            player->setHealth(player->getHealth() - 2);
+            player->setHealth(player->getHealth() - 1);
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;
         }

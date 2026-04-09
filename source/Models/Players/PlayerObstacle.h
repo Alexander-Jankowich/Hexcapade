@@ -10,7 +10,7 @@ using namespace cugl;
 using namespace std;
 using namespace cugl::physics2::distrib;
 
-#define MAX_HEALTH 10
+#define MAX_HEALTH 6
 
 /**
 * An extension of WheelObstacle to represent spell collision objects.
