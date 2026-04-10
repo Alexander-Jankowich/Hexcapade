@@ -90,38 +90,48 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
                         if (p->getPID() == de->getPID()) {
                             Vec2 playerScreenPos = p->getPosition() * PHYSICS_SCALE;
                             bool canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
-                            if (canDeposit && p->hasInventory()) {
-                                int deposited = p->depositItems();
-                                if (deposited > 0) {
-                                    if (_player && p == _player) {
-                                        inventoryValue = _player->getInventoryVal();
+                            if (canDeposit) {
+                                int slotIndex = de->getSlotIndex();
+                                if (slotIndex >= 0) {
+                                    int deposited = p->depositItem((size_t)slotIndex);
+                                    if (deposited > 0) {
+                                        if (_player && p == _player) {
+                                            inventoryValue = _player->getInventoryVal();
+                                        }
+                                        pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true, slotIndex));
                                     }
-                                    pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true));
+                                }
+                                else {
+                                    int deposited = p->depositItems();
+                                    if (deposited > 0) {
+                                        if (_player && p == _player) {
+                                            inventoryValue = _player->getInventoryVal();
+                                        }
+                                        pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true));
+                                    }
                                 }
                             }
                             break;
                         }
                     }
                 } else {
-                    // Synced deposit amounts apply to everyone including the host
-                    for (auto& p : playerFact->current) {
-                        if (p->getPID() == de->getPID()) {
-                            p->clearInventory();
-                            if (_player && p == _player) {
-                                inventoryValue = _player->getInventoryVal();
-                            }
-                            break;
-                        }
-                    }
                     depositedValue += de->getAmount();
                 }
             } else if (de->isSync()) {
                 // Clients only apply deposit updates that came back from host
                 for (auto& p : playerFact->current) {
                     if (p->getPID() == de->getPID()) {
-                        p->clearInventory();
-                        if (_player && p == _player) {
-                            inventoryValue = _player->getInventoryVal();
+                        if (de->getSlotIndex() >= 0) {
+                            p->depositItem((size_t)de->getSlotIndex());
+                            if (_player && p == _player) {
+                                inventoryValue = _player->getInventoryVal();
+                            }
+                        }
+                        else {
+                            p->clearInventory();
+                            if (_player && p == _player) {
+                                inventoryValue = _player->getInventoryVal();
+                            }
                         }
                         break;
                     }

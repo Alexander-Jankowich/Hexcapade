@@ -218,7 +218,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
             return cugl::Vec2(world.x, world.y);
         }
     );
-    _input.setInventoryPanelOpen(false);
     _inputDisplay = make_shared<InputDisplay>(&_input, _constants->get("input"));
 
     lastEnemySpawn = 0;
@@ -248,7 +247,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _canDeposit = false;
     _depositRadius = 42.0f;
     _depositPosition = Vec2::ZERO;
-    _inventoryPanelOpen = false;
     
     //_mapSeed = chooseNonZeroSeed();
     _runRevision = 1;
@@ -336,8 +334,6 @@ void GameScene::reset()
     _itemNodes.clear();
     _inventoryValue = 0;
     _canDeposit = false;
-    _inventoryPanelOpen = false;
-    _input.setInventoryPanelOpen(false);
 
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
@@ -349,25 +345,6 @@ void GameScene::reset()
 
 #pragma mark -
 #pragma mark Inventory
-
-void GameScene::addItem(int value) {
-    // GA: itemnet old scene-local carry-value path kept only as a migration
-    // bridge for any remaining call sites while Inventory becomes authoritative.
-    _inventoryValue += value;
-}
-
-int GameScene::getInventoryValue() const {
-    //if (!_player || !_player->getInventory()) {
-    //    return _inventoryValue;
-    //}
-    //return _player->getInventory()->getCarriedValue();
-    // return 1;
-    
-    if (_player) {
-        return _player->getInventoryVal();
-    }
-    return _inventoryValue;
-}
 
 void GameScene::removeItemNode(const std::shared_ptr<ItemObstacle>& item) {
     if (!item) {
@@ -396,7 +373,7 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-    if (!_map->generate(getSize(), _runConfig.map, _mapSeed)) {
+    if (!_map->generate(_runConfig.map, _mapSeed)) {
         CULog("map generation failed for run revision %d", _runRevision);
         return;
     }
@@ -645,30 +622,56 @@ void GameScene::preUpdate(float dt)
     _inputDisplay->update(playerScreenPos);
 
 
-    //updateItemPickupState();
-    //updateDepositState();
-    _input.setInventoryPanelOpen(_inventoryPanelOpen);
-
-    bool pickupRequested = false;
     bool depositRequested = false;
-    int dropIndex = -1;
-
-    //if (_input.pressedDrop()) {
-    //    std::shared_ptr<Inventory> inventory = _player->getInventory();
-     //   if (inventory && !inventory->isEmpty()) {
-     //       dropIndex = (int)inventory->getCount() - 1;
-     //   }
-      //  _input.resolvedDrop();
-   // }
+    int depositIndex = -1;
     _canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
 
-    
     if (_input.pressedDeposit()) {
         depositRequested = true;
         _input.resolvedDeposit();
     }
-    //handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
+    if (_input.pressedInventory()) {
+        depositIndex = getInventorySlotIndexAt(_input.getInventoryTap());
+        _input.resolvedInventory();
+    }
+    if (_input.getInventoryHotkeyIndex() >= 0) {
+        depositIndex = _input.getInventoryHotkeyIndex();
+        _input.resolvedInventoryHotkeyIndex();
+    }
 
+    // MOBILE DEPOSIT: TAP FOR ONE SLOT
+    if (depositIndex >= 0 && _canDeposit) {
+        if (_player && _player->hasInventory()) {
+            if (_networkCtrl->isHost()) {
+                int deposited = _player->depositItem((size_t)depositIndex);
+                if (deposited > 0) {
+                    _inventoryValue = _player->getInventoryVal();
+                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
+                }
+            } else {
+                _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, false, depositIndex));
+                CULog("CLIENT deposit request");
+            }
+        }
+    }
+
+    // MOBILE DEPOSIT: TAP FOR ALL!
+    // if (depositIndex >= 0 && _canDeposit) {
+    //     if (_player && _player->hasInventory()) {
+    //         if (_networkCtrl->isHost()) {
+    //             int deposited = _player->depositItems();
+    //             if (deposited > 0) {
+    //                 _inventoryValue = _player->getInventoryVal();
+    //                 _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true));
+    //             }
+    //         } else {
+    //             _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID()));
+    //             CULog("CLIENT deposit request");
+    //         }
+    //     }
+    // }
+
+    // DESKTOP DEPOSIT: F FOR ALL!
     if (depositRequested && _canDeposit) {
         if (_player && _player->hasInventory()) {
             if (_networkCtrl->isHost()) {
@@ -685,19 +688,6 @@ void GameScene::preUpdate(float dt)
             }
         }
     }
-
-    //bool hasNetwork = _networkCtrl && _networkCtrl->hasNetwork();
-   // if (!hasNetwork || _ishost) {
-//        if (pickupRequested) {
-//            pickupNearbyItem();
-//        }
-//        if (dropIndex >= 0) {
-//            dropInventoryIndex((size_t)dropIndex);
-//        }
-//        if (depositRequested) {
-//            depositAtDropoff();
-//        }
-   // }
 
     // Spellcasting
     if (_input.getGesture() != SpellType::NONE) {
@@ -899,38 +889,9 @@ void GameScene::renderHUD()
 
     Color4 boxColor(30, 30, 30, 255);
 
-    //Rect inventoryHeader = _input.getInventoryHeaderBounds();
-    //drawBox(inventoryHeader.origin.x + hudOffset.x, inventoryHeader.origin.y + hudOffset.y,
-    //        inventoryHeader.size.width, inventoryHeader.size.height, boxColor);
-
-    //// Health box - top center
-    //float healthW = 200;
-    //float healthX = screenSize.width / 2 - healthW / 2;
-    //float healthY = screenSize.height - barH - margin;
-    //drawBox(healthX + hudOffset.x, healthY + hudOffset.y, healthW, barH, boxColor);
-
-
-    Rect actionButton = _input.getActionButtonBounds();
-    drawBox(actionButton.origin.x + hudOffset.x, actionButton.origin.y + hudOffset.y,
-            actionButton.size.width, actionButton.size.height, boxColor);
-
     float timerX = screenSize.width / 2 - barW * 0.5f;
     float timerY = margin;
     drawBox(timerX + hudOffset.x, timerY + hudOffset.y, barW, barH, boxColor);
-    
-    // individual slots under inventory
-    //float slotHeight = 48;
-    //size_t slotCount = _player->getInventoryLimit();
-    //size_t rowCount = _player->getInventory().size();
-    //if (rowCount < slotCount) {
-    //    rowCount += 1;
-    //}
-
-    //float slotY = quotaY - slotHeight;
-    //    for (size_t slotIndex = 0; slotIndex < rowCount; ++slotIndex) {
-    //        drawBox(quotaX + hudOffset.x, slotY + hudOffset.y, barW, slotHeight, Color4(72, 120, 124, 220));
-    //        slotY -= slotHeight + 2;
-    //    }
 
     if (_font)
     {
@@ -945,20 +906,13 @@ void GameScene::renderHUD()
         auto boxTex = _assets->get<graphics::Texture>("item_box");
         if (boxTex) {
             constexpr size_t kSlotCount = 5;
-            // Scale 112x112 box to a specific size (tbd)
-            float boxSize = 80.0f;
-            float boxGap = 8.0f;
-            float totalW = kSlotCount * boxSize + (kSlotCount - 1) * boxGap; // full inventory bar width
-
-            // Center the row in the right half of the screen
-            float startX = (screenSize.width * 0.5f) - (totalW * 0.5f);
-            float topY = screenSize.height - margin - boxSize;
-
             const auto& carriedItems = _player->getInventory();
 
             for (size_t i = 0; i < kSlotCount; ++i) {
-                float boxX = startX + i * (boxSize + boxGap) + hudOffset.x;
-                float boxY = topY + hudOffset.y;
+                Rect slot = getInventorySlotBounds(i);
+                float boxX = slot.origin.x + hudOffset.x;
+                float boxY = slot.origin.y + hudOffset.y;
+                float boxSize = slot.size.width;
 
                 // Draw the frame
                 _batch->setColor(Color4::WHITE);
@@ -1037,41 +991,35 @@ void GameScene::renderHUD()
     }
 }
 
-void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex) {
-#ifdef CU_TOUCH_SCREEN
-//    if (_input.pressedInventoryToggle()) {
-//        _inventoryPanelOpen = !_inventoryPanelOpen;
-//        _input.setInventoryPanelOpen(_inventoryPanelOpen);
-//        _input.resolvedInventoryToggle();
-//        CULog("inventory panel toggled: %d", _inventoryPanelOpen ? 1 : 0);
-//    }
-//
-//    if (_input.pressedInventoryPanel()) {
-//        if (_inventoryPanelOpen) {
-//            int index = getInventoryPanelIndexAt(_input.getLastUITap());
-//            if (index >= 0) {
-//                dropIndex = index;
-//            }
-//        }
-//        _input.resolvedInventoryPanel();
-//    }
-//
-//    if (_input.pressedContextAction()) {
-//        _input.resolvedContextAction();
-//        if (_canPickupItem) {
-//            pickupRequested = true;
-//        } else if (_canDeposit) {
-//            depositRequested = true;
-//        }
-//    }
-#else
-    if (_input.pressedInventoryToggle()) {
-        _inventoryPanelOpen = !_inventoryPanelOpen;
-        _input.resolvedInventoryToggle();
-    }
-#endif
+cugl::Rect GameScene::getInventorySlotBounds(size_t slotIndex) const {
+    Size screenSize = this->getSize();
+    float margin = 16;
+
+    constexpr size_t kSlotCount = 5;
+    // Scale 112x112 box to a specific size (tbd)
+    float boxSize = 80.0f;
+    float boxGap = 8.0f;
+    float totalW = kSlotCount * boxSize + (kSlotCount - 1) * boxGap; // full inventory bar width
+
+    // Center the row in the right half of the screen
+    float startX = (screenSize.width * 0.5f) - (totalW * 0.5f);
+    float topY = screenSize.height - margin - boxSize;
+
+    return Rect(startX + slotIndex * (boxSize + boxGap), topY, boxSize, boxSize);
 }
 
+int GameScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {
+    if (!_player) {
+        return -1;
+    }
+    const auto& carriedItems = _player->getInventory();
+    for (size_t i = 0; i < carriedItems.size(); ++i) {
+        if (getInventorySlotBounds(i).contains(tapPos)) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
 
 void GameScene::drawDepositZone() {
     if (!_map || _appliedRunRevision <= 0) {
@@ -1343,4 +1291,3 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact -> SetEnabled(false);
     }
 }
-

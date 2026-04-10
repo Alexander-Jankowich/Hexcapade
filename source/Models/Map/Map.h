@@ -63,7 +63,7 @@ public:
     void init();
 
 
-    bool generate(const cugl::Size& viewSize, const MapGenerationConfig& config, unsigned int seed);
+    bool generate(const MapGenerationConfig& config, unsigned int seed);
     void populateObtacles(std::shared_ptr<NetWorld>& world);
     bool canOccupy(const cugl::Vec2& worldPos, float radius) const;
     cugl::Vec2 resolveSlideMove(const cugl::Vec2& startPos, const cugl::Vec2& velocity, float radius) const;
@@ -145,4 +145,3 @@ private:
 };
 
 #endif // __HEXCAPADE_MAP_H__
-

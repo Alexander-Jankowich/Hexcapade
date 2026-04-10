@@ -369,6 +369,8 @@ std::vector<std::vector<Vec2>> FREEZE_GESTURE = {
 //
 // The meaning of any touch depends on the zone it begins in.
 
+/** The portion of the screen used for the top zone */
+#define TOP_ZONE        0.25f
 /** The portion of the screen used for the left zone */
 #define LEFT_ZONE       0.5f
 /** The portion of the screen used for the right zone */
@@ -392,13 +394,10 @@ _touchID(-1),
 _mouseKey(0),
 _joystick(false),
 _pickupPressed(false),
-_dropPressed(false),
 _depositPressed(false),
-_contextActionPressed(false),
-_inventoryTogglePressed(false),
-_inventoryPanelPressed(false),
-_inventoryPanelOpen(false),
-_lastUITap(Vec2::ZERO),
+_inventoryPressed(false),
+_inventoryTap(Vec2::ZERO),
+_inventoryHotkeyIndex(-1),
 _resetPressed(false),
 _lastGesture(SpellType::NONE),
 _isAiming(false),
@@ -545,11 +544,9 @@ void InputController::update(float dt) {
 void InputController::readInput(){
 #ifndef CU_TOUCH_SCREEN
     _pickupPressed = false;
-    _dropPressed = false;
     _depositPressed = false;
-    _contextActionPressed = false;
-    _inventoryTogglePressed = false;
-    _inventoryPanelPressed = false;
+    _inventoryPressed = false;
+    _inventoryHotkeyIndex = -1;
     _resetPressed = false;
 
     Keyboard* keys = Input::get<Keyboard>();
@@ -602,23 +599,27 @@ void InputController::readInput(){
         _pickupPressed = pickup && !pickupDown;
         pickupDown = pickup;
 
-        // Keyboard input for dropping and depositing while we prototype items
-        // on the networking branch. These are scene-level requests; the scene
-        // decides whether the action is locally allowed this frame.
-        bool drop = keys->keyDown(KeyCode::Q);
         bool deposit = keys->keyDown(KeyCode::F);
-        bool inventoryToggle = keys->keyDown(KeyCode::I);
-        static bool dropDown = false;
         static bool depositDown = false;
-        static bool inventoryToggleDown = false;
 
-        _dropPressed = drop && !dropDown;
         _depositPressed = deposit && !depositDown;
-        _inventoryTogglePressed = inventoryToggle && !inventoryToggleDown;
-
-        dropDown = drop;
         depositDown = deposit;
-        inventoryToggleDown = inventoryToggle;
+
+        KeyCode slotKeys[5] = {
+            KeyCode::NUM_1,
+            KeyCode::NUM_2,
+            KeyCode::NUM_3,
+            KeyCode::NUM_4,
+            KeyCode::NUM_5
+        };
+        static bool slotDown[5] = { false, false, false, false, false };
+        for (int i = 0; i < 5; ++i) {
+            bool slotPressed = keys->keyDown(slotKeys[i]);
+            if (slotPressed && !slotDown[i]) {
+                _inventoryHotkeyIndex = i;
+            }
+            slotDown[i] = slotPressed;
+        }
 
 
         // Keyboard inputs for spells
@@ -662,11 +663,19 @@ void InputController::readInput(){
  * Defines the zone boundaries, so we can quickly categorize touches.
  */
 void InputController::createZones() {
+    _tzone = _sbounds;
+    _tzone.size.height *= TOP_ZONE;
+
     _lzone = _sbounds;
     _lzone.size.width *= LEFT_ZONE;
+    _lzone.origin.y += _tzone.size.height;
+    _lzone.size.height -= _tzone.size.height;
+
     _rzone = _sbounds;
     _rzone.size.width *= RIGHT_ZONE;
     _rzone.origin.x = _sbounds.origin.x+_sbounds.size.width-_rzone.size.width;
+    _rzone.size.height -= _tzone.size.height;
+    _rzone.origin.y += _tzone.size.height;
 }
 
 /**
@@ -687,7 +696,9 @@ void InputController::clearTouchInstance(TouchInstance& touchInstance) {
  * @return the correct zone for the given position.
  */
 InputController::Zone InputController::getZone(const Vec2 pos) const {
-    if (_lzone.contains(pos)) {
+    if (_tzone.contains(pos)) {
+        return Zone::TOP;
+    } else if (_lzone.contains(pos)) {
         return Zone::LEFT;
     } else if (_rzone.contains(pos)) {
         return Zone::RIGHT;
@@ -839,11 +850,8 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         //CULog("%s", gesture.c_str());
     }
     else {
-        // Taps in the gesture zone no longer imply pickup now that mobile item
-        // actions live behind explicit HUD buttons.
         _lastGesture = SpellType::NONE;
         _pickupPressed = true;
-        _depositPressed = true;
     }
 }
 
@@ -872,6 +880,8 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     pos = touch2Screen(pos);
     
     switch (zone){
+        case Zone::TOP:
+            break;
         case Zone::LEFT:
             // Only process if no touch in zone
             if (_ltouch.touchids.empty()) {
@@ -917,8 +927,9 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
 void InputController::touchEndCB(const TouchEvent& event, bool focus) {
     _touchDown = false;
     // Reset all keys that might have been set
-    Vec2 pos = touch2Screen(event.position);
+    Vec2 pos = event.position;
     Zone zone = getZone(pos);
+    pos = touch2Screen(pos);
    
 
     if (_ltouch.touchids.find(event.touch) != _ltouch.touchids.end()) {
@@ -928,6 +939,9 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
     } else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
         _rtouch.touchids.clear();
         processGestureEnd(pos);
+    } else if (zone == Zone::TOP) {
+        _inventoryPressed = true;
+        _inventoryTap = pos;
     } else if (zone == Zone::MAIN) {
     }
 }
@@ -958,6 +972,9 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
     Zone zone = getZone(pos);
 
     switch (zone) {
+    case Zone::TOP:
+        _mouseDownZone = Zone::TOP;
+        break;
     case Zone::LEFT:
         // Left is the floating joystick
         _mouseDownZone = Zone::LEFT;
@@ -1006,6 +1023,8 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
     else if (_mouseDownZone == Zone::RIGHT) {
         _rtouch.touchids.clear();
         processGestureEnd(pos);
+    }
+    else if (_mouseDownZone == Zone::TOP) {
     }
     else if (zone == Zone::MAIN) {
     }

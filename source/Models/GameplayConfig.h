@@ -23,8 +23,6 @@ struct MapGenerationConfig {
     int roomPlacementAttempts = 1200;
 
     float tileSize = 48.0f;
-    float worldScaleX = 4.0f;
-    float worldScaleY = 4.0f;
     int worldMinGridWidth = 84;
     int worldMinGridHeight = 84;
 

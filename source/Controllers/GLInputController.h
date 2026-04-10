@@ -160,21 +160,6 @@ public:
     }
 
     /**
-    * Returns whether the player requested a quick-drop action this frame.
-    *
-    * Desktop uses this for the `Q` key and mobile uses inventory-panel taps to
-    * choose a slot, which later resolve into a drop request.
-    */
-    bool pressedDrop() {
-        return _dropPressed;
-    }
-
-    /** Clears the one-frame quick-drop input flag after the scene handles it. */
-    void resolvedDrop() {
-        _dropPressed = false;
-    }
-
-    /**
     * Returns whether the player requested a deposit action this frame.
     *
     * Desktop uses this for the `F` key and mobile routes it through the single
@@ -184,63 +169,46 @@ public:
         return _depositPressed;
     }
 
-    /** Clears the one-frame deposit input flag after the scene handles it. */
+    /**
+    * Call this function after resolving deposit.
+    */
     void resolvedDeposit() {
         _depositPressed = false;
     }
 
     /**
-    * Returns whether the mobile context button was tapped this frame.
+    * Returns whether a tap landed inside the top inventory HUD area.
     */
-    bool pressedContextAction() {
-        return _contextActionPressed;
+    bool pressedInventory() {
+        return _inventoryPressed;
     }
 
-    /** Clears the one-frame mobile context button flag. */
-    void resolvedContextAction() {
-        _contextActionPressed = false;
+    /** Clears the one-frame inventory HUD tap flag. */
+    void resolvedInventory() {
+        _inventoryPressed = false;
     }
 
     /**
-    * Returns whether the inventory header toggle was tapped this frame.
-    */
-    bool pressedInventoryToggle() {
-        return _inventoryTogglePressed;
-    }
-
-    /** Clears the one-frame inventory toggle flag. */
-    void resolvedInventoryToggle() {
-        _inventoryTogglePressed = false;
-    }
-
-    /**
-    * Returns whether a tap landed inside the expanded inventory panel.
-    */
-    bool pressedInventoryPanel() {
-        return _inventoryPanelPressed;
-    }
-
-    /** Clears the one-frame inventory panel tap flag. */
-    void resolvedInventoryPanel() {
-        _inventoryPanelPressed = false;
-    }
-
-    /**
-    * Returns the most recent UI tap location in scene coordinates.
+    * Returns the most recent inventory tap location in scene coordinates.
     *
-    * The GameScene uses this to convert panel taps into inventory slot indices.
+    * The GameScene uses this to convert top-zone taps into inventory slot indices.
     */
-    cugl::Vec2 getLastUITap() const {
-        return _lastUITap;
+    cugl::Vec2 getInventoryTap() const {
+        return _inventoryTap;
     }
 
     /**
-    * Lets the GameScene tell the input controller whether the panel is open.
-    *
-    * This keeps HUD hit testing and panel visibility synchronized.
+    * Returns the inventory slot requested by desktop number-key input.
     */
-    void setInventoryPanelOpen(bool open) {
-        _inventoryPanelOpen = open;
+    int getInventoryHotkeyIndex() const {
+        return _inventoryHotkeyIndex;
+    }
+
+    /**
+    * Call this function after resolving a desktop inventory hotkey.
+    */
+    void resolvedInventoryHotkeyIndex() {
+        _inventoryHotkeyIndex = -1;
     }
 
     /**
@@ -308,13 +276,6 @@ public:
 
     cugl::Vec2 getSpellAngle() { return _spellAngle; }
 
-    /** Returns the bottom-right context button bounds in scene space. */
-    const cugl::Rect& getActionButtonBounds() const { return _actionButtonBounds; }
-    /** Returns the top-left inventory header bounds in scene space. */
-    const cugl::Rect& getInventoryHeaderBounds() const { return _inventoryHeaderBounds; }
-    /** Returns the expanded inventory panel bounds in scene space. */
-    const cugl::Rect& getInventoryPanelBounds() const { return _inventoryPanelBounds; }
-
 protected:
     /** Whether the input device was successfully initialized */
     bool _active;
@@ -351,20 +312,14 @@ protected:
     
     /** Did player attempt to pickup item */
     bool _pickupPressed;
-    /** Did player request a quick-drop this frame. */
-    bool _dropPressed;
-    /** Did player request a deposit this frame. */
+    /** Did player request deposit this frame. */
     bool _depositPressed;
-    /** Did player tap the context-sensitive mobile action button. */
-    bool _contextActionPressed;
-    /** Did player tap the inventory header toggle. */
-    bool _inventoryTogglePressed;
-    /** Did player tap inside the expanded inventory panel. */
-    bool _inventoryPanelPressed;
-    /** Whether inventory panel hit-testing should be active. */
-    bool _inventoryPanelOpen;
-    /** Most recent UI tap position in scene coordinates. */
-    cugl::Vec2 _lastUITap;
+    /** Did player tap inside the top inventory area. */
+    bool _inventoryPressed;
+    /** Most recent inventory tap position in scene coordinates. */
+    cugl::Vec2 _inventoryTap;
+    /** Which inventory slot was requested by keyboard hotkey. */
+    int _inventoryHotkeyIndex;
 
     /** Did player press reset */
     bool _resetPressed;
@@ -404,15 +359,6 @@ protected:
     bool _releaseSpell;
     cugl::Vec2 _spellAngle;
 
-#pragma mark HUD button variables
-
-    /** Bottom-right mobile context button bounds shared with HUD rendering. */
-    cugl::Rect _actionButtonBounds;
-    /** Top-left inventory header bounds shared with HUD rendering. */
-    cugl::Rect _inventoryHeaderBounds;
-    /** Expanded inventory panel bounds shared with HUD rendering. */
-    cugl::Rect _inventoryPanelBounds;
-    
     /** Information representing a single "touch" (possibly multi-finger) */
     struct TouchInstance {
         /** The anchor touch position (on start) */
@@ -427,6 +373,8 @@ protected:
     enum class Zone {
         /** The touch was not inside the screen bounds */
         UNDEFINED,
+        /** The touch was in the top zone */
+        TOP,
         /** The touch was in the left zone (as shown above) */
         LEFT,
         /** The touch was in the right zone (as shown above) */
@@ -439,6 +387,8 @@ protected:
     cugl::Rect _tbounds;
     /** The bounds of the entire game screen (in scene coordinates) */
     cugl::Rect _sbounds;
+    /** The bounds of the top touch zone */
+    cugl::Rect _tzone;
     /** The bounds of the left touch zone */
     cugl::Rect _lzone;
     /** The bounds of the right touch zone */
@@ -540,15 +490,6 @@ protected:
      * @param pos the position of the touch end
      */
     void processGestureEnd(const cugl::Vec2 pos);
-
-    /**
-     * Consumes taps on mobile HUD controls before they reach joystick/gesture zones.
-     *
-     * @param pos  The tap position in scene coordinates.
-     *
-     * @return true if the HUD consumed this touch.
-     */
-    bool processMobileHUDTap(const cugl::Vec2 pos);
 
 private:
 #pragma mark Mouse Callbacks

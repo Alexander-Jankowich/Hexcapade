@@ -94,6 +94,14 @@ public:
         _inventory.clear();
         return deposited;
     }
+    int depositItem(size_t index) {
+        if (index >= _inventory.size()) {
+            return 0;
+        }
+        int deposited = _inventory[index].value;
+        _inventory.erase(_inventory.begin() + index);
+        return deposited;
+    }
 
     void setVelocity(Vec2 v);
     cugl::Vec2 getVelocity() {return _velocity;}

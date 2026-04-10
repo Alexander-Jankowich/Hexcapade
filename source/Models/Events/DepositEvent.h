@@ -21,9 +21,10 @@ public:
     std::string _pid;
     int _amount;
     bool _sync;
+    int _slotIndex;
 
     std::shared_ptr<NetEvent> newEvent() override;
-    static std::shared_ptr<NetEvent> allocDepositEvent(const std::string& pid, int amount = 0, bool sync = false);
+    static std::shared_ptr<NetEvent> allocDepositEvent(const std::string& pid, int amount = 0, bool sync = false, int slotIndex = -1);
 
     std::vector<std::byte> serialize() override;
     void deserialize(const std::vector<std::byte>& data) override;
@@ -31,6 +32,7 @@ public:
     std::string getPID() const { return _pid; }
     int getAmount() const { return _amount; }
     bool isSync() const { return _sync; }
+    int getSlotIndex() const { return _slotIndex; }
 };
 
 #endif // !__NP_DEPOSIT_EVENT_H__
