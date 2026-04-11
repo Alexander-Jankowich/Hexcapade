@@ -16,7 +16,8 @@ enum class SpellType {
     FIREBALL=2,
     HEAL=3,
     COMBO_FIREBALL=4,
-    COMBO_FREEZE=5
+    COMBO_FREEZE=5,
+    DEATH = 6
 };
 
 class SpellNode : public SpriteNode{

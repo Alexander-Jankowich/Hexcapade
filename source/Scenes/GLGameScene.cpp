@@ -686,19 +686,6 @@ void GameScene::preUpdate(float dt)
         }
     }
 
-    //bool hasNetwork = _networkCtrl && _networkCtrl->hasNetwork();
-   // if (!hasNetwork || _ishost) {
-//        if (pickupRequested) {
-//            pickupNearbyItem();
-//        }
-//        if (dropIndex >= 0) {
-//            dropInventoryIndex((size_t)dropIndex);
-//        }
-//        if (depositRequested) {
-//            depositAtDropoff();
-//        }
-   // }
-
     // Spellcasting
     if (_input.getGesture() != SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
@@ -758,13 +745,23 @@ void GameScene::preUpdate(float dt)
         }
 
         //CULog("Casting spell type: %d", t);
-        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball") -> getSize().height/4.f, angle*2, t, _networkCtrl->getPID());
+        if(t == SpellType::DEATH){
+            for(int i = 0; i < 32; i++){
+                angle = angle.rotate((3.141592653/16) * i);
+                auto params = _spellFact->serializeParams((playerScreenPos/PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball") -> getSize().height/4.f, angle, t, _networkCtrl->getPID());
+                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+                _networkCtrl->getPhysController()->acquireObs(pair.first,0);
+            }
+        }else{
+            auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball") -> getSize().height/4.f, angle, t, _networkCtrl->getPID());
+            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+            _networkCtrl->getPhysController()->acquireObs(pair.first,0);
+        }
+        
 
-        auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+        
         //We must acquire an object if we create it if we fail to do so the network
         //will consistently try to reset its position.
-        _networkCtrl->getPhysController()->acquireObs(pair.first,0);
-
         _input.resolveSpell();
         _player->resolveSpell();
         _networkCtrl->pushOutEvent(
@@ -1280,10 +1277,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
 
     // Checking for collisions
+    if (spell && spell){
+        contact -> SetEnabled(false);
+    }
     if (player && spell) {
         contact -> SetEnabled(false);
         if (spell->getCasterUID()==_networkCtrl->getPID()) return;
-        if (spell->getHealed()) {
+        if (spell->TYPE == SpellType::HEAL) {
             int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
             spell->markRemoved(true);
@@ -1309,10 +1309,19 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
     if (enemy && spell) {
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
-        if(spell -> getFroze()){
+        if(spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE){
             enemy -> setFrozen(true);
+            if(spell->TYPE == SpellType::FREEZE){
+                enemy->setFrozenTimer(60);
+            }else{
+                enemy->setFrozenTimer(240);
+            }
+            
         }
-        spell->markRemoved(true);
+        if(!(spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH)){
+            spell->markRemoved(true);
+        }
+        
         if (enemy->getHealth()==0) enemy->markRemoved(true);
         return;
     }
