@@ -12,6 +12,7 @@
 #include "Scenes/HostScene.h"
 #include "Scenes/ClientScene.h"
 #include "Controllers/NetworkController.h"
+#include "Models/Map/LevelLoader.h"
 
 /**
  * This class represents the application root for Hexcapade.
@@ -26,6 +27,8 @@ protected:
     std::shared_ptr<cugl::graphics::SpriteBatch> _batch;
     /** The global asset manager */
     std::shared_ptr<cugl::AssetManager> _assets;
+    
+    std::shared_ptr<std::vector<std::string>> _rooms;
 
     /** Whether or not we have finished loading all assets */
     bool _loaded;

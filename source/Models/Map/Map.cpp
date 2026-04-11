@@ -10,78 +10,15 @@
 #include <queue>
 #include <unordered_set>
 #include <utility>
-#include "TiledRoomLoader.h"
-#include "RectFactory.h"
 
 #define PHYSICS_SCALE 100
+#define FLOOR_GID 66
+#define EMPTY_TILE 0
 
 
 using namespace cugl;
 using namespace cugl::graphics;
 
-namespace {
-    // tiled stores flip flags inside the high bits of the gid, so the draw
-    // path needs to peel those back off before it looks up the base tile art
-    constexpr unsigned int kTiledHorizontalFlipFlag = 0x80000000u;
-    constexpr unsigned int kTiledVerticalFlipFlag = 0x40000000u;
-    constexpr unsigned int kTiledDiagonalFlipFlag = 0x20000000u;
-    constexpr unsigned int kTiledFlipMask = 0xE0000000u;
-
-    // this strips the tiled flip bits off so we can look up the real tile id.
-    unsigned int stripTiledFlipFlags(unsigned int rawGid) {
-        return rawGid & ~kTiledFlipMask;
-    }
-
-    // these tiny helpers let the draw path ask for each authored tiled flip directly.
-    bool hasTiledHorizontalFlip(unsigned int rawGid) {
-        return (rawGid & kTiledHorizontalFlipFlag) != 0;
-    }
-
-    bool hasTiledVerticalFlip(unsigned int rawGid) {
-        return (rawGid & kTiledVerticalFlipFlag) != 0;
-    }
-
-    bool hasTiledDiagonalFlip(unsigned int rawGid) {
-        return (rawGid & kTiledDiagonalFlipFlag) != 0;
-    }
-
-    // this is the tiny 2x2 matrix we use for authored tiled flip transforms.
-    struct TileTransform2D {
-        float m11 = 1.0f;
-        float m12 = 0.0f;
-        float m21 = 0.0f;
-        float m22 = 1.0f;
-    };
-
-    // this multiplies two small tile transforms so draw can apply them together.
-    TileTransform2D multiplyTransform(const TileTransform2D& a, const TileTransform2D& b) {
-        TileTransform2D result;
-        result.m11 = a.m11 * b.m11 + a.m12 * b.m21;
-        result.m12 = a.m11 * b.m12 + a.m12 * b.m22;
-        result.m21 = a.m21 * b.m11 + a.m22 * b.m21;
-        result.m22 = a.m21 * b.m12 + a.m22 * b.m22;
-        return result;
-    }
-
-    // tiled flip flags represent affine transforms too, so we convert them
-    // into one small 2x2 matrix for the draw call...?
-    TileTransform2D makeTileTransform(bool flipHorizontal, bool flipVertical,
-                                      bool flipDiagonal) {
-        TileTransform2D raw;
-
-        if (flipDiagonal) {
-            raw = multiplyTransform(TileTransform2D{0.0f, 1.0f, 1.0f, 0.0f}, raw);
-        }
-        if (flipHorizontal) {
-            raw = multiplyTransform(TileTransform2D{-1.0f, 0.0f, 0.0f, 1.0f}, raw);
-        }
-        if (flipVertical) {
-            raw = multiplyTransform(TileTransform2D{1.0f, 0.0f, 0.0f, -1.0f}, raw);
-        }
-
-        return raw;
-    }
-}
 
 Map::Map() :
 _gridWidth(0),
@@ -90,28 +27,21 @@ _tileSize(0.0f),
 _origin(Vec2::ZERO),
 _worldBounds(Rect::ZERO),
 _playerSpawn(Vec2::ZERO),
-_config(),
-_hallFloorGid(0),
-_tiledRoomPrefab(nullptr) {
+_config() {
 }
 
-// FLAG: Serena added
-void Map::init() {
-    _tiledRoomPrefab = TiledRoomLoader::loadFromAsset("tiles/example_3.tmj");
-    if (!_tiledRoomPrefab) {
-        CULog("tiled room load failed: tiles/example_2.tmj :(");
-    }
-}
-//Alex flood- literally # islands leetcode esque 
-void floodFill(std::vector<std::vector<Map::TileType>>& tileGrid) {
+
+//Alex flood- literally # islands leetcode esque
+// tileGrid = JUST the floor layer
+void floodFill(std::vector<std::vector<int>>& tileGrid) {
     std::queue<cugl::Vec2> queue;
 
     bool found = false;
     for (int i = 0; i < tileGrid.size() && !found; ++i) {
         for (int j = 0; j < tileGrid[i].size() && !found; ++j) {
-            if (tileGrid[i][j] == Map::TileType::EMPTY) {
+            if (tileGrid[i][j] == 0) {
                 queue.push(cugl::Vec2(i, j));
-                tileGrid[i][j] = Map::TileType::HALL_FLOOR;
+                tileGrid[i][j] = FLOOR_GID;
                 found = true;
             }
         }
@@ -132,16 +62,16 @@ void floodFill(std::vector<std::vector<Map::TileType>>& tileGrid) {
 
             if (nx >= 0 && nx < tileGrid.size() &&
                 ny >= 0 && ny < tileGrid[nx].size() &&
-                tileGrid[nx][ny] == Map::TileType::EMPTY)
+                tileGrid[nx][ny] == EMPTY_TILE)
             {
-                tileGrid[nx][ny] = Map::TileType::HALL_FLOOR;
+                tileGrid[nx][ny] = FLOOR_GID;
                 queue.push(cugl::Vec2(nx, ny));
             }
         }
     }
 }
 
-bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsigned int seed) {
+bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<LevelLoader> tileData) {
     CULog("seed: %d", seed);
     // this now builds the map from one repeated tiled room (ex) instead of carving
     // each room shape procedurally. we still keep the current map runtime,
@@ -155,13 +85,10 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     CUAssertLog(seed!=0, "map generation seed is zero");
     _rng.initWithSeed(seed);
 
-    // this is the one room prefab we repeat for the first tiled-backed map;
-    // later we can swap this for a pool of tmj room files without changing
-    // the rest of the map/runtime architecture!
 
     // we use the tiled tile size as the real map tile size so the rendered art,
     // collision grid, and world positions stay aligned (ask deisgners)
-    _tileSize = std::max(8.0f, (float)_tiledRoomPrefab->getTileWidth());
+    _tileSize = tileData->getTileW();
     CULog("TIle Size %f", _tileSize);
     //int clampedMinRooms = std::max(1, _config.roomCountMin);
 //    int clampedMaxRooms = std::max(clampedMinRooms, _config.roomCountMax);
@@ -170,8 +97,9 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     int targetRoomCount = std::max(_config.roomCountMin, (int) (_rng.getDouble() * _config.roomCountMax));
 
     bool useTemplates = !_config.roomTemplates.empty();
-    int prefabWidth = std::max(1, _tiledRoomPrefab->getWidth());
-    int prefabHeight = std::max(1, _tiledRoomPrefab->getHeight());
+    // FLAG: hardcoded for single room?
+    int prefabWidth = (int) tileData->getFlatMap().at(0).size();
+    int prefabHeight = (int) tileData->getFlatMap().size();
 
     // for now we stay on one hallway layout mode so the parser/render changes
     // are easier to validate against what tiled itself shows

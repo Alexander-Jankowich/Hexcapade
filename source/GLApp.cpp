@@ -15,6 +15,7 @@
 //
 #include "GLApp.h"
 
+
 using namespace cugl;
 using namespace cugl::graphics;
 using namespace cugl::scene2;
@@ -71,6 +72,7 @@ CU_ROOTCLASS(GeometryApp)
 void GeometryApp::onStartup() {
     _assets = AssetManager::alloc();
     _batch = SpriteBatch::alloc();
+    _rooms = std::make_shared<std::vector<std::string>>();
     auto cam = OrthographicCamera::alloc(getDisplaySize());
     Input::activate<TextInput>();
     Input::activate<Keyboard>();
@@ -92,6 +94,7 @@ void GeometryApp::onStartup() {
     // Needed for loading screen
     _assets->attach<WidgetValue>(WidgetLoader::alloc()->getHook());
     _assets->attach<scene2::SceneNode>(Scene2Loader::alloc()->getHook());
+    _assets->attach<LevelLoader>(GenericLoader<LevelLoader>::alloc("level", 4)->getHook());
     _assets->loadDirectory("json/loading.json");
     setFixedStep(_fixstep / 2);
 
@@ -101,6 +104,7 @@ void GeometryApp::onStartup() {
     _loading.setSpriteBatch(_batch);
 
     // Queue up the other assets
+    _assets->loadAsync<LevelLoader>("room1","json/room1.json",nullptr);
     _loading.start();
 
     cugl::netcode::NetworkLayer::start(cugl::netcode::NetworkLayer::Log::DEVELOPER);
@@ -345,7 +349,7 @@ void GeometryApp::updateLoadingScene(float dt) {
     _clientScene.init(_assets);
     _clientScene.setSpriteBatch(_batch);
 
-    _gameplay.init(_assets);
+    _gameplay.init(_assets); //TODO: feed _rooms into _gameplay
     _gameplay.setSpriteBatch(_batch);
 
     _endScene.init(_assets);

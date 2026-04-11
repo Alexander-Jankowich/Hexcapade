@@ -9,7 +9,7 @@
 
 #include "../GameplayConfig.h"
 #include "Room.h"
-#include "TiledRoomLoader.h"
+#include "LevelLoader.h"
 #include "../../Controllers/NetworkController.h"
 #include "RectFactory.h"
 
@@ -37,14 +37,6 @@ private:
     float _tileSize;
     cugl::Vec2 _origin;
     cugl::Rect _worldBounds;
-    std::vector<std::vector<TileType>> _tileGrid;
-    std::vector<TileType> _tiles;
-    std::vector<int> _tileRoomIndex;
-    std::vector<unsigned int> _floorRenderGids;
-    std::vector<unsigned int> _wallRenderGids;
-    std::vector<unsigned int> _decoRenderGids;
-    std::vector<unsigned int> _visFixRenderGids;
-    unsigned int _hallFloorGid;
 
     std::vector<Room> _rooms;
     
@@ -57,12 +49,8 @@ private:
 
 public:
     Map();
-    std::shared_ptr<TiledRoomData> _tiledRoomPrefab;
-    
-    void init();
 
-
-    bool generate(const cugl::Size& viewSize, const MapGenerationConfig& config, unsigned int seed);
+    bool generate(const cugl::Size& viewSize, const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<LevelLoader> tileData);
     void populateObtacles(std::shared_ptr<NetWorld>& world);
 
     bool canOccupy(const cugl::Vec2& worldPos, float radius) const;
