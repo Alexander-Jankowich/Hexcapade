@@ -33,12 +33,11 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
         // Check if frozen
         if (en->isFroze()) {
             en->setLinearVelocity(Vec2::ZERO);
-            //CULog("i am frozen af");
-            int i = en->getFrozenTimer() + 1;
+            int i = en->getFrozenTimer() - 1;
             en->setFrozenTimer(i);
-            if (en->getFrozenTimer() >= FROZEN_FRAMES) {
+            if (en->getFrozenTimer() == 0) {
                 en->setFrozen(false);
-                en->setFrozenTimer(0);
+                
             }
             continue;
         }
