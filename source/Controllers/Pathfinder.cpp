@@ -28,7 +28,58 @@ Vec2 Pathfinder::getClosestPlayer(Vec2 enemPos, unordered_set<shared_ptr<PlayerO
     return minPos;
 }
 
-void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact) {
+Vec2 Pathfinder::getClosestPlayer(Vec2 enemPos, unordered_set<PlayerObstacle*> targs) {
+    float minDist = FLT_MAX;
+    Vec2 minPos = Vec2(0, 0); // default
+    for (auto t : targs) {
+        float d = enemPos.distance(t->getPosition());
+        if (d < minDist) {
+            minDist = d;
+            minPos = t->getPosition();
+        }
+    }
+    return minPos;
+}
+
+unordered_set<PlayerObstacle*> Pathfinder::getVisiblePlayers(shared_ptr<physics2::distrib::NetWorld> world,
+        Vec2 enemPos, float range, unordered_set<shared_ptr<PlayerObstacle>> targs) {
+    visiblePos.clear();
+    function<float(b2Fixture*, const Vec2&, const Vec2&, float)> callback =
+        [this](b2Fixture* fixture, const Vec2& point, const Vec2& normal, float fraction) {
+            physics2::Obstacle* obs = reinterpret_cast<physics2::Obstacle*>(fixture->GetUserData().pointer);
+            if (auto p = dynamic_cast<PlayerObstacle*>(obs)) {
+                visiblePos.emplace(p);
+                CULog("hit player");
+                return fraction;
+            }
+            if (auto p = dynamic_cast<RectObstacle*>(obs)) {
+                CULog("hit wall");
+                return 0.0f;
+            }
+            if (auto p = dynamic_cast<EnemyObstacle*>(obs)) {
+                CULog("hit enemy");
+            }
+            if (auto p = dynamic_cast<ItemObstacle*>(obs)) {
+                CULog("hit item");
+            }
+            if (obs) {
+                CULog("hit other");
+            }
+            return -1.0f;
+        };
+
+    for (auto t : targs) {
+        if (t->getPosition().distance(enemPos) < range) {
+            world->rayCast(callback, enemPos, (t->getPosition() - enemPos)*2 + enemPos);
+        }
+    }
+
+    return visiblePos;
+}
+
+void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact,
+        shared_ptr<physics2::distrib::NetWorld> world) {
+
     for (auto en : enemyFact->current) {
         // Check if frozen
         if (en->isFroze()) {
@@ -50,7 +101,8 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
         }
 
         // Update target
-        auto targets = getValidTargets(en->getPosition(), en->getRange(), playerFact);
+        //auto targets = getValidTargets(en->getPosition(), en->getRange(), playerFact);
+        auto targets = getVisiblePlayers(world, en->getPosition(), en->getRange(), playerFact->current);
 
         // Set new target depending on enemy type
         Vec2 targ;

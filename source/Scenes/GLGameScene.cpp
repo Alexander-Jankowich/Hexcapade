@@ -612,7 +612,7 @@ void GameScene::preUpdate(float dt)
         }
 
         // Update enemy movement
-        _pathfinder.updateEnemies(_enemyFact, _playerFact);
+        _pathfinder.updateEnemies(_enemyFact, _playerFact, _world);
         
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
