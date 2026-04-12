@@ -177,24 +177,38 @@ public:
     }
 
     /**
-    * Returns whether a tap landed inside the top inventory HUD area.
+    * Returns whether an inventory touch ended this frame.
     */
-    bool pressedInventory() {
-        return _inventoryPressed;
+    bool inventoryReleased() {
+        return _inventoryReleased;
     }
 
-    /** Clears the one-frame inventory HUD tap flag. */
-    void resolvedInventory() {
-        _inventoryPressed = false;
+    /** Clears the one-frame inventory release flag. */
+    void resolvedInventoryRelease() {
+        _inventoryReleased = false;
     }
 
     /**
-    * Returns the most recent inventory tap location in scene coordinates.
-    *
-    * The GameScene uses this to convert top-zone taps into inventory slot indices.
+    * Returns whether an inventory touch is currently active.
     */
-    cugl::Vec2 getInventoryTap() const {
-        return _inventoryTap;
+    bool inventoryHeld() const {
+        return !_itouch.touchids.empty();
+    }
+
+    /**
+    * Returns where the active inventory touch began in scene coordinates.
+    */
+    cugl::Vec2 getInventoryAnchor() const {
+        return _inventoryAnchor;
+    }
+
+    /**
+    * Returns the most recent inventory touch location in scene coordinates.
+    *
+    * The GameScene uses this for drag proxy movement and drop tests.
+    */
+    cugl::Vec2 getInventoryTouchPos() const {
+        return _inventoryTouchPos;
     }
 
     /**
@@ -314,10 +328,12 @@ protected:
     bool _pickupPressed;
     /** Did player request deposit this frame. */
     bool _depositPressed;
-    /** Did player tap inside the top inventory area. */
-    bool _inventoryPressed;
-    /** Most recent inventory tap position in scene coordinates. */
-    cugl::Vec2 _inventoryTap;
+    /** Did an inventory touch end this frame. */
+    bool _inventoryReleased;
+    /** Where the current inventory touch began in scene coordinates. */
+    cugl::Vec2 _inventoryAnchor;
+    /** Most recent inventory touch position in scene coordinates. */
+    cugl::Vec2 _inventoryTouchPos;
     /** Which inventory slot was requested by keyboard hotkey. */
     int _inventoryHotkeyIndex;
 
@@ -399,6 +415,8 @@ protected:
     TouchInstance _ltouch;
     /** The current touch location for the right zone */
     TouchInstance _rtouch;
+    /** The current touch location for the top inventory zone */
+    TouchInstance _itouch;
     /** The current touch location for the bottom zone */
     TouchInstance _mtouch;
     

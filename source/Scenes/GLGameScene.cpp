@@ -334,6 +334,8 @@ void GameScene::reset()
     _itemNodes.clear();
     _inventoryValue = 0;
     _canDeposit = false;
+    _dragInventoryIndex = -1;
+    _dragInventoryPos = Vec2::ZERO;
 
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
@@ -630,16 +632,28 @@ void GameScene::preUpdate(float dt)
         depositRequested = true;
         _input.resolvedDeposit();
     }
-    if (_input.pressedInventory()) {
-        depositIndex = getInventorySlotIndexAt(_input.getInventoryTap());
-        _input.resolvedInventory();
+    if (_input.inventoryHeld()) {
+        if (_dragInventoryIndex < 0) {
+            _dragInventoryIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
+        }
+        if (_dragInventoryIndex >= 0) {
+            _dragInventoryPos = _input.getInventoryTouchPos();
+        }
+    }
+
+    if (_input.inventoryReleased()) {
+        if (_dragInventoryIndex >= 0 && getDepositZoneBounds().contains(_input.getInventoryTouchPos())) {
+            depositIndex = _dragInventoryIndex;
+        }
+        _dragInventoryIndex = -1;
+        _input.resolvedInventoryRelease();
     }
     if (_input.getInventoryHotkeyIndex() >= 0) {
         depositIndex = _input.getInventoryHotkeyIndex();
         _input.resolvedInventoryHotkeyIndex();
     }
 
-    // MOBILE DEPOSIT: TAP FOR ONE SLOT
+    // MOBILE DEPOSIT: DRAG ONE SLOT TO THE DEPOSIT ZONE
     if (depositIndex >= 0 && _canDeposit) {
         if (_player && _player->hasInventory()) {
             if (_networkCtrl->isHost()) {
@@ -920,6 +934,9 @@ void GameScene::renderHUD()
 
                 // Draw item texture centered inside the frame
                 if (i < carriedItems.size()) {
+                    if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex == i) {
+                        continue;
+                    }
                     const auto& carried = carriedItems[i];
                     auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
                     if (itemTex) {
@@ -930,6 +947,29 @@ void GameScene::renderHUD()
                         _batch->setColor(Color4::WHITE);
                         _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
                     }
+                }
+            }
+
+            // ?? Easier way to do it?
+            // While dragging, render the item icon at the current touch position instead of in its slot.
+            if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex < carriedItems.size()) {
+                const auto& carried = carriedItems[(size_t)_dragInventoryIndex];
+                auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
+                if (itemTex) {
+                    Rect dragSlot = getInventorySlotBounds((size_t)_dragInventoryIndex);
+                    float boxSize = dragSlot.size.width;
+                    float padding = 10.0f;
+                    float iconSize = boxSize - padding * 2;
+                    float iconX = _dragInventoryPos.x - iconSize * 0.5f + hudOffset.x;
+                    float iconY = _dragInventoryPos.y - iconSize * 0.5f + hudOffset.y;
+
+                    // ?? Drag when transparent? Or transparent in inventory while being dragged?
+                    // Color4 dragColor(255, 255, 255, 100);
+                    // _batch->draw(itemTex, dragColor, Rect(iconX, iconY, iconSize, iconSize));
+                    
+                    _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
+                    
+                    _batch->setColor(Color4::WHITE);
                 }
             }
         }
@@ -1006,6 +1046,14 @@ cugl::Rect GameScene::getInventorySlotBounds(size_t slotIndex) const {
     float topY = screenSize.height - margin - boxSize;
 
     return Rect(startX + slotIndex * (boxSize + boxGap), topY, boxSize, boxSize);
+}
+
+cugl::Rect GameScene::getDepositZoneBounds() const {
+    Vec2 hudOffset = getHUDOffset();
+    return Rect(_depositPosition.x - _depositRadius - hudOffset.x,
+                _depositPosition.y - _depositRadius - hudOffset.y,
+                _depositRadius * 2.0f,
+                _depositRadius * 2.0f);
 }
 
 int GameScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {

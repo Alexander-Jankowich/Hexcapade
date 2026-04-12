@@ -395,8 +395,9 @@ _mouseKey(0),
 _joystick(false),
 _pickupPressed(false),
 _depositPressed(false),
-_inventoryPressed(false),
-_inventoryTap(Vec2::ZERO),
+_inventoryReleased(false),
+_inventoryAnchor(Vec2::ZERO),
+_inventoryTouchPos(Vec2::ZERO),
 _inventoryHotkeyIndex(-1),
 _resetPressed(false),
 _lastGesture(SpellType::NONE),
@@ -456,6 +457,7 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     createZones();
     clearTouchInstance(_ltouch);
     clearTouchInstance(_rtouch);
+    clearTouchInstance(_itouch);
     clearTouchInstance(_mtouch);
 #else
     Size display = Application::get()->getDrawableSize();
@@ -464,6 +466,7 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     createZones();
     clearTouchInstance(_ltouch);
     clearTouchInstance(_rtouch);
+    clearTouchInstance(_itouch);
     clearTouchInstance(_mtouch);
     
 #endif
@@ -545,7 +548,7 @@ void InputController::readInput(){
 #ifndef CU_TOUCH_SCREEN
     _pickupPressed = false;
     _depositPressed = false;
-    _inventoryPressed = false;
+    _inventoryReleased = false;
     _inventoryHotkeyIndex = -1;
     _resetPressed = false;
 
@@ -881,6 +884,13 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     
     switch (zone){
         case Zone::TOP:
+            if (_itouch.touchids.empty()) {
+                _inventoryAnchor = pos;
+                _inventoryTouchPos = pos;
+                _itouch.position = pos;
+                _itouch.timestamp.mark();
+                _itouch.touchids.insert(event.touch);
+            }
             break;
         case Zone::LEFT:
             // Only process if no touch in zone
@@ -939,9 +949,13 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
     } else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
         _rtouch.touchids.clear();
         processGestureEnd(pos);
+    } else if (_itouch.touchids.find(event.touch) != _itouch.touchids.end()) {
+        _itouch.touchids.clear();
+        _inventoryReleased = true;
+        _inventoryTouchPos = pos;
     } else if (zone == Zone::TOP) {
-        _inventoryPressed = true;
-        _inventoryTap = pos;
+        _inventoryReleased = true;
+        _inventoryTouchPos = pos;
     } else if (zone == Zone::MAIN) {
     }
 }
@@ -961,6 +975,9 @@ void InputController::touchMotionCB(const TouchEvent& event, const Vec2& previou
     }
     else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
         processDrag(pos);
+    }
+    else if (_itouch.touchids.find(event.touch) != _itouch.touchids.end()) {
+        _inventoryTouchPos = pos;
     }
 }
 
