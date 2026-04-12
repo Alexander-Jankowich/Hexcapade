@@ -692,7 +692,7 @@ void GameScene::preUpdate(float dt)
     // Spellcasting
     if (_input.getGesture() != SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
-        if (newSpell != _player->getSpell()) {
+        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
             _player->setSpell(newSpell);
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
@@ -707,68 +707,73 @@ void GameScene::preUpdate(float dt)
         //CULog("Release spell--------------------------------------------------------");
         
         //CULog("Spell type: %d", _player->getSpell());
-        SpellType t = SpellType::NONE;
+        if (_player->getSpell() == SpellType::NONE) {
+            _input.resolveSpell();
+            _player->resolveSpell();
+        }
+        else {
+            SpellType t = SpellType::NONE;
 
-        // check for possible combos - serena implemented
-        for (auto p : _playerFact->current) {
-            CULog("pLayer fact size: %zu",_playerFact->current.size());
-            CULog("This is the spell %d",p->getSpell());
-            if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
-                // calc combo spell + send combo event
-                CULog("combo potential");
-                if (_player->getSpell() == SpellType::FIREBALL) {
-                    if (p->getSpell() == SpellType::FIREBALL) {
-                        t = SpellType::COMBO_FIREBALL;
-                        p->resolveSpell();
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                        CULog("combo fireball");
+            // check for possible combos - serena implemented
+            for (auto p : _playerFact->current) {
+                CULog("pLayer fact size: %zu", _playerFact->current.size());
+                CULog("This is the spell %d", p->getSpell());
+                if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
+                    // calc combo spell + send combo event
+                    CULog("combo potential");
+                    if (_player->getSpell() == SpellType::FIREBALL) {
+                        if (p->getSpell() == SpellType::FIREBALL) {
+                            t = SpellType::COMBO_FIREBALL;
+                            p->resolveSpell();
+                            _networkCtrl->pushOutEvent(
+                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                            CULog("combo fireball");
+                        }
                     }
-                }
-                else if (_player->getSpell() == SpellType::FREEZE) {
-                    if (p->getSpell() == SpellType::FREEZE) {
-                        t = SpellType::COMBO_FREEZE;
-                        p->resolveSpell();
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    else if (_player->getSpell() == SpellType::FREEZE) {
+                        if (p->getSpell() == SpellType::FREEZE) {
+                            t = SpellType::COMBO_FREEZE;
+                            p->resolveSpell();
+                            _networkCtrl->pushOutEvent(
+                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        }
                     }
-                }
 
-                // Spell is combo-ed!
-                if (t != SpellType::NONE) {
-                    _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
-                    break;
+                    // Spell is combo-ed!
+                    if (t != SpellType::NONE) {
+                        _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
+                        break;
+                    }
                 }
             }
-        }
 
-        // Not a combo, use base spell
-        if (t == SpellType::NONE) {
-            t = _player->getSpell();
-        }
+            // Not a combo, use base spell
+            if (t == SpellType::NONE) {
+                t = _player->getSpell();
+            }
 
-        //CULog("Casting spell type: %d", t);
-        if(t == SpellType::DEATH){
-            for(int i = 0; i < 32; i++){
-                angle = angle.rotate((3.141592653/16) * i);
-                auto params = _spellFact->serializeParams((playerScreenPos/PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball") -> getSize().height/4.f, angle, t, _networkCtrl->getPID());
+            //CULog("Casting spell type: %d", t);
+            if (t == SpellType::DEATH) {
+                for (int i = 0; i < 32; i++) {
+                    angle = angle.rotate((3.141592653 / 16) * i);
+                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
+                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                }
+            }
+            else {
+                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-                _networkCtrl->getPhysController()->acquireObs(pair.first,0);
+                _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             }
-        }else{
-            auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball") -> getSize().height/4.f, angle, t, _networkCtrl->getPID());
-            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-            _networkCtrl->getPhysController()->acquireObs(pair.first,0);
-        }
-        
 
-        
-        //We must acquire an object if we create it if we fail to do so the network
-        //will consistently try to reset its position.
-        _input.resolveSpell();
-        _player->resolveSpell();
-        _networkCtrl->pushOutEvent(
-            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
+            //We must acquire an object if we create it if we fail to do so the network
+            //will consistently try to reset its position.
+            _input.resolveSpell();
+            _player->resolveSpell();
+            _networkCtrl->pushOutEvent(
+                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
+        }
     }
 
     if (_input.pressedPickup() && _currOverlappedItem >= 0) {
