@@ -71,6 +71,9 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         values =_spellConsts->get("death");
         image = _assets->get<graphics::Texture>("fireball");
         break;
+    case SpellType::EARTH:
+        values = _spellConsts->get("earth");
+        image = _assets -> get<graphics::Texture>("freeze");
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
     default:

@@ -38,6 +38,8 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared
 
     _state = EnemyState::IDLE;
     _frozen = false;
+    _mud = false;
+    _mudTimer = 0;
     _frozenTimer = 0;
     _attackCounter = 0;
 }

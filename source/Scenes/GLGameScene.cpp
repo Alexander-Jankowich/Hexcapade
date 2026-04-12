@@ -1282,6 +1282,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             }
             
         }
+        if(spell->TYPE == SpellType::EARTH){
+            enemy -> setMud(true);
+            enemy -> setMudTimer(300);
+        }
         if(!(spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH)){
             spell->markRemoved(true);
         }

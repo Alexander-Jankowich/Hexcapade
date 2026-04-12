@@ -53,9 +53,15 @@ protected:
 
     // Whether the enemy is frozen
     bool _frozen;
+    
+    //Whether the enemy has mud status
+    bool _mud;
 
-    // The time since the enemy was frozen
+    // The time left until enemy is unfrozen
     int _frozenTimer;
+    
+    //The time left until enemies mud wears off
+    int _mudTimer;
 
 public:
     EnemyObstacle(EnemyType type, const Vec2& pos, const shared_ptr<JsonValue> consts, Size s);
@@ -81,7 +87,7 @@ public:
      * @return the speed of this enemy
      */
     const float getSpeed() const { return _speed; }
-    
+    void setSpeed(float s) {_speed = s; }
     EnemyState getState() {return _state;}
     void setState(EnemyState s) {_state=s;}
     void updateAttackCounter();
@@ -117,6 +123,14 @@ public:
     int getFrozenTimer() { return _frozenTimer; }
     
     void setFrozen(bool b) { _frozen = b; }
+    
+    void setMud(bool m) { _mud = m; }
+    
+    bool isMud () { return _mud; }
+    
+    int getMudTimer() { return _mudTimer; }
+    
+    void setMudTimer(float t) { _mudTimer = t; }
 };
 
 /**

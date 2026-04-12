@@ -32,6 +32,73 @@ using namespace cugl;
 
 /** How fast a double click must be in milliseconds */
 #define DOUBLE_CLICK    400
+std::vector<std::vector<Vec2>> EARTH_GESTURE = {
+    {
+        {1152.366333, 423.816711},
+        {1144.427490, 409.770935},
+        {1144.427490, 400.610657},
+        {1144.427490, 384.122070},
+        {1144.427490, 358.473206},
+        {1144.427490, 323.664062},
+        {1144.427490, 288.244263},
+        {1145.038086, 255.877808},
+        {1147.480835, 225.954224},
+        {1149.312988, 199.083923},
+        {1150.534424, 176.488525},
+        {1150.534424, 159.389282},
+        {1150.534424, 147.175537},
+        {1150.534424, 139.236572},
+        {1150.534424, 134.351074},
+        {1150.534424, 132.519043},
+        {1149.923706, 130.687012},
+        {1148.702271, 130.687012},
+        {1147.480835, 130.687012},
+        {1146.870239, 130.687012},
+        {1146.870239, 131.908386}
+    },
+    {
+        {997.862549, 323.664062},
+        {1012.519043, 303.511414},
+        {1022.290039, 292.519043},
+        {1035.114502, 276.030457},
+        {1052.213745, 256.488525},
+        {1071.145020, 236.946533},
+        {1086.412231, 220.457947},
+        {1098.625977, 207.022888},
+        {1109.007568, 196.030518},
+        {1118.778564, 186.259521},
+        {1126.717529, 177.709900},
+        {1132.213745, 171.603027},
+        {1135.877808, 166.106812},
+        {1138.320679, 161.832031},
+        {1140.763306, 156.946533},
+        {1141.984741, 153.282410},
+        {1141.984741, 152.671753},
+        {1141.984741, 155.114502},
+        {1141.984741, 155.114502},
+    },
+    {
+        {1008.854980, 407.938843},
+        {1010.076294, 392.671692},
+        {1010.076294, 373.129700},
+        {1009.465576, 339.541931},
+        {1005.801514, 301.068665},
+        {1003.358765, 266.259521},
+        {1002.137451, 235.725159},
+        {1001.526733, 209.465637},
+        {1001.526733, 186.870178},
+        {1001.526733, 166.717529},
+        {1001.526733, 151.450317},
+        {1001.526733, 141.068665},
+        {1001.526733, 136.183167},
+        {1001.526733, 134.351074},
+        {1001.526733, 133.740417},
+        {1000.916016, 133.740417},
+        {1000.305298, 133.740417},
+        {1000.305298, 136.183167},
+        {1000.305298, 136.183167}
+    }
+};
 std::vector<std::vector<Vec2>> X_GESTURE = {
     
         {
@@ -560,8 +627,9 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
                             std::function<cugl::Vec2(const cugl::Vec2&)> screenToWorld) {
     _screenToWorld = screenToWorld;
     recognizer = cugl::PGestureRecognizer::alloc();
-    recognizer -> addGesture("Death", X_GESTURE);
-    recognizer -> addGesture("Death", X_GESTURE_1);
+    recognizer -> addGesture("Death", EARTH_GESTURE);
+    recognizer -> addGesture("Earth", X_GESTURE);
+    recognizer -> addGesture("Earth", X_GESTURE_1);
     recognizer -> addGesture("Fire", ARROW_GESTURE);
     recognizer -> addGesture("Fire", ARROW_GESTURE_2);
     recognizer -> addGesture("Fire", ARROW_GESTURE_3);
@@ -576,7 +644,8 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
         {"Fire", SpellType::FIREBALL},
         {"Freeze", SpellType::FREEZE},
         {"Heal", SpellType::HEAL },
-        {"Death", SpellType::DEATH}
+        {"Death", SpellType::DEATH},
+        {"Earth", SpellType::EARTH}
     };
 
     _joyradius = values->get("joystick")->getInt("radius");

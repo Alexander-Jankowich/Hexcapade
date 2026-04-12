@@ -16,6 +16,9 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, int rows, int c
     if(t == SpellType::DEATH){
         setColor(Color4::BLACK);
     }
+    if(t == SpellType::EARTH){
+        setColor(Color4::PAPYRUS);
+    }
     
     _velocity = vel;
     _position = pos;
