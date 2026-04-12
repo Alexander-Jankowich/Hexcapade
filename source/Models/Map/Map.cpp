@@ -141,7 +141,7 @@ void floodFill(std::vector<std::vector<Map::TileType>>& tileGrid) {
     }
 }
 
-bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsigned int seed) {
+bool Map::generate(const MapGenerationConfig& config, unsigned int seed) {
     CULog("seed: %d", seed);
     // this now builds the map from one repeated tiled room (ex) instead of carving
     // each room shape procedurally. we still keep the current map runtime,
@@ -173,14 +173,8 @@ bool Map::generate(const Size& viewSize, const MapGenerationConfig& config, unsi
     int prefabWidth = std::max(1, _tiledRoomPrefab->getWidth());
     int prefabHeight = std::max(1, _tiledRoomPrefab->getHeight());
 
-    // for now we stay on one hallway layout mode so the parser/render changes
-    // are easier to validate against what tiled itself shows
-    float worldScaleX = std::max(1.0f, _config.worldScaleX);
-    float worldScaleY = std::max(1.0f, _config.worldScaleY);
-    _gridWidth = std::max(std::max(16, _config.worldMinGridWidth),
-                          (int)std::ceil((viewSize.width / _tileSize) * worldScaleX));
-    _gridHeight = std::max(std::max(16, _config.worldMinGridHeight),
-                           (int)std::ceil((viewSize.height / _tileSize) * worldScaleY));
+    _gridWidth = std::max(16, _config.worldMinGridWidth);
+    _gridHeight = std::max(16, _config.worldMinGridHeight);
 
     _origin = Vec2::ZERO;
     _worldBounds = Rect(_origin.x, _origin.y, _gridWidth * _tileSize, _gridHeight * _tileSize);
@@ -1642,4 +1636,3 @@ int Map::findNearestWalkableTileIndex(int startX, int startY) const {
 
     return -1;
 }
-

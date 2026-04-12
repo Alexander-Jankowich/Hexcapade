@@ -76,8 +76,6 @@ inline void parseProceduralConfig(const std::shared_ptr<cugl::JsonValue>& root, 
     config.map.roomPlacementAttempts = getIntMin(mapNode, "room_placement_attempts", config.map.roomPlacementAttempts, 1);
 
     config.map.tileSize = getFloatMin(mapNode, "tile_size", config.map.tileSize, 8.0f);
-    config.map.worldScaleX = getFloatMin(mapNode, "world_scale_x", config.map.worldScaleX, 1.0f);
-    config.map.worldScaleY = getFloatMin(mapNode, "world_scale_y", config.map.worldScaleY, 1.0f);
     config.map.worldMinGridWidth = getIntMin(mapNode, "world_min_grid_width", config.map.worldMinGridWidth, 16);
     config.map.worldMinGridHeight = getIntMin(mapNode, "world_min_grid_height", config.map.worldMinGridHeight, 16);
 

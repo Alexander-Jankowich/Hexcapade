@@ -84,12 +84,11 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
         // Check if frozen
         if (en->isFroze()) {
             en->setLinearVelocity(Vec2::ZERO);
-            //CULog("i am frozen af");
-            int i = en->getFrozenTimer() + 1;
+            int i = en->getFrozenTimer() - 1;
             en->setFrozenTimer(i);
-            if (en->getFrozenTimer() >= FROZEN_FRAMES) {
+            if (en->getFrozenTimer() == 0) {
                 en->setFrozen(false);
-                en->setFrozenTimer(0);
+                
             }
             continue;
         }
@@ -116,6 +115,8 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
         if (!targ.isZero()) { // Found a valid target
             en->setTarget(targ);
             //CULog("found target!!");
+        }else{
+            en -> setVelocity(Vec2::ZERO);
         }
 
         // if chasing
@@ -132,13 +133,22 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
 
             Vec2 desiredVel = en->getTarget() - en->getPosition();
             desiredVel.normalize();
-            desiredVel *= en->getSpeed();
+            if (en -> isMud() ){
+                desiredVel *= en->getSpeed()/2;
+                int t = en -> getMudTimer() - 1;
+                en -> setMudTimer(t);
+                if(en -> getMudTimer() == 0){
+                    en -> setMud(false);
+                }
+                
+            }else{
+                desiredVel *= en->getSpeed();
+            }
+            
 
             float recovery = 0.2f;
             Vec2 newVel = currentVel * (1 - recovery) + desiredVel * recovery;
-
-            //(*it)->setLinearVelocity(newVel);
-            en->setVelocity(desiredVel);
+            en->setVelocity(newVel);
         }
     }
 }

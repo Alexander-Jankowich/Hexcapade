@@ -32,7 +32,206 @@ using namespace cugl;
 
 /** How fast a double click must be in milliseconds */
 #define DOUBLE_CLICK    400
+std::vector<std::vector<Vec2>> EARTH_GESTURE = {
+    {
+        {1152.366333, 423.816711},
+        {1144.427490, 409.770935},
+        {1144.427490, 400.610657},
+        {1144.427490, 384.122070},
+        {1144.427490, 358.473206},
+        {1144.427490, 323.664062},
+        {1144.427490, 288.244263},
+        {1145.038086, 255.877808},
+        {1147.480835, 225.954224},
+        {1149.312988, 199.083923},
+        {1150.534424, 176.488525},
+        {1150.534424, 159.389282},
+        {1150.534424, 147.175537},
+        {1150.534424, 139.236572},
+        {1150.534424, 134.351074},
+        {1150.534424, 132.519043},
+        {1149.923706, 130.687012},
+        {1148.702271, 130.687012},
+        {1147.480835, 130.687012},
+        {1146.870239, 130.687012},
+        {1146.870239, 131.908386}
+    },
+    {
+        {997.862549, 323.664062},
+        {1012.519043, 303.511414},
+        {1022.290039, 292.519043},
+        {1035.114502, 276.030457},
+        {1052.213745, 256.488525},
+        {1071.145020, 236.946533},
+        {1086.412231, 220.457947},
+        {1098.625977, 207.022888},
+        {1109.007568, 196.030518},
+        {1118.778564, 186.259521},
+        {1126.717529, 177.709900},
+        {1132.213745, 171.603027},
+        {1135.877808, 166.106812},
+        {1138.320679, 161.832031},
+        {1140.763306, 156.946533},
+        {1141.984741, 153.282410},
+        {1141.984741, 152.671753},
+        {1141.984741, 155.114502},
+        {1141.984741, 155.114502},
+    },
+    {
+        {1008.854980, 407.938843},
+        {1010.076294, 392.671692},
+        {1010.076294, 373.129700},
+        {1009.465576, 339.541931},
+        {1005.801514, 301.068665},
+        {1003.358765, 266.259521},
+        {1002.137451, 235.725159},
+        {1001.526733, 209.465637},
+        {1001.526733, 186.870178},
+        {1001.526733, 166.717529},
+        {1001.526733, 151.450317},
+        {1001.526733, 141.068665},
+        {1001.526733, 136.183167},
+        {1001.526733, 134.351074},
+        {1001.526733, 133.740417},
+        {1000.916016, 133.740417},
+        {1000.305298, 133.740417},
+        {1000.305298, 136.183167},
+        {1000.305298, 136.183167}
+    }
+};
+std::vector<std::vector<Vec2>> X_GESTURE = {
+    
+        {
+            {923.167969, 431.843750},
+            {925.429688, 429.097656},
+            {937.640625, 414.460938},
+            {949.582031, 400.437500},
+            {965.078125, 383.250000},
+            {971.472656, 376.421875},
+            {977.101562, 370.742188},
+            {983.785156, 364.242188},
+            {990.917969, 357.292969},
+            {995.726562, 353.167969},
+            {998.125000, 350.859375},
+            {999.242188, 349.589844},
+            {1000.097656, 348.730469},
+            {1000.613281, 348.214844},
+            {1001.015625, 347.812500},
+            {1001.523438, 347.304688},
+            {1001.863281, 346.851562},
+            {1001.996094, 346.726562},
+            {1002.015625, 346.496094},
+            {1002.015625, 346.027344},
+            {1002.015625, 345.515625},
+            {999.671875, 342.500000},
+            {992.281250, 331.585938},
+            {976.230469, 307.644531},
+            {958.421875, 283.347656},
+            {950.636719, 273.031250},
+            {944.078125, 264.199219},
+            {940.757812, 260.218750},
+            {939.425781, 258.667969},
+            {938.921875, 258.031250},
+            {938.761719, 257.617188},
+            {938.496094, 257.355469},
+            {938.230469, 257.097656},
+            {938.097656, 257.023438},
+            {937.878906, 256.765625},
+            {937.863281, 256.519531},
+            {937.847656, 256.250000},
+            {937.843750, 256.000000},
+            {937.523438, 255.382812},
+            {936.449219, 253.937500},
+            {934.226562, 250.585938},
+            {930.847656, 245.257812},
+            {926.414062, 238.187500},
+            {924.710938, 235.347656},
+            {923.109375, 232.835938},
+            {922.375000, 231.667969},
+            {922.230469, 230.996094},
+            {922.132812, 230.687500},
+            {922.007812, 230.527344},
+            {921.859375, 230.386719},
+            {921.734375, 230.257812}
+        },
+        {
+            {915.171875, 437.257812},
+            {915.171875, 428.582031},
+            {915.171875, 399.500000},
+            {915.171875, 341.867188},
+            {915.171875, 284.054688},
+            {915.171875, 215.308594},
+            {915.171875, 182.179688},
+            {915.171875, 166.253906},
+            {915.171875, 152.480469},
+            {915.171875, 147.062500},
+            {915.171875, 145.773438},
+            {915.171875, 145.476562},
+            {915.042969, 146.156250},
+            {914.445312, 147.339844},
+            {914.445312, 147.339844}
+    }
+    
+};
 
+std::vector<std::vector<Vec2>> X_GESTURE_1 = {
+    {
+        {878.277344, 405.074219},
+        {881.027344, 403.550781},
+        {886.910156, 399.488281},
+        {903.160156, 387.312500},
+        {930.191406, 366.410156},
+        {956.851562, 343.812500},
+        {977.363281, 326.332031},
+        {998.617188, 307.347656},
+        {1009.535156, 297.007812},
+        {1016.480469, 290.921875},
+        {1020.593750, 287.230469},
+        {1021.285156, 286.695312},
+        {1022.050781, 285.878906},
+        {1021.980469, 285.710938},
+        {1021.261719, 285.664062},
+        {1019.695312, 286.164062},
+        {1017.441406, 287.378906},
+        {1009.390625, 288.312500},
+        {998.335938, 287.667969},
+        {985.312500, 283.062500},
+        {966.898438, 273.855469},
+        {948.304688, 262.054688},
+        {926.550781, 246.937500},
+        {912.855469, 237.359375},
+        {904.312500, 231.402344},
+        {898.542969, 227.500000},
+        {895.843750, 225.800781},
+        {894.656250, 225.121094},
+        {894.328125, 224.578125},
+        {893.722656, 224.031250},
+        {892.207031, 223.437500},
+        {890.265625, 222.550781},
+        {887.707031, 221.335938},
+        {884.449219, 219.546875},
+        {882.289062, 218.449219},
+        {880.804688, 217.785156},
+        {880.035156, 217.351562},
+        {879.753906, 217.339844}
+    },
+    {
+        {872.335938, 399.859375},
+        {872.453125, 399.859375},
+        {872.570312, 391.015625},
+        {872.570312, 355.554688},
+        {872.570312, 266.503906},
+        {872.570312, 191.054688},
+        {872.570312, 136.773438},
+        {872.570312, 102.527344},
+        {872.570312, 84.859375},
+        {872.570312, 70.691406},
+        {872.570312, 65.781250},
+        {872.570312, 64.679688},
+        {871.390625, 64.777344},
+        {871.390625, 64.777344}
+    }
+};
 std::vector<std::vector<Vec2>> ARROW_GESTURE = {
     {
         {2033.129883, 749.465759},
@@ -369,6 +568,8 @@ std::vector<std::vector<Vec2>> FREEZE_GESTURE = {
 //
 // The meaning of any touch depends on the zone it begins in.
 
+/** The portion of the screen used for the top zone */
+#define TOP_ZONE        0.25f
 /** The portion of the screen used for the left zone */
 #define LEFT_ZONE       0.5f
 /** The portion of the screen used for the right zone */
@@ -392,13 +593,10 @@ _touchID(-1),
 _mouseKey(0),
 _joystick(false),
 _pickupPressed(false),
-_dropPressed(false),
 _depositPressed(false),
-_contextActionPressed(false),
-_inventoryTogglePressed(false),
-_inventoryPanelPressed(false),
-_inventoryPanelOpen(false),
-_lastUITap(Vec2::ZERO),
+_inventoryPressed(false),
+_inventoryTap(Vec2::ZERO),
+_inventoryHotkeyIndex(-1),
 _resetPressed(false),
 _lastGesture(SpellType::NONE),
 _isAiming(false),
@@ -429,6 +627,9 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
                             std::function<cugl::Vec2(const cugl::Vec2&)> screenToWorld) {
     _screenToWorld = screenToWorld;
     recognizer = cugl::PGestureRecognizer::alloc();
+    recognizer -> addGesture("Death", EARTH_GESTURE);
+    recognizer -> addGesture("Earth", X_GESTURE);
+    recognizer -> addGesture("Earth", X_GESTURE_1);
     recognizer -> addGesture("Fire", ARROW_GESTURE);
     recognizer -> addGesture("Fire", ARROW_GESTURE_2);
     recognizer -> addGesture("Fire", ARROW_GESTURE_3);
@@ -442,7 +643,9 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     _gesturemap = {
         {"Fire", SpellType::FIREBALL},
         {"Freeze", SpellType::FREEZE},
-        { "Heal", SpellType::HEAL }
+        {"Heal", SpellType::HEAL },
+        {"Death", SpellType::DEATH},
+        {"Earth", SpellType::EARTH}
     };
 
     _joyradius = values->get("joystick")->getInt("radius");
@@ -545,11 +748,9 @@ void InputController::update(float dt) {
 void InputController::readInput(){
 #ifndef CU_TOUCH_SCREEN
     _pickupPressed = false;
-    _dropPressed = false;
     _depositPressed = false;
-    _contextActionPressed = false;
-    _inventoryTogglePressed = false;
-    _inventoryPanelPressed = false;
+    _inventoryPressed = false;
+    _inventoryHotkeyIndex = -1;
     _resetPressed = false;
 
     Keyboard* keys = Input::get<Keyboard>();
@@ -602,23 +803,27 @@ void InputController::readInput(){
         _pickupPressed = pickup && !pickupDown;
         pickupDown = pickup;
 
-        // Keyboard input for dropping and depositing while we prototype items
-        // on the networking branch. These are scene-level requests; the scene
-        // decides whether the action is locally allowed this frame.
-        bool drop = keys->keyDown(KeyCode::Q);
         bool deposit = keys->keyDown(KeyCode::F);
-        bool inventoryToggle = keys->keyDown(KeyCode::I);
-        static bool dropDown = false;
         static bool depositDown = false;
-        static bool inventoryToggleDown = false;
 
-        _dropPressed = drop && !dropDown;
         _depositPressed = deposit && !depositDown;
-        _inventoryTogglePressed = inventoryToggle && !inventoryToggleDown;
-
-        dropDown = drop;
         depositDown = deposit;
-        inventoryToggleDown = inventoryToggle;
+
+        KeyCode slotKeys[5] = {
+            KeyCode::NUM_1,
+            KeyCode::NUM_2,
+            KeyCode::NUM_3,
+            KeyCode::NUM_4,
+            KeyCode::NUM_5
+        };
+        static bool slotDown[5] = { false, false, false, false, false };
+        for (int i = 0; i < 5; ++i) {
+            bool slotPressed = keys->keyDown(slotKeys[i]);
+            if (slotPressed && !slotDown[i]) {
+                _inventoryHotkeyIndex = i;
+            }
+            slotDown[i] = slotPressed;
+        }
 
 
         // Keyboard inputs for spells
@@ -662,11 +867,19 @@ void InputController::readInput(){
  * Defines the zone boundaries, so we can quickly categorize touches.
  */
 void InputController::createZones() {
+    _tzone = _sbounds;
+    _tzone.size.height *= TOP_ZONE;
+
     _lzone = _sbounds;
     _lzone.size.width *= LEFT_ZONE;
+    _lzone.origin.y += _tzone.size.height;
+    _lzone.size.height -= _tzone.size.height;
+
     _rzone = _sbounds;
     _rzone.size.width *= RIGHT_ZONE;
     _rzone.origin.x = _sbounds.origin.x+_sbounds.size.width-_rzone.size.width;
+    _rzone.size.height -= _tzone.size.height;
+    _rzone.origin.y += _tzone.size.height;
 }
 
 /**
@@ -687,7 +900,9 @@ void InputController::clearTouchInstance(TouchInstance& touchInstance) {
  * @return the correct zone for the given position.
  */
 InputController::Zone InputController::getZone(const Vec2 pos) const {
-    if (_lzone.contains(pos)) {
+    if (_tzone.contains(pos)) {
+        return Zone::TOP;
+    } else if (_lzone.contains(pos)) {
         return Zone::LEFT;
     } else if (_rzone.contains(pos)) {
         return Zone::RIGHT;
@@ -767,18 +982,18 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         //CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
         return;
     }
-    //CULog("First Stroke points:");
-    //for (const auto& p : currentStroke) {
-    //    CULog("{%f, %f},", p.x, p.y);
-    //}
-    //CULog("Second Stroke points:");
-    //for (const auto& p : secondStroke) {
-    //    CULog("{%f, %f},", p.x, p.y);
-    //}
-    //CULog("Third Stroke points:");
-    //for (const auto& p : thirdStroke) {
-    //    CULog("{%f, %f},", p.x, p.y);
-    //}
+    CULog("First Stroke points:");
+    for (const auto& p : currentStroke) {
+        CULog("{%f, %f},", p.x, p.y);
+    }
+    CULog("Second Stroke points:");
+    for (const auto& p : secondStroke) {
+        CULog("{%f, %f},", p.x, p.y);
+    }
+    CULog("Third Stroke points:");
+    for (const auto& p : thirdStroke) {
+        CULog("{%f, %f},", p.x, p.y);
+    }
     _timeSinceLastStroke = 0;
     _curStrokes++;
     if (_curStrokes > 3) {
@@ -839,11 +1054,8 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         //CULog("%s", gesture.c_str());
     }
     else {
-        // Taps in the gesture zone no longer imply pickup now that mobile item
-        // actions live behind explicit HUD buttons.
         _lastGesture = SpellType::NONE;
         _pickupPressed = true;
-        _depositPressed = true;
     }
 }
 
@@ -872,6 +1084,8 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     pos = touch2Screen(pos);
     
     switch (zone){
+        case Zone::TOP:
+            break;
         case Zone::LEFT:
             // Only process if no touch in zone
             if (_ltouch.touchids.empty()) {
@@ -917,8 +1131,9 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
 void InputController::touchEndCB(const TouchEvent& event, bool focus) {
     _touchDown = false;
     // Reset all keys that might have been set
-    Vec2 pos = touch2Screen(event.position);
+    Vec2 pos = event.position;
     Zone zone = getZone(pos);
+    pos = touch2Screen(pos);
    
 
     if (_ltouch.touchids.find(event.touch) != _ltouch.touchids.end()) {
@@ -928,6 +1143,9 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
     } else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
         _rtouch.touchids.clear();
         processGestureEnd(pos);
+    } else if (zone == Zone::TOP) {
+        _inventoryPressed = true;
+        _inventoryTap = pos;
     } else if (zone == Zone::MAIN) {
     }
 }
@@ -958,6 +1176,9 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
     Zone zone = getZone(pos);
 
     switch (zone) {
+    case Zone::TOP:
+        _mouseDownZone = Zone::TOP;
+        break;
     case Zone::LEFT:
         // Left is the floating joystick
         _mouseDownZone = Zone::LEFT;
@@ -1006,6 +1227,8 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
     else if (_mouseDownZone == Zone::RIGHT) {
         _rtouch.touchids.clear();
         processGestureEnd(pos);
+    }
+    else if (_mouseDownZone == Zone::TOP) {
     }
     else if (zone == Zone::MAIN) {
     }

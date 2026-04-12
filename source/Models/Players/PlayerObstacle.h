@@ -10,7 +10,7 @@ using namespace cugl;
 using namespace std;
 using namespace cugl::physics2::distrib;
 
-#define MAX_HEALTH 10
+#define MAX_HEALTH 6
 
 /**
 * An extension of WheelObstacle to represent spell collision objects.
@@ -43,7 +43,7 @@ protected:
     std::string _pid;
 
     float _speed;
-    SpellType _curSpell;
+    SpellType _curSpell = SpellType::NONE;
 
     /** Velocity of entity */
     cugl::Vec2 _velocity;
@@ -92,6 +92,14 @@ public:
     int depositItems() {
         int deposited = getInventoryVal();
         _inventory.clear();
+        return deposited;
+    }
+    int depositItem(size_t index) {
+        if (index >= _inventory.size()) {
+            return 0;
+        }
+        int deposited = _inventory[index].value;
+        _inventory.erase(_inventory.begin() + index);
         return deposited;
     }
 

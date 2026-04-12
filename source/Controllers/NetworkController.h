@@ -6,6 +6,11 @@
 //
 #include <cugl/cugl.h>
 #include "../Models/Events.h"
+#include "../Models/Items.h"
+#include "../Models/Players.h"
+#include "../Models/Spells.h"
+#include "../Models/Enemies.h"
+#include "../Scenes/InputDisplay.h"
 
 #ifndef __NETWORK_CONTROLLER_H__
 #define __NETWORK_CONTROLLER_H__
@@ -60,5 +65,20 @@ public:
         string room = getRoomID();
         return hex2dec(room);
     }
+    
+    void processComboEvent(const std::shared_ptr<CastSpellEvent>& e, std::shared_ptr<PlayerObstacle> player, InputController input) {
+        if (e->getP2() == player->getPID()) {
+            input.resolveSpell();
+            player->resolveSpell();
+        }
+    }
+    void processEndEvent(const std::shared_ptr<EndGameEvent> &e,bool* _playerWon, bool* _gameEnded)
+    {
+        *_playerWon = e->getResult();
+        *_gameEnded = true;
+    }
+    
+    std::tuple<int,int> customEvents(std::shared_ptr<ItemFactory> itemFact,std::shared_ptr<PlayerFactory> playerFact,
+                                     std::shared_ptr<PlayerObstacle> _player, InputController& _input,bool* _playerWon, bool* _gameEnded, cugl::Vec2 _depositPosition, float _depositRadius);
 };
 #endif // !__NETWORK_CONTROLLER_H__

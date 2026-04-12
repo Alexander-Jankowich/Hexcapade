@@ -11,9 +11,10 @@
 using namespace std;
 using namespace cugl;
 
-SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int dmg, float range, bool freeze, bool heal,SpellType type, std::string c) {
-    if (type == SpellType::COMBO_FREEZE or type == SpellType::COMBO_FIREBALL){
-        CULog("this works for making bigger");
+SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int dmg, float range ,SpellType type, std::string c) : TYPE(type) {
+    if (type == SpellType::DEATH){
+        init(pos, (rad*2)/PHYSICS_SCALE);
+    }else if (type == SpellType::COMBO_FREEZE or type == SpellType::COMBO_FIREBALL){
         init(pos, (rad*2)/PHYSICS_SCALE);
     }else{
         init(pos, rad/PHYSICS_SCALE);
@@ -27,8 +28,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int
     setFixedRotation(true);
     
     _damage = dmg;
-    _froze = freeze;
-    _healed = heal;
+    
 
     _start = pos;
     _range = range;
@@ -67,6 +67,13 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         values = _spellConsts->get("heal");
         image = _assets->get<graphics::Texture>("heal");
         break;
+    case SpellType::DEATH:
+        values =_spellConsts->get("death");
+        image = _assets->get<graphics::Texture>("fireball");
+        break;
+    case SpellType::EARTH:
+        values = _spellConsts->get("earth");
+        image = _assets -> get<graphics::Texture>("freeze");
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
     default:
@@ -76,9 +83,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     Vec2 vel = norm * values->getFloat("speed");
     auto spell = SpellObstacle::alloc(pos, rad,vel,
         values->getInt("damage"),
-        values->getFloat("range"),
-        values->getBool("freeze", false),
-        values->getBool("heal", false), type,c_uid);
+        values->getFloat("range"),type ,c_uid);
     //auto spell = SpellObstacle::alloc(pos, type);
 
     spell->setAngleSnap(0); // Snap to the nearest degree

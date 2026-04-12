@@ -98,7 +98,7 @@ protected:
     /** Whether the player has won/lost - only valid when _gameEnded is true */
     bool _playerWon;
     /** Whether thegame has ended */
-    bool _gameEnded;
+    bool  _gameEnded;
     /**Timer for end of game**/
     float _timer = 3600;
 
@@ -118,8 +118,6 @@ protected:
     cugl::Vec2 _depositPosition;
     /** this stores the prototype origin/deposit interaction radius */
     float _depositRadius;
-    /** this tracks local-only inventory panel visibility */
-    bool _inventoryPanelOpen;
     /** id of item player is on, if they are on an item */
     int _currOverlappedItem = -1;
 
@@ -132,7 +130,7 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _gameEnded(false), _inventoryValue(0), _depositedValue(0), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f), _inventoryPanelOpen(false) {}
+    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _gameEnded(false), _inventoryValue(0), _depositedValue(0), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f) {}
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
@@ -148,7 +146,7 @@ public:
     void dispose() override;
     void reset();
     
-    bool gameEnded() {return _gameEnded;}
+    bool gameEnded() { return _gameEnded && _gameEnded; }
 
     /**
      * Initializes the controller contents, and starts the game
@@ -165,11 +163,9 @@ public:
     
     std::shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
 
-    void addItem(int value);
-    int getInventoryValue() const;
     int getDepositedValue() const { return _depositedValue; }
     int getQuota() const { return _quota; }
-    bool hasWon() const { return _playerWon; }
+    bool hasWon() const { return _playerWon && _playerWon; }
 
     /** initializes the network and physics world */
     void initNetwork(std::shared_ptr<NetworkController> n);
@@ -281,10 +277,9 @@ private:
     void processComboEvent(const std::shared_ptr<CastSpellEvent>& e);
     void processEndEvent(const std::shared_ptr<EndGameEvent>& e);
 
-    // this maps local HUD input into explicit pickup/drop/deposit requests
-    void handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex);
-    // this maps the last panel tap to an inventory row index for the upcoming item flow
-    int getInventoryPanelIndexAt(const cugl::Vec2& tapPos) const;
+    cugl::Rect getInventorySlotBounds(size_t slotIndex) const;
+    // this maps the last hud tap to an inventory slot index for the upcoming item flow
+    int getInventorySlotIndexAt(const cugl::Vec2& tapPos) const;
     /**
      * on recieving a pickup event from player, checks if it is valid.
      */
