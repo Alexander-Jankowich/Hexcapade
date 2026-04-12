@@ -955,7 +955,7 @@ void GameScene::renderHUD()
         // Scale container with 269x79 aspect ratio (only need to change container cause actualy heart size is based on container)
         float containerH = 79.0f * 0.8f;
         float containerW = 269.0f * 0.8f;
-        float containerX = margin + hudOffset.x + 15.0f; //extra offset because health gets clipped on iphone corner
+        float containerX = margin + hudOffset.x + 25.0f; //extra offset because health gets clipped on iphone corner
         float containerY = screenSize.height - containerH - margin + hudOffset.y;
 
         if (texContainer && texFull && texHalf && texEmpty) {
@@ -993,13 +993,14 @@ void GameScene::renderHUD()
         // quota
         float quotaX = margin;
         float quotaY = screenSize.height - containerH - margin - barH - margin;
-        drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
+        //drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
 
         std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
             "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
         quotaLabel->layout();
         Affine2 quotaTrans;
         quotaTrans.translate(quotaX + 10 + hudOffset.x, quotaY + 12 + hudOffset.y);
+        _batch->setColor(Color4::BLACK);
         _batch->drawText(quotaLabel, quotaTrans);
     }
 }
