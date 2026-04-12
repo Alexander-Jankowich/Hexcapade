@@ -289,8 +289,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
         };
     _world->update(1);
     
-    
-    
     _networkCtrl = nullptr;
     setActive(false);
     return true;
