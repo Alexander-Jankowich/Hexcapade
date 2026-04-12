@@ -44,7 +44,7 @@ using namespace std;
 using namespace cugl::graphics;
 
 namespace {
-    constexpr size_t kPrototypeInventoryCapacity = 4;
+    constexpr size_t kPrototypeInventoryCapacity = 5;
     constexpr int kPrototypeQuota = 500;
     constexpr int kGuaranteedArtifacts = 1;
     constexpr int kGuaranteedSpellbooks = 1;
@@ -218,7 +218,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
             return cugl::Vec2(world.x, world.y);
         }
     );
-    _input.setInventoryPanelOpen(false);
     _inputDisplay = make_shared<InputDisplay>(&_input, _constants->get("input"));
 
     lastEnemySpawn = 0;
@@ -248,19 +247,19 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _canDeposit = false;
     _depositRadius = 42.0f;
     _depositPosition = Vec2::ZERO;
-    _inventoryPanelOpen = false;
     
     //_mapSeed = chooseNonZeroSeed();
     _runRevision = 1;
     
-    
-
+    // Create all the factories
     _spellFact = SpellFactory::alloc(_assets);
     _playerFact = PlayerFactory::alloc(_assets);
     _enemyFact = EnemyFactory::alloc(_assets);
     _rectFact = RectFactory::alloc(_assets, _map->_tiledRoomPrefab);
     _itemFact = ItemFactory::alloc(_assets);
-    //CULog("did tiled thing load: %d", _map->_tiledRoomPrefab==nullptr);
+
+    // Create other controllers
+    _pathfinder = Pathfinder();
 
     // IMPORTANT: SCALING MUST BE UNIFORM
     // This means that we cannot change the aspect ratio of the physics world
@@ -289,8 +288,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
         beforeSolve(contact, oldManifold);
         };
     _world->update(1);
-    
-    
     
     _networkCtrl = nullptr;
     setActive(false);
@@ -335,8 +332,6 @@ void GameScene::reset()
     _itemNodes.clear();
     _inventoryValue = 0;
     _canDeposit = false;
-    _inventoryPanelOpen = false;
-    _input.setInventoryPanelOpen(false);
 
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
@@ -348,25 +343,6 @@ void GameScene::reset()
 
 #pragma mark -
 #pragma mark Inventory
-
-void GameScene::addItem(int value) {
-    // GA: itemnet old scene-local carry-value path kept only as a migration
-    // bridge for any remaining call sites while Inventory becomes authoritative.
-    _inventoryValue += value;
-}
-
-int GameScene::getInventoryValue() const {
-    //if (!_player || !_player->getInventory()) {
-    //    return _inventoryValue;
-    //}
-    //return _player->getInventory()->getCarriedValue();
-    // return 1;
-    
-    if (_player) {
-        return _player->getInventoryVal();
-    }
-    return _inventoryValue;
-}
 
 void GameScene::removeItemNode(const std::shared_ptr<ItemObstacle>& item) {
     if (!item) {
@@ -395,7 +371,7 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-    if (!_map->generate(getSize(), _runConfig.map, _mapSeed)) {
+    if (!_map->generate(_runConfig.map, _mapSeed)) {
         CULog("map generation failed for run revision %d", _runRevision);
         return;
     }
@@ -553,11 +529,11 @@ Vec2 GameScene::getHUDOffset() const {
 void GameScene::preUpdate(float dt)
 {
     if (!_player) {
-            // Try to find our player now that replication may have run
-            _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
-            //Have we set our player yet / received signal
-            if (!_player) return;
-        }
+        // Try to find our player now that replication may have run
+        _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
+        //Have we set our player yet / received signal
+        if (!_player) return;
+    }
     //We have to acquire ourselves before we attempt to move
     //it is a little weird to do this every frame but this allows host to acquire themselves
     _networkCtrl -> getPhysController() -> acquireObs(_player, 0);
@@ -590,31 +566,28 @@ void GameScene::preUpdate(float dt)
         lastEnemySpawn += dt;
         if (lastEnemySpawn > 8) {
             lastEnemySpawn = 0;
-            //_enemy->spawnEnemy(getSize() / 2, 4);
-            
-            
+
             auto spawns = _map -> getEnemySpawnPoints();
             std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
             if (!spawns.empty()) {
                 std::uint64_t index = rand % spawns.size();
                 Vec2 pos = spawns[index];
 
-                auto params = _enemyFact->serializeParams(pos / PHYSICS_SCALE, Vec2::ZERO, 4);
+                auto params = _enemyFact->serializeParams(EnemyType::GHOST, pos / PHYSICS_SCALE);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
+                // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
                 _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
             }
         }
 
-        std::vector<Vec2> player_pos;
-        for (auto p : _playerFact->current) {
-            if (p->getHealth() > 0)
-                player_pos.push_back(p->getPosition());
-        }
-        auto toRemove = _enemyFact->update(player_pos);
+        auto toRemove = _enemyFact->getRemoved();
         for (auto en : toRemove) {
             _networkCtrl->getPhysController()->removeSharedObstacle(en);
         }
+
+        // Update enemy movement
+        _pathfinder.updateEnemies(_enemyFact, _playerFact);
         
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
@@ -625,7 +598,7 @@ void GameScene::preUpdate(float dt)
         auto spellRemove = _spellFact->update();
         for (auto spell : spellRemove) {
             _networkCtrl->getPhysController()->removeSharedObstacle(spell);
-            CULog("Remove spell: %d", spell->isRemoved());
+            //CULog("Remove spell: %d", spell->isRemoved());
         }
         
     }
@@ -637,12 +610,8 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 velocity = input * _player->getSpeed();
     _player->setVelocity(velocity);
     
-    
-    //CULog("body active: %d", _player->isAwake());
-    //CULog("actual vel: %f %f", _player->getLinearVelocity().x, _player->getLinearVelocity().y);
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
-    //CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
 
     updateCameraFollow();
     Vec2 offset = getHUDOffset();
@@ -651,30 +620,56 @@ void GameScene::preUpdate(float dt)
     _inputDisplay->update(playerScreenPos);
 
 
-    //updateItemPickupState();
-    //updateDepositState();
-    _input.setInventoryPanelOpen(_inventoryPanelOpen);
-
-    bool pickupRequested = false;
     bool depositRequested = false;
-    int dropIndex = -1;
-
-    //if (_input.pressedDrop()) {
-    //    std::shared_ptr<Inventory> inventory = _player->getInventory();
-     //   if (inventory && !inventory->isEmpty()) {
-     //       dropIndex = (int)inventory->getCount() - 1;
-     //   }
-      //  _input.resolvedDrop();
-   // }
+    int depositIndex = -1;
     _canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
 
-    
     if (_input.pressedDeposit()) {
         depositRequested = true;
         _input.resolvedDeposit();
     }
-    //handleMobileHUDInput(pickupRequested, depositRequested, dropIndex);
+    if (_input.pressedInventory()) {
+        depositIndex = getInventorySlotIndexAt(_input.getInventoryTap());
+        _input.resolvedInventory();
+    }
+    if (_input.getInventoryHotkeyIndex() >= 0) {
+        depositIndex = _input.getInventoryHotkeyIndex();
+        _input.resolvedInventoryHotkeyIndex();
+    }
 
+    // MOBILE DEPOSIT: TAP FOR ONE SLOT
+    if (depositIndex >= 0 && _canDeposit) {
+        if (_player && _player->hasInventory()) {
+            if (_networkCtrl->isHost()) {
+                int deposited = _player->depositItem((size_t)depositIndex);
+                if (deposited > 0) {
+                    _inventoryValue = _player->getInventoryVal();
+                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
+                }
+            } else {
+                _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, false, depositIndex));
+                CULog("CLIENT deposit request");
+            }
+        }
+    }
+
+    // MOBILE DEPOSIT: TAP FOR ALL!
+    // if (depositIndex >= 0 && _canDeposit) {
+    //     if (_player && _player->hasInventory()) {
+    //         if (_networkCtrl->isHost()) {
+    //             int deposited = _player->depositItems();
+    //             if (deposited > 0) {
+    //                 _inventoryValue = _player->getInventoryVal();
+    //                 _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true));
+    //             }
+    //         } else {
+    //             _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID()));
+    //             CULog("CLIENT deposit request");
+    //         }
+    //     }
+    // }
+
+    // DESKTOP DEPOSIT: F FOR ALL!
     if (depositRequested && _canDeposit) {
         if (_player && _player->hasInventory()) {
             if (_networkCtrl->isHost()) {
@@ -692,23 +687,10 @@ void GameScene::preUpdate(float dt)
         }
     }
 
-    //bool hasNetwork = _networkCtrl && _networkCtrl->hasNetwork();
-   // if (!hasNetwork || _ishost) {
-//        if (pickupRequested) {
-//            pickupNearbyItem();
-//        }
-//        if (dropIndex >= 0) {
-//            dropInventoryIndex((size_t)dropIndex);
-//        }
-//        if (depositRequested) {
-//            depositAtDropoff();
-//        }
-   // }
-
     // Spellcasting
     if (_input.getGesture() != SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
-        if (newSpell != _player->getSpell()) {
+        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
             _player->setSpell(newSpell);
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
@@ -720,63 +702,76 @@ void GameScene::preUpdate(float dt)
         angle = _player->getDirection();
     }
     if (_input.shouldReleaseSpell()) {
-        CULog("Release spell--------------------------------------------------------");
-        // CULog("Pos: %.2f %.2f", playerScreenPos.x, playerScreenPos.y);
-        //spells.spawnSpell(_player->getSpellId(), _player->getSpell(), playerScreenPos, angle);
-        // Spawn spell, make host owner of object
+        //CULog("Release spell--------------------------------------------------------");
         
-        CULog("Spell type: %d", _player->getSpell());
-        SpellType t = SpellType::NONE;
+        //CULog("Spell type: %d", _player->getSpell());
+        if (_player->getSpell() == SpellType::NONE) {
+            _input.resolveSpell();
+            _player->resolveSpell();
+        }
+        else {
+            SpellType t = SpellType::NONE;
 
-        // check for possible combos - serena implemented
-        for (auto p : _playerFact->current) {
-            CULog("pLayer fact size: %zu",_playerFact->current.size());
-            CULog("This is the spell %d",p->getSpell());
-            if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
-                // calc combo spell + send combo event
-                CULog("combo potential");
-                if (_player->getSpell() == SpellType::FIREBALL) {
-                    if (p->getSpell() == SpellType::FIREBALL) {
-                        t = SpellType::COMBO_FIREBALL;
-                        p->resolveSpell();
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                        CULog("combo fireball");
+            // check for possible combos - serena implemented
+            for (auto p : _playerFact->current) {
+                CULog("pLayer fact size: %zu", _playerFact->current.size());
+                CULog("This is the spell %d", p->getSpell());
+                if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
+                    // calc combo spell + send combo event
+                    CULog("combo potential");
+                    if (_player->getSpell() == SpellType::FIREBALL) {
+                        if (p->getSpell() == SpellType::FIREBALL) {
+                            t = SpellType::COMBO_FIREBALL;
+                            p->resolveSpell();
+                            _networkCtrl->pushOutEvent(
+                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                            CULog("combo fireball");
+                        }
                     }
-                }
-                else if (_player->getSpell() == SpellType::FREEZE) {
-                    if (p->getSpell() == SpellType::FREEZE) {
-                        t = SpellType::COMBO_FREEZE;
-                        p->resolveSpell();
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    else if (_player->getSpell() == SpellType::FREEZE) {
+                        if (p->getSpell() == SpellType::FREEZE) {
+                            t = SpellType::COMBO_FREEZE;
+                            p->resolveSpell();
+                            _networkCtrl->pushOutEvent(
+                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        }
                     }
-                }
 
-                // Spell is combo-ed!
-                if (t != SpellType::NONE) {
-                    _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
-                    break;
+                    // Spell is combo-ed!
+                    if (t != SpellType::NONE) {
+                        _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
+                        break;
+                    }
                 }
             }
+
+            // Not a combo, use base spell
+            if (t == SpellType::NONE) {
+                t = _player->getSpell();
+            }
+
+            //CULog("Casting spell type: %d", t);
+            if (t == SpellType::DEATH) {
+                for (int i = 0; i < 32; i++) {
+                    angle = angle.rotate((3.141592653 / 16) * i);
+                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
+                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                }
+            }
+            else {
+                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
+                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+                _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+            }
+
+            //We must acquire an object if we create it if we fail to do so the network
+            //will consistently try to reset its position.
+            _input.resolveSpell();
+            _player->resolveSpell();
+            _networkCtrl->pushOutEvent(
+                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
         }
-
-        // Not a combo, use base spell
-        if (t == SpellType::NONE) {
-            t = _player->getSpell();
-        }
-
-        CULog("Casting spell type: %d", t);
-        auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball") -> getSize().height/4.f, angle*2, t, _networkCtrl->getPID());
-        auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-        //We must acquire an object if we create it if we fail to do so the network
-        //will consistently try to reset its position.
-        _networkCtrl->getPhysController()->acquireObs(pair.first,0);
-
-        _input.resolveSpell();
-        _player->resolveSpell();
-        _networkCtrl->pushOutEvent(
-            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
     }
 
     if (_input.pressedPickup() && _currOverlappedItem >= 0) {
@@ -824,99 +819,11 @@ void GameScene::fixedUpdate(Uint64 step)
     // First process incoming events
     _networkCtrl->updateNet();
     
-    // handle cast spell event
-    while (_networkCtrl->isInAvailable()){
-        auto e = _networkCtrl->popInEvent();
-        if(auto cse = std::dynamic_pointer_cast<CastSpellEvent>(e)){
-            CULog("COMBO SPELL GOT");
-            processComboEvent(cse);
-        } else if (auto cse = std::dynamic_pointer_cast<EndGameEvent>(e)){
-            CULog("END GAME GOT");
-            processEndEvent(cse);
-        }else if (auto sse = std::dynamic_pointer_cast<SetSpellEvent>(e)){
-            CULog("SET SPELL GOT");
-            for (auto& p : _playerFact->current) {
-                    if (p->getPID() == sse->getPID()) {
-                        p->setSpell(sse->getSpell());
-                        break;
-                    }
-                }
-        } else if (auto de = std::dynamic_pointer_cast<DepositEvent>(e)) {
-            // 1. Host recieve 2. Host applies deposit 3. Client applies deposit
-            if (_networkCtrl->isHost()) {
-                if (!de->isSync()) {
-                    // Clients send deposit request and the host sends back the
-                    // final synced amount after checking zone and inventory
-                    CULog("HOST deposit request");
-                    for (auto& p : _playerFact->current) {
-                        if (p->getPID() == de->getPID()) {
-                            Vec2 playerScreenPos = p->getPosition() * PHYSICS_SCALE;
-                            bool canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
-                            if (canDeposit && p->hasInventory()) {
-                                int deposited = p->depositItems();
-                                if (deposited > 0) {
-                                    if (_player && p == _player) {
-                                        _inventoryValue = _player->getInventoryVal();
-                                    }
-                                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true));
-                                }
-                            }
-                            break;
-                        }
-                    }
-                } else {
-                    // Synced deposit amounts apply to everyone including the host
-                    for (auto& p : _playerFact->current) {
-                        if (p->getPID() == de->getPID()) {
-                            p->clearInventory();
-                            if (_player && p == _player) {
-                                _inventoryValue = _player->getInventoryVal();
-                            }
-                            break;
-                        }
-                    }
-                    _depositedValue += de->getAmount();
-                    CULog("HOST deposit: amount=%d total=%d / %d", de->getAmount(), _depositedValue, _quota);
-                }
-            } else if (de->isSync()) {
-                // Clients only apply deposit updates that came back from host
-                for (auto& p : _playerFact->current) {
-                    if (p->getPID() == de->getPID()) {
-                        p->clearInventory();
-                        if (_player && p == _player) {
-                            _inventoryValue = _player->getInventoryVal();
-                        }
-                        break;
-                    }
-                }
-                _depositedValue += de->getAmount();
-                CULog("CLIENT deposit: amount=%d total=%d / %d", de->getAmount(), _depositedValue, _quota);
-            }
-        } else if (auto pre = std::dynamic_pointer_cast<PickupEvent>(e)) {
-            if (_itemFact->getItem(pre->getItemID()) != nullptr) {
-                CULog("pickup event got!");
-                auto item = _itemFact->getItem(pre->getItemID());
-                if (item && !item->isRemoved()) {
-                    for (auto& p : _playerFact->current) {
-                        if (p->getPID() == pre->getPID()) {
-                            if (p->addItem(item->getItemType(), item->getValue())) {
-                                if (_player && p == _player) {
-                                    _inventoryValue = _player->getInventoryVal();
-                                }
-                                _itemFact->getItem(pre->getItemID())->markRemoved(true);
-                            }
-                            break;
-                        }
-                    }
-                }
-                
-            }
-            
-        }
-        
-        
-        
-    }
+    std::tuple<int,int> values = _networkCtrl->customEvents(_itemFact, _playerFact,
+                                 _player, _input, &_playerWon, &_gameEnded, _depositPosition, _depositRadius);
+    _inventoryValue = std::get<0>(values);
+    _depositedValue += std::get<1>(values);
+    
     _world->update(step / 1000000.0f);
 }
 
@@ -995,71 +902,13 @@ void GameScene::renderHUD()
 
     Color4 boxColor(30, 30, 30, 255);
 
-    Rect inventoryHeader = _input.getInventoryHeaderBounds();
-    drawBox(inventoryHeader.origin.x + hudOffset.x, inventoryHeader.origin.y + hudOffset.y,
-            inventoryHeader.size.width, inventoryHeader.size.height, boxColor);
-
-    // Inventory box - top right
-    float quotaX = screenSize.width - barW - margin;
-    float quotaY = screenSize.height - barH - margin;
-    drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
-
-    // Health box - top center
-    float healthW = 200;
-    float healthX = screenSize.width / 2 - healthW / 2;
-    float healthY = screenSize.height - barH - margin;
-    drawBox(healthX + hudOffset.x, healthY + hudOffset.y, healthW, barH, boxColor);
-
-
-    Rect actionButton = _input.getActionButtonBounds();
-    drawBox(actionButton.origin.x + hudOffset.x, actionButton.origin.y + hudOffset.y,
-            actionButton.size.width, actionButton.size.height, boxColor);
-
-    float timerX = 20;
-    float timerY = screenSize.height - barH - margin;
+    float timerX = screenSize.width / 2 - barW * 0.5f;
+    float timerY = margin;
     drawBox(timerX + hudOffset.x, timerY + hudOffset.y, barW, barH, boxColor);
-    
-    // individual slots under inventory
-    float slotHeight = 48;
-    size_t slotCount = _player->getInventoryLimit();
-    size_t rowCount = _player->getInventory().size();
-    if (rowCount < slotCount) {
-        rowCount += 1;
-    }
-
-    float slotY = quotaY - slotHeight;
-        for (size_t slotIndex = 0; slotIndex < rowCount; ++slotIndex) {
-            drawBox(quotaX + hudOffset.x, slotY + hudOffset.y, barW, slotHeight, Color4(72, 120, 124, 220));
-            slotY -= slotHeight + 2;
-        }
 
     if (_font)
     {
         _batch->setColor(Color4::WHITE);
-
-        //std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
-        //size_t itemCount = inventory ? inventory->getCount() : 0;
-        //size_t inventoryCapacity = inventory ? inventory->getCapacity() : kPrototypeInventoryCapacity;
-        //std::shared_ptr<TextLayout> invLabel = TextLayout::allocWithText(
-        //    "inventory: " + std::to_string(itemCount) + "/" + std::to_string(inventoryCapacity), _font);
-        //invLabel->layout();
-       // Affine2 invTrans;
-        //invTrans.translate(inventoryHeader.origin.x + 10 + hudOffset.x, inventoryHeader.origin.y + 12 + //hudOffset.y);
-       // _batch->drawText(invLabel, invTrans);
-
-        std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
-            "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
-        quotaLabel->layout();
-        Affine2 quotaTrans;
-        quotaTrans.translate(quotaX + 10 + hudOffset.x, quotaY + 12 + hudOffset.y);
-        _batch->drawText(quotaLabel, quotaTrans);
-
-        std::shared_ptr<TextLayout> healthLabel = TextLayout::allocWithText(
-            "Health: " + std::to_string(_player->getHealth()), _font);
-        healthLabel->layout();
-        Affine2 healthTrans;
-        healthTrans.translate(healthX + 10 + hudOffset.x, healthY + 12 + hudOffset.y);
-        _batch->drawText(healthLabel, healthTrans);
         std::shared_ptr<TextLayout> timerLabel = TextLayout::allocWithText(
                     "Time Remaining: " + std::to_string(_timer/60), _font);
         timerLabel->layout();
@@ -1067,210 +916,123 @@ void GameScene::renderHUD()
         timerTrans.translate(timerX + 10 + hudOffset.x, timerY + 12 + hudOffset.y );
         _batch->drawText(timerLabel, timerTrans);
 
-        if (_player) {
-            // show the carried item slots under the deposit box so players can see limit
+        auto boxTex = _assets->get<graphics::Texture>("item_box");
+        if (boxTex) {
+            constexpr size_t kSlotCount = 5;
             const auto& carriedItems = _player->getInventory();
-            size_t slotCount = _player->getInventoryLimit();
-            size_t rowCount = carriedItems.size();
-            if (rowCount < slotCount) {
-                rowCount += 1;
-            }
-            float rowY = quotaY - slotHeight;
 
-            for (size_t rowIndex = 0; rowIndex < rowCount; ++rowIndex) {
-                Rect slotRect(quotaX + hudOffset.x, rowY + hudOffset.y, barW, slotHeight);
-                std::string rowText;
-                float textX = slotRect.origin.x + 14;
+            for (size_t i = 0; i < kSlotCount; ++i) {
+                Rect slot = getInventorySlotBounds(i);
+                float boxX = slot.origin.x + hudOffset.x;
+                float boxY = slot.origin.y + hudOffset.y;
+                float boxSize = slot.size.width;
 
-                if (rowIndex < carriedItems.size()) {
-                    const auto& carriedItem = carriedItems[rowIndex];
-                    auto texture = _assets->get<graphics::Texture>(carriedItem.itemType);
-                    if (texture) {
-                        //items were getting stretched out in inventory so fixing to row
-                        float iconHeight = slotHeight - 10;
-                        float iconWidth = iconHeight * texture->getWidth() / texture->getHeight();
-                        _batch->draw(texture, Color4::WHITE, Rect(quotaX + 6 + hudOffset.x, rowY + (slotHeight - iconHeight) / 2 + hudOffset.y, iconWidth, iconHeight));
-                        textX = quotaX + 6 + hudOffset.x + iconWidth + 10;
-                    }
-                    rowText = getCarriedItemName(_runConfig.item.entries, carriedItem) + " " + std::to_string(carriedItem.value);
-                } else {
-                    size_t remainingCount = slotCount - carriedItems.size();
-                    rowText = std::to_string(remainingCount) + (remainingCount == 1 ? " Slot Remaining" : " Slots Remaining");
-                }
-
-#ifdef CU_TOUCH_SCREEN
-//        if (_inventoryPanelOpen && inventory) {
-//            Rect panelBounds = _input.getInventoryPanelBounds();
-//            drawBox(panelBounds.origin.x + hudOffset.x, panelBounds.origin.y + hudOffset.y,
-//                    panelBounds.size.width, panelBounds.size.height,
-//                    Color4(20, 20, 20, 230));
-//
-//            float rowH = panelBounds.size.height / 4.0f;
-//            for (int ii = 0; ii < 4; ++ii) {
-//                float rowY = panelBounds.getMaxY() - rowH * (ii + 1);
-//                drawBox(panelBounds.origin.x + 2.0f + hudOffset.x, rowY + 1.0f + hudOffset.y,
-//                        panelBounds.size.width - 4.0f, rowH - 2.0f,
-//                        Color4(40, 40, 40, 220));
-//
-//                std::string rowText = "-";
-//                if ((size_t)ii < inventory->getCount()) {
-//                    rowText = inventory->getItems()[(size_t)ii]->getName();
-//                }
-//
-//                std::shared_ptr<TextLayout> rowLabel = TextLayout::allocWithText(rowText, _font);
-//                rowLabel->layout();
-//                Affine2 rowTrans;
-//                rowTrans.translate(panelBounds.origin.x + 10.0f + hudOffset.x, rowY + 8.0f + hudOffset.y);
-//                _batch->drawText(rowLabel, rowTrans);
-//            }
-//        }
-#endif // CU_TOUCH_SCREEN
+                // Draw the frame
                 _batch->setColor(Color4::WHITE);
-                std::shared_ptr<TextLayout> rowLabel = TextLayout::allocWithText(rowText, _font);
-                rowLabel->layout();
-                Affine2 rowTrans;
-                // rowTrans.translate(quotaX + 40 + hudOffset.x, rowY + 12 + hudOffset.y);
-                // keep label spacing tied to tecture width so text looks nice
-                float textY = slotRect.getMidY() - rowLabel->getBounds().size.height / 2;
-                rowTrans.translate(textX, textY);
-                _batch->drawText(rowLabel, rowTrans);
-                rowY -= slotHeight + 2;
+                _batch->draw(boxTex, Rect(boxX, boxY, boxSize, boxSize));
+
+                // Draw item texture centered inside the frame
+                if (i < carriedItems.size()) {
+                    const auto& carried = carriedItems[i];
+                    auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
+                    if (itemTex) {
+                        float padding = 20.0f;
+                        float iconSize = boxSize - padding * 2;
+                        float iconX = boxX + padding;
+                        float iconY = boxY + padding;
+                        _batch->setColor(Color4::WHITE);
+                        _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
+                    }
+                }
             }
         }
+
+        auto texContainer = _assets->get<graphics::Texture>("health_bar");
+        auto texFull = _assets->get<graphics::Texture>("health_full");
+        auto texHalf = _assets->get<graphics::Texture>("health_half");
+        auto texEmpty = _assets->get<graphics::Texture>("health_empty");
+
+        // Scale container with 269x79 aspect ratio (only need to change container cause actualy heart size is based on container)
+        float containerH = 79.0f * 0.8f;
+        float containerW = 269.0f * 0.8f;
+        float containerX = margin + hudOffset.x + 15.0f; //extra offset because health gets clipped on iphone corner
+        float containerY = screenSize.height - containerH - margin + hudOffset.y;
+
+        if (texContainer && texFull && texHalf && texEmpty) {
+            // Draw the health bar
+            _batch->setColor(Color4::WHITE);
+            _batch->draw(texContainer, Rect(containerX, containerY, containerW, containerH));
+
+            // Scale hearts to fit inside container with 83x78 aspect ratio
+            float heartH = containerH * 0.75f;
+            float heartW = heartH * (83.0f / 78.0f);
+
+            // Space 3 hearts equally
+            float totalHeartsW = containerW / 3.0f;
+            int hp = _player->getHealth();
+
+            for (int i = 0; i < 3; ++i) {
+                int heartPoints = hp - i * 2;
+                std::shared_ptr<graphics::Texture> tex;
+                if (heartPoints >= 2)   
+                    tex = texFull;
+                else if (heartPoints == 1) 
+                    tex = texHalf;
+                else                       
+                    tex = texEmpty;
+
+                // Center each heart in its section
+                float slotCenterX = containerX + totalHeartsW * i + totalHeartsW * 0.5f;
+                float hx = slotCenterX - heartW * 0.5f;
+                float hy = containerY + (containerH - heartH) * 0.5f;
+                _batch->setColor(Color4::WHITE);
+                _batch->draw(tex, Rect(hx, hy, heartW, heartH));
+            }
+        }
+
+        // quota
+        float quotaX = margin;
+        float quotaY = screenSize.height - containerH - margin - barH - margin;
+        drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
+
+        std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
+            "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
+        quotaLabel->layout();
+        Affine2 quotaTrans;
+        quotaTrans.translate(quotaX + 10 + hudOffset.x, quotaY + 12 + hudOffset.y);
+        _batch->drawText(quotaLabel, quotaTrans);
     }
 }
 
-void GameScene::handleMobileHUDInput(bool& pickupRequested, bool& depositRequested, int& dropIndex) {
-#ifdef CU_TOUCH_SCREEN
-//    if (_input.pressedInventoryToggle()) {
-//        _inventoryPanelOpen = !_inventoryPanelOpen;
-//        _input.setInventoryPanelOpen(_inventoryPanelOpen);
-//        _input.resolvedInventoryToggle();
-//        CULog("inventory panel toggled: %d", _inventoryPanelOpen ? 1 : 0);
-//    }
-//
-//    if (_input.pressedInventoryPanel()) {
-//        if (_inventoryPanelOpen) {
-//            int index = getInventoryPanelIndexAt(_input.getLastUITap());
-//            if (index >= 0) {
-//                dropIndex = index;
-//            }
-//        }
-//        _input.resolvedInventoryPanel();
-//    }
-//
-//    if (_input.pressedContextAction()) {
-//        _input.resolvedContextAction();
-//        if (_canPickupItem) {
-//            pickupRequested = true;
-//        } else if (_canDeposit) {
-//            depositRequested = true;
-//        }
-//    }
-#else
-    if (_input.pressedInventoryToggle()) {
-        _inventoryPanelOpen = !_inventoryPanelOpen;
-        _input.resolvedInventoryToggle();
-    }
-#endif
+cugl::Rect GameScene::getInventorySlotBounds(size_t slotIndex) const {
+    Size screenSize = this->getSize();
+    float margin = 16;
+
+    constexpr size_t kSlotCount = 5;
+    // Scale 112x112 box to a specific size (tbd)
+    float boxSize = 96.0f;
+    float boxGap = 8.0f;
+    float totalW = kSlotCount * boxSize + (kSlotCount - 1) * boxGap; // full inventory bar width
+
+    // Center the row in the right half of the screen
+    float startX = (screenSize.width * 0.5f) - (totalW * 0.5f);
+    float topY = screenSize.height - margin - boxSize;
+
+    return Rect(startX + slotIndex * (boxSize + boxGap), topY, boxSize, boxSize);
 }
 
-//bool GameScene::hostCheckItemPickupForPlayer(const std::string& pid) {
-//    std::shared_ptr<PlayerObstacle> requestingPlayer = nullptr;
-//    for (auto& p : _playerFact->current) {
-//        if (p->getPID() == pid) {
-//            requestingPlayer = p;
-//            break;
-//        }
-//    }
-//    if (!requestingPlayer) return false;
-//
-//    for (auto& item : _itemFact->current) {
-//        if (item->isRemoved()) continue;
-//        float dist = item->getPosition().distance(requestingPlayer->getPosition());
-//        if (dist <= ITEM_PICKUP_RADIUS) {
-//            if (!requestingPlayer->addItem(item->getItemType(), item->getValue())) {
-//                CULog("Inventory full for player %s", pid.c_str());
-//                continue;
-//            }
-//            item->markRemoved(true);
-//            CULog("Picked up %s worth %d (total carrying: %d)",
-//                item->getItemType().c_str(), item->getValue(), requestingPlayer->getInventoryVal());
-////            _networkCtrl->getPhysController()->removeSharedObstacle(item);
-////            removeItemNode(item);
-//            if (_player && requestingPlayer == _player) {
-//                _inventoryValue = _player->getInventoryVal();
-//            }
-////            _itemFact->update();
-//            return true;
-//        }
-//    }
-////    _itemFact->update();
-//    return false;
-//}
-
-//void GameScene::applyInventorySnapshotToPlayer(const std::shared_ptr<Player>& player,
-//                                               const std::vector<HostInventoryItemData>& items) {
-//    if (!player) {
-//        return;
-//    }
-//
-//    if (!player->getInventory()) {
-//        player->setInventory(std::make_shared<Inventory>(kPrototypeInventoryCapacity));
-//    }
-//
-//    std::shared_ptr<Inventory> inventory = player->getInventory();
-//    inventory->clear();
-//    for (const HostInventoryItemData& item : items) {
-//        inventory->addItem(makePrototypeItem(item.id, item.kind, item.name, item.value));
-//    }
-//}
-
-//int GameScene::getInventoryPanelIndexAt(const Vec2& tapPos) const {
-//    Rect panel = _input.getInventoryPanelBounds();
-//    if (!panel.contains(tapPos)) {
-//        return -1;
-//    }
-//
-//    std::shared_ptr<Inventory> inventory = _player ? _player->getInventory() : nullptr;
-//    if (!inventory || inventory->isEmpty()) {
-//        return -1;
-//    }
-//
-//    float rowH = panel.size.height / 4.0f;
-//    float fromTop = panel.getMaxY() - tapPos.y;
-//    int index = (int)(fromTop / rowH);
-//    if (index < 0 || index >= (int)inventory->getCount()) {
-//        return -1;
-//    }
-//    return index;
-//}
-//
-//void GameScene::updateDepositState() {
-//    _canDeposit = _collisions.resolvePlayerItem(_player, _depositPosition, _depositRadius);
-//}
-//
-//void GameScene::tryDropItem() {
-//    if (!_input.pressedDrop()) {
-//        return;
-//    }
-//    _input.resolvedDrop();
-//
-//    std::shared_ptr<Inventory> inventory = _player->getInventory();
-//    if (!inventory || inventory->isEmpty()) {
-//        return;
-//    }
-//
-//    dropInventoryIndex(inventory->getCount() - 1);
-//}
-
-//void GameScene::tryDepositItems() {
-//    if (!_input.pressedDeposit()) {
-//        return;
-//    }
-//    _input.resolvedDeposit();
-//    depositAtDropoff();
-//}
+int GameScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {
+    if (!_player) {
+        return -1;
+    }
+    const auto& carriedItems = _player->getInventory();
+    for (size_t i = 0; i < carriedItems.size(); ++i) {
+        if (getInventorySlotBounds(i).contains(tapPos)) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
 
 void GameScene::drawDepositZone() {
     if (!_map || _appliedRunRevision <= 0) {
@@ -1423,18 +1185,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     }
 }
 
-void GameScene::processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
-    if (e->getP2() == _player->getPID()) {
-        _input.resolveSpell();
-        _player->resolveSpell();
-    }
-}
-void GameScene::processEndEvent(const std::shared_ptr<EndGameEvent> &e)
-{
-    _playerWon = e->getResult();
-    _gameEnded = true;
-}
-
 /**
  * Handles any modifications necessary before collision resolution
  *
@@ -1494,10 +1244,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
 
     // Checking for collisions
+    if (spell && spell){
+        contact -> SetEnabled(false);
+    }
     if (player && spell) {
         contact -> SetEnabled(false);
         if (spell->getCasterUID()==_networkCtrl->getPID()) return;
-        if (spell->getHealed()) {
+        if (spell->TYPE == SpellType::HEAL) {
             int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
             spell->markRemoved(true);
@@ -1517,16 +1270,29 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
 
         if (enemy->getState() != EnemyObstacle::EnemyState::ATTACK_RESET)
-            player->setHealth(player->getHealth() - 2);
+            player->setHealth(player->getHealth() - 1);
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;
         }
     if (enemy && spell) {
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
-        if(spell -> getFroze()){
+        if(spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE){
             enemy -> setFrozen(true);
+            if(spell->TYPE == SpellType::FREEZE){
+                enemy->setFrozenTimer(60);
+            }else{
+                enemy->setFrozenTimer(240);
+            }
+            
         }
-        spell->markRemoved(true);
+        if(spell->TYPE == SpellType::EARTH){
+            enemy -> setMud(true);
+            enemy -> setMudTimer(300);
+        }
+        if(!(spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH)){
+            spell->markRemoved(true);
+        }
+        
         if (enemy->getHealth()==0) enemy->markRemoved(true);
         return;
     }
@@ -1538,7 +1304,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     if (wall && enemy){
         //CULog("here wall and enemy");
-        contact -> SetEnabled(false);
+        if (enemy->TYPE == EnemyType::GHOST) {
+            contact->SetEnabled(false);
+            return;
+        }
     }
     if(player && player2){
         contact -> SetEnabled(false);
@@ -1551,4 +1320,3 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact -> SetEnabled(false);
     }
 }
-

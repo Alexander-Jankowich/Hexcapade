@@ -27,6 +27,16 @@
         }
     },
     "spells": {
+        "earth":{
+            "speed": 3,
+            "damage": 2,
+            "range":5.0
+        },
+        "death":{
+            "speed": 5,
+            "damage": 500,
+            "range": 10.0
+        },
         "combo_fireball":{
             "speed": 5,
             "damage": 10,
@@ -45,7 +55,7 @@
         },
         "freeze": {
             "speed": 5,
-            "damage": 2,
+            "damage": 1,
             "range": 5.0,
             "freeze": true
         },
@@ -57,8 +67,11 @@
         }
     },
     "enemies": {
-        "speed": 2.5,
-        "range": 4.5
+        "ghost": {
+            "health": 4,
+            "speed": 2.0,
+            "range": 4.5
+        }
     },
     "artifacts": {
 

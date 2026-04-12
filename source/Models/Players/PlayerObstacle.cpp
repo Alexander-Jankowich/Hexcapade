@@ -12,8 +12,8 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
     setFixedRotation(true);
     _pid = pid;
     _speed = 5;
-    _health = 10;
-    _inventoryLimit = 4;
+    _health = 6;
+    _inventoryLimit = 5;
 }
 
 void PlayerObstacle::setVelocity(Vec2 v) {
@@ -29,7 +29,7 @@ void PlayerObstacle::setVelocity(Vec2 v) {
     float mass = getBody()->GetMass();
     float scale = mass * 60.0f;
     b2Vec2 force = b2Vec2(velDiff.x * scale, velDiff.y * scale);
-    CULog("mass: %f, force: %f %f", mass, force.x, force.y);
+    //CULog("mass: %f, force: %f %f", mass, force.x, force.y);
     getBody()->ApplyForceToCenter(force, true);
 }
 

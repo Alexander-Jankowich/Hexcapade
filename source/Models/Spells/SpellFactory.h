@@ -20,25 +20,22 @@ using namespace cugl::physics2::distrib;
 class SpellObstacle : public physics2::WheelObstacle {
 protected:
     float _damage;
-    bool _froze;
-    bool _healed;
+    
     std::string _caster;
 
     cugl::Vec2 _start;
     float _range;
 
 public:
-    SpellObstacle(const cugl::Vec2 pos, float rad, cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed,SpellType type, std::string c);
+    const SpellType TYPE;
+    SpellObstacle(const cugl::Vec2 pos, float rad, cugl::Vec2 vel, int dmg, float range,SpellType type, std::string c);
 
     static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos,float rad,
-        cugl::Vec2 vel, int dmg, float range, bool freeze, bool healed,SpellType type, std::string c) {
-        auto f = std::make_shared<SpellObstacle>(pos, rad,vel, dmg, range, freeze, healed,type, c);
+        cugl::Vec2 vel, int dmg, float range, SpellType type, std::string c) {
+        auto f = std::make_shared<SpellObstacle>(pos, rad,vel, dmg, range,type, c);
         f->createFixtures();
         return f;
     }
-
-    bool getHealed() { return _healed; }
-    bool getFroze() { return _froze; }
     float getDamage() { return _damage; }
     std::string getCasterUID() {return _caster;}
     float getRange() { return _range; }

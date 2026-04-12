@@ -12,19 +12,36 @@
 using namespace std;
 using namespace cugl;
 
-EnemyObstacle::EnemyObstacle(const cugl::Vec2& pos, float speed, int health, float range, cugl::Size s) {
+EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared_ptr<JsonValue> consts, Size s)
+        : TYPE(type) {
     init(pos, s / PHYSICS_SCALE);
     setAwake(true);
     setEnabled(true);
     setBodyType(b2_dynamicBody);
+    setDensity(1.0f);
+    setFixedRotation(true);
 
-    _health = health;
-    _speed = speed;
-    _range = range;
+    shared_ptr<JsonValue> vals;
+    switch (type) {
+    case EnemyType::GHOST:
+        vals = consts->get("ghost");
+        break;
+    default:
+        CULog("Error! Enemy type not found in JSON!!!");
+        break;
+    }
+
+    _health = vals->getInt("health");
+    _speed = vals->getFloat("speed");
+    _range = vals->getFloat("range");
     _target = pos;
+
     _state = EnemyState::IDLE;
     _frozen = false;
+    _mud = false;
+    _mudTimer = 0;
     _frozenTimer = 0;
+    _attackCounter = 0;
 }
 
 /**
@@ -50,21 +67,36 @@ void EnemyObstacle::updateAttackCounter() {
     //CULog("attack counter: %d", _attackCounter);
 }
 
+void EnemyObstacle::setVelocity(Vec2 v) {
+    if (!getBody()) return; // body not ready yet
+
+    //CULog("Setting velocity to %.2f, %.2f", v.x, v.y);
+    b2Vec2 currentVel = getBody()->GetLinearVelocity();
+    b2Vec2 targetVel = b2Vec2(v.x, v.y);
+    b2Vec2 velDiff = targetVel - currentVel;
+    float mass = getBody()->GetMass();
+    float scale = mass * 60.0f;
+    b2Vec2 force = b2Vec2(velDiff.x * scale, velDiff.y * scale);
+    CULog("mass: %f, force: %f %f", mass, force.x, force.y);
+    getBody()->ApplyForceToCenter(force, true);
+}
+
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory::createObstacle(Vec2 pos, Vec2 velocity, int h) {
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory::createObstacle(EnemyType type, Vec2 pos) {
     
     auto image = _assets->get<graphics::Texture>("enemy"); // TODO this will need to update with additional metadata (which asset to get)
     Size size = image->getSize();
     
-    // Create the SpellObstacle
-    auto en = EnemyObstacle::alloc(pos, 2.5, h,_assets->get<JsonValue>("constants")->get("enemies")->getFloat("range"), size);
+    // Create the EnemyObstacle
+
+    auto en = EnemyObstacle::alloc(type, pos, _enemyConsts, size);
 
 //    pl->setAngleSnap(0); // Snap to the nearest degree
 //
 //    // Set the physics attributes
-    en->setLinearVelocity(velocity);
+    en->setLinearVelocity(Vec2::ZERO);
     // which of those are needed...
 
     en->setShared(true);
@@ -81,18 +113,16 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 /**
  * Helper method for converting normal parameters into byte vectors used for syncing.
  */
-shared_ptr<vector<byte>> EnemyFactory::serializeParams(Vec2 pos, Vec2 velocity, int h) {
+shared_ptr<vector<byte>> EnemyFactory::serializeParams(EnemyType type, Vec2 pos) {
     /**
      * TODO: Use _serializer to serialize pos and scale (remember to make a
      * shared copy of the serializer reference, otherwise it will be lost if
      * the serializer is reset).
      */
     _serializer.reset();
+    _serializer.writeUint16((uint16) type);
     _serializer.writeFloat(pos.x);
     _serializer.writeFloat(pos.y);
-    _serializer.writeFloat(velocity.x);
-    _serializer.writeFloat(velocity.y);
-    _serializer.writeUint32(h);
     return make_shared<vector<byte>>(_serializer.serialize());
 }
 
@@ -107,79 +137,25 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
      */
     _deserializer.reset();
     _deserializer.receive(params);
+    EnemyType type = (EnemyType) _deserializer.readUint16();
     float x = _deserializer.readFloat();
     float y = _deserializer.readFloat();
     Vec2 pos = Vec2(x, y);
-    float vx = _deserializer.readFloat();
-    float vy = _deserializer.readFloat();
-    Vec2 velocity = Vec2(vx, vy);
-    int health =  _deserializer.readUint32();
-    return createObstacle(pos, velocity, health);
+    return createObstacle(type, pos);
 }
 
-#pragma mark Enemy Behavior
 
-Vec2 EnemyFactory::getClosestPlayer(Vec2 enemPos, std::vector<Vec2> targs) {
-    float minDist = FLT_MAX;
-    Vec2 minPos = Vec2(0, 0); // default
-    for (auto t : targs) {
-        float d = enemPos.distance(t);
-        if (d < minDist) {
-            minDist = d;
-            minPos = t;
-        }
-    }
-    return minPos;
-}
-
-std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::update(std::vector<Vec2> targets) {
+std::unordered_set<std::shared_ptr<EnemyObstacle>> EnemyFactory::getRemoved() {
     std::unordered_set<std::shared_ptr<EnemyObstacle>> remove;
 
     for (auto it = current.begin(); it != current.end(); ) {
-        // Remove from set if removed from scene
-        if ((*it) -> isFroze()) {
-            (*it)->setLinearVelocity(Vec2::ZERO);
-            CULog("i am frozen af");
-            int i = (*it) -> getFrozenTimer() + 1;
-            (*it) -> setFrozenTimer(i);
-            if ((*it) -> getFrozenTimer() >= FROZEN_FRAMES) {
-                (*it) -> setFrozen(false);
-                (*it) -> setFrozenTimer(0);
-            }
-            it++;
-            continue;
-        }
         if ((*it)->isRemoved()) {
             remove.emplace(*it);
             it = current.erase(it);
-            continue;
         }
-        
-        if((*it)->getState()==EnemyObstacle::EnemyState::ATTACK_RESET) (*it)->updateAttackCounter();
         else {
-            // Update individual enemies
-            Vec2 targ = getClosestPlayer((*it)->getPosition(), targets);
-
-            if (targ.distance((*it)->getPosition()) < (*it)->getRange()) {
-                (*it)->setTarget(targ);
-                //CULog("%.2f", targ.distance((*it)->getPosition()));
-            }
-            // if chasing
-            if ((*it)->getState()==EnemyObstacle::EnemyState::CHASING) {
-                // Set velocity to go to target
-                Vec2 currentVel = (*it)->getLinearVelocity();
-
-                Vec2 desiredVel = (*it)->getTarget() - (*it)->getPosition();
-                desiredVel.normalize();
-                desiredVel *= (*it)->getSpeed();
-
-                float recovery = 0.2f;
-                Vec2 newVel = currentVel * (1 - recovery) + desiredVel * recovery;
-
-                (*it)->setLinearVelocity(newVel);
-            }
+            it++;
         }
-        it++;
     }
 
     return remove;
