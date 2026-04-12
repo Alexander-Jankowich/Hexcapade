@@ -936,7 +936,7 @@ void GameScene::renderHUD()
                     const auto& carried = carriedItems[i];
                     auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
                     if (itemTex) {
-                        float padding = 10.0f;
+                        float padding = 20.0f;
                         float iconSize = boxSize - padding * 2;
                         float iconX = boxX + padding;
                         float iconY = boxY + padding;
@@ -955,7 +955,7 @@ void GameScene::renderHUD()
         // Scale container with 269x79 aspect ratio (only need to change container cause actualy heart size is based on container)
         float containerH = 79.0f * 0.8f;
         float containerW = 269.0f * 0.8f;
-        float containerX = margin + hudOffset.x;
+        float containerX = margin + hudOffset.x + 15.0f; //extra offset because health gets clipped on iphone corner
         float containerY = screenSize.height - containerH - margin + hudOffset.y;
 
         if (texContainer && texFull && texHalf && texEmpty) {
@@ -1010,7 +1010,7 @@ cugl::Rect GameScene::getInventorySlotBounds(size_t slotIndex) const {
 
     constexpr size_t kSlotCount = 5;
     // Scale 112x112 box to a specific size (tbd)
-    float boxSize = 80.0f;
+    float boxSize = 96.0f;
     float boxGap = 8.0f;
     float totalW = kSlotCount * boxSize + (kSlotCount - 1) * boxGap; // full inventory bar width
 
