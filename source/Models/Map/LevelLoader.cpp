@@ -109,3 +109,11 @@ bool LevelLoader::materialize() {
     loadTilesFromImage(tex, _firstID);
     return true;
 }
+
+bool LevelLoader::changeTiledSource(std::string &newImgPath) {
+    _imgPath = newImgPath;
+    shared_ptr<graphics::Image> image = graphics::Image::allocWithFile(_imgPath);
+    auto tex = graphics::Texture::allocWithImage(image); // acc to spec this will work
+    loadTilesFromImage(tex, _firstID);
+    return true;
+}

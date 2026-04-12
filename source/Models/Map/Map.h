@@ -14,14 +14,6 @@
 #include "RectFactory.h"
 
 class Map {
-public:
-    enum class TileType : uint8_t {
-        EMPTY,
-        ROOM_FLOOR,
-        HALL_FLOOR,
-        WALL,
-        OBSTACLE
-    };
 
 private:
     struct GridRoom {
@@ -29,7 +21,7 @@ private:
         int y;
         int w;
         int h;
-        int templateIndex;
+        std::shared_ptr<LevelLoader> _tiledData;
     };
 
     int _gridWidth;

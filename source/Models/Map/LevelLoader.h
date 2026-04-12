@@ -97,6 +97,10 @@ public:
     
     virtual bool materialize() override;
     
+    /** This is a helper method to change the source, as room effects are displayed in the UI and have
+     * the same layout (wrt GIDs) but are tied to a different source tileset. */
+    bool changeTiledSource(std::string& newImgPath);
+    
 #pragma mark Getters
     map<int, std::shared_ptr<graphics::Texture>> getTiles() {return _tiles;}
     vector<vector<int>> getFloorLayer() {return _floor;}
