@@ -8,6 +8,7 @@
 #include "EnemyObstacle.h"
 
 #define PHYSICS_SCALE 100
+#define ATTACK_DELAY 1.3
 
 EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared_ptr<JsonValue> consts, Size s)
     : TYPE(type) {
@@ -72,6 +73,6 @@ void EnemyObstacle::setVelocity(Vec2 v) {
     float mass = getBody()->GetMass();
     float scale = mass * 60.0f;
     b2Vec2 force = b2Vec2(velDiff.x * scale, velDiff.y * scale);
-    CULog("mass: %f, force: %f %f", mass, force.x, force.y);
+    //CULog("mass: %f, force: %f %f", mass, force.x, force.y);
     getBody()->ApplyForceToCenter(force, true);
 }

@@ -46,24 +46,15 @@ unordered_set<PlayerObstacle*> Pathfinder::getVisiblePlayers(shared_ptr<physics2
     visiblePos.clear();
     function<float(b2Fixture*, const Vec2&, const Vec2&, float)> callback =
         [this](b2Fixture* fixture, const Vec2& point, const Vec2& normal, float fraction) {
-            physics2::Obstacle* obs = reinterpret_cast<physics2::Obstacle*>(fixture->GetUserData().pointer);
+            physics2::Obstacle* obs = reinterpret_cast<physics2::Obstacle*>(fixture->GetBody()->GetUserData().pointer);
             if (auto p = dynamic_cast<PlayerObstacle*>(obs)) {
                 visiblePos.emplace(p);
-                CULog("hit player");
+                //CULog("hit player");
                 return fraction;
             }
             if (auto p = dynamic_cast<RectObstacle*>(obs)) {
-                CULog("hit wall");
+                //CULog("hit wall");
                 return 0.0f;
-            }
-            if (auto p = dynamic_cast<EnemyObstacle*>(obs)) {
-                CULog("hit enemy");
-            }
-            if (auto p = dynamic_cast<ItemObstacle*>(obs)) {
-                CULog("hit item");
-            }
-            if (obs) {
-                CULog("hit other");
             }
             return -1.0f;
         };
