@@ -74,13 +74,20 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
         
         switch (door->dir) {
             case Door::Direction::NORTH:
-                // check if a room will fit
+                // create list of possible rooms (that have southern door)
                 
+                // check if a room will fit - call attemptToFitRoom
+                
+                // if a room will fit:
+                //  add hallways
                 // western wall 99 eastern wall 100
                 // floor is 4 floor tiles 66
-                // start at top left corner of door + 1 tile?, fill in 4 x 3 section of floor
+                // start at top left corner of door + 1 tile?, fill in 5 x hallsize section of floor
                 
-                // add walls
+                // addRoomSceneNodes
+                
+                // if not, wall off this room gids (10/23/36) x5 across doorway
+                
                 
                 break;
             case Door::Direction::SOUTH:
@@ -99,15 +106,6 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
             case Door::Direction::WEST:
                 break;
         }
-        // randomly select new room
-        rm_idx = (int) (_rng.getFloat() * (int) rooms->size());
-        room = rooms->at(rm_idx);
-        // room bottom left corner at (width/2 - tilew /2, height/2 - tileheight/2)
-        
-        //helper function to create all the sceneNodes
-        
-        // add all doors in room to doors queue
-        
         
     }
     
@@ -160,4 +158,24 @@ void Map::addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCor
         }
     }
 }
+
+bool Map::attemptToFitRoom(MapDoor d, std::shared_ptr<std::vector<std::string>> rooms) {
+    int attempts = 0;
+    //TODO: these will be in level config file perhaps?
+    int minHallUnits = 3;
+    int maxHallUnits = 6;
+    while (attempts < 3){
+        // select room for this attempt -
+        int rm_idx = _rng.getFloat() * rooms->size();
+        auto rmData = _assets->get<LevelLoader>(rooms->at(rm_idx));
+        
+        // try to fit room with varying hall sizes
+        for (int i=minHallUnits; i<=maxHallUnits; i++) {
+            // check if room will fit by seeing if each 1 in mask is a 0 on the grid
+            // if yes then return room and hallUnits
+            // else incr hall and try again
+        }
+    }
+}
+
 
