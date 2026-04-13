@@ -48,57 +48,63 @@ bool LevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
     _tileHeight = json->getInt("tileheight");
     _imgPath = json->get("tilesets")->get(0)->getString("source");
     _firstID = json->get("tilesets")->get(0)->getInt("firstgid");
-    // TODO: debug
     
+    // init 2D layer vectors
+    _mapHeight = json->getInt("height");
+    _mapWidth = json->getInt("width");
+    vector<vector<int>> fl(_mapHeight, vector<int>(_mapWidth, 0));
+    vector<vector<int>> wl(_mapHeight, vector<int>(_mapWidth, 0));
+    vector<vector<int>> vf(_mapHeight, vector<int>(_mapWidth, 0));
+    vector<vector<int>> dc(_mapHeight, vector<int>(_mapWidth, 0));
+    vector<vector<int>> mk(_mapHeight, vector<int>(_mapWidth, 0));
+    _floor = fl;
+    _walls = wl;
+    _visfix = vf;
+    _deco = dc;
+    _mask = mk;
     
-    int mapHeight = json->getInt("height");
-    int mapWidth = json->getInt("width");
-    for (int i=0; i<mapHeight; i++) {
-        vector<int> v(mapWidth);
-        _floor.push_back(v);
-        _walls.push_back(v);
-        _visfix.push_back(v);
-        _deco.push_back(v);
-    }
     // generate the flat map
     auto fl_layer = json->get("layers")->get(0)->get("layers")->get(0);
     auto wl_layer = json->get("layers")->get(0)->get("layers")->get(1);
     auto vf_layer = json->get("layers")->get(0)->get("layers")->get(2);
     auto dc_layer = json->get("layers")->get(0)->get("layers")->get(3);
+    auto mk_layer = json->get("layers")->get(0)->get("layers")->get(4);
 
     auto fl_tiledData = fl_layer->get("data")->asIntArray();
     auto wl_tiledData = wl_layer->get("data")->asIntArray();
     auto vf_tiledData = vf_layer->get("data")->asIntArray();
     auto dc_tiledData = dc_layer->get("data")->asIntArray();
-    // iterate over the data set in parallel lol
-    for (int row=0; row<mapHeight; row++){
-        for(int col=0; col<mapWidth; col++){
-            _floor.at(row).at(col) = fl_tiledData[row*mapWidth + col];
-            _walls.at(row).at(col) = wl_tiledData[row*mapWidth + col];
-            _visfix.at(row).at(col) = vf_tiledData[row*mapWidth + col];
-            _deco.at(row).at(col) = dc_tiledData[row*mapWidth + col];
+    auto mk_tiledData = mk_layer->get("data")->asIntArray();
 
+    // iterate over the data set in parallel lol
+    for (int row=0; row<_mapHeight; row++){
+        for(int col=0; col<_mapWidth; col++){
+            _floor.at(row).at(col) = fl_tiledData[row*_mapWidth + col];
+            _walls.at(row).at(col) = wl_tiledData[row*_mapWidth + col];
+            _visfix.at(row).at(col) = vf_tiledData[row*_mapWidth + col];
+            _deco.at(row).at(col) = dc_tiledData[row*_mapWidth + col];
+            _mask.at(row).at(col) = mk_tiledData[row * _mapWidth + col];
         }
     }
     
     // generate the spawn points
+    // TODO: figure out if should be shared_ptr or not...
     for (auto item_spawn : json->get("layers")->get(1)->get("layers")->get(0)->get("objects")->children()){
-        SpawnPoint sp = SpawnPoint(SpawnPoint::SpawnType::ITEM, item_spawn->getFloat("x"), item_spawn->getFloat("y"));
-        _spawnPoints.push_back(sp);
+        auto sp = Vec2(item_spawn->getFloat("x"), item_spawn->getFloat("y"));
+        _itemSpawnPoints.push_back(sp);
     }
     
     auto pl_spawn = json->get("layers")->get(1)->get("layers")->get(1)->get("objects")->get(0);
-    SpawnPoint sp = SpawnPoint(SpawnPoint::SpawnType::PLAYER, pl_spawn->getFloat("x"), pl_spawn->getFloat("y"));
-    _spawnPoints.push_back(sp);
+    _playerSpawn = Vec2(pl_spawn->getFloat("x"), pl_spawn->getFloat("y"));
     
     for (auto enem_spawn : json->get("layers")->get(1)->get("layers")->get(2)->get("objects")->children()){
-        SpawnPoint sp = SpawnPoint(SpawnPoint::SpawnType::ENEMY, enem_spawn->getFloat("x"), enem_spawn->getFloat("y"));
-        _spawnPoints.push_back(sp);
+        auto sp = Vec2(enem_spawn->getFloat("x"), enem_spawn->getFloat("y"));
+        _enemSpawnPoints.push_back(sp);
     }
-    
-    // generate door info
+    _doors.fill(nullptr);
     for (auto door_sp : json->get("layers")->get(1)->get("layers")->get(2)->get("objects")->children()){
-        
+        auto d = std::make_shared<Door>(Door(static_cast<Door::Direction>(door_sp->get("properties")->get(0)->getInt("value")), door_sp->getInt("x"), door_sp->getInt("y"), door_sp->getInt("width"), door_sp->getInt("height")));
+        _doors[door_sp->get("properties")->get(0)->getInt("value")] = d;
     }
     return true;
 }

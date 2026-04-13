@@ -10,8 +10,7 @@
 
 using namespace std;
 using namespace cugl;
-class Door {
-    public:
+struct Door {
         enum Direction : int {
             NORTH=0,
             EAST=1,
@@ -19,10 +18,12 @@ class Door {
             WEST=3
         };
     Direction _direction;
-    Vec2 _llCorner;
-    Door(Direction d, float x, float y) {
+    Vec2 _tlCorner;
+    Size _dimens;
+    Door(Direction d, int x, int y, int h, int w) {
         _direction = d;
-        _llCorner = Vec2(x, y);
+        _tlCorner = Vec2(x, y);
+        _dimens = Size(w, h);
     }
 };
 class SpawnPoint {
@@ -46,12 +47,19 @@ protected:
     map<int, std::shared_ptr<graphics::Texture>> _tiles;
     Uint32 _tileWidth;
     Uint32 _tileHeight;
+    int _mapHeight;
+    int _mapWidth;
     vector<vector<int>> _floor;
     vector<vector<int>> _walls;
     vector<vector<int>> _deco;
     vector<vector<int>> _visfix;
-    vector<Door> _doors;
-    vector<SpawnPoint> _spawnPoints;
+    vector<vector<int>> _mask;
+    std::array<std::shared_ptr<Door>, 4> _doors;
+    vector<Vec2> _itemSpawnPoints;
+    vector<Vec2> _enemSpawnPoints;
+    Vec2 _playerSpawn;
+
+
     // hash map for doors? direction -> vec door objects
     string _imgPath;
     int _firstID;
@@ -102,16 +110,32 @@ public:
     bool changeTiledSource(std::string& newImgPath);
     
 #pragma mark Getters
-    map<int, std::shared_ptr<graphics::Texture>> getTiles() {return _tiles;}
+    std::shared_ptr<graphics::Texture> getTileForGid(int gid) {return _tiles.at(gid);}
     vector<vector<int>> getFloorLayer() {return _floor;}
     vector<vector<int>> getWallLayer() {return _walls;}
     vector<vector<int>> getDecoLayer() {return _deco;}
     vector<vector<int>> getFixLayer() {return _visfix;}
+    vector<vector<int>> getMaskLayer() {return _mask;}
     
-    vector<Door> getDoors() {return _doors;}
+    std::array<std::shared_ptr<Door>, 4> getDoors() {return _doors;}
     
 
-    vector<SpawnPoint> getSpawnPoints() {return _spawnPoints;}
+    vector<Vec2> getItemSpawnPoints() {return _itemSpawnPoints;}
+    vector<Vec2> getEnemSpawnPoints() {return _enemSpawnPoints;}
+    Vec2 getPlayerSpawn() {return _playerSpawn;}
+
+
+    int getHeight() {return _mapHeight;}
+    int getWidth() {return _mapWidth;}
+    bool hasNorthDoor() {return _doors[0] != nullptr;}
+    bool hasEastDoor() {return _doors[1] != nullptr;}
+    bool hasSouthDoor() {return _doors[2] != nullptr;}
+    bool hasWestDoor() {return _doors[3] != nullptr;}
+    
+    std::shared_ptr<Door> getNorthDoor() {return _doors[0];}
+    std::shared_ptr<Door> getEastDoor() {return _doors[1];}
+    std::shared_ptr<Door> getSouthDoor() {return _doors[2];}
+    std::shared_ptr<Door> getWestDoor() {return _doors[3];}
 };
 
 #endif // !__TD_LEVEL_MODEL_H__

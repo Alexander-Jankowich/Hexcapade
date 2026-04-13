@@ -14,9 +14,22 @@
 #include "../../Controllers/NetworkController.h"
 #include "RectFactory.h"
 
-class Map {
+#define MAP_HEIGHT 100
+#define MAP_WIDTH 100
 
+
+class Map {
 private:
+    struct MapDoor {
+        Vec2 pos;
+        Size size;
+        Door::Direction dir;
+        MapDoor(Vec2 p, Size s, Door::Direction d) {
+            pos = p;
+            size = s;
+            dir = d;
+        }
+    }
     struct GridRoom {
         int x;
         int y;
@@ -25,11 +38,10 @@ private:
         std::shared_ptr<LevelLoader> _tiledData;
     };
 
-    int _gridWidth;
-    int _gridHeight;
-    float _tileSize;
+    std::array<std::array<int, MAP_WIDTH>, MAP_HEIGHT> _mapGrid;
+    std::shared_ptr<AssetManager> _assets;
+    
     cugl::Vec2 _origin;
-    cugl::Rect _worldBounds;
 
     std::vector<Room> _rooms;
 
@@ -42,86 +54,23 @@ private:
 
 public:
     Map();
+    /** Procedurally generates the map for this run. Adds all created rooms to a SceneNode and generates collision obstacles accordingly
+     * @param seed the random seed used to initialize this runs random number generator
+     * @param assets the assetManager, which contains all loaded tiled data tied to proper room keys
+     * @param rooms the list of all string keys used to access each room in the AssetManager
+     */
+    std::shared_ptr<cugl::scene2::SceneNode> generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms);
 
-    bool generate(const cugl::Size& viewSize, const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<LevelLoader> tileData);
-    void populateObtacles(std::shared_ptr<NetWorld>& world);
-    bool canOccupy(const cugl::Vec2& worldPos, float radius) const;
-    cugl::Vec2 resolveSlideMove(const cugl::Vec2& startPos, const cugl::Vec2& velocity, float radius) const;
-    cugl::Vec2 getNextWaypoint(const cugl::Vec2& fromWorld, const cugl::Vec2& toWorld) const;
-    cugl::Vec2 findNearestWalkableWorld(const cugl::Vec2& fromWorld) const;
-
-    int findRoomIndexForWorld(const cugl::Vec2& worldPos) const;
-    const std::vector<int>& getConnectedRooms(int roomIndex) const;
-
-    const cugl::Rect& getWorldBounds() const { return _worldBounds; }
-    const std::vector<Room>& getRooms() const { return _rooms; }
-    const std::vector<cugl::Vec2>& getItemSpawnPoints() const { return _itemSpawnPoints; }
-    const std::vector<cugl::Vec2>& getEnemySpawnPoints() const { return _enemySpawnPoints; }
-    cugl::Vec2 getPlayerSpawn() const { return _playerSpawn; }
-    std::shared_ptr<cugl::scene2::SceneNode> draw();
-    std::shared_ptr<cugl::scene2::SceneNode> draw2();
 private:
-    bool inBounds(int x, int y) const;
-    int toIndex(int x, int y) const;
-    TileType getTile(int x, int y) const;
-    void setTile(int x, int y, TileType tile, int roomIndex = -1);
-    bool isWalkableTile(int x, int y) const;
-    bool worldToTile(const cugl::Vec2& worldPos, int& outX, int& outY) const;
-    cugl::Vec2 tileToWorldCenter(int x, int y) const;
-
-    bool overlapsExistingRoom(const GridRoom& candidate, const std::vector<GridRoom>& rooms) const;
-
-    // this clears the per-tile gid layers used to render repeated tiled rooms
-    void clearRenderLayers();
-    // this writes one gid into one map-wide tiled render layer.
-    void setRenderGid(std::vector<unsigned int>& layer, int x, int y, unsigned int gid);
-    // this clears all stamped room art at a map tile; hall carving uses this
-    // when it needs to cut through a room wall (not used recent)
-    void clearRenderTile(int x, int y);
-    // this copies one tiled room prefab into the map grid and stamps its art
-    void stampTiledRoom(const GridRoom& room, int roomIndex);
-    // this converts a local room-space marker from tiled into world space for one room instance
-    cugl::Vec2 roomLocalToWorld(const GridRoom& room, const cugl::Vec2& localPos) const;
-    // this seeds player/item/enemy spawns from the tiled markers in each repeated room
-    void seedTiledRoomSpawns(const std::vector<GridRoom>& rooms);
-    // this picks the tile on a room edge where a hallway should connect.
-    cugl::Vec2 pickHallAnchorTile(const GridRoom& room, const GridRoom& otherRoom) const;
-    // this converts a room-edge doorway tile into the first hallway tile just
-    // outside the room so the hall does not start on top of room art.
-    cugl::Vec2 getExteriorHallTileForAnchor(const GridRoom& room,
-        const cugl::Vec2& anchorTile) const;
-    // this carves a one-tile doorway so hall entrances do not shave off extra decor.
-    void carveDoorTile(int x, int y);
-    // this carves one hallway step using the current hall width rules.
-    void carveHallTile(int x, int y, bool horizontalSegment);
-    // this scores how destructive one hallway tile would be before we commit
-    int scoreHallTileDamage(int x, int y, int fromRoomIndex, int toRoomIndex) const;
-    // this compares the two possible l-shaped hallway routes so we can keep
-    // the room art intact as much as possible
-    int scoreHallwayRoute(const cugl::Vec2& from, const cugl::Vec2& to,
-        bool horizontalFirst, int fromRoomIndex, int toRoomIndex) const;
-    // this opens a short doorway from the hall anchor into the room interior;
-    // it keeps every repeated room enterable even if the prefab edge is walled
-    void openDoorwayForHallAnchor(const GridRoom& room, const GridRoom& otherRoom,
-        const cugl::Vec2& anchorTile);
-
-    // this removes stray one-tile hall tabs that can appear next to a room
-    // without actually connecting to the hallway network (doublecheck)
-    void pruneHallArtifacts();
-
-    void carveHallway(const cugl::Vec2& from, const cugl::Vec2& to,
-        int fromRoomIndex = -1, int toRoomIndex = -1);
-
-    /*
-    // old random-room helpers kept here as reference from the pre-tiled map path.
-    void carveRoom(const GridRoom& room, int roomIndex);
-    void placeObstaclesInRoom(const GridRoom& room);
-    void buildWalls();
-    void seedRoomSpawns(const std::vector<GridRoom>& rooms);
-    cugl::Vec2 pickRandomWalkableInRoom(const GridRoom& room, const cugl::Vec2* avoid = nullptr);
-    cugl::Color4 getFloorColorForTile(int x, int y) const;
-    */
-    int findNearestWalkableTileIndex(int startX, int startY) const;
+    /** Helper function to add all sceneNodes for a room (given tiled data) in the right place.
+     * Side effect:  fills in the mapGrid with 1s for each space this room covers
+     * @param tiledRmData the Tiled Data for this room
+     * @param tlCorner the top left corner of the room in tiled coordinates
+     * @param world the base sceneNode to add all created nodes to
+     */
+    void addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world);
+    
+    bool attemptToFitRoom(MapDoor d, std::shared_ptr<std::vector<std::string>> rooms);
 };
 
 #endif // __HEXCAPADE_MAP_H__
