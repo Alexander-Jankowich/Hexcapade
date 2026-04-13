@@ -19,6 +19,9 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, int rows, int c
     if(t == SpellType::EARTH){
         setColor(Color4::PAPYRUS);
     }
+    if(t == SpellType::COMBO_EFREEZE){
+        setColor(Color4::GRAY);
+    }
     
     _velocity = vel;
     _position = pos;

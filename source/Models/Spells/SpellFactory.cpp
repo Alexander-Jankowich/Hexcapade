@@ -22,7 +22,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int
     
     setAwake(true);
     setEnabled(true);
-    setBullet(true);
+    //setBullet(true);
     setBodyType(b2_dynamicBody);
     setAngle(vel.getAngle());
     setFixedRotation(true);
@@ -74,6 +74,11 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     case SpellType::EARTH:
         values = _spellConsts->get("earth");
         image = _assets -> get<graphics::Texture>("freeze");
+        break;
+    case SpellType::COMBO_EFREEZE:
+        values = _spellConsts->get("combo_efreeze");
+        image =_assets -> get<graphics::Texture>("freeze");
+        break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
     default:

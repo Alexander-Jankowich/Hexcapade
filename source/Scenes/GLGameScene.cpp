@@ -52,61 +52,6 @@ namespace {
     constexpr int kMaxAdditionalPrototypeItems = 40;
     constexpr float kEnemySpawnDelaySeconds = 15.0f;
 
-//    unsigned int chooseNonZeroSeed() {
-//        unsigned int seed = (unsigned int)std::random_device{}();
-//        return seed == 0 ? 1u : seed;
-//    }
-
-//std::shared_ptr<Item> makePrototypeItem(const std::string& id, int kind,
-//                                        const std::string& name, int value) {
-//    if (kind == 0) {
-//        return std::make_shared<Artifact>(
-//                                          id,
-//                                          name,
-//                                          value,
-//                                          Artifact::Effect::ARTIFACT_EFFECT
-//                                          );
-//    }
-//    
-//    return std::make_shared<SpellBook>(
-//                                       id,
-//                                       name,
-//                                       value,
-//                                       SpellBook::Spell::SPELL_EFFECT
-//                                       );
-//}
-
-
-// item ids and texture stuff
-//std::string getItemTextureKey(const std::shared_ptr<Item>& item) {
-//    if (!item) {
-//        return "";
-//    }
-//    
-//    const std::string& itemId = item->getId();
-//    if (itemId.rfind("artifact_scroll", 0) == 0) {
-//        return "artifact_scroll";
-//    }
-//    if (itemId.rfind("artifact_gem", 0) == 0) {
-//        return "artifact_gem";
-//    }
-//    if (itemId.rfind("spellbook_fire", 0) == 0) {
-//        return "spellbook_fire";
-//    }
-//    if (itemId.rfind("spellbook_freeze", 0) == 0) {
-//        return "spellbook_freeze";
-//    }
-//    if (itemId.rfind("spellbook_heal", 0) == 0) {
-//        return "spellbook_heal";
-//    }
-//    
-//    // keep one tiny fallback so older ids still show something readable.
-//    if (item->getKind() == Item::Kind::ARTIFACT) {
-//        return "artifact_scroll";
-//    }
-//    return "spellbook_fire";
-//}
-
 const ItemCatalogEntryConfig* chooseWeight( const std::vector<ItemCatalogEntryConfig>& entries, const std::shared_ptr<cugl::Random>& random) {
     
     float totalWeight = 0.0f;
@@ -716,22 +661,26 @@ void GameScene::preUpdate(float dt)
             if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
                 // calc combo spell + send combo event
                 CULog("combo potential");
-                if (_player->getSpell() == SpellType::FIREBALL) {
-                    if (p->getSpell() == SpellType::FIREBALL) {
-                        t = SpellType::COMBO_FIREBALL;
-                        p->resolveSpell();
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                        CULog("combo fireball");
-                    }
+                if (_player->getSpell() == SpellType::FIREBALL && p->getSpell() == SpellType::FIREBALL) {
+                    t = SpellType::COMBO_FIREBALL;
+                    p->resolveSpell();
+                    _networkCtrl->pushOutEvent(
+                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    CULog("combo fireball");
+                    
                 }
-                else if (_player->getSpell() == SpellType::FREEZE) {
-                    if (p->getSpell() == SpellType::FREEZE) {
-                        t = SpellType::COMBO_FREEZE;
-                        p->resolveSpell();
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                    }
+                else if (_player->getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::FREEZE) {
+                    t = SpellType::COMBO_FREEZE;
+                    p->resolveSpell();
+                    _networkCtrl->pushOutEvent(
+                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    
+                }else if ((_player -> getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::EARTH) || (_player -> getSpell() == SpellType::EARTH && p->getSpell() == SpellType::FREEZE) ){
+                    t = SpellType::COMBO_EFREEZE;
+                    p -> resolveSpell();
+                    _networkCtrl->pushOutEvent(
+                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    
                 }
 
                 // Spell is combo-ed!
@@ -1170,6 +1119,18 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                     p_node->setAngle(angle);
                     p_node->setVelocity(p->getLinearVelocity() * PHYSICS_SCALE);
             });
+        }else if (auto p = dynamic_pointer_cast<EnemyObstacle>(obj)){
+            obj->setListener([=, this](physics2::Obstacle* obs) {
+                std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
+                e_node -> setFrozen(p -> isFroze());
+                e_node -> setStatue(p -> isMud());
+                e_node -> updateState();
+                float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+                Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+                float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+                e_node->setPosition(pos * PHYSICS_SCALE);
+                e_node->setAngle(angle);
+            });
         } else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
@@ -1272,13 +1233,16 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         return;
         }
     if (enemy && spell) {
+        contact -> SetEnabled(false);
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
-        if(spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE){
+        if(spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_EFREEZE){
             enemy -> setFrozen(true);
             if(spell->TYPE == SpellType::FREEZE){
                 enemy->setFrozenTimer(60);
-            }else{
+            }else if (spell->TYPE == SpellType::COMBO_FREEZE){
                 enemy->setFrozenTimer(240);
+            }else{
+                enemy->setFrozenTimer(-1);
             }
             
         }
@@ -1298,6 +1262,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     if(wall && spell){
         contact->SetEnabled(false);
+        spell -> markRemoved(true);
     }
     if (wall && enemy){
         //CULog("here wall and enemy");
