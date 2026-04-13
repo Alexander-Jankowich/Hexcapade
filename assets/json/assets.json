@@ -58,6 +58,12 @@
     },
     "spellbook_heal": {
       "file": "textures/spellbook_heal.png"
+    },
+    "spellbook_death": {
+        "file": "textures/disintigrate_spellbook.png"
+    },
+    "spellbook_earth": {
+        "file": "textures/earth_spellbook.png"
     }
 
   },

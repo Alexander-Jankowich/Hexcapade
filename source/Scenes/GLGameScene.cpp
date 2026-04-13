@@ -44,13 +44,6 @@ using namespace std;
 using namespace cugl::graphics;
 
 namespace {
-    constexpr size_t kPrototypeInventoryCapacity = 5;
-    constexpr int kPrototypeQuota = 500;
-    constexpr int kGuaranteedArtifacts = 1;
-    constexpr int kGuaranteedSpellbooks = 1;
-    constexpr float kTargetWorldValueMultiplier = 1.35f;
-    constexpr int kMaxAdditionalPrototypeItems = 40;
-    constexpr float kEnemySpawnDelaySeconds = 15.0f;
 
 const ItemCatalogEntryConfig* chooseWeight( const std::vector<ItemCatalogEntryConfig>& entries, const std::shared_ptr<cugl::Random>& random) {
     
@@ -233,8 +226,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
         beforeSolve(contact, oldManifold);
         };
     _world->update(1);
-    
-    
     
     _networkCtrl = nullptr;
     setActive(false);
@@ -637,7 +628,7 @@ void GameScene::preUpdate(float dt)
     // Spellcasting
     if (_input.getGesture() != SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
-        if (newSpell != _player->getSpell()) {
+        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
             _player->setSpell(newSpell);
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
@@ -652,9 +643,12 @@ void GameScene::preUpdate(float dt)
         //CULog("Release spell--------------------------------------------------------");
         
         //CULog("Spell type: %d", _player->getSpell());
-        SpellType t = SpellType::NONE;
-
-        // check for possible combos - serena implemented
+        if (_player->getSpell() == SpellType::NONE) {
+            _input.resolveSpell();
+            _player->resolveSpell();
+        }
+        else {
+            SpellType t = SpellType::NONE;
         for (auto p : _playerFact->current) {
             CULog("pLayer fact size: %zu",_playerFact->current.size());
             CULog("This is the spell %d",p->getSpell());
@@ -683,41 +677,41 @@ void GameScene::preUpdate(float dt)
                     
                 }
 
-                // Spell is combo-ed!
-                if (t != SpellType::NONE) {
-                    _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
-                    break;
+                    // Spell is combo-ed!
+                    if (t != SpellType::NONE) {
+                        _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
+                        break;
+                    }
                 }
             }
-        }
 
-        // Not a combo, use base spell
-        if (t == SpellType::NONE) {
-            t = _player->getSpell();
-        }
-
-        //CULog("Casting spell type: %d", t);
-        if(t == SpellType::DEATH){
-            for(int i = 0; i < 32; i++){
-                angle = angle.rotate((3.141592653/16) * i);
-                auto params = _spellFact->serializeParams((playerScreenPos/PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball") -> getSize().height/4.f, angle, t, _networkCtrl->getPID());
-                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-                _networkCtrl->getPhysController()->acquireObs(pair.first,0);
+            // Not a combo, use base spell
+            if (t == SpellType::NONE) {
+                t = _player->getSpell();
             }
-        }else{
-            auto params = _spellFact->serializeParams(playerScreenPos/PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball") -> getSize().height/4.f, angle, t, _networkCtrl->getPID());
-            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-            _networkCtrl->getPhysController()->acquireObs(pair.first,0);
-        }
-        
 
-        
-        //We must acquire an object if we create it if we fail to do so the network
-        //will consistently try to reset its position.
-        _input.resolveSpell();
-        _player->resolveSpell();
-        _networkCtrl->pushOutEvent(
-            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
+            //CULog("Casting spell type: %d", t);
+            if (t == SpellType::DEATH) {
+                for (int i = 0; i < 32; i++) {
+                    angle = angle.rotate((3.141592653 / 16) * i);
+                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
+                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                }
+            }
+            else {
+                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
+                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+                _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+            }
+
+            //We must acquire an object if we create it if we fail to do so the network
+            //will consistently try to reset its position.
+            _input.resolveSpell();
+            _player->resolveSpell();
+            _networkCtrl->pushOutEvent(
+                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
+        }
     }
 
     if (_input.pressedPickup() && _currOverlappedItem >= 0) {
@@ -882,7 +876,7 @@ void GameScene::renderHUD()
                     const auto& carried = carriedItems[i];
                     auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
                     if (itemTex) {
-                        float padding = 10.0f;
+                        float padding = 20.0f;
                         float iconSize = boxSize - padding * 2;
                         float iconX = boxX + padding;
                         float iconY = boxY + padding;
@@ -901,7 +895,7 @@ void GameScene::renderHUD()
         // Scale container with 269x79 aspect ratio (only need to change container cause actualy heart size is based on container)
         float containerH = 79.0f * 0.8f;
         float containerW = 269.0f * 0.8f;
-        float containerX = margin + hudOffset.x;
+        float containerX = margin + hudOffset.x + 25.0f; //extra offset because health gets clipped on iphone corner
         float containerY = screenSize.height - containerH - margin + hudOffset.y;
 
         if (texContainer && texFull && texHalf && texEmpty) {
@@ -939,13 +933,14 @@ void GameScene::renderHUD()
         // quota
         float quotaX = margin;
         float quotaY = screenSize.height - containerH - margin - barH - margin;
-        drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
+        //drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
 
         std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
             "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
         quotaLabel->layout();
         Affine2 quotaTrans;
         quotaTrans.translate(quotaX + 10 + hudOffset.x, quotaY + 12 + hudOffset.y);
+        _batch->setColor(Color4::BLACK);
         _batch->drawText(quotaLabel, quotaTrans);
     }
 }
@@ -956,7 +951,7 @@ cugl::Rect GameScene::getInventorySlotBounds(size_t slotIndex) const {
 
     constexpr size_t kSlotCount = 5;
     // Scale 112x112 box to a specific size (tbd)
-    float boxSize = 80.0f;
+    float boxSize = 96.0f;
     float boxGap = 8.0f;
     float totalW = kSlotCount * boxSize + (kSlotCount - 1) * boxGap; // full inventory bar width
 
