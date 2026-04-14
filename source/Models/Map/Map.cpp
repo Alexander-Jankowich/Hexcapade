@@ -85,6 +85,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     if (std::get<0>(res) == nullptr){
                         // wall off this room gids (10/23/36) x5 across doorway
                         // TODO: ensure this is fine with map bounds or if room close to edge
+                        CULog("walling off - N");
                         for (int i = door.pos.x; i <= door.pos.x + 5; i++) {
                             // wall 1
                             addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 3), node);
@@ -95,11 +96,11 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                             // wall 3
                             addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 1), node);
                         }
-                        
+                        CULog("done walling off - N");
                         //TODO: add collider
                         continue;
                     }
-                    
+                    CULog("adding halls - N");
                     for (int y=door.pos.y; y > door.pos.y - std::get<1>(res); y--) {
                         // add west wall
                         addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(door.pos.x - 1, MAP_HEIGHT - y), node);
@@ -110,7 +111,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         // add east wall
                         addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(door.pos.x +5, MAP_HEIGHT - y), node);
                     }
-                        
+                    CULog("done adding halls - N");
                     break;
                 }
             case Door::Direction::SOUTH:
@@ -120,6 +121,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 if (std::get<0>(res) == nullptr){
                     // wall off this room x5 across doorway
                     // TODO: ensure this is fine with map bounds or if room close to edge
+                    CULog("walling off - S");
                     for (int i = door.pos.x; i <= door.pos.x + 5; i++) {
                         // wall 1
                         addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 3), node);
@@ -130,11 +132,13 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         // wall 3
                         addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 1), node);
                     }
-                    
+                    CULog("done walling off - S");
+
                     //TODO: add collider
                     continue;
                 }
-                
+                CULog("adding halls - S");
+
                 for (int y=door.pos.y; y < door.pos.y + std::get<1>(res); y++) {
                     // add west wall
                     addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(door.pos.x - 1, MAP_HEIGHT - y), node);
@@ -145,6 +149,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     // add east wall
                     addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(door.pos.x +5, MAP_HEIGHT - y), node);
                 }
+                CULog("done adding halls - S");
                 //TODO: hallway colliders
                 break;
             }
@@ -154,13 +159,16 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 res = attemptToFitRoom(door, hasEastDoors, Door::Direction::EAST);
                 if (std::get<0>(res) == nullptr){
                     // wall off this door
+                    CULog("walling off - E");
+
                     for (int i = door.pos.y; i <= door.pos.y + 5; i++) {
                         addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(door.pos.x-1, MAP_HEIGHT - i), node);
                     }
                     //TODO: add collider
                     continue;
                 }
-                
+                CULog("adding halls - E");
+
                 for (int x=door.pos.x; x > door.pos.x - std::get<1>(res); x--) {
                     // add top walls
                     addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 3), node);
@@ -168,7 +176,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 1), node);
                     
                     // add 5 floor tiles
-                    for (int y=door.pos.y; x < door.pos.y +5; y++){
+                    for (int y=door.pos.y; y < door.pos.y +5; y++){
                         addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - y), node);
                     }
                     // add bottom walls
@@ -176,6 +184,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 4), node);
                     addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 5), node);
                 }
+                CULog("done adding halls - E");
+
                 //TODO: hallway colliders
                 break;
             }
@@ -185,20 +195,25 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 res = attemptToFitRoom(door, hasEastDoors, Door::Direction::EAST);
                 if (std::get<0>(res) == nullptr){
                     // wall off this door
+                    CULog("walling off - W");
+
                     for (int i = door.pos.y; i <= door.pos.y + 5; i++) {
                         addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(door.pos.x+1, MAP_HEIGHT - i), node);
                     }
+                    CULog("done walling off - W");
+
                     //TODO: add collider
                     continue;
                 }
-                
+                CULog("adding halls - W");
                 for (int x=door.pos.x; x < door.pos.x + std::get<1>(res); x++) {
+                    CULog("adding hall at %d", x);
                     // add top walls
                     addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 3), node);
                     addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 2), node);
                     addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 1), node);
                     // add 5 floor tiles
-                    for (int y=door.pos.y; x < door.pos.y +5; y++){
+                    for (int y=door.pos.y; y < door.pos.y +5; y++){
                         addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - y), node);
                     }
                     // add bottom walls
@@ -206,11 +221,14 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 4), node);
                     addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 5), node);
                 }
+                CULog("done adding halls - W");
+
                 //TODO: hallway colliders
                 break;
             }
         }
         // for all, if here then res successfully filled in with room data. add room + doors + incr counter (later add room obj)
+        CULog("adding room and doors");
         addRoomSceneNodes(std::get<0>(res), std::get<2>(res), node);
         for (auto d : std::get<0>(res)->getDoors()) {
             // pos is the TOP LEFT corner of door
@@ -272,7 +290,7 @@ std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoo
     int minHallUnits = 3;
     int maxHallUnits = 6;
     while (attempts < 3){
-        
+        CULog("attempt: %d", attempts);
         // select room for this attempt
         int rm_idx = (int) _rng.getOpenSint64(0, rooms.size());
         auto rmData = _assets->get<LevelLoader>(rooms.at(rm_idx));
@@ -301,12 +319,12 @@ std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoo
                     tlCornerY = d.pos.y - rmData->getEastDoor()->_tlCorner.y;
                     tlCornerX = d.pos.x + rmData->getWidth() + i;
                     break;
-            }
+            } // switch case
             // check if room will fit by seeing if each !0 in mask is a 0 on the grid
             bool overlap = false;
             for(int row=0; row<rmData->getHeight(); row++){
                 for(int col=0; col<rmData->getWidth(); col++){
-                    if(tlCornerX+col >= MAP_WIDTH || tlCornerY+row>=MAP_HEIGHT) {
+                    if(tlCornerX+col >= MAP_WIDTH || tlCornerX < 0 || tlCornerY+row>=MAP_HEIGHT || tlCornerY < 0) {
                         overlap=true;
                         goto exit;
                     }
@@ -319,6 +337,7 @@ std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoo
             
         exit:
             if (!overlap) { // this room works, else run again
+                CULog("found room!");
                 auto p = std::make_tuple(rmData, i, Vec2(tlCornerX, tlCornerY));
                 return p;
             }
