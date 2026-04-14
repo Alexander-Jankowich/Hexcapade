@@ -14,7 +14,8 @@ using namespace cugl;
 using namespace std;
 
 enum class EnemyType {
-    GHOST = 0
+    GHOST = 0,
+    BAT = 1
 };
 
 /**
@@ -60,7 +61,7 @@ protected:
     int _mudTimer;
 
 public:
-    EnemyObstacle(EnemyType type, const Vec2& pos, const shared_ptr<JsonValue> consts, Size s);
+    EnemyObstacle(EnemyType type, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s);
 
     // The type of enemy this enemy is, can be public bc it is a constant
     const EnemyType TYPE;

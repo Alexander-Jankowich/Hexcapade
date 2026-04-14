@@ -32,10 +32,8 @@ protected:
     /** Deserializer for supporting parameters */
     cugl::netcode::NetcodeDeserializer _deserializer;
 
-    /**
-     * Generate a pair of Obstacle and SceneNode using the given parameters
-     */
-    
+    static int rows;
+    static int cols;
 
 
 public:
@@ -55,7 +53,10 @@ public:
      */
     void init(shared_ptr<AssetManager>& assets) {
         _assets = assets;
-        PlayerNode::setConsts(_assets->get<JsonValue>("constants")->get("player"));
+        auto consts = _assets->get<JsonValue>("constants")->get("player");
+        PlayerNode::setConsts(consts);
+        rows = consts->getInt("rows");
+        cols = consts->getInt("columns");
     }
 
     /**

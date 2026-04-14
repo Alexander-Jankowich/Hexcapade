@@ -70,7 +70,30 @@
         "ghost": {
             "health": 4,
             "speed": 2.0,
-            "range": 4.5
+            "range": 4.5,
+
+            "texture": "ghost",
+            "columns": 1,
+            "rows": 1,
+            "right_forward_walk": 0,
+            "left_forward_walk": 0,
+            "right_backward_walk": 0,
+            "left_backward_walk": 0,
+            "walk_frames": 1
+        },
+        "bat": {
+            "health": 3,
+            "speed": 6.0,
+            "range": 5,
+
+            "texture": "bat",
+            "columns": 8,
+            "rows": 4,
+            "right_forward_walk": 0,
+            "left_forward_walk": 8,
+            "right_backward_walk": 16,
+            "left_backward_walk": 24,
+            "walk_frames": 8
         }
     },
     "artifacts": {

@@ -20,34 +20,49 @@
 #ifndef __GP_ENEMY_H__
 #define __GP_ENEMY_H__
 #include <cugl/cugl.h>
+#include "EnemyObstacle.h"
 
+using namespace cugl;
+using namespace std;
 
 /**
- * Model class representing an alien ship.
+ * Model class representing an enemy.
  */
-class EnemyNode : public cugl::scene2::SpriteNode {
+class EnemyNode : public scene2::SpriteNode {
 private:
-    float _speed;
+    Vec2 _velocity;
+
+    bool facingBack;
+    bool facingLeft;
+
+    int curFrame;
+    int curFrameOffset;
+
+    const int LEFT_FORWARD_WALK;
+    const int RIGHT_FORWARD_WALK;
+    const int LEFT_BACKWARD_WALK;
+    const int RIGHT_BACKWARD_WALK;
 
 public:
 #pragma mark Constructors
     /**
-     * Creates a ship wiht the given position and data.
-     *
-     * The JsonValue should be a reference of all of the constants
-     * that necessary to set the "hidden physical properties".
+     * Creates a enemy node the given position and data.
      *
      * @param pos   The ship position
      * @param data  The data defining the physics constants
      */
-    EnemyNode(std::shared_ptr<cugl::graphics::Texture>& tex);
+    EnemyNode(shared_ptr<graphics::Texture>& tex, shared_ptr<JsonValue>& consts);
     
     /**
      * Disposes the ship, releasing all resources.
      */
     ~EnemyNode() {}
     
-#pragma mark Graphics
+#pragma mark Properties
+
+    void setVelocity(Vec2 value);
+
+    void updateAnimationState(EnemyObstacle::EnemyState s);
 };
 
 #endif // !__GP_ENEMY_H__

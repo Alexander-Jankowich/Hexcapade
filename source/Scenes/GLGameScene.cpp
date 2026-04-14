@@ -575,7 +575,7 @@ void GameScene::preUpdate(float dt)
                 std::uint64_t index = rand % spawns.size();
                 Vec2 pos = spawns[index];
 
-                auto params = _enemyFact->serializeParams(EnemyType::GHOST, pos / PHYSICS_SCALE);
+                auto params = _enemyFact->serializeParams(EnemyType::BAT, pos / PHYSICS_SCALE);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
                 // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host

@@ -14,26 +14,39 @@ using namespace cugl;
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
 pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory::createObstacle(EnemyType type, Vec2 pos) {
-    
-    auto image = _assets->get<graphics::Texture>("enemy"); // TODO this will need to update with additional metadata (which asset to get)
-    Size size = image->getSize();
+
+    shared_ptr<JsonValue> vals;
+    switch (type) {
+    case EnemyType::GHOST:
+        vals = _enemyConsts->get("ghost");
+        break;
+    case EnemyType::BAT:
+        vals = _enemyConsts->get("bat");
+        break;
+    default:
+        CULog("Error! Enemy type not found in JSON!!!");
+        break;
+    }
+
+    auto img = _assets->get<graphics::Texture>(vals->getString("texture"));
+    Size size = img->getSize();
+    size.width /= vals->getInt("columns");
+    size.height /= vals->getInt("rows");
     
     // Create the EnemyObstacle
-
-    auto en = EnemyObstacle::alloc(type, pos, _enemyConsts, size);
+    auto en = EnemyObstacle::alloc(type, pos, vals, size);
 
 //    pl->setAngleSnap(0); // Snap to the nearest degree
 //
 //    // Set the physics attributes
     en->setLinearVelocity(Vec2::ZERO);
-    // which of those are needed...
 
     en->setShared(true);
 
     current.emplace(en);
 
     // Create enemy
-    auto sprite = make_shared<EnemyNode>(image);
+    auto sprite = make_shared<EnemyNode>(img, vals);
     sprite -> setScale(0.5);
 
     return std::make_pair(en, sprite);

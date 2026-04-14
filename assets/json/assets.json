@@ -5,8 +5,11 @@
         "gestures":  "json/gestures.json"
     },
   "textures": {
-    "enemy": {
-      "file": "textures/enemy.png"
+    "ghost": {
+        "file": "textures/enemy.png"
+    },
+    "bat": {
+        "file": "textures/enemy_bat_sheet.png"
     },
     "fireball": {
       "file": "textures/fireballv2.png"

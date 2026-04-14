@@ -8,9 +8,9 @@
 #include "EnemyObstacle.h"
 
 #define PHYSICS_SCALE 100
-#define ATTACK_DELAY 1.3
+#define ATTACK_DELAY 1.3f
 
-EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared_ptr<JsonValue> consts, Size s)
+EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s)
     : TYPE(type) {
     init(pos, s / PHYSICS_SCALE);
     setAwake(true);
@@ -19,19 +19,10 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared
     setDensity(1.0f);
     setFixedRotation(true);
 
-    shared_ptr<JsonValue> vals;
-    switch (type) {
-    case EnemyType::GHOST:
-        vals = consts->get("ghost");
-        break;
-    default:
-        CULog("Error! Enemy type not found in JSON!!!");
-        break;
-    }
 
-    _health = vals->getInt("health");
-    _speed = vals->getFloat("speed");
-    _range = vals->getFloat("range");
+    _health = consts->getInt("health");
+    _speed = consts->getFloat("speed");
+    _range = consts->getFloat("range");
     _target = pos;
 
     _state = EnemyState::IDLE;
