@@ -62,6 +62,11 @@ protected:
     
     //The time left until enemies mud wears off
     int _mudTimer;
+    
+    Vec2 _waterPushDir = Vec2::ZERO;
+    int _waterPushTimer = 0;
+    
+    
 
 public:
     EnemyObstacle(EnemyType type, const Vec2& pos, const shared_ptr<JsonValue> consts, Size s);
@@ -131,6 +136,11 @@ public:
     int getMudTimer() { return _mudTimer; }
     
     void setMudTimer(float t) { _mudTimer = t; }
+    
+    void setWaterPush(Vec2 dir, int frames) { _waterPushDir = dir; _waterPushTimer = frames; }
+    Vec2 getWaterPushDir() const { return _waterPushDir; }
+    int getWaterPushTimer() const { return _waterPushTimer; }
+    void tickWaterPush() { if (_waterPushTimer > 0) _waterPushTimer--; }
 };
 
 /**

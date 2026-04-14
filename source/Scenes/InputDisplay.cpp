@@ -26,11 +26,12 @@ Color4 colorFromVec(std::vector<int> vec) {
 InputDisplay::InputDisplay(InputController* input, std::shared_ptr<JsonValue> values) {
 	_input = input;
 	_uiOffset = Vec2::ZERO;
+	_uiZoom = 1.0f;
 
 	// Set joystick constants
-	PolyFactory factory = PolyFactory();
-	_joybase = factory.makeCircle(0, 0, values->get("joystick")->getInt("radius"));
-	_joystick = factory.makeCircle(0, 0, values->get("joystick")->getInt("radius") / 2);
+//	PolyFactory factory = PolyFactory();
+//	_joybase = factory.makeCircle(0, 0, values->get("joystick")->getInt("radius"));
+//	_joystick = factory.makeCircle(0, 0, values->get("joystick")->getInt("radius") / 2);
 	_baseColor = colorFromVec(values->get("joystick")->get("base_color")->asIntArray());
 	_joystickColor = colorFromVec(values->get("joystick")->get("joystick_color")->asIntArray());
 
@@ -54,6 +55,11 @@ InputDisplay::InputDisplay(InputController* input, std::shared_ptr<JsonValue> va
 
 void InputDisplay::update(Vec2 playerPos) {
 	static SimpleExtruder extruder = SimpleExtruder();
+    
+    // keep size correct when it gets zoomed in.
+	PolyFactory factory = PolyFactory();
+	_joybase = factory.makeCircle(0, 0, _input->getJoystickRadius() / _uiZoom);
+	_joystick = factory.makeCircle(0, 0, (_input->getJoystickRadius() / _uiZoom) / 2);
 
 	_showJoystick = _input->showJoystick();
 	if (_showJoystick) {
@@ -70,15 +76,15 @@ void InputDisplay::update(Vec2 playerPos) {
 		_gesture.set(_input->getCurStroke());
 		extruder.set(_gesture);
 		extruder.set(_gesture);
-		extruder.calculate(_gestureWidth);
+		extruder.calculate(_gestureWidth / _uiZoom);
 		_gestureDisplay = extruder.getPolygon();
 		_gesture2.set(_input->getsecondStroke());
 		extruder.set(_gesture2);
-		extruder.calculate(_gestureWidth);
+		extruder.calculate(_gestureWidth / _uiZoom);
 		_secondDisplay = extruder.getPolygon();
 		_gesture3.set(_input->getthirdStroke());
 		extruder.set(_gesture3);
-		extruder.calculate(_gestureWidth);
+		extruder.calculate(_gestureWidth / _uiZoom);
 		_thirdDisplay = extruder.getPolygon();
 	}
 

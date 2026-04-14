@@ -139,24 +139,42 @@ public:
     }
 
     bool hasSpell(SpellType spell) const {
-        std::string type;
+        std::vector<string> type;
         switch (spell) {
         case SpellType::FIREBALL:
-            type  = "spellbook_fire";
+        case SpellType::COMBO_FIREBALL:
+            type.push_back("spellbook_fire");
             break;
         case SpellType::FREEZE:
-            type = "spellbook_freeze";
+        case SpellType::COMBO_FREEZE:
+            type.push_back("spellbook_freeze");
             break;
         case SpellType::HEAL:
-            type = "spellbook_heal";
+            type.push_back("spellbook_heal");
+            break;
+        case SpellType::EARTH:
+            type.push_back("spellbook_earth");
+            break;
+        case SpellType::DEATH:
+            type.push_back("spellbook_death");
+            break;
+        case SpellType::COMBO_EFREEZE:
+            type.push_back("spellbook_earth");
+            type.push_back("spellbook_freeze");
+            break;
+        case SpellType::WATER:
+            type.push_back("spellbook_water");
             break;
         default:
             return false;
         }
         for (const auto& item : _inventory) {
-            if (item.kind == ItemKind::SPELLBOOK && item.itemType == type) {
-                return true;
+            for (const auto& t : type){
+                if (item.kind == ItemKind::SPELLBOOK && item.itemType == t) {
+                    return true;
+                }
             }
+            
         }
         return false;
     }
@@ -164,33 +182,23 @@ public:
 // These mirror the Inventory class queries but work directly on CarriedItem.
 // Effect checks use the itemType string so no separate enum is needed. NOT USED YET.
 
-    ///**
-    // * Returns true if any carried artifact restricts spellcasting.
-    // * Keyed on itemType == "artifact_restriction".
-    // */
-    //bool blocksSpellcasting() const {
-    //    for (const auto& item : _inventory) {
-    //        if (item.kind == ItemKind::ARTIFACT &&
-    //            item.itemType == "artifact_restriction")
-    //            return true;
-    //    }
-    //    return false;
-    //}
+    bool blocksSpellcasting() const {
+        for (const auto& item : _inventory) {
+            if (item.kind == ItemKind::ARTIFACT &&
+                item.itemType == "artifact_scroll")
+                return true;
+        }
+        return false;
+    }
 
-    ///**
-    // * Returns the combined damage multiplier from carried artifacts.
-    // * "artifact_boost"  adds +0.25 per stack.
-    // * "artifact_reduce" adds -0.25 per stack (floored at 0.1).
-    // */
-    //float getDamageMultiplier() const {
-    //    float multiplier = 1.0f;
-    //    for (const auto& item : _inventory) {
-    //        if (item.kind != ItemKind::ARTIFACT) continue;
-    //        if (item.itemType == "artifact_boost")  multiplier += 0.25f;
-    //        if (item.itemType == "artifact_reduce") multiplier -= 0.25f;
-    //    }
-    //    return std::max(0.1f, multiplier);
-    //}
+    int getDamageBonus() const {
+        for (const auto& item : _inventory) {
+            if (item.kind == ItemKind::ARTIFACT &&
+                item.itemType == "artifact_gem")
+                return 2;
+        }
+        return 0;
+    }
 
     ///**
     // * Returns true if the player carries a protection artifact
