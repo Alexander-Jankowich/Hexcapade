@@ -591,7 +591,9 @@ void GameScene::preUpdate(float dt)
         
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
-            _networkCtrl->getPhysController()->removeSharedObstacle(item);
+            if (!item->isRemoved()) {
+                _networkCtrl->getPhysController()->removeSharedObstacle(item);
+            }
         }
 
         // Remove spells that have gone out of range
