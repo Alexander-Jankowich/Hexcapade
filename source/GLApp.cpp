@@ -105,6 +105,7 @@ void GeometryApp::onStartup() {
 
     // Queue up the other assets
     _assets->loadAsync<LevelLoader>("room1","json/room1.json",nullptr);
+    _rooms->push_back("room1");
     _loading.start();
 
     cugl::netcode::NetworkLayer::start(cugl::netcode::NetworkLayer::Log::DEVELOPER);
@@ -349,7 +350,7 @@ void GeometryApp::updateLoadingScene(float dt) {
     _clientScene.init(_assets);
     _clientScene.setSpriteBatch(_batch);
 
-    _gameplay.init(_assets); //TODO: feed _rooms into _gameplay
+    _gameplay.init(_assets, _rooms);
     _gameplay.setSpriteBatch(_batch);
 
     _endScene.init(_assets);

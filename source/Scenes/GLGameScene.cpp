@@ -185,7 +185,7 @@ void GameScene::beginContact(b2Contact* contact){
  *
  * @return true if the controller is initialized properly, false otherwise.
  */
-bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
+bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const std::shared_ptr<std::vector<std::string>>& rooms)
 {
     // Initialize the scene to a locked width
     if (assets == nullptr)
@@ -198,6 +198,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     }
 
     _assets = assets;
+    _rooms = rooms;
 
     // Get constants
     _constants = assets->get<JsonValue>("constants");
@@ -221,7 +222,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     lastEnemySpawn = 0;
 
     _map = std::make_shared<Map>();
-    _map->init(); // initialize with tiled data
     _roomController.setMap(_map);
     _runRevision = 0;
     _appliedRunRevision = -1;
@@ -253,7 +253,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _spellFact = SpellFactory::alloc(_assets);
     _playerFact = PlayerFactory::alloc(_assets);
     _enemyFact = EnemyFactory::alloc(_assets);
-    _rectFact = RectFactory::alloc(_assets, _map->_tiledRoomPrefab);
     _itemFact = ItemFactory::alloc(_assets);
 
     // Create other controllers
@@ -333,7 +332,6 @@ void GameScene::reset()
 
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
-    _map -> populateObtacles(_world);
     if (_networkCtrl->isHost()) {
         _networkCtrl->startGame();
     }
@@ -369,13 +367,12 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-    if (!_map->generate(_runConfig.map, _mapSeed)) {
+    if (!_map->generate(_runConfig.map, _mapSeed, _assets, _rooms)) {
         CULog("map generation failed for run revision %d", _runRevision);
         return;
     }
-    _map -> populateObtacles(_world);
     
-    auto n = _map -> draw2();
+    auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
     _worldnode -> addChild(n);
@@ -383,11 +380,6 @@ void GameScene::rebuildMapForRun() {
     
     _roomController.setMap(_map);
     _appliedRunRevision = _runRevision;
-    auto mapNode = _map->draw();
-    mapNode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    mapNode->setPosition(Vec2::ZERO);
-
-    _worldnode->addChild(mapNode);
     
     _quota = std::max(1, _runConfig.quota);
     _depositPosition = _map->getPlayerSpawn();
@@ -403,7 +395,7 @@ void GameScene::rebuildMapForRun() {
 }
 
 void GameScene::spawnItemsFromMap() {
-    const std::vector<Vec2>& spawnPoints = _roomController.getInitialItemSpawnPoints();
+    const std::vector<Vec2>& spawnPoints = _map->getItemSpawnPoints();
     if (spawnPoints.empty()) {
         CULog("ItemFactory: no item spawn points found on map");
         return;
@@ -411,7 +403,7 @@ void GameScene::spawnItemsFromMap() {
 
     const std::vector<ItemCatalogEntryConfig>& entries = _runConfig.item.entries;
 
-    size_t roomCount = _map->getRooms().size();
+    int roomCount = _map->getNumRooms();
     float typicalItemValue = getTypicalItemValue(entries);
     size_t spawnCount = chooseSpawnCount(
         spawnPoints.size(), roomCount, _quota,
@@ -463,7 +455,7 @@ void GameScene::updateCameraFollow() {
         return;
     }
 
-    const Rect& world = _map->getWorldBounds();
+    const Rect& world = Rect(0, 0, MAP_WIDTH, MAP_HEIGHT); //TODO: is this right??
     Size view = this->getSize();
     float halfW = view.width * 0.5f;
     float halfH = view.height * 0.5f;
@@ -489,13 +481,6 @@ void GameScene::updateCameraFollow() {
     cameraPos.y = cy;
     camera->setPosition(cameraPos);
     camera->update();
-}
-
-Vec2 GameScene::resolvePlayerMapMove(const Vec2& startPos, const Vec2& velocity) const {
-    if (!_map) {
-        return startPos + velocity;
-    }
-    return _map->resolveSlideMove(startPos, velocity, 14.0f);
 }
 
 Vec2 GameScene::getHUDOffset() const {
@@ -1050,7 +1035,6 @@ void GameScene::drawDepositZone() {
 void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
     if (_networkCtrl!=nullptr) return;
     _networkCtrl = n;
-    _map->init();
 }
 
 void GameScene::initMap() {
@@ -1065,7 +1049,6 @@ void GameScene::initMap() {
     _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
     _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
     _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
-    _rectFactId = _networkCtrl->getPhysController()->attachFactory(_rectFact);
     _itemFactId = _networkCtrl->getPhysController()->attachFactory(_itemFact);
     CULog("Enemy factory ID: %u", _enemyFactId);
     CULog("Item factory ID: %u", _itemFactId);
@@ -1208,7 +1191,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     PlayerObstacle* player = nullptr;
     PlayerObstacle* player2 = nullptr;
     EnemyObstacle* enemy = nullptr;
-    RectObstacle* wall = nullptr;
+    cugl::physics2::PolygonObstacle* wall = nullptr;
     ItemObstacle* item = nullptr;
 
     // Get types of the 2 obstacles; only care about collisions between different types of obstacles
@@ -1218,7 +1201,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         player = p;
     } else if (auto e = dynamic_cast<EnemyObstacle*>(obs1)) {
         enemy = e;
-    } else if (auto w = dynamic_cast<RectObstacle*>(obs1)) {
+    } else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs1)) {
         wall = w;
     } else if (auto w = dynamic_cast<ItemObstacle*>(obs1)){
         item = w;
@@ -1235,7 +1218,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         
     } else if (auto e = dynamic_cast<EnemyObstacle*>(obs2)) {
         enemy = e;
-    } else if (auto w = dynamic_cast<RectObstacle*>(obs2)) {
+    } else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs2)) {
         wall = w;
     } else if (auto w = dynamic_cast<ItemObstacle*>(obs2)){
         item = w;

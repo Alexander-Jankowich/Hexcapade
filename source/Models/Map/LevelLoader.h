@@ -117,7 +117,11 @@ public:
     vector<vector<int>> getFixLayer() {return _visfix;}
     vector<vector<int>> getMaskLayer() {return _mask;}
     
-    std::array<std::shared_ptr<Door>, 4> getDoors() {return _doors;}
+    std::vector<std::shared_ptr<Door>> getDoors() {
+        std::vector<std::shared_ptr<Door>> res;
+        for (auto d: _doors) if(d!=nullptr) res.push_back(d);
+        return res;
+    }
     
 
     vector<Vec2> getItemSpawnPoints() {return _itemSpawnPoints;}

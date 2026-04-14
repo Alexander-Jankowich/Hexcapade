@@ -11,7 +11,6 @@ class Room {
 private:
     int _id;
     cugl::Rect _bounds;
-    cugl::Color4 _debugColor;
     std::vector<int> _connectedRooms;
     std::string _activeModifier;
     std::vector<cugl::Vec2> _itemSpawns;
@@ -24,7 +23,6 @@ public:
 
     int getId() const { return _id; }
     const cugl::Rect& getBounds() const { return _bounds; }
-    const cugl::Color4& getDebugColor() const { return _debugColor; }
     const std::vector<int>& getConnectedRooms() const { return _connectedRooms; }
     const std::string& getActiveModifier() const { return _activeModifier; }
     bool hasActiveModifier() const { return !_activeModifier.empty() && _activeModifier != "none"; }

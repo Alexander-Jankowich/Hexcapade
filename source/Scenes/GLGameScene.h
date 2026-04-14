@@ -24,7 +24,7 @@
 #include "../Controllers/Pathfinder.h"
 
 #include "../Models/GameplayConfig.h"
-#include "../Models/Map.h"
+#include "../Models/Map/Map.h"
 #include "../Models/Items.h"
 #include "../Models/Players.h"
 #include "../Models/Spells.h"
@@ -66,8 +66,6 @@ protected:
     Uint32 _playerFactId;
     std::shared_ptr<EnemyFactory> _enemyFact;
     Uint32 _enemyFactId;
-    std::shared_ptr<RectFactory> _rectFact;
-    Uint32 _rectFactId;
     std::shared_ptr<ItemFactory> _itemFact;
     Uint32 _itemFactId;
 
@@ -103,6 +101,8 @@ protected:
     float _timer = 3600;
 
     std::shared_ptr<cugl::AssetManager> _assets;
+    /** list of rooms */
+    std::shared_ptr<std::vector<std::string>> _rooms;
     /** Font for rendering HUD text */
     std::shared_ptr<cugl::graphics::Font> _font;
 
@@ -159,7 +159,7 @@ public:
      *
      * @return true if the controller is initialized properly, false otherwise.
      */
-    bool init(const std::shared_ptr<cugl::AssetManager>& assets);
+    bool init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<std::vector<std::string>>& rooms);
     
     std::shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
 

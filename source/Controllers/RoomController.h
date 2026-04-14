@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-#include "../Models/Map.h"
+#include "../Models/Map/Map.h"
 
 class RoomController {
 private:

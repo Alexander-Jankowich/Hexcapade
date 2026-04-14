@@ -21,7 +21,6 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
     
     auto node = scene2::SceneNode::alloc();
     std::queue<MapDoor> doors;
-    _rng = cugl::Random();
     _rng.initWithSeed(seed);
     _assets = assets;
     
@@ -47,7 +46,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
     std::copy_if(rooms->begin(), rooms->end(), std::back_inserter(hasWestDoors), [this](std::string r){return _assets->get<LevelLoader>(r)->hasWestDoor();});
     
     // select first room and add to center of the map
-    int rm_idx = (int) _rng.getClosedSint64(0, rooms->size()-1);
+    int rm_idx = (int) _rng.getOpenSint64(0, rooms->size());
     std::string& room = rooms->at(rm_idx);
     auto tiledData = _assets->get<LevelLoader>(room);
     
@@ -65,20 +64,24 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
         auto md = MapDoor(Vec2(tlcorner.x + d->_tlCorner.x, tlcorner.y - d->_tlCorner.y), d->_dimens / tiledData->getTileH(), d->_direction);
         doors.push(md);
     }
+    _numRooms++;
     
-    
+    CULog("added first room");
     // iterate over doors queue
     while (!doors.empty()) {
+        CULog("doors size %d", (int) doors.size());
         auto door = doors.front();
         doors.pop();
         
+        // declare up here, default vals
+        std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> res = std::make_tuple(nullptr, -1, Vec2(0, 0));
         // gids to wall off doors: 100 for east door, 99 for west, (10/23/36) for north and (102 115 128) for south
         
         switch (door.dir) {
             case Door::Direction::NORTH:
                 {
                     // check if a room will fit - call attemptToFitRoom
-                    std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> res = attemptToFitRoom(door, hasSouthDoors, Door::Direction::SOUTH);
+                    res = attemptToFitRoom(door, hasSouthDoors, Door::Direction::SOUTH);
                     if (std::get<0>(res) == nullptr){
                         // wall off this room gids (10/23/36) x5 across doorway
                         // TODO: ensure this is fine with map bounds or if room close to edge
@@ -107,14 +110,13 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         // add east wall
                         addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(door.pos.x +5, MAP_HEIGHT - y), node);
                     }
-                    
-                    addRoomSceneNodes(std::get<0>(res), std::get<2>(res), node);
+                        
                     break;
                 }
             case Door::Direction::SOUTH:
             {
                 // check if a room will fit - call attemptToFitRoom
-                std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> res = attemptToFitRoom(door, hasNorthDoors, Door::Direction::NORTH);
+                res = attemptToFitRoom(door, hasNorthDoors, Door::Direction::NORTH);
                 if (std::get<0>(res) == nullptr){
                     // wall off this room x5 across doorway
                     // TODO: ensure this is fine with map bounds or if room close to edge
@@ -144,13 +146,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(door.pos.x +5, MAP_HEIGHT - y), node);
                 }
                 //TODO: hallway colliders
-                addRoomSceneNodes(std::get<0>(res), std::get<2>(res), node);
                 break;
             }
             case Door::Direction::EAST:
             {
                 // check if a room will fit - call attemptToFitRoom
-                std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> res = attemptToFitRoom(door, hasEastDoors, Door::Direction::EAST);
+                res = attemptToFitRoom(door, hasEastDoors, Door::Direction::EAST);
                 if (std::get<0>(res) == nullptr){
                     // wall off this door
                     for (int i = door.pos.y; i <= door.pos.y + 5; i++) {
@@ -176,13 +177,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 5), node);
                 }
                 //TODO: hallway colliders
-                addRoomSceneNodes(std::get<0>(res), std::get<2>(res), node);
                 break;
             }
             case Door::Direction::WEST:
             {
                 // check if a room will fit - call attemptToFitRoom
-                std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> res = attemptToFitRoom(door, hasEastDoors, Door::Direction::EAST);
+                res = attemptToFitRoom(door, hasEastDoors, Door::Direction::EAST);
                 if (std::get<0>(res) == nullptr){
                     // wall off this door
                     for (int i = door.pos.y; i <= door.pos.y + 5; i++) {
@@ -207,10 +207,17 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 5), node);
                 }
                 //TODO: hallway colliders
-                addRoomSceneNodes(std::get<0>(res), std::get<2>(res), node);
                 break;
             }
         }
+        // for all, if here then res successfully filled in with room data. add room + doors + incr counter (later add room obj)
+        addRoomSceneNodes(std::get<0>(res), std::get<2>(res), node);
+        for (auto d : std::get<0>(res)->getDoors()) {
+            // pos is the TOP LEFT corner of door
+            auto md = MapDoor(Vec2(std::get<2>(res).x + d->_tlCorner.x, std::get<2>(res).y - d->_tlCorner.y), d->_dimens / std::get<0>(res)->getTileH(), d->_direction);
+            doors.push(md);
+        }
+        _numRooms++;
         
     }
     
@@ -257,13 +264,17 @@ void Map::addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCor
 }
 
 std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoor d, std::vector<std::string> rooms, Door::Direction connDir) {
+    
+    if(rooms.size()==0) return std::make_tuple(nullptr, -1, Vec2(-1, -1)); // no viable room
+
     int attempts = 0;
     //TODO: these will be in level config file perhaps?
     int minHallUnits = 3;
     int maxHallUnits = 6;
     while (attempts < 3){
+        
         // select room for this attempt
-        int rm_idx = (int) _rng.getClosedSint64(0, rooms.size()-1);
+        int rm_idx = (int) _rng.getOpenSint64(0, rooms.size());
         auto rmData = _assets->get<LevelLoader>(rooms.at(rm_idx));
         
         // try to fit room with varying hall sizes
@@ -313,6 +324,7 @@ std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoo
             }
             
         } // hallway count loop
+        attempts++;
     } // attempt loop
     // if we make it here, 3 attempts failed so nullptr
     return std::make_tuple(nullptr, -1, Vec2(-1, -1));
@@ -323,4 +335,3 @@ void Map::addSingleNode(std::shared_ptr<Texture> t, Vec2 pos, std::shared_ptr<cu
     sprite->initWithTexturePoly(t, Rect(pos, Size(TILE_SIZE, TILE_SIZE)));
     world -> addChild(sprite);
 }
-

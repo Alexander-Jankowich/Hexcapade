@@ -54,12 +54,13 @@ private:
     
     cugl::Vec2 _origin;
 
-    std::vector<Room> _rooms;
+    //std::vector<Room> _rooms; IGNORING FOR NOW
 
     std::vector<cugl::Vec2> _itemSpawnPoints;
     std::vector<cugl::Vec2> _enemySpawnPoints;
     cugl::Vec2 _playerSpawn;
     MapGenerationConfig _config;
+    int _numRooms; //TEMP CHANGE LATER
 
     cugl::Random _rng;
 
@@ -71,6 +72,12 @@ public:
      * @param rooms the list of all string keys used to access each room in the AssetManager
      */
     std::shared_ptr<cugl::scene2::SceneNode> generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms);
+    
+    Vec2 getPlayerSpawn() {return _playerSpawn;}
+    std::vector<Vec2> getEnemySpawnPoints() {return _enemySpawnPoints;}
+    std::vector<Vec2> getItemSpawnPoints() {return _enemySpawnPoints;}
+    int getNumRooms() {return _numRooms;}
+
 
 private:
     /** Helper function to add all sceneNodes for a room (given tiled data) in the right place.

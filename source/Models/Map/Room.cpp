@@ -2,15 +2,13 @@
 
 Room::Room() :
 _id(-1),
-_bounds(cugl::Rect::ZERO),
-_debugColor(cugl::Color4::WHITE) {
+_bounds(cugl::Rect::ZERO) {
 }
 
 Room::Room(int id, const cugl::Rect& bounds, const cugl::Color4& debugColor,
            const std::string& activeModifier) :
 _id(id),
 _bounds(bounds),
-_debugColor(debugColor),
 _activeModifier(activeModifier) {
 }
 
