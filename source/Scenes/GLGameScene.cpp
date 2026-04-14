@@ -141,7 +141,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 
     auto orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera());
     if (orthographicCamera) {
-        orthographicCamera->setZoom(std::max(_cameraZoom, 0.01f));
+        orthographicCamera->setZoom(std::max(_cameraZoom, 0.02f));
         orthographicCamera->update();
     }
 
@@ -652,11 +652,11 @@ void GameScene::preUpdate(float dt)
         _input.resolveSpell();
     } else if (_input.getGesture() != SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
-        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
+        //if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
             _player->setSpell(newSpell);
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-        }
+        //}
     }
 
     Vec2 angle = _input.getSpellAngle();
@@ -1264,16 +1264,22 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     if (player && spell) {
         contact -> SetEnabled(false);
-        if (spell->getCasterUID()==_networkCtrl->getPID()) return;
+        if (spell->getCasterUID()==player->getPID()) return;
         if (spell->TYPE == SpellType::HEAL) {
             int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
             spell->markRemoved(true);
+            return;
         }
+        player -> setHealth(player->getHealth() - 1);
+        
         return;
     }
     if (player && enemy) {
         contact -> SetEnabled(false);
+        if(player -> getHealth() == 0){
+            return;
+        }
         float knockbackSpeed = 10.0f;
         b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
         b2Vec2 dir = vel;
@@ -1284,8 +1290,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
 
-        if (enemy->getState() != EnemyObstacle::EnemyState::ATTACK_RESET)
-            player->setHealth(player->getHealth() - 1);
+        
+        player->setHealth(player->getHealth() - 1);
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;
         }
