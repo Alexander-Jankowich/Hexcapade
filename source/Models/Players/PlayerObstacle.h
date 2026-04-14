@@ -162,6 +162,9 @@ public:
             type.push_back("spellbook_earth");
             type.push_back("spellbook_freeze");
             break;
+        case SpellType::WATER:
+            type.push_back("spellbook_water");
+            break;
         default:
             return false;
         }

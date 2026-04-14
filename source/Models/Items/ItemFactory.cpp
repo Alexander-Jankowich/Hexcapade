@@ -17,7 +17,6 @@ using namespace cugl;
 ItemObstacle::ItemObstacle(const cugl::Vec2& pos, int value, const std::string& itemType, int i) {
     init(pos, cugl::Size(ITEM_SIZE, ITEM_SIZE));
     setBodyType(b2_staticBody);
-    setAwake(true);
     setEnabled(true);
     _value = value;
     _itemType = itemType;

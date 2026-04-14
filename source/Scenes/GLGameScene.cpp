@@ -693,13 +693,29 @@ void GameScene::preUpdate(float dt)
             //CULog("Casting spell type: %d", t);
             if (t == SpellType::DEATH) {
                 for (int i = 0; i < 32; i++) {
-                    angle = angle.rotate((3.141592653 / 16) * i);
+                    angle = angle.rotate((M_PI / 16) * i);
                     auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
-            }
-            else {
+            }else if (t == SpellType::WATER){
+                int numShots = 8;
+                float start = M_PI / 6.0f;
+                float end   = -M_PI / 6.0f;
+                for (int i = 0; i < numShots; i++) {
+                    float alpha = (float)i / (numShots - 1); 
+                    float theta = start + alpha * (end - start);
+
+                    Vec2 dir = angle.getNormalization().rotate(theta);
+
+                    auto params = _spellFact->serializeParams(
+                        (playerScreenPos / PHYSICS_SCALE),
+                        _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f,
+                        dir,t,_networkCtrl->getPID());
+                        auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+                        _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                    }
+            }else {
                 auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
@@ -1229,6 +1245,11 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
     if (enemy && spell) {
         contact -> SetEnabled(false);
+        if(spell -> TYPE == SpellType::WATER){
+            Vec2 pushDir = enemy->getPosition() - spell->getPosition();
+            pushDir.normalize();
+            enemy->setWaterPush(pushDir, 30);
+        }
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
         if(spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_EFREEZE){
             enemy -> setFrozen(true);
@@ -1245,7 +1266,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             enemy -> setMud(true);
             enemy -> setMudTimer(300);
         }
-        if(!(spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH)){
+        if(!(spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
+             or spell -> TYPE == SpellType::WATER)){
             spell->markRemoved(true);
         }
         

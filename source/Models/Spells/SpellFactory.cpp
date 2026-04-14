@@ -16,6 +16,9 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int
         init(pos, (rad*2)/PHYSICS_SCALE);
     }else if (type == SpellType::COMBO_FREEZE or type == SpellType::COMBO_FIREBALL){
         init(pos, (rad*2)/PHYSICS_SCALE);
+    }else if (type == SpellType::WATER){
+        init(pos, (rad*2) / PHYSICS_SCALE);
+        setDensity(100);
     }else{
         init(pos, rad/PHYSICS_SCALE);
     }
@@ -49,6 +52,11 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     std::shared_ptr<JsonValue> values;
 
     switch (type) {
+    case SpellType::WATER:
+        CULog("this case");
+        values = _spellConsts->get("water");
+        image = _assets->get<graphics::Texture>("freeze");
+        break;
     case SpellType::COMBO_FIREBALL:
         values = _spellConsts->get("combo_fireball");
         break;

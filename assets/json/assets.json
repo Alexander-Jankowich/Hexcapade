@@ -64,6 +64,9 @@
     },
     "spellbook_earth": {
         "file": "textures/earth_spellbook.png"
+    },
+    "spellbook_water": {
+        "file": "textures/water_spellbook.png"
     }
 
   },
