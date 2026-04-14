@@ -5,18 +5,29 @@
 #define __HEXCAPADE_MAP_H__
 
 #include <cugl/cugl.h>
-#include <memory>
-#include <vector>
 
 #include "../GameplayConfig.h"
 #include "Room.h"
 #include "LevelLoader.h"
 #include "../../Controllers/NetworkController.h"
-#include "RectFactory.h"
 
 #define MAP_HEIGHT 100
 #define MAP_WIDTH 100
+#define TILE_SIZE 40
 
+// GID defs for hallway gen
+#define FLOOR_GID 66
+#define WEST_GID 99
+#define EAST_GID 100
+#define NORTH_TOP_GID 10
+#define NORTH_MID_GID 23
+#define NORTH_LOW_GID 36
+#define SOUTH_TOP_GID 102
+#define SOUTH_MID_GID 115
+#define SOUTH_LOW_GID 128
+
+using namespace cugl;
+using namespace cugl::graphics;
 
 class Map {
 private:
@@ -29,7 +40,7 @@ private:
             size = s;
             dir = d;
         }
-    }
+    };
     struct GridRoom {
         int x;
         int y;
@@ -74,9 +85,11 @@ private:
      * @param d the door the algorithm is trying to branch off of
      * @param rooms a list of rooms that could possibly connect (have door in correct wall)
      * @param connDir the direction of the connection (from view of room)
-     * @return a pair of the tiled data for a room that fits and the # of hallway units it needs. nullptr if no room was found.
+     * @return a tuple of the tiled data for a room that fits, the # of hallway units it needs, and the coords for the rooms top left corner. nullptr if no room was found.
      */
-    std::pair<std::shared_ptr<LevelLoader>, int> attemptToFitRoom(MapDoor d, std::shared_ptr<std::vector<std::string>> rooms, Door::Direction connDir);
+    std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> attemptToFitRoom(MapDoor d, std::vector<std::string> rooms, Door::Direction connDir);
+    
+    void addSingleNode(std::shared_ptr<Texture> t, Vec2 pos, std::shared_ptr<cugl::scene2::SceneNode> world);
 };
 
 #endif // __HEXCAPADE_MAP_H__
