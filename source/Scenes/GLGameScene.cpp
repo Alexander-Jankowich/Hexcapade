@@ -30,7 +30,7 @@
 #define SCENE_HEIGHT 720
 
 /** The ratio between the physics world and the screen. (40 px = 1 meter, 1 tile is 1m x 1m or 40px x 40px) */
-#define PHYSICS_SCALE 40
+#define PHYSICS_SCALE 100
 
 #define COMBO_RADIUS 25
 
@@ -367,12 +367,12 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-    if (!_map->generate(_runConfig.map, _mapSeed, _assets, _rooms)) {
-        CULog("map generation failed for run revision %d", _runRevision);
-        return;
-    }
+//    if (!_map->generate(_runConfig.map, _mapSeed, _assets, _rooms)) {
+//        CULog("map generation failed for run revision %d", _runRevision);
+//        return;
+//    }
     
-    auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms);
+    auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize());
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
     _worldnode -> addChild(n);
@@ -385,7 +385,7 @@ void GameScene::rebuildMapForRun() {
     _depositPosition = _map->getPlayerSpawn();
 
     if (_networkCtrl && _networkCtrl->isHost()) {
-        spawnItemsFromMap();
+        //spawnItemsFromMap();
     }
     //updateItemPickupState();
     //updateDepositState();
@@ -454,8 +454,8 @@ void GameScene::updateCameraFollow() {
         camera->update();
         return;
     }
-
-    const Rect& world = Rect(0, 0, MAP_WIDTH, MAP_HEIGHT); //TODO: is this right??
+    
+    const Rect& world = Rect(0, 0, getSize().width, getSize().height); //TODO: is this right??
     Size view = this->getSize();
     float halfW = view.width * 0.5f;
     float halfH = view.height * 0.5f;
@@ -517,6 +517,8 @@ void GameScene::preUpdate(float dt)
         //Have we set our player yet / received signal
         if (!_player) return;
     }
+    Vec2 pos = _player->getPosition();
+    CULog("X: %f, Y:%f", pos.x, pos.y);
     //We have to acquire ourselves before we attempt to move
     //it is a little weird to do this every frame but this allows host to acquire themselves
     _networkCtrl -> getPhysController() -> acquireObs(_player, 0);
@@ -550,18 +552,18 @@ void GameScene::preUpdate(float dt)
         if (lastEnemySpawn > 8) {
             lastEnemySpawn = 0;
 
-            auto spawns = _map -> getEnemySpawnPoints();
-            std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
-            if (!spawns.empty()) {
-                std::uint64_t index = rand % spawns.size();
-                Vec2 pos = spawns[index];
-
-                auto params = _enemyFact->serializeParams(EnemyType::GHOST, pos / PHYSICS_SCALE);
-                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
-                //If we create it we MUST acquire it
-                // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
-                _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
-            }
+//            auto spawns = _map -> getEnemySpawnPoints();
+//            std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
+//            if (!spawns.empty()) {
+//                std::uint64_t index = rand % spawns.size();
+//                Vec2 pos = spawns[index];
+//
+//                auto params = _enemyFact->serializeParams(EnemyType::GHOST, pos / PHYSICS_SCALE);
+//                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
+//                //If we create it we MUST acquire it
+//                // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
+//                _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
+//            }
         }
 
         auto toRemove = _enemyFact->getRemoved();

@@ -16,7 +16,7 @@
 #define TILE_SIZE 40
 
 // GID defs for hallway gen
-#define FLOOR_GID 66
+#define FLOOR_GID 67
 #define WEST_GID 99
 #define EAST_GID 100
 #define NORTH_TOP_GID 10
@@ -53,6 +53,7 @@ private:
     std::shared_ptr<AssetManager> _assets;
     
     cugl::Vec2 _origin;
+    cugl::Size _sceneSize;
 
     //std::vector<Room> _rooms; IGNORING FOR NOW
 
@@ -71,7 +72,7 @@ public:
      * @param assets the assetManager, which contains all loaded tiled data tied to proper room keys
      * @param rooms the list of all string keys used to access each room in the AssetManager
      */
-    std::shared_ptr<cugl::scene2::SceneNode> generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms);
+    std::shared_ptr<cugl::scene2::SceneNode> generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize);
     
     Vec2 getPlayerSpawn() {return _playerSpawn;}
     std::vector<Vec2> getEnemySpawnPoints() {return _enemySpawnPoints;}
@@ -83,7 +84,7 @@ private:
     /** Helper function to add all sceneNodes for a room (given tiled data) in the right place.
      * Side effect:  fills in the mapGrid with 1s for each space this room covers
      * @param tiledRmData the Tiled Data for this room
-     * @param tlCorner the top left corner of the room in tiled coordinates
+     * @param tlCorner the top left corner of the room in mapGrid coordinates
      * @param world the base sceneNode to add all created nodes to
      */
     void addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world);

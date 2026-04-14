@@ -90,15 +90,15 @@ bool LevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
     // generate the spawn points
     // TODO: figure out if should be shared_ptr or not...
     for (auto item_spawn : json->get("layers")->get(1)->get("layers")->get(0)->get("objects")->children()){
-        auto sp = Vec2(item_spawn->getFloat("x"), item_spawn->getFloat("y"));
+        auto sp = Vec2(item_spawn->getFloat("x") / _tileWidth, item_spawn->getFloat("y") / _tileHeight);
         _itemSpawnPoints.push_back(sp);
     }
     
     auto pl_spawn = json->get("layers")->get(1)->get("layers")->get(1)->get("objects")->get(0);
-    _playerSpawn = Vec2(pl_spawn->getFloat("x"), pl_spawn->getFloat("y"));
+    _playerSpawn = Vec2(pl_spawn->getFloat("x") / _tileWidth, pl_spawn->getFloat("y") / _tileHeight);
     
     for (auto enem_spawn : json->get("layers")->get(1)->get("layers")->get(2)->get("objects")->children()){
-        auto sp = Vec2(enem_spawn->getFloat("x"), enem_spawn->getFloat("y"));
+        auto sp = Vec2(enem_spawn->getFloat("x") / _tileWidth, enem_spawn->getFloat("y") / _tileHeight);
         _enemSpawnPoints.push_back(sp);
     }
     _doors.fill(nullptr);
