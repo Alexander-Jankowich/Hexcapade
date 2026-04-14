@@ -27,6 +27,11 @@
         }
     },
     "spells": {
+        "combo_efreeze":{
+            "speed" : 3,
+            "damage" : 2,
+            "range" : 10.0
+        },
         "earth":{
             "speed": 3,
             "damage": 2,

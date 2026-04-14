@@ -28,6 +28,8 @@
 class EnemyNode : public cugl::scene2::SpriteNode {
 private:
     float _speed;
+    bool frozen;
+    bool statue;
 
 public:
 #pragma mark Constructors
@@ -46,6 +48,13 @@ public:
      * Disposes the ship, releasing all resources.
      */
     ~EnemyNode() {}
+    
+    void setFrozen(bool f) { frozen = f; }
+    bool getFrozen() { return frozen; }
+    void setStatue(bool s) { statue = s; }
+    bool getStatue() { return statue; }
+    
+    void updateState();
     
 #pragma mark Graphics
 };

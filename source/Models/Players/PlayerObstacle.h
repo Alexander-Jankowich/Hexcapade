@@ -139,24 +139,39 @@ public:
     }
 
     bool hasSpell(SpellType spell) const {
-        std::string type;
+        std::vector<string> type;
         switch (spell) {
         case SpellType::FIREBALL:
-            type  = "spellbook_fire";
+        case SpellType::COMBO_FIREBALL:
+            type.push_back("spellbook_fire");
             break;
         case SpellType::FREEZE:
-            type = "spellbook_freeze";
+        case SpellType::COMBO_FREEZE:
+            type.push_back("spellbook_freeze");
             break;
         case SpellType::HEAL:
-            type = "spellbook_heal";
+            type.push_back("spellbook_heal");
+            break;
+        case SpellType::EARTH:
+            type.push_back("spellbook_earth");
+            break;
+        case SpellType::DEATH:
+            type.push_back("spellbook_death");
+            break;
+        case SpellType::COMBO_EFREEZE:
+            type.push_back("spellbook_earth");
+            type.push_back("spellbook_freeze");
             break;
         default:
             return false;
         }
         for (const auto& item : _inventory) {
-            if (item.kind == ItemKind::SPELLBOOK && item.itemType == type) {
-                return true;
+            for (const auto& t : type){
+                if (item.kind == ItemKind::SPELLBOOK && item.itemType == t) {
+                    return true;
+                }
             }
+            
         }
         return false;
     }
