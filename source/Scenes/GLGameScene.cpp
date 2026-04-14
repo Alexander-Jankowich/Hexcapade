@@ -628,7 +628,15 @@ void GameScene::preUpdate(float dt)
     }
 
     // Spellcasting
-    if (_input.getGesture() != SpellType::NONE) {
+    if (_player->blocksSpellcasting()) {
+        // restriction artifact needs to supress all spells (even the ones casted alr)
+        if (_player->getSpell() != SpellType::NONE) {
+            _player->resolveSpell();
+            _networkCtrl->pushOutEvent(
+                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
+        }
+        _input.resolveSpell();
+    } else if (_input.getGesture() != SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
         if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
             _player->setSpell(newSpell);
@@ -641,7 +649,7 @@ void GameScene::preUpdate(float dt)
     if (angle.isZero()) {
         angle = _player->getDirection();
     }
-    if (_input.shouldReleaseSpell()) {
+    if (_input.shouldReleaseSpell() && !_player->blocksSpellcasting()) {
         //CULog("Release spell--------------------------------------------------------");
         
         //CULog("Spell type: %d", _player->getSpell());
@@ -696,13 +704,15 @@ void GameScene::preUpdate(float dt)
             if (t == SpellType::DEATH) {
                 for (int i = 0; i < 32; i++) {
                     angle = angle.rotate((3.141592653 / 16) * i);
-                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
+                    int damageBonus = _player->getDamageBonus();
+                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID(), damageBonus);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
             }
             else {
-                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
+                int damageBonus = _player->getDamageBonus();
+                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID(), damageBonus);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             }

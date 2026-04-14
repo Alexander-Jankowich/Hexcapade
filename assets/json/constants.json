@@ -73,7 +73,7 @@
     },
     "enemies": {
         "ghost": {
-            "health": 4,
+            "health": 6,
             "speed": 2.0,
             "range": 4.5
         }
