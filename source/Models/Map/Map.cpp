@@ -43,6 +43,19 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
         minRoomH = _assets->get<LevelLoader>(r)->getHeight() < minRoomH ? assets->get<LevelLoader>(r)->getHeight() : minRoomH;
     }
     
+    // calc lists of room w each door type:
+    std::vector<std::string> hasNorthDoors;
+    std::copy_if(rooms->begin(), rooms->end(), std::back_inserter(hasNorthDoors), [this](std::string r){return _assets->get<LevelLoader>(r)->hasNorthDoor();});
+    
+    std::vector<std::string> hasSouthDoors;
+    std::copy_if(rooms->begin(), rooms->end(), std::back_inserter(hasSouthDoors), [this](std::string r){return _assets->get<LevelLoader>(r)->hasSouthDoor();});
+    
+    std::vector<std::string> hasEastDoors;
+    std::copy_if(rooms->begin(), rooms->end(), std::back_inserter(hasEastDoors), [this](std::string r){return _assets->get<LevelLoader>(r)->hasEastDoor();});
+    
+    std::vector<std::string> hasWestDoors;
+    std::copy_if(rooms->begin(), rooms->end(), std::back_inserter(hasWestDoors), [this](std::string r){return _assets->get<LevelLoader>(r)->hasWestDoor();});
+    
     // select first room and add to center of the map
     int rm_idx = (int) (_rng.getFloat() * (int) rooms->size());
     std::string& room = rooms->at(rm_idx);
@@ -59,7 +72,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
     // add all doors in room to doors queue
     for (auto d : tiledData->getDoors()) {
         // pos is the TOP LEFT corner of door
-        auto md = std::make_shared<MapDoor>(Vec2(tlcorner.x + d->_tlCorner.x, tlcorner.y - d->_tlCorner.y), d->_dimens, d->_direction);
+        auto md = std::make_shared<MapDoor>(Vec2(tlcorner.x + d->_tlCorner.x, tlcorner.y - d->_tlCorner.y), d->_dimens / tiledData->getTileH(), d->_direction);
         doors.push(md);
     }
     
@@ -74,9 +87,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
         
         switch (door->dir) {
             case Door::Direction::NORTH:
-                // create list of possible rooms (that have southern door)
-                
                 // check if a room will fit - call attemptToFitRoom
+                
                 
                 // if a room will fit:
                 //  add hallways
@@ -124,7 +136,8 @@ void Map::addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCor
             int maskGid = tiledRmData->getMaskLayer().at(y).at(x);
             
             // multiply by tile size to convert to world coords? subtract y bc going top down
-            Vec2 pos = Vec2((tlCorner.x+x) * tiledRmData->getTileW(), (tlCorner.y-y) * tiledRmData->getTileH());
+            // TODO: check math
+            Vec2 pos = Vec2((tlCorner.x+x), (MAP_HEIGHT - tlCorner.y-y));
             Size s = Size(tiledRmData->getTileW(), tiledRmData->getTileH());
             auto cell = Rect(pos, s);
             // add tile layers in order, skip if gid zero
@@ -153,27 +166,52 @@ void Map::addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCor
                 world -> addChild(sprite);
             }
             if(maskGid !=0){
-                _mapGrid[tlCorner.y-y][tlCorner.x+x] = 1; // x, y are tiled coords
+                _mapGrid[tlCorner.y+y][tlCorner.x+x] = 1; // _mapGrid is (0,0) top left corner, so just add
             }
         }
     }
 }
 
-bool Map::attemptToFitRoom(MapDoor d, std::shared_ptr<std::vector<std::string>> rooms) {
+std::pair<std::shared_ptr<LevelLoader>, int> Map::attemptToFitRoom(MapDoor d, std::shared_ptr<std::vector<std::string>> rooms, Door::Direction connDir) {
     int attempts = 0;
     //TODO: these will be in level config file perhaps?
     int minHallUnits = 3;
     int maxHallUnits = 6;
     while (attempts < 3){
-        // select room for this attempt -
+        // select room for this attempt
         int rm_idx = _rng.getFloat() * rooms->size();
         auto rmData = _assets->get<LevelLoader>(rooms->at(rm_idx));
         
         // try to fit room with varying hall sizes
         for (int i=minHallUnits; i<=maxHallUnits; i++) {
+            switch (connDir) {
+                case Door::Direction::NORTH: // rooms north door is connecting
+                    {
+                        int tlCornerY = d.pos.y - d.size.height - i;
+                        int tlCornerX = d.pos.x - rmData->getNorthDoor()->_tlCorner.x; // x pos of hallway, subtract distance from north door corner to room corner, which is just tlCorner.x bc tiled coords
+                        break;
+                    }
+                case Door::Direction::EAST:
+                    {
+
+                        break;
+                    }
+                case Door::Direction::SOUTH: // rooms south door connecting
+                    {
+                        int tlCornerY = d.pos.y + i + rmData->getHeight();
+                        int tlCornerX = d.pos.x - rmData->getSouthDoor()->_tlCorner.x; // same math as north door
+
+
+                        break;
+                    }
+                case Door::Direction::WEST:
+                    {
+
+                        break;
+                    }
+            }
             // check if room will fit by seeing if each 1 in mask is a 0 on the grid
             // if yes then return room and hallUnits
-            // else incr hall and try again
         }
     }
 }

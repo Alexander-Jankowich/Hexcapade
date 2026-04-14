@@ -29,12 +29,10 @@
 // Lock the screen size to fixed height regardless of aspect ratio
 #define SCENE_HEIGHT 720
 
-/** The ratio between the physics world and the screen. */
-#define PHYSICS_SCALE 100
+/** The ratio between the physics world and the screen. (40 px = 1 meter, 1 tile is 1m x 1m or 40px x 40px) */
+#define PHYSICS_SCALE 40
 
 #define COMBO_RADIUS 25
-
-#define PI 3.14159265358979323
 
 #define ITEM_PICKUP_RADIUS 0.5f
 

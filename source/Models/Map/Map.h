@@ -70,7 +70,13 @@ private:
      */
     void addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world);
     
-    bool attemptToFitRoom(MapDoor d, std::shared_ptr<std::vector<std::string>> rooms);
+    /** Helper function that attempts to fit a room branching off of the desired door.
+     * @param d the door the algorithm is trying to branch off of
+     * @param rooms a list of rooms that could possibly connect (have door in correct wall)
+     * @param connDir the direction of the connection (from view of room)
+     * @return a pair of the tiled data for a room that fits and the # of hallway units it needs. nullptr if no room was found.
+     */
+    std::pair<std::shared_ptr<LevelLoader>, int> attemptToFitRoom(MapDoor d, std::shared_ptr<std::vector<std::string>> rooms, Door::Direction connDir);
 };
 
 #endif // __HEXCAPADE_MAP_H__
