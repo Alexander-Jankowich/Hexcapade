@@ -63,7 +63,7 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos,float rad, Vec2 velocity, SpellType type, std::string c_uid);
+    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos,float rad, Vec2 velocity, SpellType type, std::string c_uid, int damageBonus);
 
 
 public:
@@ -92,7 +92,7 @@ public:
     /**
      * Helper method for converting normal parameters into byte vectors used for syncing.
      */
-    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos,float rad,Vec2 velocity, SpellType type, std::string c);
+    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos,float rad,Vec2 velocity, SpellType type, std::string c, int damageBonus = 0);
 
     /**
      * Generate a pair of Obstacle and SceneNode using serialized parameters.
