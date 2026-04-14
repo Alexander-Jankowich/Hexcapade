@@ -878,12 +878,19 @@ void GameScene::renderHUD()
                     const auto& carried = carriedItems[i];
                     auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
                     if (itemTex) {
-                        float padding = 20.0f;
-                        float iconSize = boxSize - padding * 2;
-                        float iconX = boxX + padding;
+                        float padding = 0.0f;
+                        float maxSize = boxSize - padding * 2;
+
+                        // Preserve 3:4 aspect ratio
+                        float iconW = maxSize * (3.0f / 4.0f);
+                        float iconH = maxSize;
+
+                        float iconX = boxX + (boxSize - iconW) * 0.5f;
                         float iconY = boxY + padding;
+
                         _batch->setColor(Color4::WHITE);
-                        _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
+                        _batch->draw(itemTex, Rect(iconX, iconY, iconW, iconH));
+
                     }
                 }
             }
