@@ -139,6 +139,12 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 
     _assets = assets;
 
+    auto orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera());
+    if (orthographicCamera) {
+        orthographicCamera->setZoom(std::max(_cameraZoom, 0.01f));
+        orthographicCamera->update();
+    }
+
     // Get constants
     _constants = assets->get<JsonValue>("constants");
     _gestures = assets->get<JsonValue>("gestures");
@@ -387,27 +393,12 @@ void GameScene::spawnItemsFromMap() {
 }
 
 void GameScene::updateCameraFollow() {
-    std::shared_ptr<Camera> camera = this->getCamera();
-    if (!camera) {
-        _cameraBottomLeft = Vec2::ZERO;
-        return;
-    }
-
-    if (!_map) {
-        _cameraBottomLeft = Vec2::ZERO;
-        Vec3 cameraPos = camera->getPosition();
-        cameraPos.x = this->getSize().width * 0.5f;
-        cameraPos.y = this->getSize().height * 0.5f;
-        camera->setPosition(cameraPos);
-        camera->update();
-        return;
-    }
+    std::shared_ptr<OrthographicCamera> orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera());
+    float zoom = getActiveCameraZoom();
+    float halfW = getSize().width / (2.0f * zoom);
+    float halfH = getSize().height / (2.0f * zoom);
 
     const Rect& world = _map->getWorldBounds();
-    Size view = this->getSize();
-    float halfW = view.width * 0.5f;
-    float halfH = view.height * 0.5f;
-
     float minCenterX = world.origin.x + halfW;
     float maxCenterX = world.getMaxX() - halfW;
     float minCenterY = world.origin.y + halfH;
@@ -421,21 +412,21 @@ void GameScene::updateCameraFollow() {
     }
     float cx = std::clamp(_player->getPosition().x * PHYSICS_SCALE, minCenterX, maxCenterX);
     float cy = std::clamp(_player->getPosition().y * PHYSICS_SCALE, minCenterY, maxCenterY);
-    _cameraBottomLeft = Vec2(cx - halfW, cy - halfH);
-
-    Vec3 cameraPos = camera->getPosition();
     
+    _cameraBottomLeft = Vec2(cx - halfW, cy - halfH);
+    
+    Vec3 cameraPos = orthographicCamera->getPosition();
     cameraPos.x = cx;
     cameraPos.y = cy;
-    camera->setPosition(cameraPos);
-    camera->update();
+    orthographicCamera->setPosition(cameraPos);
+    orthographicCamera->update();
 }
 
-Vec2 GameScene::resolvePlayerMapMove(const Vec2& startPos, const Vec2& velocity) const {
-    if (!_map) {
-        return startPos + velocity;
+float GameScene::getActiveCameraZoom() const {
+    if (auto orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera())) {
+        return std::max(orthographicCamera->getZoom(), 0.01f);
     }
-    return _map->resolveSlideMove(startPos, velocity, 14.0f);
+    return 1.0f;
 }
 
 Vec2 GameScene::getHUDOffset() const {
@@ -548,6 +539,28 @@ void GameScene::preUpdate(float dt)
     // Player movement
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
+
+    if (_map) {
+        // Using from original Map code, might change depending on new Procgen.
+        const Rect& world = _map->getWorldBounds();
+        cugl::Vec2 playerWorldPos = _player->getPosition() * PHYSICS_SCALE;
+        cugl::Vec2 clampedPos(
+            std::clamp(playerWorldPos.x, world.origin.x, world.getMaxX()),
+            std::clamp(playerWorldPos.y, world.origin.y, world.getMaxY())
+        );
+
+        // slides when edge
+        if ((clampedPos.x <= world.origin.x && velocity.x < 0) ||
+            (clampedPos.x >= world.getMaxX() && velocity.x > 0)) {
+            velocity.x = 0;
+        }
+
+        if ((clampedPos.y <= world.origin.y && velocity.y < 0) ||
+            (clampedPos.y >= world.getMaxY() && velocity.y > 0)) {
+            velocity.y = 0;
+        }
+    }
+
     _player->setVelocity(velocity);
     
     _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
@@ -557,6 +570,7 @@ void GameScene::preUpdate(float dt)
     Vec2 offset = getHUDOffset();
     _input.setCameraOffset(offset);
     _inputDisplay->setUIOffset(offset);
+    _inputDisplay->setUIZoom(getActiveCameraZoom());
     _inputDisplay->update(playerScreenPos);
 
 
@@ -821,10 +835,21 @@ void GameScene::renderHUD()
 {
     Size screenSize = this->getSize();
     Vec2 hudOffset = getHUDOffset();
+    float zoom = getActiveCameraZoom();
 
     float barW = 320;
     float barH = 50;
     float margin = 16;
+    
+    auto hudX = [hudOffset, zoom](float value) {
+        return hudOffset.x + value / zoom;
+    };
+    auto hudY = [hudOffset, zoom](float value) {
+        return hudOffset.y + value / zoom;
+    };
+    auto hudSize = [zoom](float value) {
+        return value / zoom;
+    };
 
     // Helper lambda to draw a solid colored box using Poly2
     auto drawBox = [&](float x, float y, float w, float h, Color4 color)
@@ -846,7 +871,7 @@ void GameScene::renderHUD()
 
     float timerX = screenSize.width / 2 - barW * 0.5f;
     float timerY = margin;
-    drawBox(timerX + hudOffset.x, timerY + hudOffset.y, barW, barH, boxColor);
+    drawBox(hudX(timerX), hudY(timerY), hudSize(barW), hudSize(barH), boxColor);
 
     if (_font)
     {
@@ -855,7 +880,7 @@ void GameScene::renderHUD()
                     "Time Remaining: " + std::to_string(_timer/60), _font);
         timerLabel->layout();
         Affine2 timerTrans;
-        timerTrans.translate(timerX + 10 + hudOffset.x, timerY + 12 + hudOffset.y );
+        timerTrans.scale(1.0f / zoom).translate(hudX(timerX + 10), hudY(timerY + 12));
         _batch->drawText(timerLabel, timerTrans);
 
         auto boxTex = _assets->get<graphics::Texture>("item_box");
@@ -902,10 +927,11 @@ void GameScene::renderHUD()
         auto texEmpty = _assets->get<graphics::Texture>("health_empty");
 
         // Scale container with 269x79 aspect ratio (only need to change container cause actualy heart size is based on container)
-        float containerH = 79.0f * 0.8f;
-        float containerW = 269.0f * 0.8f;
-        float containerX = margin + hudOffset.x + 25.0f; //extra offset because health gets clipped on iphone corner
-        float containerY = screenSize.height - containerH - margin + hudOffset.y;
+        float containerH = hudSize(79.0f * 0.8f);
+        float containerW = hudSize(269.0f * 0.8f);
+        float containerX = hudX(margin + 25.0f); //extra offset because health gets clipped on iphone corner
+        float containerY = hudY(screenSize.height - 79.0f * 0.8f - margin);
+        float quotaY = screenSize.height - 79.0f * 0.8f - margin - barH - margin;
 
         if (texContainer && texFull && texHalf && texEmpty) {
             // Draw the health bar
@@ -941,14 +967,13 @@ void GameScene::renderHUD()
 
         // quota
         float quotaX = margin;
-        float quotaY = screenSize.height - containerH - margin - barH - margin;
         //drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
 
         std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
             "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
         quotaLabel->layout();
         Affine2 quotaTrans;
-        quotaTrans.translate(quotaX + 10 + hudOffset.x, quotaY + 12 + hudOffset.y);
+        quotaTrans.scale(1.0f / zoom).translate(hudX(quotaX + 10), hudY(quotaY + 12));
         _batch->setColor(Color4::BLACK);
         _batch->drawText(quotaLabel, quotaTrans);
     }
@@ -956,6 +981,7 @@ void GameScene::renderHUD()
 
 cugl::Rect GameScene::getInventorySlotBounds(size_t slotIndex) const {
     Size screenSize = this->getSize();
+    float zoom = getActiveCameraZoom();
     float margin = 16;
 
     constexpr size_t kSlotCount = 5;
@@ -968,7 +994,7 @@ cugl::Rect GameScene::getInventorySlotBounds(size_t slotIndex) const {
     float startX = (screenSize.width * 0.5f) - (totalW * 0.5f);
     float topY = screenSize.height - margin - boxSize;
 
-    return Rect(startX + slotIndex * (boxSize + boxGap), topY, boxSize, boxSize);
+    return Rect((startX + slotIndex * (boxSize + boxGap)) / zoom, topY / zoom, boxSize / zoom, boxSize / zoom);
 }
 
 int GameScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {

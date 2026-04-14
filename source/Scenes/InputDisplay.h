@@ -23,6 +23,7 @@ public:
 	// this lets gamescene keep screen-space ui visuals anchored while the
 	// camera follows the world map
 	void setUIOffset(const cugl::Vec2& offset) { _uiOffset = offset; }
+	void setUIZoom(float zoom) { _uiZoom = std::max(zoom, 0.01f); }
 
 	/**
 	* Updates values based on _input (should be called after _input is
@@ -70,6 +71,7 @@ private:
 
 	// this stores the current camera offset for screen-space ui visuals
 	cugl::Vec2 _uiOffset;
+	float _uiZoom;
 
 	bool _showAim;
 	cugl::Affine2 _arrowTrans;
