@@ -218,7 +218,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
 
     addChild(_worldnode);
 
-    _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, dimen.width * 1000 , SCENE_HEIGHT * 1000), Vec2::ZERO);
+    _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, 200 , 200), Vec2::ZERO);
     _world -> activateCollisionCallbacks(true);
     _world -> activateFilterCallbacks(false);
     _world -> activateDestructionCallbacks(true);
