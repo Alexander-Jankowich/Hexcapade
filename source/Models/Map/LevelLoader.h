@@ -58,6 +58,7 @@ protected:
     vector<Vec2> _itemSpawnPoints;
     vector<Vec2> _enemSpawnPoints;
     Vec2 _playerSpawn;
+    vector<cugl::Path2> _colliders;
 
 
     // hash map for doors? direction -> vec door objects
