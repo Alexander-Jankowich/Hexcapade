@@ -44,7 +44,6 @@ CU_ROOTCLASS(GeometryApp)
     setName("Hexcapade");
     setOrganization("GDIAC");
     setAppId("edu.cornell.gdiac.code2");
-
     setHighDPI(true);
     setResizable(false);
     setVSync(true);
@@ -56,7 +55,7 @@ CU_ROOTCLASS(GeometryApp)
     setFPS(60.0f);
 
     // Get rid of the cornflower blue
-    setClearColor(Color4(192, 192, 192));
+    setClearColor(Color4(50,128,128));
 }
 
 /**
