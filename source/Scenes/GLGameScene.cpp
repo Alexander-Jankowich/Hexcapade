@@ -329,7 +329,7 @@ void GameScene::rebuildMapForRun() {
     _depositPosition = _map->getPlayerSpawn();
 
     if (_networkCtrl && _networkCtrl->isHost()) {
-        //spawnItemsFromMap();
+        spawnItemsFromMap();
     }
     //updateItemPickupState();
     //updateDepositState();
@@ -487,18 +487,18 @@ void GameScene::preUpdate(float dt)
         if (lastEnemySpawn > 8) {
             lastEnemySpawn = 0;
 
-//            auto spawns = _map -> getEnemySpawnPoints();
-//            std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
-//            if (!spawns.empty()) {
-//                std::uint64_t index = rand % spawns.size();
-//                Vec2 pos = spawns[index];
-//
-//                auto params = _enemyFact->serializeParams(EnemyType::GHOST, pos / PHYSICS_SCALE);
-//                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
-//                //If we create it we MUST acquire it
-//                // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
-//                _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
-//            }
+            auto spawns = _map -> getEnemySpawnPoints();
+            std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
+            if (!spawns.empty()) {
+                std::uint64_t index = rand % spawns.size();
+                Vec2 pos = spawns[index];
+
+                auto params = _enemyFact->serializeParams(EnemyType::GHOST, pos / PHYSICS_SCALE);
+                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
+                //If we create it we MUST acquire it
+                // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
+                _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
+            }
         }
 
         auto toRemove = _enemyFact->getRemoved();

@@ -75,8 +75,8 @@ public:
     std::shared_ptr<cugl::scene2::SceneNode> generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize);
     
     Vec2 getPlayerSpawn() {return _playerSpawn;}
-    std::vector<Vec2> getEnemySpawnPoints() {return _enemySpawnPoints;}
-    std::vector<Vec2> getItemSpawnPoints() {return _enemySpawnPoints;}
+    const std::vector<Vec2>& getEnemySpawnPoints() const {return _enemySpawnPoints;}
+    const std::vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
     int getNumRooms() {return _numRooms;}
 
 

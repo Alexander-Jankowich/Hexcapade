@@ -275,11 +275,27 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 doors.push_back(md);
             }
         }
+        // add item spawn pts
+        for (auto ip : std::get<0>(res)->getItemSpawnPoints()) {
+            // convert coords
+            auto ip_mg = cugl::Vec2(std::get<2>(res).x + ip.x,
+                                    std::get<2>(res).y + ip.y);
+            // Just map grid units to world pixels.
+            // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
+            _itemSpawnPoints.push_back(Vec2(ip_mg.x * TILE_SIZE, (MAP_HEIGHT - ip_mg.y) * TILE_SIZE));
+        }
+        // add enemy spawns
+        for (auto ep : std::get<0>(res)->getEnemSpawnPoints()) {
+            // convert coords
+            auto ep_mg = cugl::Vec2(std::get<2>(res).x + ep.x,
+                                    std::get<2>(res).y + ep.y);
+            // Just map grid units to world pixels.
+            // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
+            _enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (MAP_HEIGHT - ep_mg.y) * TILE_SIZE));
+        }
         _numRooms++;
         
     }
-    
-    
     return node;
 }
 
