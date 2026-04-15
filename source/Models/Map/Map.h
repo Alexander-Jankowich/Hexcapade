@@ -11,8 +11,8 @@
 #include "LevelLoader.h"
 #include "../../Controllers/NetworkController.h"
 
-#define MAP_HEIGHT 100
-#define MAP_WIDTH 100
+#define MAP_HEIGHT 200
+#define MAP_WIDTH 200
 #define TILE_SIZE 40
 
 // GID defs for hallway gen
@@ -22,9 +22,9 @@
 #define NORTH_TOP_GID 10
 #define NORTH_MID_GID 23
 #define NORTH_LOW_GID 36
-#define SOUTH_TOP_GID 102
-#define SOUTH_MID_GID 115
-#define SOUTH_LOW_GID 128
+#define SOUTH_TOP_GID 103
+#define SOUTH_MID_GID 116
+#define SOUTH_LOW_GID 129
 
 using namespace cugl;
 using namespace cugl::graphics;

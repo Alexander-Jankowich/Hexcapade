@@ -103,9 +103,16 @@ void GeometryApp::onStartup() {
     _loading.init(_assets, "json/assets.json");
     _loading.setSpriteBatch(_batch);
 
-    // Queue up the other assets
+    // Queue up the other assets TODO: make this a forloop lol
     _assets->loadAsync<LevelLoader>("room1","json/room1.json",nullptr);
+    _assets->loadAsync<LevelLoader>("room2","json/room2.json",nullptr);
+    _assets->loadAsync<LevelLoader>("room3","json/room3.json",nullptr);
+
+
     _rooms->push_back("room1");
+    _rooms->push_back("room2");
+    _rooms->push_back("room3");
+
     _loading.start();
 
     cugl::netcode::NetworkLayer::start(cugl::netcode::NetworkLayer::Log::DEVELOPER);
