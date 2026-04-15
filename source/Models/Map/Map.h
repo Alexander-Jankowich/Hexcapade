@@ -55,7 +55,7 @@ private:
     
     cugl::Vec2 _origin;
     cugl::Size _sceneSize;
-
+    SimpleExtruder _extruder;
     //std::vector<Room> _rooms; IGNORING FOR NOW
 
     std::vector<cugl::Vec2> _itemSpawnPoints;
@@ -89,6 +89,13 @@ private:
      * @param world the base sceneNode to add all created nodes to
      */
     void addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world);
+    
+    /** Helper function to add all obstacles for a room
+     * @param tiledRmData the Tiled Data for this room
+     * @param tlCorner the top left corner of the room in mapGrid coordinates
+     * @param world the physics networld to add all created obstacles to
+     */
+    void addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::physics2::distrib::NetWorld> world);
     
     /** Helper function that attempts to fit a room branching off of the desired door.
      * @param d the door the algorithm is trying to branch off of
