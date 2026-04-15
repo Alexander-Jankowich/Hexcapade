@@ -95,7 +95,7 @@ private:
      * @param connDir the direction of the connection (from view of room)
      * @return a tuple of the tiled data for a room that fits, the # of hallway units it needs, and the coords for the rooms top left corner. nullptr if no room was found.
      */
-    std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> attemptToFitRoom(MapDoor d, std::vector<std::string> rooms, Door::Direction connDir);
+    std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> attemptToFitRoom(MapDoor& d, std::vector<std::string>& rooms, Door::Direction connDir);
     
     void addSingleNode(std::shared_ptr<Texture> t, Vec2 pos, std::shared_ptr<cugl::scene2::SceneNode> world);
 };
