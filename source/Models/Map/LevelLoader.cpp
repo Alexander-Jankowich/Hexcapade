@@ -107,6 +107,17 @@ bool LevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
         auto d = std::make_shared<Door>(Door(static_cast<Door::Direction>(door_sp->get("properties")->get(0)->getInt("value")), door_sp->getInt("x") / _tileWidth, door_sp->getInt("y") / _tileHeight, door_sp->getInt("width") / _tileWidth, door_sp->getInt("height") / _tileHeight));
         _doors[door_sp->get("properties")->get(0)->getInt("value")] = d;
     }
+    
+    // collect colliders
+    for (auto col_data : json->get("layers")->get(1)->get("layers")->get(4)->get("objects")->children()) {
+        Vec2 origin = Vec2(col_data->getFloat("x"), col_data->getFloat("y"));
+        vector<Vec2> points;
+        for (auto p : col_data->get("polygon")->children()) {
+            points.push_back(Vec2((origin.x + p->getFloat("x"))/_tileWidth, (origin.y + p->getFloat("y"))/_tileHeight));
+        }
+        _colliders.push_back(Path2(points));
+    }
+    
     return true;
 }
 

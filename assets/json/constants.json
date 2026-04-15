@@ -45,7 +45,7 @@
         "death":{
             "speed": 5,
             "damage": 500,
-            "range": 10.0
+            "range": 5.0
         },
         "combo_fireball":{
             "speed": 5,

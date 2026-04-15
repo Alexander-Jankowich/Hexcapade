@@ -127,6 +127,7 @@ public:
 
     const vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
     const vector<Vec2>& getEnemSpawnPoints() const {return _enemSpawnPoints;}
+    const vector<cugl::Path2>& getColliders() const {return _colliders;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
 
 

@@ -16,7 +16,7 @@ _playerSpawn(Vec2::ZERO),
 _config() {
 }
 
-std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize) {
+std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
     _mapGrid = {{0}};
     _sceneSize = sceneSize;
     auto node = scene2::SceneNode::alloc();
@@ -126,6 +126,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         _mapGrid[y][door.pos.x+5] = 1;
 
                     }
+                    // colliders
+//                    auto ww = Poly2(Rect((door.pos.x - 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y) * TILE_SIZE / PHYSICS_SCALE, TILE_SIZE / PHYSICS_SCALE, std::get<1>(res) * TILE_SIZE / PHYSICS_SCALE));
+//                    auto ew = Poly2(Rect((door.pos.x + 5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y) * TILE_SIZE / PHYSICS_SCALE, TILE_SIZE / PHYSICS_SCALE, std::get<1>(res) * TILE_SIZE / PHYSICS_SCALE));
+//                    
+//                    addWallObstacle(ww, world);
+//                    addWallObstacle(ew, world);
                     to_skip = Door::Direction::SOUTH;
                     CULog("done adding halls - N");
                     break;
@@ -293,6 +299,22 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
             // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
             _enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (MAP_HEIGHT - ep_mg.y) * TILE_SIZE));
         }
+        // add colliders
+        // each point needs y flipped, then multiply by tileSize, then / physics scale??
+//        for (auto coll : std::get<0>(res)->getColliders()) {
+//            vector<Vec2> translatedPoints;
+//            for (auto pt : coll.vertices) {
+//                auto pt_mg = cugl::Vec2(std::get<2>(res).x + pt.x,
+//                                        std::get<2>(res).y + pt.y);
+//                Vec2 tpt = Vec2(pt_mg.x * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - pt_mg.y) * TILE_SIZE / PHYSICS_SCALE);
+//                translatedPoints.push_back(tpt);
+//                CULog("wall point x: %f y: %f", tpt.x, tpt.y);
+//            }
+//            SimpleExtruder se = SimpleExtruder(translatedPoints, false);
+//            se.calculate(TILE_SIZE/PHYSICS_SCALE);
+//            auto p = se.getPolygon();
+//            addWallObstacle(p, world);
+//        }
         _numRooms++;
         
     }
@@ -423,4 +445,12 @@ void Map::addSingleNode(std::shared_ptr<Texture> t, Vec2 pos, std::shared_ptr<cu
     sprite->setPosition(Vec2(x, y));
     sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     world->addChild(sprite);
+}
+
+void Map::addWallObstacle(Poly2 &poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
+    auto obs = physics2::PolygonObstacle::alloc(poly);
+    obs->createFixtures();
+    obs->setMass(1.0);
+    obs->setBodyType(b2_staticBody);
+    world->addObstacle(obs);
 }

@@ -9,7 +9,7 @@
 #include "../GameplayConfig.h"
 #include "Room.h"
 #include "LevelLoader.h"
-#include "../../Controllers/NetworkController.h"
+//#include "../../Controllers/NetworkController.h"
 
 #define MAP_HEIGHT 90
 #define MAP_WIDTH 90
@@ -73,7 +73,7 @@ public:
      * @param assets the assetManager, which contains all loaded tiled data tied to proper room keys
      * @param rooms the list of all string keys used to access each room in the AssetManager
      */
-    std::shared_ptr<cugl::scene2::SceneNode> generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize);
+    std::shared_ptr<cugl::scene2::SceneNode> generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
     
     Vec2 getPlayerSpawn() {return _playerSpawn;}
     const std::vector<Vec2>& getEnemySpawnPoints() const {return _enemySpawnPoints;}
@@ -99,6 +99,8 @@ private:
     std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> attemptToFitRoom(MapDoor& d, std::vector<std::string>& rooms, Door::Direction connDir);
     
     void addSingleNode(std::shared_ptr<Texture> t, Vec2 pos, std::shared_ptr<cugl::scene2::SceneNode> world);
+    
+    void addWallObstacle(Poly2& poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
 };
 
 #endif // __HEXCAPADE_MAP_H__
