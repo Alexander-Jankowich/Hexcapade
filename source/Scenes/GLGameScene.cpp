@@ -388,7 +388,7 @@ void GameScene::updateCameraFollow() {
     float halfW = getSize().width / (2.0f * zoom);
     float halfH = getSize().height / (2.0f * zoom);
 
-    const Rect& world = Rect(0, 0, getSize().width, getSize().height); //TODO: is this right??
+    const Rect& world = Rect(0, 0, MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
     float minCenterX = world.origin.x + halfW;
     float maxCenterX = world.getMaxX() - halfW;
     float minCenterY = world.origin.y + halfH;
@@ -531,27 +531,27 @@ void GameScene::preUpdate(float dt)
     // Player movement
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
-
-    if (_map) {
-        // Using from original Map code, might change depending on new Procgen.
-        const Rect& world = _map->getWorldBounds();
-        cugl::Vec2 playerWorldPos = _player->getPosition() * PHYSICS_SCALE;
-        cugl::Vec2 clampedPos(
-            std::clamp(playerWorldPos.x, world.origin.x, world.getMaxX()),
-            std::clamp(playerWorldPos.y, world.origin.y, world.getMaxY())
-        );
-
-        // slides when edge
-        if ((clampedPos.x <= world.origin.x && velocity.x < 0) ||
-            (clampedPos.x >= world.getMaxX() && velocity.x > 0)) {
-            velocity.x = 0;
-        }
-
-        if ((clampedPos.y <= world.origin.y && velocity.y < 0) ||
-            (clampedPos.y >= world.getMaxY() && velocity.y > 0)) {
-            velocity.y = 0;
-        }
-    }
+//
+//    if (_map) {
+//        // Using from original Map code, might change depending on new Procgen.
+//        const Rect& world = _map->getWorldBounds();
+//        cugl::Vec2 playerWorldPos = _player->getPosition() * PHYSICS_SCALE;
+//        cugl::Vec2 clampedPos(
+//            std::clamp(playerWorldPos.x, world.origin.x, world.getMaxX()),
+//            std::clamp(playerWorldPos.y, world.origin.y, world.getMaxY())
+//        );
+//
+//        // slides when edge
+//        if ((clampedPos.x <= world.origin.x && velocity.x < 0) ||
+//            (clampedPos.x >= world.getMaxX() && velocity.x > 0)) {
+//            velocity.x = 0;
+//        }
+//
+//        if ((clampedPos.y <= world.origin.y && velocity.y < 0) ||
+//            (clampedPos.y >= world.getMaxY() && velocity.y > 0)) {
+//            velocity.y = 0;
+//        }
+//    }
 
     _player->setVelocity(velocity);
     
