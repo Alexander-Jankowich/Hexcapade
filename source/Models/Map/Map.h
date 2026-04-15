@@ -11,9 +11,10 @@
 #include "LevelLoader.h"
 #include "../../Controllers/NetworkController.h"
 
-#define MAP_HEIGHT 100
-#define MAP_WIDTH 100
+#define MAP_HEIGHT 90
+#define MAP_WIDTH 90
 #define TILE_SIZE 40
+#define PHYSICS_SCALE 100 //TODO: find a way to like. not redefine it lol
 
 // GID defs for hallway gen
 #define FLOOR_GID 67
@@ -75,8 +76,8 @@ public:
     std::shared_ptr<cugl::scene2::SceneNode> generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize);
     
     Vec2 getPlayerSpawn() {return _playerSpawn;}
-    std::vector<Vec2> getEnemySpawnPoints() {return _enemySpawnPoints;}
-    std::vector<Vec2> getItemSpawnPoints() {return _enemySpawnPoints;}
+    const std::vector<Vec2>& getEnemySpawnPoints() const {return _enemySpawnPoints;}
+    const std::vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
     int getNumRooms() {return _numRooms;}
 
 
