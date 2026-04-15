@@ -316,7 +316,7 @@ void GameScene::rebuildMapForRun() {
 //        return;
 //    }
     
-    auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize());
+    auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize(), _world);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
     _worldnode -> addChild(n);
@@ -447,13 +447,14 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
+    Vec2 pos = _player->getPosition();
+    CULog("X: %f, Y: %f", pos.x,pos.y);
     if (!_player) {
         // Try to find our player now that replication may have run
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
         //Have we set our player yet / received signal
         if (!_player) return;
     }
-    Vec2 pos = _player->getPosition();
     //We have to acquire ourselves before we attempt to move
     //it is a little weird to do this every frame but this allows host to acquire themselves
     _networkCtrl -> getPhysController() -> acquireObs(_player, 0);
@@ -493,11 +494,11 @@ void GameScene::preUpdate(float dt)
                 std::uint64_t index = rand % spawns.size();
                 Vec2 pos = spawns[index];
 
-                auto params = _enemyFact->serializeParams(EnemyType::GHOST, pos / PHYSICS_SCALE);
-                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
+                //auto params = _enemyFact->serializeParams(EnemyType::GHOST, pos / PHYSICS_SCALE);
+                //auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
                 // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
-                _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
+                //_networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
             }
         }
 
@@ -1310,6 +1311,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if(!(spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
              or spell -> TYPE == SpellType::WATER)){
             spell->markRemoved(true);
+            return;
         }
         
         if (enemy->getHealth()==0) enemy->markRemoved(true);
@@ -1317,10 +1319,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     if (wall && player){
         contact->SetEnabled(true);
+        return;
     }
     if(wall && spell){
         contact->SetEnabled(false);
         spell -> markRemoved(true);
+        return;
     }
     if (wall && enemy){
         //CULog("here wall and enemy");
@@ -1331,12 +1335,16 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     if(player && player2){
         contact -> SetEnabled(false);
+        return;
     }
     if(player && item){
         contact -> SetEnabled(false);
         _currOverlappedItem = item->getID();
+        return;
     }
     if(enemy && item){
         contact -> SetEnabled(false);
+        return;
     }
+    CULog("there is an unknown collision");
 }

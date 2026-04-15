@@ -55,7 +55,7 @@ CU_ROOTCLASS(GeometryApp)
     setFPS(60.0f);
 
     // Get rid of the cornflower blue
-    setClearColor(Color4(50,128,128));
+    setClearColor(Color4(70,120,124));
 }
 
 /**

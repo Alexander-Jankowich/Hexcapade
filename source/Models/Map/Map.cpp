@@ -60,7 +60,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
     // Corrected player spawn calculation
     auto pl_mg = cugl::Vec2(MAP_WIDTH/2 - tiledData->getWidth() / 2 + tiledData->getPlayerSpawn().x,
                             MAP_HEIGHT / 2 - tiledData->getHeight() / 2 + tiledData->getPlayerSpawn().y);
-
+    
     // Just map grid units to world pixels.
     // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
     _playerSpawn = Vec2(pl_mg.x * TILE_SIZE, (MAP_HEIGHT - pl_mg.y) * TILE_SIZE);
@@ -73,7 +73,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
     _numRooms++;
     
     CULog("added first room");
-     //iterate over doors queue
+    //iterate over doors queue
     while (!doors.empty()) {
         CULog("doors size %d", (int) doors.size());
         // select a random door - ty bloomberg for the O(1) method
@@ -89,53 +89,52 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
         
         switch (door.dir) {
             case Door::Direction::NORTH:
-                {
-                    // check if a room will fit - call attemptToFitRoom
-                    res = attemptToFitRoom(door, hasSouthDoors, Door::Direction::SOUTH);
-                    if (std::get<0>(res) == nullptr){
-                        // wall off this room gids (10/23/36) x5 across doorway
-                        CULog("walling off - N");
-                        for (int i = door.pos.x; i < door.pos.x + 5; i++) {
-                            // wall 1
-                            addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 1), node);
-                            if (door.pos.y-1 >= 0) _mapGrid[door.pos.y-1][i] = 1;
-                            // wall 2
-                            addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(i, MAP_HEIGHT - door.pos.y), node);
-                            if (door.pos.y >= 0)_mapGrid[door.pos.y][i] = 1;
-                            // wall 3
-                            addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(i, MAP_HEIGHT - door.pos.y - 1), node);
-                            if (door.pos.y + 1 >= 0)_mapGrid[door.pos.y+1][i] = 1;
-
-                        }
-                        CULog("done walling off - N");
-                        //TODO: add collider
-                        continue;
+            {
+                // check if a room will fit - call attemptToFitRoom
+                res = attemptToFitRoom(door, hasSouthDoors, Door::Direction::SOUTH);
+                if (std::get<0>(res) == nullptr){
+                    // wall off this room gids (10/23/36) x5 across doorway
+                    CULog("walling off - N");
+                    for (int i = door.pos.x; i < door.pos.x + 5; i++) {
+                        // wall 1
+                        addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 1), node);
+                        if (door.pos.y-1 >= 0) _mapGrid[door.pos.y-1][i] = 1;
+                        // wall 2
+                        addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(i, MAP_HEIGHT - door.pos.y), node);
+                        if (door.pos.y >= 0)_mapGrid[door.pos.y][i] = 1;
+                        // wall 3
+                        addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(i, MAP_HEIGHT - door.pos.y - 1), node);
+                        if (door.pos.y + 1 >= 0)_mapGrid[door.pos.y+1][i] = 1;
+                        
                     }
-                    CULog("adding halls - N");
-                    for (int y=door.pos.y; y >= door.pos.y - std::get<1>(res); y--) {
-                        // add west wall
-                        addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(door.pos.x - 1, MAP_HEIGHT - y), node);
-                        _mapGrid[y][door.pos.x-1] = 1;
-                        // add 5 floor tiles
-                        for (int x=door.pos.x; x < door.pos.x +5; x++){
-                            addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - y), node);
-                            _mapGrid[y][x] = 1;
-                        }
-                        // add east wall
-                        addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(door.pos.x +5, MAP_HEIGHT - y), node);
-                        _mapGrid[y][door.pos.x+5] = 1;
-
-                    }
-                    // colliders
-//                    auto ww = Poly2(Rect((door.pos.x - 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y) * TILE_SIZE / PHYSICS_SCALE, TILE_SIZE / PHYSICS_SCALE, std::get<1>(res) * TILE_SIZE / PHYSICS_SCALE));
-//                    auto ew = Poly2(Rect((door.pos.x + 5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y) * TILE_SIZE / PHYSICS_SCALE, TILE_SIZE / PHYSICS_SCALE, std::get<1>(res) * TILE_SIZE / PHYSICS_SCALE));
-//                    
-//                    addWallObstacle(ww, world);
-//                    addWallObstacle(ew, world);
-                    to_skip = Door::Direction::SOUTH;
-                    CULog("done adding halls - N");
-                    break;
+                    CULog("done walling off - N");
+                    //TODO: add collider
+                    continue;
                 }
+                CULog("adding halls - N");
+                for (int y=door.pos.y; y >= door.pos.y - std::get<1>(res); y--) {
+                    // add west wall
+                    addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(door.pos.x - 1, MAP_HEIGHT - y), node);
+                    _mapGrid[y][door.pos.x-1] = 1;
+                    // add 5 floor tiles
+                    for (int x=door.pos.x; x < door.pos.x +5; x++){
+                        addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - y), node);
+                        _mapGrid[y][x] = 1;
+                    }
+                    // add east wall
+                    addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(door.pos.x +5, MAP_HEIGHT - y), node);
+                    _mapGrid[y][door.pos.x+5] = 1;
+                    
+                }
+                auto ww = Poly2(Rect((door.pos.x - 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y + 1) * TILE_SIZE / PHYSICS_SCALE, TILE_SIZE / PHYSICS_SCALE, std::get<1>(res) * TILE_SIZE / PHYSICS_SCALE));
+                auto ew = Poly2(Rect((door.pos.x + 5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y + 1) * TILE_SIZE / PHYSICS_SCALE, TILE_SIZE / PHYSICS_SCALE, std::get<1>(res) * TILE_SIZE / PHYSICS_SCALE));
+                
+                addWallObstacle(ww, world);
+                addWallObstacle(ew, world);
+                to_skip = Door::Direction::SOUTH;
+                CULog("done adding halls - N");
+                break;
+            }
             case Door::Direction::SOUTH:
             {
                 // check if a room will fit - call attemptToFitRoom
@@ -155,12 +154,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         _mapGrid[door.pos.y][i] = 1;
                     }
                     CULog("done walling off - S");
-
+                    
                     //TODO: add collider
                     continue;
                 }
                 CULog("adding halls - S");
-
+                
                 for (int y=door.pos.y; y < door.pos.y + std::get<1>(res); y++) {
                     // add west wall
                     addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(door.pos.x - 1, MAP_HEIGHT - y), node);
@@ -173,7 +172,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     // add east wall
                     addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(door.pos.x +5, MAP_HEIGHT - y), node);
                     _mapGrid[y][door.pos.x+5] = 1;
-
+                    
                 }
                 to_skip = Door::Direction::NORTH;
                 CULog("done adding halls - S");
@@ -187,7 +186,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 if (std::get<0>(res) == nullptr){
                     // wall off this door
                     CULog("walling off - E");
-
+                    
                     for (int i = door.pos.y - 2; i < door.pos.y + 4; i++) {
                         addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(door.pos.x+1, MAP_HEIGHT - i), node);
                         if(door.pos.x < MAP_WIDTH - 1) _mapGrid[i][door.pos.x + 1] = 1;
@@ -196,7 +195,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     continue;
                 }
                 CULog("adding halls - E");
-
+                
                 for (int x=door.pos.x; x <= door.pos.x + std::get<1>(res); x++) {
                     // add top walls
                     addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 3), node);
@@ -205,7 +204,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     _mapGrid[door.pos.y-3][x] = 1;
                     _mapGrid[door.pos.y-2][x] = 1;
                     _mapGrid[door.pos.y-1][x] = 1;
-
+                    
                     // add 5 floor tiles
                     for (int y=door.pos.y; y < door.pos.y +5; y++){
                         addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - y), node);
@@ -231,13 +230,13 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 if (std::get<0>(res) == nullptr){
                     // wall off this door
                     CULog("walling off - W");
-
+                    
                     for (int i = door.pos.y - 2; i < door.pos.y + 4; i++) {
                         addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(door.pos.x-1, MAP_HEIGHT - i), node);
                         if(door.pos.x > 0) _mapGrid[i][door.pos.x -1] = 1;
                     }
                     CULog("done walling off - W");
-
+                    
                     //TODO: add collider
                     continue;
                 }
@@ -266,7 +265,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 }
                 to_skip = Door::Direction::EAST;
                 CULog("done adding halls - W");
-
+                
                 //TODO: hallway colliders
                 break;
             }
@@ -301,156 +300,165 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
         }
         // add colliders
         // each point needs y flipped, then multiply by tileSize, then / physics scale??
-//        for (auto coll : std::get<0>(res)->getColliders()) {
-//            vector<Vec2> translatedPoints;
-//            for (auto pt : coll.vertices) {
-//                auto pt_mg = cugl::Vec2(std::get<2>(res).x + pt.x,
-//                                        std::get<2>(res).y + pt.y);
-//                Vec2 tpt = Vec2(pt_mg.x * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - pt_mg.y) * TILE_SIZE / PHYSICS_SCALE);
-//                translatedPoints.push_back(tpt);
-//                CULog("wall point x: %f y: %f", tpt.x, tpt.y);
-//            }
-//            SimpleExtruder se = SimpleExtruder(translatedPoints, false);
-//            se.calculate(TILE_SIZE/PHYSICS_SCALE);
-//            auto p = se.getPolygon();
-//            addWallObstacle(p, world);
-//        }
-        _numRooms++;
-        
-    }
-    return node;
-}
-
-void Map::addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world) {
-    // iterate over tiled nodes and add to scene
-    const auto& floorLayer = tiledRmData->getFloorLayer();
-    const auto& wallLayer  = tiledRmData->getWallLayer();
-    const auto& fixLayer   = tiledRmData->getFixLayer();
-    const auto& decoLayer  = tiledRmData->getDecoLayer();
-    const auto& maskLayer  = tiledRmData->getMaskLayer();
-    for (int x =0; x<tiledRmData->getWidth(); x++) {
-        for (int y=0; y<tiledRmData->getHeight(); y++){
-            int floorGid = floorLayer[y][x];
-            int wallGid  = wallLayer[y][x];
-            int fixGid   = fixLayer[y][x];
-            int decoGid  = decoLayer[y][x];
-            int maskGid  = maskLayer[y][x];
+        for (auto coll : std::get<0>(res)->getColliders()) {
+            vector<Vec2> translatedPoints;
+            for (auto pt : coll.vertices) {
+                auto pt_mg = cugl::Vec2(std::get<2>(res).x + pt.x,
+                                        std::get<2>(res).y + pt.y);
+                Vec2 tpt = Vec2(
+                    pt_mg.x * TILE_SIZE / PHYSICS_SCALE,
+                    (MAP_HEIGHT - pt_mg.y + 1) * TILE_SIZE / PHYSICS_SCALE
+                );
+                translatedPoints.push_back(tpt);
+                CULog("wall point x: %f y: %f", tpt.x, tpt.y);
+            }
             
-            // subtract y bc going top down
-            Vec2 pos = Vec2((tlCorner.x+x), (MAP_HEIGHT - tlCorner.y-y));
-            //Size s = Size(tiledRmData->getTileW(), tiledRmData->getTileH());
-            //auto cell = Rect(pos, s);
-            // add tile layers in order, skip if gid zero
-            if(floorGid!=0){
-                addSingleNode(tiledRmData->getTileForGid(floorGid), pos, world);
-            }
-            if(wallGid!=0){
-                addSingleNode(tiledRmData->getTileForGid(wallGid), pos, world);
-            }
-            if(fixGid!=0){
-                addSingleNode(tiledRmData->getTileForGid(fixGid), pos, world);
-            }
-            if(decoGid!=0){
-                addSingleNode(tiledRmData->getTileForGid(decoGid), pos, world);
-            }
-            if(maskGid !=0){
-                // remember y is row, x is col on mapGrid
-                _mapGrid[tlCorner.y+y][tlCorner.x+x] = 1; // _mapGrid is (0,0) top left corner, so just add
-            }
+            SimpleExtruder se = SimpleExtruder(translatedPoints, false);
+            se.calculate(0.05f);
+            
+            auto p = se.getPolygon();
+            addWallObstacle(p, world);
+        }//        }
+            _numRooms++;
+            
         }
+        return node;
     }
-    CULog("world has %d children", (int) world->getChildCount());
-    // add colliders
     
-}
-
-std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoor& d, std::vector<std::string>& rooms, Door::Direction connDir) {
-    
-    if(rooms.size()==0) return std::make_tuple(nullptr, -1, Vec2(-1, -1)); // no viable room
-
-    int attempts = 0;
-    //TODO: these will be in level config file perhaps?
-    int minHallUnits = 2;
-    int maxHallUnits = 6;
-    while (attempts < 3){
-        CULog("attempt: %d", attempts);
-        // select room for this attempt
-        int rm_idx = (int) _rng.getOpenSint64(0, rooms.size());
-        auto rmData = _assets->get<LevelLoader>(rooms.at(rm_idx));
-        
-        // try to fit room with varying hall sizes
-        for (int i=minHallUnits; i<=maxHallUnits; i++) {
-            int tlCornerX, tlCornerY;
-            
-            switch (connDir) {
-                case Door::Direction::NORTH: // rooms north door is connecting
-                    tlCornerY = d.pos.y + d.size.height + i; // mapGrid origin also top left
-                    tlCornerX = d.pos.x - rmData->getNorthDoor()->_tlCorner.x; // x pos of hallway, subtract distance from north door corner to room corner, which is just tlCorner.x bc tiled coords
-                    break;
-                    
-                case Door::Direction::EAST:
-                    tlCornerY = d.pos.y - rmData->getEastDoor()->_tlCorner.y;
-                    tlCornerX = d.pos.x - rmData->getWidth() - i;
-                    break;
-                    
-                case Door::Direction::SOUTH: // rooms south door connecting
-                    tlCornerY = d.pos.y - i - rmData->getHeight();
-                    tlCornerX = d.pos.x - rmData->getSouthDoor()->_tlCorner.x; // same math as north door
-                    break;
-                    
-                case Door::Direction::WEST:
-                    tlCornerY = d.pos.y - rmData->getWestDoor()->_tlCorner.y;
-                    tlCornerX = d.pos.x + d.size.width + i;
-                    break;
-            } // switch case
-            // check if room will fit by seeing if each !0 in mask is a 0 on the grid
-            bool overlap = false;
-            const auto& mask = rmData->getMaskLayer();
-            for(int row=0; row<rmData->getHeight(); row++){
-                for(int col=0; col<rmData->getWidth(); col++){
-                    if(tlCornerX+col >= MAP_WIDTH || tlCornerX < 0 || tlCornerY+row>=MAP_HEIGHT || tlCornerY < 0) {
-                        CULog("out of bounds");
-                        overlap=true;
-                        goto exit;
-                    }
-                    if(mask[row][col]!=0 && _mapGrid[tlCornerY+row][tlCornerX+col]!=0){
-                        overlap=true;
-                        goto exit;
-                    }
+    void Map::addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world) {
+        // iterate over tiled nodes and add to scene
+        const auto& floorLayer = tiledRmData->getFloorLayer();
+        const auto& wallLayer  = tiledRmData->getWallLayer();
+        const auto& fixLayer   = tiledRmData->getFixLayer();
+        const auto& decoLayer  = tiledRmData->getDecoLayer();
+        const auto& maskLayer  = tiledRmData->getMaskLayer();
+        for (int x =0; x<tiledRmData->getWidth(); x++) {
+            for (int y=0; y<tiledRmData->getHeight(); y++){
+                int floorGid = floorLayer[y][x];
+                int wallGid  = wallLayer[y][x];
+                int fixGid   = fixLayer[y][x];
+                int decoGid  = decoLayer[y][x];
+                int maskGid  = maskLayer[y][x];
+                
+                // subtract y bc going top down
+                Vec2 pos = Vec2((tlCorner.x+x), (MAP_HEIGHT - tlCorner.y-y));
+                //Size s = Size(tiledRmData->getTileW(), tiledRmData->getTileH());
+                //auto cell = Rect(pos, s);
+                // add tile layers in order, skip if gid zero
+                if(floorGid!=0){
+                    addSingleNode(tiledRmData->getTileForGid(floorGid), pos, world);
+                }
+                if(wallGid!=0){
+                    addSingleNode(tiledRmData->getTileForGid(wallGid), pos, world);
+                }
+                if(fixGid!=0){
+                    addSingleNode(tiledRmData->getTileForGid(fixGid), pos, world);
+                }
+                if(decoGid!=0){
+                    addSingleNode(tiledRmData->getTileForGid(decoGid), pos, world);
+                }
+                if(maskGid !=0){
+                    // remember y is row, x is col on mapGrid
+                    _mapGrid[tlCorner.y+y][tlCorner.x+x] = 1; // _mapGrid is (0,0) top left corner, so just add
                 }
             }
+        }
+        CULog("world has %d children", (int) world->getChildCount());
+        // add colliders
+        
+    }
+    
+    std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoor& d, std::vector<std::string>& rooms, Door::Direction connDir) {
+        
+        if(rooms.size()==0) return std::make_tuple(nullptr, -1, Vec2(-1, -1)); // no viable room
+        
+        int attempts = 0;
+        //TODO: these will be in level config file perhaps?
+        int minHallUnits = 2;
+        int maxHallUnits = 6;
+        while (attempts < 3){
+            CULog("attempt: %d", attempts);
+            // select room for this attempt
+            int rm_idx = (int) _rng.getOpenSint64(0, rooms.size());
+            auto rmData = _assets->get<LevelLoader>(rooms.at(rm_idx));
             
-        exit:
-            if (!overlap) { // this room works, else run again
-                CULog("found room!");
-                auto p = std::make_tuple(rmData, i, Vec2(tlCornerX, tlCornerY));
-                return p;
-            }
-            
-        } // hallway count loop
-        attempts++;
-    } // attempt loop
-    // if we make it here, 3 attempts failed so nullptr
-    return std::make_tuple(nullptr, -1, Vec2(-1, -1));
-}
-
-void Map::addSingleNode(std::shared_ptr<Texture> t, Vec2 pos, std::shared_ptr<cugl::scene2::SceneNode> world) {
-    auto sprite = cugl::scene2::PolygonNode::allocWithTexture(t);
+            // try to fit room with varying hall sizes
+            for (int i=minHallUnits; i<=maxHallUnits; i++) {
+                int tlCornerX, tlCornerY;
+                
+                switch (connDir) {
+                    case Door::Direction::NORTH: // rooms north door is connecting
+                        tlCornerY = d.pos.y + d.size.height + i; // mapGrid origin also top left
+                        tlCornerX = d.pos.x - rmData->getNorthDoor()->_tlCorner.x; // x pos of hallway, subtract distance from north door corner to room corner, which is just tlCorner.x bc tiled coords
+                        break;
+                        
+                    case Door::Direction::EAST:
+                        tlCornerY = d.pos.y - rmData->getEastDoor()->_tlCorner.y;
+                        tlCornerX = d.pos.x - rmData->getWidth() - i;
+                        break;
+                        
+                    case Door::Direction::SOUTH: // rooms south door connecting
+                        tlCornerY = d.pos.y - i - rmData->getHeight();
+                        tlCornerX = d.pos.x - rmData->getSouthDoor()->_tlCorner.x; // same math as north door
+                        break;
+                        
+                    case Door::Direction::WEST:
+                        tlCornerY = d.pos.y - rmData->getWestDoor()->_tlCorner.y;
+                        tlCornerX = d.pos.x + d.size.width + i;
+                        break;
+                } // switch case
+                // check if room will fit by seeing if each !0 in mask is a 0 on the grid
+                bool overlap = false;
+                const auto& mask = rmData->getMaskLayer();
+                for(int row=0; row<rmData->getHeight(); row++){
+                    for(int col=0; col<rmData->getWidth(); col++){
+                        if(tlCornerX+col >= MAP_WIDTH || tlCornerX < 0 || tlCornerY+row>=MAP_HEIGHT || tlCornerY < 0) {
+                            CULog("out of bounds");
+                            overlap=true;
+                            goto exit;
+                        }
+                        if(mask[row][col]!=0 && _mapGrid[tlCornerY+row][tlCornerX+col]!=0){
+                            overlap=true;
+                            goto exit;
+                        }
+                    }
+                }
+                
+            exit:
+                if (!overlap) { // this room works, else run again
+                    CULog("found room!");
+                    auto p = std::make_tuple(rmData, i, Vec2(tlCornerX, tlCornerY));
+                    return p;
+                }
+                
+            } // hallway count loop
+            attempts++;
+        } // attempt loop
+        // if we make it here, 3 attempts failed so nullptr
+        return std::make_tuple(nullptr, -1, Vec2(-1, -1));
+    }
+    
+    void Map::addSingleNode(std::shared_ptr<Texture> t, Vec2 pos, std::shared_ptr<cugl::scene2::SceneNode> world) {
+        auto sprite = cugl::scene2::PolygonNode::allocWithTexture(t);
         
         // Convert grid coordinates directly to world pixels
         // pos.y is already "flipped" in addRoomSceneNodes, so we don't flip it again here
-    float x = pos.x * TILE_SIZE;
-    float y = pos.y * TILE_SIZE;
-    //CULog("X: %f, Y %f", x,y);
-    sprite->setPosition(Vec2(x, y));
-    sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    world->addChild(sprite);
-}
-
-void Map::addWallObstacle(Poly2 &poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
-    auto obs = physics2::PolygonObstacle::alloc(poly);
-    obs->createFixtures();
-    obs->setMass(1.0);
-    obs->setBodyType(b2_staticBody);
-    world->addObstacle(obs);
-}
+        float x = pos.x * TILE_SIZE;
+        float y = pos.y * TILE_SIZE;
+        //CULog("X: %f, Y %f", x,y);
+        sprite->setPosition(Vec2(x, y));
+        sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+        world->addChild(sprite);
+    }
+    
+    void Map::addWallObstacle(Poly2 &poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
+        auto obs = physics2::PolygonObstacle::alloc(poly);
+        obs->createFixtures();
+        //obs->setPosition(0,0);
+        obs->setDensity(1.0);
+        obs -> setEnabled(true);
+        obs->setBodyType(b2_staticBody);
+        CULog("%f",obs -> getPosition().x);
+        world->addObstacle(obs);
+        
+    }
