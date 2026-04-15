@@ -14,10 +14,10 @@ Map::Map() :
 _origin(Vec2::ZERO),
 _playerSpawn(Vec2::ZERO),
 _config() {
-    for (auto a : _mapGrid) a.fill(0);
 }
 
 std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize) {
+    _mapGrid = {{0}};
     _sceneSize = sceneSize;
     auto node = scene2::SceneNode::alloc();
     std::vector<MapDoor> doors;
@@ -94,18 +94,17 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     res = attemptToFitRoom(door, hasSouthDoors, Door::Direction::SOUTH);
                     if (std::get<0>(res) == nullptr){
                         // wall off this room gids (10/23/36) x5 across doorway
-                        // TODO: ensure this is fine with map bounds or if room close to edge
                         CULog("walling off - N");
                         for (int i = door.pos.x; i < door.pos.x + 5; i++) {
                             // wall 1
-                            addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 2), node);
-                            if (door.pos.y-2 >= 0) _mapGrid[door.pos.y-2][i] = 1;
+                            addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 1), node);
+                            if (door.pos.y-1 >= 0) _mapGrid[door.pos.y-1][i] = 1;
                             // wall 2
-                            addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 1), node);
-                            if (door.pos.y-1 >= 0)_mapGrid[door.pos.y-1][i] = 1;
-                            // wall 3
-                            addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(i, MAP_HEIGHT - door.pos.y), node);
+                            addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(i, MAP_HEIGHT - door.pos.y), node);
                             if (door.pos.y >= 0)_mapGrid[door.pos.y][i] = 1;
+                            // wall 3
+                            addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(i, MAP_HEIGHT - door.pos.y - 1), node);
+                            if (door.pos.y + 1 >= 0)_mapGrid[door.pos.y+1][i] = 1;
 
                         }
                         CULog("done walling off - N");

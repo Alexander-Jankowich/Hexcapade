@@ -124,8 +124,8 @@ public:
     }
     
 
-    vector<Vec2> getItemSpawnPoints() {return _itemSpawnPoints;}
-    vector<Vec2> getEnemSpawnPoints() {return _enemSpawnPoints;}
+    const vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
+    const vector<Vec2>& getEnemSpawnPoints() const {return _enemSpawnPoints;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
 
 

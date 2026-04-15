@@ -11,8 +11,8 @@
 #include "LevelLoader.h"
 #include "../../Controllers/NetworkController.h"
 
-#define MAP_HEIGHT 100
-#define MAP_WIDTH 100
+#define MAP_HEIGHT 90
+#define MAP_WIDTH 90
 #define TILE_SIZE 40
 
 // GID defs for hallway gen
