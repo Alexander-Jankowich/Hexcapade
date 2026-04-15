@@ -286,13 +286,18 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
 
 void Map::addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world) {
     // iterate over tiled nodes and add to scene
+    const auto& floorLayer = tiledRmData->getFloorLayer();
+    const auto& wallLayer  = tiledRmData->getWallLayer();
+    const auto& fixLayer   = tiledRmData->getFixLayer();
+    const auto& decoLayer  = tiledRmData->getDecoLayer();
+    const auto& maskLayer  = tiledRmData->getMaskLayer();
     for (int x =0; x<tiledRmData->getWidth(); x++) {
         for (int y=0; y<tiledRmData->getHeight(); y++){
-            int floorGid = tiledRmData->getFloorLayer().at(y).at(x);
-            int wallGid = tiledRmData->getWallLayer().at(y).at(x);
-            int fixGid = tiledRmData->getFixLayer().at(y).at(x);
-            int decoGid = tiledRmData->getDecoLayer().at(y).at(x);
-            int maskGid = tiledRmData->getMaskLayer().at(y).at(x);
+            int floorGid = floorLayer[y][x];
+            int wallGid  = wallLayer[y][x];
+            int fixGid   = fixLayer[y][x];
+            int decoGid  = decoLayer[y][x];
+            int maskGid  = maskLayer[y][x];
             
             // subtract y bc going top down
             Vec2 pos = Vec2((tlCorner.x+x), (MAP_HEIGHT - tlCorner.y-y));
@@ -322,7 +327,7 @@ void Map::addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCor
     
 }
 
-std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoor d, std::vector<std::string> rooms, Door::Direction connDir) {
+std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoor& d, std::vector<std::string>& rooms, Door::Direction connDir) {
     
     if(rooms.size()==0) return std::make_tuple(nullptr, -1, Vec2(-1, -1)); // no viable room
 
@@ -363,13 +368,14 @@ std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoo
             } // switch case
             // check if room will fit by seeing if each !0 in mask is a 0 on the grid
             bool overlap = false;
+            const auto& mask = rmData->getMaskLayer();
             for(int row=0; row<rmData->getHeight(); row++){
                 for(int col=0; col<rmData->getWidth(); col++){
                     if(tlCornerX+col >= MAP_WIDTH || tlCornerX < 0 || tlCornerY+row>=MAP_HEIGHT || tlCornerY < 0) {
                         overlap=true;
                         goto exit;
                     }
-                    if(rmData->getMaskLayer().at(row).at(col)!=0 && _mapGrid[tlCornerY+row][tlCornerX+col]!=0){
+                    if(mask[row][col]!=0 && _mapGrid[tlCornerY+row][tlCornerX+col]!=0){
                         overlap=true;
                         goto exit;
                     }
