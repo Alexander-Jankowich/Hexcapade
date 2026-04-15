@@ -98,14 +98,14 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         CULog("walling off - N");
                         for (int i = door.pos.x; i < door.pos.x + 5; i++) {
                             // wall 1
-                            addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 3), node);
-                            if (door.pos.y-3 >= 0) _mapGrid[door.pos.y-3][i] = 1;
+                            addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 2), node);
+                            if (door.pos.y-2 >= 0) _mapGrid[door.pos.y-2][i] = 1;
                             // wall 2
-                            addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 2), node);
-                            if (door.pos.y-2 >= 0)_mapGrid[door.pos.y-2][i] = 1;
-                            // wall 3
-                            addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 1), node);
+                            addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 1), node);
                             if (door.pos.y-1 >= 0)_mapGrid[door.pos.y-1][i] = 1;
+                            // wall 3
+                            addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(i, MAP_HEIGHT - door.pos.y), node);
+                            if (door.pos.y >= 0)_mapGrid[door.pos.y][i] = 1;
 
                         }
                         CULog("done walling off - N");
@@ -113,7 +113,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         continue;
                     }
                     CULog("adding halls - N");
-                    for (int y=door.pos.y; y > door.pos.y - std::get<1>(res); y--) {
+                    for (int y=door.pos.y; y >= door.pos.y - std::get<1>(res); y--) {
                         // add west wall
                         addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(door.pos.x - 1, MAP_HEIGHT - y), node);
                         _mapGrid[y][door.pos.x-1] = 1;
@@ -366,10 +366,12 @@ std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoo
             for(int row=0; row<rmData->getHeight(); row++){
                 for(int col=0; col<rmData->getWidth(); col++){
                     if(tlCornerX+col >= MAP_WIDTH || tlCornerX < 0 || tlCornerY+row>=MAP_HEIGHT || tlCornerY < 0) {
+                        CULog("out of bounds");
                         overlap=true;
                         goto exit;
                     }
                     if(rmData->getMaskLayer().at(row).at(col)!=0 && _mapGrid[tlCornerY+row][tlCornerX+col]!=0){
+                        CULog("index row: %d col: %d has thing at it", tlCornerY+row, tlCornerX+col);
                         overlap=true;
                         goto exit;
                     }
