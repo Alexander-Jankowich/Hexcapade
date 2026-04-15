@@ -17,8 +17,8 @@
 
 // GID defs for hallway gen
 #define FLOOR_GID 67
-#define WEST_GID 99
-#define EAST_GID 100
+#define WEST_GID 100
+#define EAST_GID 101
 #define NORTH_TOP_GID 10
 #define NORTH_MID_GID 23
 #define NORTH_LOW_GID 36

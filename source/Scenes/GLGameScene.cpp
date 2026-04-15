@@ -454,7 +454,6 @@ void GameScene::preUpdate(float dt)
         if (!_player) return;
     }
     Vec2 pos = _player->getPosition();
-    CULog("X: %f, Y:%f", pos.x, pos.y);
     //We have to acquire ourselves before we attempt to move
     //it is a little weird to do this every frame but this allows host to acquire themselves
     _networkCtrl -> getPhysController() -> acquireObs(_player, 0);
