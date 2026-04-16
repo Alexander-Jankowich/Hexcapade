@@ -326,9 +326,11 @@ void GameScene::showInventoryCard(size_t slotIndex) {
 
     _inventoryCardNode = scene2::PolygonNode::allocWithTexture(cardTex);
     _inventoryCardNode->setAnchor(Vec2::ANCHOR_CENTER);
+    float zoom = getActiveCameraZoom();
     Vec2 offset = getHUDOffset();
-    _inventoryCardNode->setPosition(Vec2(this->getSize().width * 0.5f + offset.x,
-                                         this->getSize().height * 0.5f + offset.y));
+    _inventoryCardNode->setScale(1.0f / zoom);
+    _inventoryCardNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
+                                         offset.y + this->getSize().height * 0.5f / zoom));
     addChild(_inventoryCardNode);
 }
 
@@ -457,10 +459,7 @@ void GameScene::updateCameraFollow() {
 }
 
 float GameScene::getActiveCameraZoom() const {
-    if (auto orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera())) {
-        return std::max(orthographicCamera->getZoom(), 0.01f);
-    }
-    return 1.0f;
+    return std::max(std::dynamic_pointer_cast<OrthographicCamera>(getCamera())->getZoom(), 0.02f);
 }
 
 Vec2 GameScene::getHUDOffset() const {
@@ -607,10 +606,12 @@ void GameScene::preUpdate(float dt)
     _inputDisplay->setUIZoom(getActiveCameraZoom());
     _inputDisplay->update(playerScreenPos);
 
-//    if (_inventoryCardNode) {
-//        _inventoryCardNode->setPosition(Vec2(this->getSize().width * 0.5f + offset.x,
-//                                             this->getSize().height * 0.5f + offset.y));
-//    }
+    if (_inventoryCardNode) {
+        float zoom = getActiveCameraZoom();
+        _inventoryCardNode->setScale(1.0f / zoom);
+        _inventoryCardNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
+                                             offset.y + this->getSize().height * 0.5f / zoom));
+    }
     if (_inventoryCardNode) {
         if (_input.cardDismissTap() || _input.getMove().x != 0) {
             hideInventoryCard();
@@ -656,13 +657,27 @@ void GameScene::preUpdate(float dt)
     }
 
     // MOBILE DEPOSIT: DRAG ONE SLOT WHILE THE PLAYER IS IN DEPOSIT RANGE
-    if (depositIndex >= 0 && _canDeposit) {
-        if (_player && _player->hasInventory()) {
+    if (depositIndex >= 0) {
+        if (_player->hasInventory()) {
             if (_networkCtrl->isHost()) {
-                int deposited = _player->depositItem((size_t)depositIndex);
-                if (deposited > 0) {
+                if (_canDeposit) {
+                    int deposited = _player->depositItem((size_t)depositIndex);
+                    if (deposited > 0) {
+                        _inventoryValue = _player->getInventoryVal();
+                        _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
+                    }
+                }
+                
+                // Drop anywhere else in the world.
+                
+                else if ((size_t)depositIndex < _player->getInventory().size()) {
+                    auto carried = _player->getInventory()[(size_t)depositIndex];
+                    _player->depositItem((size_t)depositIndex);
                     _inventoryValue = _player->getInventoryVal();
-                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
+                    auto params = _itemFact->serializeParams(_player->getPosition(), carried.value, carried.itemType);
+                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
+                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
                 }
             } else {
                 _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, false, depositIndex));
@@ -866,7 +881,7 @@ void GameScene::fixedUpdate(Uint64 step)
     // First process incoming events
     _networkCtrl->updateNet();
     
-    std::tuple<int,int> values = _networkCtrl->customEvents(_itemFact, _playerFact,
+    std::tuple<int,int> values = _networkCtrl->customEvents(_itemFact, _playerFact, _itemFactId,
                                  _player, _input, &_playerWon, &_gameEnded, _depositPosition, _depositRadius);
     _inventoryValue = std::get<0>(values);
     _depositedValue += std::get<1>(values);
