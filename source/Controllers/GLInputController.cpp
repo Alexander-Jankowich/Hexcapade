@@ -678,7 +678,7 @@ std::vector<std::vector<Vec2>> WATER_GESTURE = {
 // The meaning of any touch depends on the zone it begins in.
 
 /** The portion of the screen used for the top zone */
-#define TOP_ZONE        0.25f
+#define TOP_ZONE        0.20f
 /** The portion of the screen used for the left zone */
 #define LEFT_ZONE       0.5f
 /** The portion of the screen used for the right zone */
@@ -698,13 +698,15 @@ _currDown(false),
 _prevDown(false),
 _mouseDown(false),
 _touchDown(false),
+_cardDismissTap(false),
 _touchID(-1),
 _mouseKey(0),
 _joystick(false),
 _pickupPressed(false),
 _depositPressed(false),
-_inventoryPressed(false),
-_inventoryTap(Vec2::ZERO),
+_inventoryReleased(false),
+_inventoryAnchor(Vec2::ZERO),
+_inventoryTouchPos(Vec2::ZERO),
 _inventoryHotkeyIndex(-1),
 _resetPressed(false),
 _lastGesture(SpellType::NONE),
@@ -773,6 +775,7 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     createZones();
     clearTouchInstance(_ltouch);
     clearTouchInstance(_rtouch);
+    clearTouchInstance(_itouch);
     clearTouchInstance(_mtouch);
 #else
     Size display = Application::get()->getDrawableSize();
@@ -781,6 +784,7 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     createZones();
     clearTouchInstance(_ltouch);
     clearTouchInstance(_rtouch);
+    clearTouchInstance(_itouch);
     clearTouchInstance(_mtouch);
     
 #endif
@@ -862,7 +866,7 @@ void InputController::readInput(){
 #ifndef CU_TOUCH_SCREEN
     _pickupPressed = false;
     _depositPressed = false;
-    _inventoryPressed = false;
+    _inventoryReleased = false;
     _inventoryHotkeyIndex = -1;
     _resetPressed = false;
 
@@ -1194,10 +1198,18 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     _touchDown = true;
     Vec2 pos = event.position;
     Zone zone = getZone(pos);
+    _cardDismissTap = true;
     pos = touch2Screen(pos);
     
     switch (zone){
         case Zone::TOP:
+            if (_itouch.touchids.empty()) {
+                _inventoryAnchor = pos;
+                _inventoryTouchPos = pos;
+                _itouch.position = pos;
+                _itouch.timestamp.mark();
+                _itouch.touchids.insert(event.touch);
+            }
             break;
         case Zone::LEFT:
             // Only process if no touch in zone
@@ -1256,9 +1268,13 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
     } else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
         _rtouch.touchids.clear();
         processGestureEnd(pos);
+    } else if (_itouch.touchids.find(event.touch) != _itouch.touchids.end()) {
+        _itouch.touchids.clear();
+        _inventoryReleased = true;
+        _inventoryTouchPos = pos;
     } else if (zone == Zone::TOP) {
-        _inventoryPressed = true;
-        _inventoryTap = pos;
+        _inventoryReleased = true;
+        _inventoryTouchPos = pos;
     } else if (zone == Zone::MAIN) {
     }
 }
@@ -1279,6 +1295,9 @@ void InputController::touchMotionCB(const TouchEvent& event, const Vec2& previou
     else if (_rtouch.touchids.find(event.touch) != _rtouch.touchids.end()) {
         processDrag(pos);
     }
+    else if (_itouch.touchids.find(event.touch) != _itouch.touchids.end()) {
+        _inventoryTouchPos = pos;
+    }
 }
 
 void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus) {
@@ -1287,6 +1306,7 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
 
     Vec2 pos = mouse2Screen(event.position);
     Zone zone = getZone(pos);
+    _cardDismissTap = true;
 
     switch (zone) {
     case Zone::TOP:

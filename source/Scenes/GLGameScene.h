@@ -55,6 +55,9 @@ protected:
     std::shared_ptr<cugl::Random> _random;
     /** Reference to the physics root of the scene graph */
     std::shared_ptr<cugl::scene2::SceneNode> _worldnode;
+    
+    /** Node for the currently open inventory card cente */
+    std::shared_ptr<cugl::scene2::SceneNode> _inventoryCardNode;
 
     /** The Box2D world */
     std::shared_ptr<cugl::physics2::distrib::NetWorld> _world;
@@ -112,15 +115,19 @@ protected:
     /** The gestures json */
     std::shared_ptr<cugl::JsonValue> _gestures;
 
-    bool input_down = false;
     /** this tracks whether the player is currently inside the deposit zone */
     bool _canDeposit;
     /** this stores the prototype origin/deposit interaction position */
     cugl::Vec2 _depositPosition;
+
     /** this stores the prototype origin/deposit interaction radius */
     float _depositRadius;
     /** id of item player is on, if they are on an item */
     int _currOverlappedItem = -1;
+    /** inventory slot currently being dragged from the top zone */
+    int _dragInventoryIndex = -1;
+    /** current screen-space pos for the floating drag */
+    cugl::Vec2 _dragInventoryPos = cugl::Vec2::ZERO;
 
 public:
 #pragma mark -
@@ -281,6 +288,8 @@ private:
     cugl::Rect getInventorySlotBounds(size_t slotIndex) const;
     // this maps the last hud tap to an inventory slot index for the upcoming item flow
     int getInventorySlotIndexAt(const cugl::Vec2& tapPos) const;
+    void showInventoryCard(size_t slotIndex);
+    void hideInventoryCard();
     /**
      * on recieving a pickup event from player, checks if it is valid.
      */
@@ -336,4 +345,3 @@ private:
 };
 
 #endif // !__GL_GAME_SCENE_H__
-
