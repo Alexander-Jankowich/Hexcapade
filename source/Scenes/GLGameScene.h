@@ -55,6 +55,9 @@ protected:
     std::shared_ptr<cugl::Random> _random;
     /** Reference to the physics root of the scene graph */
     std::shared_ptr<cugl::scene2::SceneNode> _worldnode;
+    
+    /** Node for the currently open inventory card cente */
+    std::shared_ptr<cugl::scene2::SceneNode> _inventoryCardNode;
 
     /** The Box2D world */
     std::shared_ptr<cugl::physics2::distrib::NetWorld> _world;
@@ -285,6 +288,8 @@ private:
     // this maps the last hud tap to an inventory slot index for the upcoming item flow
     int getInventorySlotIndexAt(const cugl::Vec2& tapPos) const;
     cugl::Rect getDepositZoneBounds() const;
+    void showInventoryCard(size_t slotIndex);
+    void hideInventoryCard();
     /**
      * on recieving a pickup event from player, checks if it is valid.
      */

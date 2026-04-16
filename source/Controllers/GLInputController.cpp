@@ -370,7 +370,7 @@ std::vector<std::vector<Vec2>> FREEZE_GESTURE = {
 // The meaning of any touch depends on the zone it begins in.
 
 /** The portion of the screen used for the top zone */
-#define TOP_ZONE        0.25f
+#define TOP_ZONE        0.20f
 /** The portion of the screen used for the left zone */
 #define LEFT_ZONE       0.5f
 /** The portion of the screen used for the right zone */
@@ -390,6 +390,7 @@ _currDown(false),
 _prevDown(false),
 _mouseDown(false),
 _touchDown(false),
+_cardDismissTap(false),
 _touchID(-1),
 _mouseKey(0),
 _joystick(false),
@@ -880,6 +881,7 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     _touchDown = true;
     Vec2 pos = event.position;
     Zone zone = getZone(pos);
+    _cardDismissTap = true;
     pos = touch2Screen(pos);
     
     switch (zone){
@@ -987,6 +989,7 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
 
     Vec2 pos = mouse2Screen(event.position);
     Zone zone = getZone(pos);
+    _cardDismissTap = true;
 
     switch (zone) {
     case Zone::TOP:

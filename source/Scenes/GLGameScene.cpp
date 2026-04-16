@@ -155,6 +155,14 @@ std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entrie
     }
     return item.itemType;
 }
+// Naming standard - Use this.
+std::string getInventoryCardTextureKey(const std::string& itemType) {
+    static const std::string prefix = "spellbook_";
+    if (itemType.rfind(prefix, 0) != 0) {
+        return "";
+    }
+    return itemType.substr(prefix.size()) + "_card";
+}
 }
 
 #pragma mark -
@@ -302,6 +310,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 void GameScene::dispose()
 {
     // NOTHING TO DO THIS TIME
+    hideInventoryCard();
     _inputDisplay->dispose();
     _map = nullptr;
     _assets->dispose();
@@ -336,6 +345,7 @@ void GameScene::reset()
     _canDeposit = false;
     _dragInventoryIndex = -1;
     _dragInventoryPos = Vec2::ZERO;
+    hideInventoryCard();
 
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
@@ -363,6 +373,28 @@ void GameScene::removeItemNode(const std::shared_ptr<ItemObstacle>& item) {
         }
         _itemNodes.erase(it);
         return;
+    }
+}
+
+void GameScene::showInventoryCard(size_t slotIndex) {
+    hideInventoryCard();
+
+    std::string textureKey = getInventoryCardTextureKey(_player->getInventory()[slotIndex].itemType);
+    auto cardTex = _assets->get<graphics::Texture>(textureKey);
+
+    _inventoryCardNode = scene2::PolygonNode::allocWithTexture(cardTex);
+    _inventoryCardNode->setAnchor(Vec2::ANCHOR_CENTER);
+    Vec2 offset = getHUDOffset();
+    _inventoryCardNode->setPosition(Vec2(this->getSize().width * 0.5f + offset.x,
+                                         this->getSize().height * 0.5f + offset.y));
+    addChild(_inventoryCardNode);
+}
+
+void GameScene::hideInventoryCard() {
+    if (_inventoryCardNode) {
+        // _inventoryCardNode->removeFromParent();
+        removeChild(_inventoryCardNode);
+        _inventoryCardNode = nullptr;
     }
 }
 
@@ -623,6 +655,16 @@ void GameScene::preUpdate(float dt)
     _inputDisplay->setUIOffset(offset);
     _inputDisplay->update(playerScreenPos);
 
+//    if (_inventoryCardNode) {
+//        _inventoryCardNode->setPosition(Vec2(this->getSize().width * 0.5f + offset.x,
+//                                             this->getSize().height * 0.5f + offset.y));
+//    }
+    if (_inventoryCardNode) {
+        if (_input.cardDismissTap() || _input.getMove().x != 0) {
+            hideInventoryCard();
+        }
+    }
+    _input.resolvedCardDismissTap();
 
     bool depositRequested = false;
     int depositIndex = -1;
@@ -633,6 +675,7 @@ void GameScene::preUpdate(float dt)
         _input.resolvedDeposit();
     }
     if (_input.inventoryHeld()) {
+        // consider having some sort of drag treshold bc rn jittery
         if (_dragInventoryIndex < 0) {
             _dragInventoryIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
         }
@@ -642,9 +685,18 @@ void GameScene::preUpdate(float dt)
     }
 
     if (_input.inventoryReleased()) {
-        if (_dragInventoryIndex >= 0 && getDepositZoneBounds().contains(_input.getInventoryTouchPos())) {
-            depositIndex = _dragInventoryIndex;
+        int tappedIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
+        bool tappedSlot = _input.getInventoryAnchor().distance(_input.getInventoryTouchPos()) <= 5.0f;
+
+        if (tappedSlot) {
+            if (tappedIndex >= 0) {
+                showInventoryCard((size_t)tappedIndex);
+            }
         }
+        
+        if (getDepositZoneBounds().contains(_input.getInventoryTouchPos())) {
+                depositIndex = _dragInventoryIndex;
+            }
         _dragInventoryIndex = -1;
         _input.resolvedInventoryRelease();
     }
@@ -1151,6 +1203,7 @@ void GameScene::setActive(bool value)
         }
         else
         {
+            hideInventoryCard();
             _input.deactivate();
         }
     }

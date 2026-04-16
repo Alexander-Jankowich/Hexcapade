@@ -195,6 +195,14 @@ public:
         return !_itouch.touchids.empty();
     }
 
+    bool cardDismissTap() const {
+        return _cardDismissTap;
+    }
+
+    void resolvedCardDismissTap() {
+        _cardDismissTap = false;
+    }
+
     /**
     * Returns where the active inventory touch began in scene coordinates.
     */
@@ -319,6 +327,7 @@ protected:
     bool _mouseDown;
     /** Whether a finger is down*/
     bool _touchDown;
+    bool _cardDismissTap;
     /** Where the finger touch began*/
     cugl::Vec2 _touchStart;
     /**Current touchID**/
