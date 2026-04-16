@@ -1251,8 +1251,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     // Checking for collisions
     if (spell && spell){
         contact -> SetEnabled(false);
-    }
-    if (player && spell) {
+    }else if (player && spell) {
         contact -> SetEnabled(false);
         if (spell->getCasterUID()==player->getPID()) return;
         if (spell->TYPE == SpellType::HEAL) {
@@ -1264,8 +1263,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         player -> setHealth(player->getHealth() - 1);
         
         return;
-    }
-    if (player && enemy) {
+    }else if (player && enemy) {
         contact -> SetEnabled(false);
         if(player -> getHealth() == 0){
             return;
@@ -1284,8 +1282,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         player->setHealth(player->getHealth() - 1);
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;
-        }
-    if (enemy && spell) {
+    }else if (enemy && spell) {
         contact -> SetEnabled(false);
         if(spell -> TYPE == SpellType::WATER){
             Vec2 pushDir = enemy->getPosition() - spell->getPosition();
@@ -1303,12 +1300,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
                 enemy->setFrozenTimer(-1);
             }
             
-        }
-        if(spell->TYPE == SpellType::EARTH){
+        }else if(spell->TYPE == SpellType::EARTH){
             enemy -> setMud(true);
             enemy -> setMudTimer(300);
-        }
-        if(!(spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
+        }else if(!(spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
              or spell -> TYPE == SpellType::WATER)){
             spell->markRemoved(true);
             return;
@@ -1316,33 +1311,30 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         
         if (enemy->getHealth()==0) enemy->markRemoved(true);
         return;
-    }
-    if (wall && player){
+    }else if (wall && player){
         contact->SetEnabled(true);
         return;
-    }
-    if(wall && spell){
+    }else if(wall && spell){
         contact->SetEnabled(false);
         spell -> markRemoved(true);
         return;
-    }
-    if (wall && enemy){
+    }else if (wall && enemy){
         //CULog("here wall and enemy");
         if (enemy->TYPE == EnemyType::GHOST) {
             contact->SetEnabled(false);
             return;
         }
-    }
-    if(player && player2){
+    }else if(player && player2){
         contact -> SetEnabled(false);
         return;
-    }
-    if(player && item){
+    }else if(player && item){
         contact -> SetEnabled(false);
         _currOverlappedItem = item->getID();
         return;
-    }
-    if(enemy && item){
+    }else if(enemy && item){
+        contact -> SetEnabled(false);
+        return;
+    }else{
         contact -> SetEnabled(false);
         return;
     }

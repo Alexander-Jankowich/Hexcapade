@@ -110,7 +110,14 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         
                     }
                     CULog("done walling off - N");
-                    //TODO: add collider
+                    std::vector<Vec2> north_points = {
+                        Vec2((door.pos.x) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 1 ) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((door.pos.x + 5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y  - 1) * TILE_SIZE / PHYSICS_SCALE)
+                    };
+                    _extruder.set(north_points,false);
+                    _extruder.calculate(0.05f);
+                    auto np = _extruder.getPolygon();
+                    addWallObstacle(np, world);
                     continue;
                 }
                 CULog("adding halls - N");
@@ -172,7 +179,14 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     }
                     CULog("done walling off - S");
                     
-                    //TODO: add collider
+                    std::vector<Vec2> north_points = {
+                        Vec2((door.pos.x) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 1 ) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((door.pos.x + 5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y  - 1) * TILE_SIZE / PHYSICS_SCALE)
+                    };
+                    _extruder.set(north_points,false);
+                    _extruder.calculate(0.05f);
+                    auto np = _extruder.getPolygon();
+                    addWallObstacle(np, world);
                     continue;
                 }
                 CULog("adding halls - S");
@@ -228,7 +242,14 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         if(door.pos.x < MAP_WIDTH - 1) _mapGrid[i][door.pos.x + 1] = 1;
                     }
                     // add collider
-                    auto ew = Poly2(Rect((door.pos.x + 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 4) * TILE_SIZE / PHYSICS_SCALE, TILE_SIZE / PHYSICS_SCALE, 6 * TILE_SIZE / PHYSICS_SCALE));
+                    std::vector<Vec2> north_points = {
+                        Vec2((door.pos.x + 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y + 2 ) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((door.pos.x + 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 6) * TILE_SIZE / PHYSICS_SCALE)
+                    };
+                    _extruder.set(north_points,false);
+                    _extruder.calculate(0.05f);
+                    auto np = _extruder.getPolygon();
+                    addWallObstacle(np, world);
                     //addWallObstacle(ew, world);
                     continue;
                 }
@@ -288,8 +309,14 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(door.pos.x-1, MAP_HEIGHT - i), node);
                         if(door.pos.x > 0) _mapGrid[i][door.pos.x -1] = 1;
                     }
-                    
-                    
+                    std::vector<Vec2> north_points = {
+                        Vec2((door.pos.x - 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y + 2 ) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((door.pos.x - 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 6) * TILE_SIZE / PHYSICS_SCALE)
+                    };
+                    _extruder.set(north_points,false);
+                    _extruder.calculate(0.05f);
+                    auto np = _extruder.getPolygon();
+                    addWallObstacle(np, world);
                     //addWallObstacle(ww, world);
                     CULog("done walling off - W");
                     continue;
@@ -527,7 +554,6 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
     
     void Map::addWallObstacle(Poly2 &poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
         auto obs = physics2::PolygonObstacle::alloc(poly);
-        obs->createFixtures();
         //obs->setPosition(0,0);
         obs->setDensity(1.0);
         obs -> setEnabled(true);
