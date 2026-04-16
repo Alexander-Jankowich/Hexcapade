@@ -192,12 +192,16 @@ public:
     }
 
     int getDamageBonus() const {
+        int bonus = 0;
         for (const auto& item : _inventory) {
-            if (item.kind == ItemKind::ARTIFACT &&
-                item.itemType == "artifact_gem")
-                return 2;
+            if (item.kind == ItemKind::ARTIFACT) {
+                if (item.itemType == "artifact_boost")
+                    bonus += 2;
+                else if (item.itemType == "artifact_reduce")
+                    bonus -= 2;
+            }
         }
-        return 0;
+        return bonus;
     }
 
     ///**

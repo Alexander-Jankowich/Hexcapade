@@ -44,8 +44,11 @@
     "player": {
       "file": "textures/playerfox_sheet.png"
     },
-    "artifact_gem": {
+    "artifact_gem_reduce": {
       "file": "textures/artifact_gem.png"
+    },
+    "artifact_gem_boost": {
+      "file": "textures/gem_green.png"
     },
     "artifact_scroll": {
       "file": "textures/artifact_scroll.png"
@@ -60,13 +63,10 @@
       "file": "textures/spellbook_heal.png"
     },
     "spellbook_death": {
-        "file": "textures/disintigrate_spellbook.png"
+      "file": "textures/disintigrate_spellbook.png"
     },
     "spellbook_earth": {
-        "file": "textures/earth_spellbook.png"
-    },
-    "spellbook_water": {
-        "file": "textures/water_spellbook.png"
+      "file": "textures/earth_spellbook.png"
     }
 
   },

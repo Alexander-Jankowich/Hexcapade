@@ -10,12 +10,20 @@
       "texture_asset": "artifact_scroll"
     },
     {
-      "_comment": "gem artifact visual",
-      "id": "artifact_gem",
-      "name": "Gem",
+      "_comment": "gem artifact red visual",
+      "id": "artifact_gem_reduce",
+      "name": "Gem_Reduce",
       "value": 80,
       "weight": 1.0,
-      "texture_asset": "artifact_gem"
+      "texture_asset": "artifact_gem_reduce"
+    },
+    {
+      "_comment": "gem artifact green visual",
+      "id": "artifact_gem_boost",
+      "name": "Gem_Boost",
+      "value": 80,
+      "weight": 1.0,
+      "texture_asset": "artifact_gem_boost"
     }
   ],
   "spellbooks": [
