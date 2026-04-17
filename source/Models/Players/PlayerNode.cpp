@@ -61,11 +61,9 @@ void PlayerNode::updateAnimationState(PlayerObstacle::AnimationState s) {
     case PlayerObstacle::AnimationState::CASTING:
         _nextAnimation = AnimationType::CASTING;
         break;
-    case PlayerObstacle::AnimationState::IDLE:
-        _nextAnimation = AnimationType::IDLE;
-        break;
-    case PlayerObstacle::AnimationState::WALKING:
-        _nextAnimation = AnimationType::WALK;
+    default:
+        // Just get direction
+        _nextAnimation = _velocity.isZero() ? AnimationType::IDLE : AnimationType::WALK;
         break;
     }
 }
