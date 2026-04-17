@@ -19,7 +19,6 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared
     setDensity(1.0f);
     setFixedRotation(true);
 
-
     _health = consts->getInt("health");
     _speed = consts->getFloat("speed");
     _range = consts->getFloat("range");
@@ -27,6 +26,8 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared
 
     _state = EnemyState::IDLE;
     _frozen = false;
+    _mud = false;
+    _mudTimer = 0;
     _frozenTimer = 0;
     _attackCounter = 0;
 }
@@ -64,6 +65,5 @@ void EnemyObstacle::setVelocity(Vec2 v) {
     float mass = getBody()->GetMass();
     float scale = mass * 60.0f;
     b2Vec2 force = b2Vec2(velDiff.x * scale, velDiff.y * scale);
-    //CULog("mass: %f, force: %f %f", mass, force.x, force.y);
     getBody()->ApplyForceToCenter(force, true);
 }
