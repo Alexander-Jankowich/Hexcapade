@@ -81,7 +81,7 @@ public:
 
     #pragma mark PO_Getters_and_Setters
     int getHealth() {return _health;}
-    float getSpeed() {return _speed;}
+    float getSpeed() { return hasHeavyArtifact() ? _speed * 0.5f : _speed; }
     AnimationState getState(){return _state;}
     void setAniState(AnimationState s) {_state = s;}
     
@@ -208,14 +208,24 @@ public:
     // * Returns true if the player carries a protection artifact
     // * (absorbs one lethal hit). Keyed on itemType == "artifact_protection".
     // */
-    //bool hasProtectionArtifact() const {
-    //    for (const auto& item : _inventory) {
-    //        if (item.kind == ItemKind::ARTIFACT &&
-    //            item.itemType == "artifact_protection")
-    //            return true;
-    //    }
-    //    return false;
-    //}
+    bool hasProtectionArtifact() const {
+        for (const auto& item : _inventory) {
+            if (item.kind == ItemKind::ARTIFACT &&
+                item.itemType == "artifact_protection")
+                return true;
+        }
+        return false;
+    }
+
+    bool hasHeavyArtifact() const {
+        for (const auto& item : _inventory) {
+            if (item.kind == ItemKind::ARTIFACT &&
+                item.itemType == "artifact_heavy")
+                return true;
+        }
+        return false;
+    }
+
 
     ///**
     // * Returns true if the player carries a healing artifact
