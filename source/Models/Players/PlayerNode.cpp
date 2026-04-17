@@ -127,7 +127,7 @@ pair<ActionFunction, float> PlayerNode::getNextAnimation() {
     }
 
     _curAnimation = _nextAnimation;
-    CULog("Loop player animation, %.2f", numFrames/FPS);
+    //CULog("Loop player animation, %.2f", numFrames/FPS);
     return {
         [this, frameSet, numFrames](float t, ActionState state) {
             int offset = min((int)(t * numFrames), numFrames - 1);
