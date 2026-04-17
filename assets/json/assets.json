@@ -75,13 +75,13 @@
       "file": "textures/spellbook_heal.png"
     },
     "spellbook_death": {
-      "file": "textures/disintigrate_spellbook.png"
+      "file": "textures/spellbook_disintegrate.png"
     },
     "spellbook_earth": {
-      "file": "textures/earth_spellbook.png"
+      "file": "textures/spellbook_earth.png"
     },
     "spellbook_water": {
-      "file": "textures/water_spellbook.png"
+      "file": "textures/spellbook_water.png"
     },
     "fire_card": {
       "file": "textures/inventory_cards/fire_card.png"

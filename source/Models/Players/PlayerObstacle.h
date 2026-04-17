@@ -143,8 +143,7 @@ public:
         switch (spell) {
         case SpellType::FIREBALL:
         case SpellType::COMBO_FIREBALL:
-            type.push_back("spellbook_fire");
-            break;
+            return true;
         case SpellType::FREEZE:
         case SpellType::COMBO_FREEZE:
             type.push_back("spellbook_freeze");
