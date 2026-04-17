@@ -5,17 +5,41 @@
       "_comment": "scrollartifact visual",
       "id": "artifact_scroll",
       "name": "Scroll",
-      "value": 60,
+      "value": 120,
       "weight": 1.0,
       "texture_asset": "artifact_scroll"
     },
     {
-      "_comment": "gem artifact visual",
-      "id": "artifact_gem",
-      "name": "Gem",
-      "value": 80,
+      "_comment": "gem artifact red visual",
+      "id": "artifact_gem_reduce",
+      "name": "Gem_Reduce",
+      "value": 100,
       "weight": 1.0,
-      "texture_asset": "artifact_gem"
+      "texture_asset": "artifact_gem_reduce"
+    },
+    {
+      "_comment": "gem artifact green visual",
+      "id": "artifact_gem_boost",
+      "name": "Gem_Boost",
+      "value": 60,
+      "weight": 1.0,
+      "texture_asset": "artifact_gem_boost"
+    },
+    {
+      "_comment": "gem artifact brown visual",
+      "id": "artifact_protection",
+      "name": "Gem_Boost",
+      "value": 30,
+      "weight": 1.0,
+      "texture_asset": "artifact_protection"
+    },
+    {
+      "_comment": "gem artifact blue visual",
+      "id": "artifact_heavy",
+      "name": "Gem_Boost",
+      "value": 200,
+      "weight": 1.0,
+      "texture_asset": "artifact_heavy"
     }
   ],
   "spellbooks": [
