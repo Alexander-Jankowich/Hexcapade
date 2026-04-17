@@ -34,7 +34,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     }
 
     auto img = _assets->get<graphics::Texture>(vals->getString("texture"));
-    Size size = img->getSize();
+    Size size = img->getSize() / 2;
     size.width /= vals->getInt("columns");
     size.height /= vals->getInt("rows");
     
