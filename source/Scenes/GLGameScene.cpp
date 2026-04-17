@@ -1437,11 +1437,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }else if(spell->TYPE == SpellType::EARTH){
             enemy -> setMud(true);
             enemy -> setMudTimer(300);
-        }else if(!(spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
+        }else if((spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
              or spell -> TYPE == SpellType::WATER)){
-            spell->markRemoved(true);
+            if (enemy->getHealth()==0) enemy->markRemoved(true);
+            return;
         }
         if (enemy->getHealth()==0) enemy->markRemoved(true);
+        spell->markRemoved(true);
     }else if (wall && player){
         contact->SetEnabled(true);
         return;
