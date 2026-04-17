@@ -51,6 +51,7 @@ protected:
     int _mapWidth;
     vector<vector<int>> _floor;
     vector<vector<int>> _walls;
+    vector<vector<int>> _lowerWalls;
     vector<vector<int>> _deco;
     vector<vector<int>> _visfix;
     vector<vector<int>> _mask;
@@ -114,6 +115,7 @@ public:
     std::shared_ptr<graphics::Texture> getTileForGid(int gid) {return _tiles.at(gid);}
     const vector<vector<int>>& getFloorLayer() const {return _floor;}
     const vector<vector<int>>& getWallLayer() const {return _walls;}
+    const vector<vector<int>>& getBottomWallLayer() const {return _lowerWalls;}
     const vector<vector<int>>& getDecoLayer() const {return _deco;}
     const vector<vector<int>>& getFixLayer() const {return _visfix;}
     const vector<vector<int>>& getMaskLayer() const {return _mask;}

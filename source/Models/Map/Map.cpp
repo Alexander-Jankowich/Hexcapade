@@ -21,6 +21,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
     _mapGrid = {{0}};
     _sceneSize = sceneSize;
     auto node = scene2::SceneNode::alloc();
+    lw_node = scene2::SceneNode::alloc();
     std::vector<MapDoor> doors;
     _rng.initWithSeed(seed);
     _assets = assets;
@@ -55,7 +56,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
     auto tlcorner = Vec2(MAP_WIDTH/2 - tiledData->getWidth()/2, MAP_HEIGHT/2 - tiledData->getHeight()/2);
     CULog("tlcorner first room is x: %f y: %f", tlcorner.x, tlcorner.y);
     
-    addRoomSceneNodes(tiledData, tlcorner, node);
+    addRoomSceneNodes(tiledData, tlcorner, node, lw_node);
     addRoomObstacles(tiledData, tlcorner, world);
     
     // get playerSpawn: (mapwidth/2 - roomw /2 + playerSpawn.x, mapheight/2 - roomH/2 + (roomH - playerspawn.y)
@@ -168,13 +169,13 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     CULog("walling off - S");
                     for (int i = door.pos.x; i < door.pos.x + 5; i++) {
                         // wall 1
-                        addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 2), node);
+                        addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 2), lw_node);
                         _mapGrid[door.pos.y-2][i] = 1;
                         // wall 2
-                        addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 1), node);
+                        addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(i, MAP_HEIGHT - door.pos.y + 1), lw_node);
                         _mapGrid[door.pos.y-1][i] = 1;
                         // wall 3
-                        addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(i, MAP_HEIGHT - door.pos.y), node);
+                        addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(i, MAP_HEIGHT - door.pos.y), lw_node);
                         _mapGrid[door.pos.y][i] = 1;
                     }
                     CULog("done walling off - S");
@@ -270,9 +271,9 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         _mapGrid[y][x] = 1;
                     }
                     // add bottom walls
-                    addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 3), node);
-                    addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 4), node);
-                    addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 5), node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 3), lw_node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 4), lw_node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 5), lw_node);
                     _mapGrid[door.pos.y+5][x] = 1;
                     _mapGrid[door.pos.y+4][x] = 1;
                     _mapGrid[door.pos.y+3][x] = 1;
@@ -337,9 +338,9 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         _mapGrid[y][x] = 1;
                     }
                     // add bottom walls
-                    addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 3), node);
-                    addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 4), node);
-                    addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 5), node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 3), lw_node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 4), lw_node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y - 5), lw_node);
                     _mapGrid[door.pos.y+3][x] = 1;
                     _mapGrid[door.pos.y+4][x] = 1;
                     _mapGrid[door.pos.y+5][x] = 1;
@@ -369,7 +370,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
         }
         // for all, if here then res successfully filled in with room data. add room + doors + incr counter (later add room obj)
         CULog("adding room and doors");
-        addRoomSceneNodes(std::get<0>(res), std::get<2>(res), node);
+        addRoomSceneNodes(std::get<0>(res), std::get<2>(res), node, lw_node);
         for (auto d : std::get<0>(res)->getDoors()) {
             // pos is the TOP LEFT corner of door
             if (d->_direction!=to_skip){
@@ -400,6 +401,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
         _numRooms++;
             
         }
+    
         return node;
     }
 
@@ -421,17 +423,19 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
         _extruder.calculate(0.05f);
         
         auto p = _extruder.getPolygon();
-        //addWallObstacle(p, world);
+        addWallObstacle(p, world);
     }
 }
     
-    void Map::addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world) {
+    void Map::addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world, std::shared_ptr<cugl::scene2::SceneNode> lwalls) {
         // iterate over tiled nodes and add to scene
         const auto& floorLayer = tiledRmData->getFloorLayer();
         const auto& wallLayer  = tiledRmData->getWallLayer();
         const auto& fixLayer   = tiledRmData->getFixLayer();
         const auto& decoLayer  = tiledRmData->getDecoLayer();
         const auto& maskLayer  = tiledRmData->getMaskLayer();
+        const auto& lwallLayer  = tiledRmData->getBottomWallLayer();
+
         for (int x =0; x<tiledRmData->getWidth(); x++) {
             for (int y=0; y<tiledRmData->getHeight(); y++){
                 int floorGid = floorLayer[y][x];
@@ -439,7 +443,7 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
                 int fixGid   = fixLayer[y][x];
                 int decoGid  = decoLayer[y][x];
                 int maskGid  = maskLayer[y][x];
-                
+                int lwGid = lwallLayer[y][x];
                 // subtract y bc going top down
                 Vec2 pos = Vec2((tlCorner.x+x), (MAP_HEIGHT - tlCorner.y-y));
                 //Size s = Size(tiledRmData->getTileW(), tiledRmData->getTileH());
@@ -461,11 +465,12 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
                     // remember y is row, x is col on mapGrid
                     _mapGrid[tlCorner.y+y][tlCorner.x+x] = 1; // _mapGrid is (0,0) top left corner, so just add
                 }
+                if(lwGid != 0){
+                    addSingleNode(tiledRmData->getTileForGid(lwGid), pos, lwalls);
+                }
             }
         }
         CULog("world has %d children", (int) world->getChildCount());
-        // add colliders
-        
     }
     
     std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoor& d, std::vector<std::string>& rooms, Door::Direction connDir) {

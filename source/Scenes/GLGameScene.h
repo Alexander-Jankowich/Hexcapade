@@ -53,8 +53,10 @@ protected:
     InputController _input;
     std::shared_ptr<InputDisplay> _inputDisplay;
     std::shared_ptr<cugl::Random> _random;
+    bool _addedLWalls;
     /** Reference to the physics root of the scene graph */
     std::shared_ptr<cugl::scene2::SceneNode> _worldnode;
+    
 
     /** The Box2D world */
     std::shared_ptr<cugl::physics2::distrib::NetWorld> _world;

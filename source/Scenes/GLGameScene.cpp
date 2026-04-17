@@ -134,7 +134,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
     {
         return false;
     }
-
+    _addedLWalls = false;
     _assets = assets;
     _rooms = rooms;
 
@@ -454,6 +454,10 @@ void GameScene::preUpdate(float dt)
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
         //Have we set our player yet / received signal
         if (!_player) return;
+    }
+    if (_player && !_addedLWalls) {
+        _worldnode->addChild(_map->getLowerWallNode());
+        _addedLWalls = true;
     }
     //We have to acquire ourselves before we attempt to move
     //it is a little weird to do this every frame but this allows host to acquire themselves
@@ -1082,7 +1086,11 @@ void GameScene::initMap() {
             _networkCtrl->getPhysController()
                             ->addSharedObstacle(_playerFactId, params);
                     }
+        if (!_addedLWalls) {
+            _worldnode->addChild(_map->getLowerWallNode());
+            _addedLWalls = true;
         }
+    }
     
     if (!_networkCtrl->isHost()) {
         _networkCtrl->markReady();

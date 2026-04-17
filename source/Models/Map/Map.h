@@ -56,6 +56,7 @@ private:
     cugl::Vec2 _origin;
     cugl::Size _sceneSize;
     SimpleExtruder _extruder;
+    std::shared_ptr<cugl::scene2::SceneNode> lw_node;
     //std::vector<Room> _rooms; IGNORING FOR NOW
 
     std::vector<cugl::Vec2> _itemSpawnPoints;
@@ -72,9 +73,11 @@ public:
      * @param seed the random seed used to initialize this runs random number generator
      * @param assets the assetManager, which contains all loaded tiled data tied to proper room keys
      * @param rooms the list of all string keys used to access each room in the AssetManager
+     * @return a pair, the world node and the lower walls node
      */
     std::shared_ptr<cugl::scene2::SceneNode> generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
     
+    std::shared_ptr<cugl::scene2::SceneNode> getLowerWallNode() {return lw_node;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
     const std::vector<Vec2>& getEnemySpawnPoints() const {return _enemySpawnPoints;}
     const std::vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
@@ -87,8 +90,9 @@ private:
      * @param tiledRmData the Tiled Data for this room
      * @param tlCorner the top left corner of the room in mapGrid coordinates
      * @param world the base sceneNode to add all created nodes to
+     * @param lwalls the sceneNode to add all the lower walls to
      */
-    void addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world);
+    void addRoomSceneNodes(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world, std::shared_ptr<cugl::scene2::SceneNode> lwalls);
     
     /** Helper function to add all obstacles for a room
      * @param tiledRmData the Tiled Data for this room

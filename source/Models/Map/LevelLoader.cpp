@@ -57,11 +57,13 @@ bool LevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
     vector<vector<int>> vf(_mapHeight, vector<int>(_mapWidth, 0));
     vector<vector<int>> dc(_mapHeight, vector<int>(_mapWidth, 0));
     vector<vector<int>> mk(_mapHeight, vector<int>(_mapWidth, 0));
+    vector<vector<int>> bwl(_mapHeight, vector<int>(_mapWidth, 0));
     _floor = fl;
     _walls = wl;
     _visfix = vf;
     _deco = dc;
     _mask = mk;
+    _lowerWalls = bwl;
     
     // generate the flat map
     auto fl_layer = json->get("layers")->get(0)->get("layers")->get(0);
@@ -69,12 +71,14 @@ bool LevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
     auto vf_layer = json->get("layers")->get(0)->get("layers")->get(2);
     auto dc_layer = json->get("layers")->get(0)->get("layers")->get(3);
     auto mk_layer = json->get("layers")->get(0)->get("layers")->get(4);
+    auto bwl_layer = json->get("layers")->get(0)->get("layers")->get(5);
 
     auto fl_tiledData = fl_layer->get("data")->asIntArray();
     auto wl_tiledData = wl_layer->get("data")->asIntArray();
     auto vf_tiledData = vf_layer->get("data")->asIntArray();
     auto dc_tiledData = dc_layer->get("data")->asIntArray();
     auto mk_tiledData = mk_layer->get("data")->asIntArray();
+    auto bwl_tiledData = bwl_layer->get("data")->asIntArray();
 
     // iterate over the data set in parallel lol
     for (int row=0; row<_mapHeight; row++){
@@ -84,6 +88,7 @@ bool LevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
             _visfix.at(row).at(col) = vf_tiledData[row*_mapWidth + col];
             _deco.at(row).at(col) = dc_tiledData[row*_mapWidth + col];
             _mask.at(row).at(col) = mk_tiledData[row * _mapWidth + col];
+            _lowerWalls.at(row).at(col) = bwl_tiledData[row * _mapWidth + col];
         }
     }
     
