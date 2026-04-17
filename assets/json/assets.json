@@ -50,6 +50,12 @@
     "artifact_gem_boost": {
       "file": "textures/gem_green.png"
     },
+    "artifact_protection": {
+      "file": "textures/gem_brown.png"
+    },
+    "artifact_heavy": {
+      "file": "textures/gem_blue.png"
+    },
     "artifact_scroll": {
       "file": "textures/artifact_scroll.png"
     },
