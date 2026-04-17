@@ -69,10 +69,15 @@ public:
      */
     pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(const vector<byte>& params) override;
 
-    std::unordered_set<std::shared_ptr<PlayerObstacle>> current;
+    /**
+    * The linking function for player obstacles -> player nodes
+    */
+    void linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node);
+
+    unordered_set<shared_ptr<PlayerObstacle>> current;
 
 
-    std::shared_ptr<PlayerObstacle> getPlayerByPID(std::string pid) {
+    shared_ptr<PlayerObstacle> getPlayerByPID(string pid) {
         for (auto p : current) {
             CULog("i am trying to get a player");
             if (p->getPID() == pid) return p;
@@ -80,7 +85,7 @@ public:
         return nullptr; // should NOT get here
     }
     
-    void addCurrent(std::shared_ptr<PlayerObstacle> p){
+    void addCurrent(shared_ptr<PlayerObstacle> p){
         current.emplace(p);
     }
 

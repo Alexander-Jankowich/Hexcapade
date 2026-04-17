@@ -75,6 +75,11 @@ public:
     pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(const vector<byte>& params) override;
 
     /**
+    * The linking function for enemy obstacles -> enemy nodes
+    */
+    void linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node);
+
+    /**
     * Returns a set of enemies that have been flagged for garbage collection and removes them from
     * the current enemy set. Should be called every update frame
     * 

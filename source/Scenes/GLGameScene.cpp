@@ -190,11 +190,7 @@ void GameScene::beginContact(b2Contact* contact){
 bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 {
     // Initialize the scene to a locked width
-    if (assets == nullptr)
-    {
-        return false;
-    }
-    else if (!cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
+    if (assets == nullptr || !cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
     {
         return false;
     }
@@ -258,6 +254,9 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _rectFact = RectFactory::alloc(_assets, _map->_tiledRoomPrefab);
     _itemFact = ItemFactory::alloc(_assets);
 
+    // Create action timeline
+    _animations = Animator();
+
     // Create other controllers
     _pathfinder = Pathfinder();
 
@@ -288,8 +287,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
         beforeSolve(contact, oldManifold);
         };
     _world->update(1);
-    
-    
     
     _networkCtrl = nullptr;
     setActive(false);
@@ -530,6 +527,7 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
+    //CULog("X :%f, Y : %f", _player->getPosition().x, _player->getPosition().y);
     if (!_player) {
         // Try to find our player now that replication may have run
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
@@ -605,6 +603,9 @@ void GameScene::preUpdate(float dt)
         
     }
     
+    // Update animations
+    _animations.update(dt);
+
     if (_player->getHealth()==0) return; // if dead ignore updates
 
     // Player movement
@@ -1131,46 +1132,38 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     const std::shared_ptr<scene2::SceneNode>& node) {
 
     if (node->getParent() != nullptr) {
-            return;
-        }
+        return;
+    }
     node->setPosition(obj->getPosition() * PHYSICS_SCALE);
     _worldnode->addChild(node);
     if (auto item = std::dynamic_pointer_cast<ItemObstacle>(obj)) {
         _itemNodes.push_back({ item.get(), node });
     }
-    if (auto playerObs = std::dynamic_pointer_cast<PlayerObstacle>(obj)) {
-           bool alreadyTracked = false;
-           for (const auto& p : _playerFact->current) {
-               if (p == playerObs) {
-                   alreadyTracked = true;
-                   break;
-               }
-           }
-           if (!alreadyTracked) {
-               _playerFact -> addCurrent(playerObs);
-           }
-       }
+
     // Dynamic objects need constant updating
     if (obj->getBodyType() == b2_dynamicBody) {
         scene2::SceneNode* weak = node.get(); // No need for smart pointer in callback
         if (auto p = dynamic_pointer_cast<PlayerObstacle>(obj)) {
+            // Add player to set
+            if (!_playerFact->current.contains(p)) {
+                _playerFact->addCurrent(p);
+            }
+
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                    PlayerObstacle::AnimationState state = p->getState();
-                    if (p->getSpell() != SpellType::NONE) {
-                        state = PlayerObstacle::AnimationState::CASTING;
-                    } else if (state == PlayerObstacle::AnimationState::CASTING) {
-                        state = PlayerObstacle::AnimationState::IDLE;
-                    }
-                    p_node->updateAnimationState(state);
-                    float leftover = Application::get()->getFixedRemainder() / 1000000.f;
-                    Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
-                    float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
-                    p_node->setPosition(pos * PHYSICS_SCALE);
-                    p_node->setAngle(angle);
-                    p_node->setVelocity(p->getLinearVelocity() * PHYSICS_SCALE);
+                _playerFact->linkFunc(p, p_node);
             });
-        } else {
+        }
+        else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
+            std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
+            obj->setListener([=, this](physics2::Obstacle* obs) {
+                _enemyFact->linkFunc(e, e_node);
+            });
+
+            // Add animation
+            _animations.addNode(e_node);
+        }
+        else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
                 Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();

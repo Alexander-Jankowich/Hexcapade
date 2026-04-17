@@ -137,7 +137,6 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             else{
                 desiredVel *= en->getSpeed();
             }
-            
 
             float recovery = 0.2f;
             Vec2 newVel = currentVel * (1 - recovery) + desiredVel * recovery;

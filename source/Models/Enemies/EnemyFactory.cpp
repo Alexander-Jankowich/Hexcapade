@@ -10,6 +10,8 @@
 using namespace std;
 using namespace cugl;
 
+#define PHYSICS_SCALE 100
+
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
@@ -84,6 +86,16 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     float y = _deserializer.readFloat();
     Vec2 pos = Vec2(x, y);
     return createObstacle(type, pos);
+}
+
+void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node) {
+    node->updateAnimationState(obs->getState(), obs->getHealth());
+    float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+    Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+    float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+    node->setPosition(pos * PHYSICS_SCALE);
+    node->setAngle(angle);
+    node->setVelocity(obs->getLinearVelocity() * PHYSICS_SCALE);
 }
 
 

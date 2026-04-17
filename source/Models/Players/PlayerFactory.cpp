@@ -8,6 +8,9 @@
 using namespace std;
 using namespace cugl;
 
+
+#define PHYSICS_SCALE 100
+
 int PlayerFactory::rows = 1;
 int PlayerFactory::cols = 1;
 
@@ -66,6 +69,23 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
     Vec2 pos = Vec2(x, y);
     string id =  _deserializer.readString(); // this is why i had to switch just this class to netcode de/serializers sorry abt that - serena
     return createObstacle(pos, id);
+}
+
+void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node) {
+    PlayerObstacle::AnimationState state = obs->getState();
+    if (obs->getSpell() != SpellType::NONE) {
+        state = PlayerObstacle::AnimationState::CASTING;
+    }
+    else if (state == PlayerObstacle::AnimationState::CASTING) {
+        state = PlayerObstacle::AnimationState::IDLE;
+    }
+    node->updateAnimationState(state);
+    float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+    Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+    float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+    node->setPosition(pos * PHYSICS_SCALE);
+    node->setAngle(angle);
+    node->setVelocity(obs->getLinearVelocity() * PHYSICS_SCALE);
 }
 
 PlayerFactory::PlayerFactory() {

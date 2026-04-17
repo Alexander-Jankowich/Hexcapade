@@ -18,14 +18,15 @@ EnemyNode::EnemyNode(shared_ptr<graphics::Texture>& tex, shared_ptr<JsonValue>& 
         LEFT_FORWARD_WALK(consts->getInt("left_forward_walk")),
         RIGHT_FORWARD_WALK(consts->getInt("right_forward_walk")),
         LEFT_BACKWARD_WALK(consts->getInt("left_backward_walk")),
-        RIGHT_BACKWARD_WALK(consts->getInt("right_backward_walk")) {
+        RIGHT_BACKWARD_WALK(consts->getInt("right_backward_walk")),
+        NUM_WALK(consts->getInt("walk_frames")) {
 
     initWithSheet(tex, consts->getInt("rows"), consts->getInt("columns"));
 
     facingBack = false;
     facingLeft = false;
     curFrame = 0;
-    curFrameOffset = 0;
+    nextAnimation = AnimationType::IDLE;
     setFrame(0);
 }
 
@@ -39,23 +40,63 @@ void EnemyNode::setVelocity(Vec2 value) {
     }
 }
 
-void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s) {
-    if (s == EnemyObstacle::EnemyState::CHASING) {
-        if (facingLeft) {
-            if (facingBack) {
-                curFrameOffset = LEFT_BACKWARD_WALK;
-            }
-            else {
-                curFrameOffset = LEFT_FORWARD_WALK;
-            }
-        }
-        else {
-            if (facingBack) {
-                curFrameOffset = RIGHT_BACKWARD_WALK;
-            }
-            else {
-                curFrameOffset = RIGHT_FORWARD_WALK;
-            }
-        }
+void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s, int health) {
+    if (health <= 0) {
+        nextAnimation = AnimationType::DEAD;
+        return;
     }
+
+    switch (s) {
+    case EnemyObstacle::EnemyState::IDLE:
+        nextAnimation = AnimationType::IDLE;
+        break;
+    case EnemyObstacle::EnemyState::CHASING:
+        nextAnimation = AnimationType::WALK;
+        break;
+    case EnemyObstacle::EnemyState::ATTACK_RESET:
+        nextAnimation = AnimationType::ATTACK;
+        break;
+    }
+}
+
+pair<ActionFunction, float> EnemyNode::getNextAnimation() {
+    switch (nextAnimation) {
+    case AnimationType::DEAD:
+        return { [this](float, ActionState) {}, -1 };
+    default:
+        // Only have walking for now...
+        return {
+            [this](float t, ActionState state) {
+                int offset = min((int)(t * NUM_WALK), NUM_WALK-1);
+                if (facingLeft) {
+                    if (facingBack) {
+                        setFrame(LEFT_BACKWARD_WALK + offset);
+                    }
+                    else {
+                        setFrame(LEFT_FORWARD_WALK + offset);
+                    }
+                }
+                else {
+                    if (facingBack) {
+                        setFrame(RIGHT_BACKWARD_WALK + offset);
+                    }
+                    else {
+                        setFrame(RIGHT_FORWARD_WALK + offset);
+                    }
+                }
+            },
+            NUM_WALK / FPS
+        };
+    }
+}
+
+ActionListener EnemyNode::getListener(const shared_ptr<ActionTimeline> animations) {
+    return [this, animations](const std::string key, float, float) {
+        if (nextAnimation != AnimationType::DEAD) {
+            CULog("Add repeat animation!");
+            auto ani = getNextAnimation();
+            animations->add(key, ani.first, ani.second);
+            animations->addCompletionListener(key, getListener(animations));
+        }
+    };
 }
