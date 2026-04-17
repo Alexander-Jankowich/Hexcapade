@@ -88,8 +88,15 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     return createObstacle(type, pos);
 }
 
+
 void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node) {
+    // Update state for animation
+    node->setFrozen(obs->isFroze());
+    node->setStatue(obs->isMud());
+    node->updateState();
     node->updateAnimationState(obs->getState(), obs->getHealth());
+
+    // Update position
     float leftover = Application::get()->getFixedRemainder() / 1000000.f;
     Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
     float angle = obs->getAngle() + leftover * obs->getAngularVelocity();

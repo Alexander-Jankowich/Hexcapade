@@ -10,14 +10,21 @@
 
 SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, int rows, int cols,SpellType t, std::shared_ptr<cugl::graphics::Texture> tex) {
     initWithSheet(tex, rows, cols);
-    if(!(t == SpellType::COMBO_FREEZE or t == SpellType::COMBO_FIREBALL or t == SpellType::DEATH)){
+    if(!(t == SpellType::COMBO_FREEZE or t == SpellType::COMBO_FIREBALL or t == SpellType::DEATH or t == SpellType::WATER)){
         setScale(0.5);
+    }
+    if((t == SpellType::WATER)){
+        CULog("im casting water");
+        setColor(Color4::BLUE);
     }
     if(t == SpellType::DEATH){
         setColor(Color4::BLACK);
     }
     if(t == SpellType::EARTH){
         setColor(Color4::PAPYRUS);
+    }
+    if(t == SpellType::COMBO_EFREEZE){
+        setColor(Color4::GRAY);
     }
     
     _velocity = vel;

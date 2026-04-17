@@ -32,9 +32,20 @@ public:
         DEAD = 5
     };
 
+    /** Category stored on each carried item. */
+    enum class ItemKind {
+        ARTIFACT,
+        SPELLBOOK
+    };
+
     struct CarriedItem {
         std::string itemType;
         int value;
+        ItemKind kind;
+
+        static ItemKind kindFromType(const std::string& t) {
+            return (t.rfind("spellbook", 0) == 0) ? ItemKind::SPELLBOOK : ItemKind::ARTIFACT;
+        }
     };
     
 protected:
@@ -70,7 +81,7 @@ public:
 
     #pragma mark PO_Getters_and_Setters
     int getHealth() {return _health;}
-    float getSpeed() {return _speed;}
+    float getSpeed() { return hasHeavyArtifact() ? _speed * 0.5f : _speed; }
     AnimationState getState(){return _state;}
     void setAniState(AnimationState s) {_state = s;}
     
@@ -123,15 +134,122 @@ public:
         if (!canAddItem()) {
             return false;
         }
-        _inventory.push_back({ itemType, item_val });
+        _inventory.push_back({ itemType, item_val, CarriedItem::kindFromType(itemType) });
         return true;
     }
 
-    bool addItem(int item_val) {
-        if (!canAddItem()) {
+    bool hasSpell(SpellType spell) const {
+        std::vector<string> type;
+        switch (spell) {
+        case SpellType::FIREBALL:
+        case SpellType::COMBO_FIREBALL:
+            type.push_back("spellbook_fire");
+            break;
+        case SpellType::FREEZE:
+        case SpellType::COMBO_FREEZE:
+            type.push_back("spellbook_freeze");
+            break;
+        case SpellType::HEAL:
+            type.push_back("spellbook_heal");
+            break;
+        case SpellType::EARTH:
+            type.push_back("spellbook_earth");
+            break;
+        case SpellType::DEATH:
+            type.push_back("spellbook_death");
+            break;
+        case SpellType::COMBO_EFREEZE:
+            type.push_back("spellbook_earth");
+            type.push_back("spellbook_freeze");
+            break;
+        case SpellType::WATER:
+            type.push_back("spellbook_water");
+            break;
+        default:
             return false;
         }
-        _inventory.push_back({ "", item_val });
-        return true;
+        for (const auto& item : _inventory) {
+            for (const auto& t : type){
+                if (item.kind == ItemKind::SPELLBOOK && item.itemType == t) {
+                    return true;
+                }
+            }
+            
+        }
+        return false;
     }
+    // ── Inventory query methods ──────────────────────────────────────────────
+// These mirror the Inventory class queries but work directly on CarriedItem.
+// Effect checks use the itemType string so no separate enum is needed. NOT USED YET.
+
+    bool blocksSpellcasting() const {
+        for (const auto& item : _inventory) {
+            if (item.kind == ItemKind::ARTIFACT &&
+                item.itemType == "artifact_scroll")
+                return true;
+        }
+        return false;
+    }
+
+    int getDamageBonus() const {
+        int bonus = 0;
+        for (const auto& item : _inventory) {
+            if (item.kind == ItemKind::ARTIFACT) {
+                if (item.itemType == "artifact_boost")
+                    bonus += 2;
+                else if (item.itemType == "artifact_reduce")
+                    bonus -= 2;
+            }
+        }
+        return bonus;
+    }
+
+    ///**
+    // * Returns true if the player carries a protection artifact
+    // * (absorbs one lethal hit). Keyed on itemType == "artifact_protection".
+    // */
+    bool hasProtectionArtifact() const {
+        for (const auto& item : _inventory) {
+            if (item.kind == ItemKind::ARTIFACT &&
+                item.itemType == "artifact_protection")
+                return true;
+        }
+        return false;
+    }
+
+    bool hasHeavyArtifact() const {
+        for (const auto& item : _inventory) {
+            if (item.kind == ItemKind::ARTIFACT &&
+                item.itemType == "artifact_heavy")
+                return true;
+        }
+        return false;
+    }
+
+
+    ///**
+    // * Returns true if the player carries a healing artifact
+    // * (passive HP regen). Keyed on itemType == "artifact_healing".
+    // */
+    //bool hasHealingArtifact() const {
+    //    for (const auto& item : _inventory) {
+    //        if (item.kind == ItemKind::ARTIFACT &&
+    //            item.itemType == "artifact_healing")
+    //            return true;
+    //    }
+    //    return false;
+    //}
+
+    ///**
+    // * Returns all artifact itemType strings currently in inventory.
+    // * Useful for effect-dispatch loops without exposing internals.
+    // */
+    //std::vector<std::string> getActiveArtifactTypes() const {
+    //    std::vector<std::string> types;
+    //    for (const auto& item : _inventory) {
+    //        if (item.kind == ItemKind::ARTIFACT)
+    //            types.push_back(item.itemType);
+    //    }
+    //    return types;
+    //}
 };

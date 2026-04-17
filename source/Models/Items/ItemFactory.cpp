@@ -17,7 +17,6 @@ using namespace cugl;
 ItemObstacle::ItemObstacle(const cugl::Vec2& pos, int value, const std::string& itemType, int i) {
     init(pos, cugl::Size(ITEM_SIZE, ITEM_SIZE));
     setBodyType(b2_staticBody);
-    setAwake(true);
     setEnabled(true);
     _value = value;
     _itemType = itemType;
@@ -43,6 +42,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> ItemFactory:
         // Fallback with solid colored rect
         sprite = scene2::PolygonNode::allocWithPoly(Rect(0, 0, 48, 48));
         sprite->setColor(Color4(255, 170, 60, 255));
+        CULog("ItemFactory: missing texture for itemType '%s'", itemType.c_str());
     }
     
     return std::make_pair(item, sprite);

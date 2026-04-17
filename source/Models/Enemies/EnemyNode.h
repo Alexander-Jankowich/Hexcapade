@@ -35,6 +35,9 @@ private:
     bool facingBack;
     bool facingLeft;
 
+    bool frozen;
+    bool statue;
+
     int curFrame;
     AnimationType nextAnimation;
 
@@ -43,6 +46,7 @@ private:
     const int LEFT_BACKWARD_WALK;
     const int RIGHT_BACKWARD_WALK;
     const int NUM_WALK;
+
 
 public:
 #pragma mark Constructors
@@ -70,10 +74,14 @@ public:
     */
     pair<ActionFunction, float> getNextAnimation() override;
 
-    /**
-    * Returns the action listener
-    */
-    ActionListener getListener(const shared_ptr<ActionTimeline> animations);
+    void setFrozen(bool f) { frozen = f; }
+    bool getFrozen() { return frozen; }
+    void setStatue(bool s) { statue = s; }
+    bool getStatue() { return statue; }
+    
+    void updateState();
+    
+#pragma mark Graphics
 };
 
 #endif // !__GP_ENEMY_H__

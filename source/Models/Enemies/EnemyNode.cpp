@@ -25,9 +25,24 @@ EnemyNode::EnemyNode(shared_ptr<graphics::Texture>& tex, shared_ptr<JsonValue>& 
 
     facingBack = false;
     facingLeft = false;
+    frozen = false;
+    statue = false;
+
     curFrame = 0;
     nextAnimation = AnimationType::IDLE;
     setFrame(0);
+}
+
+void EnemyNode::updateState() {
+    if(frozen){
+        setColor(Color4::BLUE);
+    }
+    else if(statue){
+        setColor(Color4::GRAY);
+    }
+    else{
+        setColor(Color4::WHITE);
+    }
 }
 
 void EnemyNode::setVelocity(Vec2 value) {
@@ -88,15 +103,4 @@ pair<ActionFunction, float> EnemyNode::getNextAnimation() {
             NUM_WALK / FPS
         };
     }
-}
-
-ActionListener EnemyNode::getListener(const shared_ptr<ActionTimeline> animations) {
-    return [this, animations](const std::string key, float, float) {
-        if (nextAnimation != AnimationType::DEAD) {
-            CULog("Add repeat animation!");
-            auto ani = getNextAnimation();
-            animations->add(key, ani.first, ani.second);
-            animations->addCompletionListener(key, getListener(animations));
-        }
-    };
 }

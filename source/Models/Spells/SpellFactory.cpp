@@ -16,13 +16,16 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int
         init(pos, (rad*2)/PHYSICS_SCALE);
     }else if (type == SpellType::COMBO_FREEZE or type == SpellType::COMBO_FIREBALL){
         init(pos, (rad*2)/PHYSICS_SCALE);
+    }else if (type == SpellType::WATER){
+        init(pos, (rad*2) / PHYSICS_SCALE);
+        setDensity(100);
     }else{
         init(pos, rad/PHYSICS_SCALE);
     }
     
     setAwake(true);
     setEnabled(true);
-    setBullet(true);
+    //setBullet(true);
     setBodyType(b2_dynamicBody);
     setAngle(vel.getAngle());
     setFixedRotation(true);
@@ -41,7 +44,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos,float rad, Vec2 angle, SpellType type, std::string c_uid) {
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos,float rad, Vec2 angle, SpellType type, std::string c_uid, int damageBonus) {
     auto image = _assets->get<graphics::Texture>("fireball"); // default?
     
     // Create the SpellObstacle
@@ -49,6 +52,11 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     std::shared_ptr<JsonValue> values;
 
     switch (type) {
+    case SpellType::WATER:
+        CULog("this case");
+        values = _spellConsts->get("water");
+        image = _assets->get<graphics::Texture>("freeze");
+        break;
     case SpellType::COMBO_FIREBALL:
         values = _spellConsts->get("combo_fireball");
         break;
@@ -74,6 +82,11 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     case SpellType::EARTH:
         values = _spellConsts->get("earth");
         image = _assets -> get<graphics::Texture>("freeze");
+        break;
+    case SpellType::COMBO_EFREEZE:
+        values = _spellConsts->get("combo_efreeze");
+        image =_assets -> get<graphics::Texture>("freeze");
+        break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
     default:
@@ -82,7 +95,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 
     Vec2 vel = norm * values->getFloat("speed");
     auto spell = SpellObstacle::alloc(pos, rad,vel,
-        values->getInt("damage"),
+        std::max(1, values->getInt("damage") + damageBonus),
         values->getFloat("range"),type ,c_uid);
     //auto spell = SpellObstacle::alloc(pos, type);
 
@@ -121,7 +134,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 /**
  * Helper method for converting normal parameters into byte vectors used for syncing.
  */
-std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos,float rad, Vec2 angle, SpellType type, string c) {
+std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos,float rad, Vec2 angle, SpellType type, string c, int damageBonus) {
     /**
      * TODO: Use _serializer to serialize pos and scale (remember to make a
      * shared copy of the serializer reference, otherwise it will be lost if
@@ -135,6 +148,7 @@ std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos,f
     _serializer.writeFloat(angle.y);
     _serializer.writeUint32((uint32_t)type);
     _serializer.writeString(c);
+    _serializer.writeSint32(damageBonus);
     return std::make_shared<std::vector<std::byte>>(_serializer.serialize());
 }
 
@@ -158,7 +172,8 @@ std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode
     Vec2 velocity = Vec2(vx, vy);
     SpellType type = (SpellType) _deserializer.readUint32();
     string c = _deserializer.readString();
-    return createObstacle(pos, rad,velocity, type, c);
+    int damageBonus = _deserializer.readSint32();
+    return createObstacle(pos, rad,velocity, type, c, damageBonus);
 }
 
 std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {

@@ -81,6 +81,7 @@ protected:
     RoomController _roomController;
     RunBalanceConfig _runConfig;
     cugl::Vec2 _cameraBottomLeft;
+    float _cameraZoom;
     int _runRevision;
     int _appliedRunRevision;
     unsigned int _mapSeed;
@@ -134,10 +135,22 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO),
-        _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO),
-        _quota(100), _playerWon(false), _gameEnded(false), _inventoryValue(0), _depositedValue(0),
-        _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f) {}
+    GameScene() : cugl::scene2::Scene2(),
+        _cameraBottomLeft(cugl::Vec2::ZERO),
+        _cameraZoom(1.5f),
+        _runRevision(0),
+        _appliedRunRevision(-1),
+        _mapSeed(0),
+        _mapSceneSize(cugl::Size::ZERO),
+        _quota(100),
+        _playerWon(false),
+        _gameEnded(false),
+        _inventoryValue(0),
+        _depositedValue(0),
+        _canDeposit(false),
+        _depositPosition(cugl::Vec2::ZERO),
+        _depositRadius(42.0f) {}
+
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
@@ -299,6 +312,8 @@ private:
     void loadGameplayConfig();
     // this rebuilds the current map from host-owned run metadata
     void rebuildMapForRun();
+    // this returns the orthographic zoom
+    float getActiveCameraZoom() const;
     // this keeps the world camera centered on the local player inside map bounds
     void updateCameraFollow();
     // this resolves the local player move against generated room/hall walls

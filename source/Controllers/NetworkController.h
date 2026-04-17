@@ -66,7 +66,7 @@ public:
         return hex2dec(room);
     }
     
-    void processComboEvent(const std::shared_ptr<CastSpellEvent>& e, std::shared_ptr<PlayerObstacle> player, InputController input) {
+    void processComboEvent(const std::shared_ptr<CastSpellEvent>& e, std::shared_ptr<PlayerObstacle> player, InputController& input) {
         if (e->getP2() == player->getPID()) {
             input.resolveSpell();
             player->resolveSpell();

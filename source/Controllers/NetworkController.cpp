@@ -155,6 +155,7 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
                                     inventoryValue = _player->getInventoryVal();
                                 }
                                 itemFact->getItem(pre->getItemID())->markRemoved(true);
+                                getPhysController()->removeSharedObstacle(item);
                             }
                             break;
                         }
