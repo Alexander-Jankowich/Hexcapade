@@ -749,11 +749,11 @@ void GameScene::preUpdate(float dt)
         _input.resolveSpell();
     } else if (_input.getGesture() != SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
-        //if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
+        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
             _player->setSpell(newSpell);
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-        //}
+        }
     }
 
     Vec2 angle = _input.getSpellAngle();
