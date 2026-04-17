@@ -859,12 +859,13 @@ void InputController::update(float dt) {
  * are more appropriate for menus and buttons (like the loading screen).
  */
 void InputController::readInput(){
-#ifndef CU_TOUCH_SCREEN
     _pickupPressed = false;
     _depositPressed = false;
     _inventoryPressed = false;
     _inventoryHotkeyIndex = -1;
     _resetPressed = false;
+
+#ifndef CU_TOUCH_SCREEN
 
     Keyboard* keys = Input::get<Keyboard>();
     if (keys) {
@@ -1168,7 +1169,13 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
     }
     else {
         _lastGesture = SpellType::NONE;
-        _pickupPressed = true;
+        if (_curStrokes == 1) {
+            _pickupPressed = true;
+        }
+        _curStrokes = 0;
+        thirdStroke.clear();
+        secondStroke.clear();
+        currentStroke.clear();
     }
 }
 
