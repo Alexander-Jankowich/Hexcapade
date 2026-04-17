@@ -142,6 +142,20 @@
             "right_backward_walk": 16,
             "left_backward_walk": 24,
             "walk_frames": 8
+        },
+        "octoplush": {
+            "health": 10,
+            "speed": 1.0,
+            "range": 4.5,
+
+            "texture": "octoplush",
+            "columns": 8,
+            "rows": 4,
+            "right_forward_walk": 0,
+            "left_forward_walk": 8,
+            "right_backward_walk": 16,
+            "left_backward_walk": 24,
+            "walk_frames": 8
         }
     },
     "artifacts": {

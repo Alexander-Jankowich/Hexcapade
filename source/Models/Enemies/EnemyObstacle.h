@@ -15,7 +15,8 @@ using namespace std;
 
 enum class EnemyType {
     GHOST = 0,
-    BAT = 1
+    BAT = 1,
+    OCTO = 2
 };
 
 /**

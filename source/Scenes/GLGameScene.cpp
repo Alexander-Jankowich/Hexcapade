@@ -502,7 +502,8 @@ void GameScene::preUpdate(float dt)
                 std::uint64_t index = rand % spawns.size();
                 Vec2 pos = spawns[index];
 
-                EnemyType type = (EnemyType) (_random->getFloat() * 2);
+                EnemyType type = (EnemyType) (_random->getFloat() * 3);
+                //CULog("enemy type: %d", type);
                 auto params = _enemyFact->serializeParams(type, pos / PHYSICS_SCALE);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it

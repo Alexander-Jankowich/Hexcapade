@@ -107,6 +107,10 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             targ = getClosestPlayer(en->getPosition(),
                 getVisiblePlayers(world, en->getPosition(), en->getRange(), playerFact->current));
             break;
+        case EnemyType::OCTO:
+            targ = getClosestPlayer(en->getPosition(),
+                getVisiblePlayers(world, en->getPosition(), en->getRange(), playerFact->current));
+            break;
         default:
             CULog("Error! Enemy type not implemented!!!");
             break;
