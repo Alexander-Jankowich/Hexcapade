@@ -1173,13 +1173,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
     }
     else {
         _lastGesture = SpellType::NONE;
-        if (_curStrokes == 1) {
-            _pickupPressed = true;
-        }
-        _curStrokes = 0;
-        thirdStroke.clear();
-        secondStroke.clear();
-        currentStroke.clear();
+        _pickupPressed = true;
     }
 }
 
