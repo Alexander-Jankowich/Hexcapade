@@ -447,8 +447,6 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
-    Vec2 pos = _player->getPosition();
-    CULog("X: %f, Y: %f", pos.x,pos.y);
     if (!_player) {
         // Try to find our player now that replication may have run
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
@@ -1220,6 +1218,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
 
     SpellObstacle* spell = nullptr;
+    SpellObstacle* spell2 = nullptr;
     PlayerObstacle* player = nullptr;
     PlayerObstacle* player2 = nullptr;
     EnemyObstacle* enemy = nullptr;
@@ -1228,38 +1227,49 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
     // Get types of the 2 obstacles; only care about collisions between different types of obstacles
     if (auto s = dynamic_cast<SpellObstacle*>(obs1)) {
+        CULog("i am a spell");
         spell = s;
     } else if (auto p = dynamic_cast<PlayerObstacle*>(obs1)) {
         player = p;
     } else if (auto e = dynamic_cast<EnemyObstacle*>(obs1)) {
         enemy = e;
-    } else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs1)) {
-        wall = w;
     } else if (auto w = dynamic_cast<ItemObstacle*>(obs1)){
         item = w;
+    }else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs1)) {
+        CULog("i am a wall");
+        wall = w;
     }
 
     if (auto s = dynamic_cast<SpellObstacle*>(obs2)) {
-        spell = s;
+        if(!spell){
+            spell = s;
+        }else{
+            spell2 = s;
+        }
+        
+        CULog("i am a spell");
     } else if (auto p = dynamic_cast<PlayerObstacle*>(obs2)) {
         if(player){
             player2 = p;
         }else{
             player = p;
         }
-        
     } else if (auto e = dynamic_cast<EnemyObstacle*>(obs2)) {
         enemy = e;
-    } else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs2)) {
-        wall = w;
     } else if (auto w = dynamic_cast<ItemObstacle*>(obs2)){
         item = w;
     }
+    else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs2)) {
+        CULog("i am a wall");
+        wall = w;
+    } ;
 
     // Checking for collisions
-    if (spell && spell){
+    if (spell && spell2){
+        CULog("spell and spell");
         contact -> SetEnabled(false);
     }else if (player && spell) {
+        CULog("spell and player");
         contact -> SetEnabled(false);
         if (spell->getCasterUID()==player->getPID()) return;
         if (spell->TYPE == SpellType::HEAL) {
@@ -1270,8 +1280,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
         player -> setHealth(player->getHealth() - 1);
         
-        return;
     }else if (player && enemy) {
+        CULog("enemy and player");
         contact -> SetEnabled(false);
         if(player -> getHealth() == 0){
             return;
@@ -1291,6 +1301,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;
     }else if (enemy && spell) {
+        CULog("enemy and spell");
         contact -> SetEnabled(false);
         if(spell -> TYPE == SpellType::WATER){
             Vec2 pushDir = enemy->getPosition() - spell->getPosition();
@@ -1314,25 +1325,25 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }else if(!(spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
              or spell -> TYPE == SpellType::WATER)){
             spell->markRemoved(true);
-            return;
         }
-        
         if (enemy->getHealth()==0) enemy->markRemoved(true);
-        return;
     }else if (wall && player){
+        CULog("wall and player");
         contact->SetEnabled(true);
         return;
     }else if(wall && spell){
+        CULog("wall and spell");
         contact->SetEnabled(false);
         spell -> markRemoved(true);
         return;
     }else if (wall && enemy){
-        //CULog("here wall and enemy");
+        CULog("here wall and enemy");
         if (enemy->TYPE == EnemyType::GHOST) {
             contact->SetEnabled(false);
             return;
         }
     }else if(player && player2){
+        CULog("player and player");
         contact -> SetEnabled(false);
         return;
     }else if(player && item){
@@ -1342,9 +1353,6 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }else if(enemy && item){
         contact -> SetEnabled(false);
         return;
-    }else{
-        contact -> SetEnabled(false);
-        return;
     }
-    CULog("there is an unknown collision");
+    
 }
