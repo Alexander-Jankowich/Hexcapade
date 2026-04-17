@@ -21,7 +21,15 @@ void PlayerObstacle::setVelocity(Vec2 v) {
     
     if (!v.isZero()) {
         _angle = v.getNormalization();
+
+        if (_state == AnimationState::IDLE) {
+            _state = AnimationState::WALKING;
+        }
     }
+    else if (_state == AnimationState::WALKING) {
+        _state = AnimationState::IDLE;
+    }
+
     if (!getBody()) return; // body not ready yet
     b2Vec2 currentVel = getBody()->GetLinearVelocity();
     b2Vec2 targetVel = b2Vec2(v.x, v.y);

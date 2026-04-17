@@ -95,7 +95,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 
     Vec2 vel = norm * values->getFloat("speed");
     auto spell = SpellObstacle::alloc(pos, rad,vel,
-        values->getInt("damage") + damageBonus,
+        std::max(1, values->getInt("damage") + damageBonus),
         values->getFloat("range"),type ,c_uid);
     //auto spell = SpellObstacle::alloc(pos, type);
 

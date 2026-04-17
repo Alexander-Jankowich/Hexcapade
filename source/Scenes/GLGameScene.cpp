@@ -126,14 +126,11 @@ void GameScene::beginContact(b2Contact* contact){
 bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const std::shared_ptr<std::vector<std::string>>& rooms)
 {
     // Initialize the scene to a locked width
-    if (assets == nullptr)
+    if (assets == nullptr || !cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
     {
         return false;
     }
-    else if (!cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
-    {
-        return false;
-    }
+    
     _addedLWalls = false;
     _assets = assets;
     _rooms = rooms;
@@ -198,6 +195,9 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
     _playerFact = PlayerFactory::alloc(_assets);
     _enemyFact = EnemyFactory::alloc(_assets);
     _itemFact = ItemFactory::alloc(_assets);
+
+    // Create action timeline
+    _animations = Animator();
 
     // Create other controllers
     _pathfinder = Pathfinder();
@@ -447,6 +447,7 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
+    //CULog("X :%f, Y : %f", _player->getPosition().x, _player->getPosition().y);
     if (!_player) {
         // Try to find our player now that replication may have run
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
@@ -496,8 +497,9 @@ void GameScene::preUpdate(float dt)
                 std::uint64_t index = rand % spawns.size();
                 Vec2 pos = spawns[index];
 
-                //auto params = _enemyFact->serializeParams(EnemyType::GHOST, pos / PHYSICS_SCALE);
-                //auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
+                EnemyType type = (EnemyType) (_random->getFloat() * 2);
+                auto params = _enemyFact->serializeParams(type, pos / PHYSICS_SCALE);
+                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
                 // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
                 //_networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
@@ -510,7 +512,7 @@ void GameScene::preUpdate(float dt)
         }
 
         // Update enemy movement
-        _pathfinder.updateEnemies(_enemyFact, _playerFact);
+        _pathfinder.updateEnemies(_enemyFact, _playerFact, _world);
         
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
@@ -528,6 +530,9 @@ void GameScene::preUpdate(float dt)
         
     }
     
+    // Update animations
+    _animations.update(dt);
+
     if (_player->getHealth()==0) return; // if dead ignore updates
 
     // Player movement
@@ -693,7 +698,7 @@ void GameScene::preUpdate(float dt)
                                 SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
                     p -> resolveSpell();
                     
-                }
+                    }
 
                     // Spell is combo-ed!
                     if (t != SpellType::NONE) {
@@ -709,19 +714,21 @@ void GameScene::preUpdate(float dt)
             }
 
             //CULog("Casting spell type: %d", t);
-            if (t == SpellType::DEATH) {
+            switch (t) {
+            case SpellType::DEATH:
                 for (int i = 0; i < 32; i++) {
                     angle = angle.rotate((M_PI / 16) * i);
                     auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
-            }else if (t == SpellType::WATER){
+                break;
+            case SpellType::WATER: {
                 int numShots = 8;
                 float start = M_PI / 6.0f;
-                float end   = -M_PI / 6.0f;
+                float end = -M_PI / 6.0f;
                 for (int i = 0; i < numShots; i++) {
-                    float alpha = (float)i / (numShots - 1); 
+                    float alpha = (float)i / (numShots - 1);
                     float theta = start + alpha * (end - start);
 
                     Vec2 dir = angle.getNormalization().rotate(theta);
@@ -729,17 +736,18 @@ void GameScene::preUpdate(float dt)
                     auto params = _spellFact->serializeParams(
                         (playerScreenPos / PHYSICS_SCALE),
                         _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f,
-                        dir,t,_networkCtrl->getPID());
-                        auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-                        _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                    }
+                        dir, t, _networkCtrl->getPID());
+                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                }
+                break;
             }
-
-            else {
+            default:
                 int damageBonus = _player->getDamageBonus();
                 auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID(), damageBonus);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                break;
             }
 
             //We must acquire an object if we create it if we fail to do so the network
@@ -1133,61 +1141,41 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     const std::shared_ptr<scene2::SceneNode>& node) {
 
     if (node->getParent() != nullptr) {
-            return;
-        }
+        return;
+    }
     node->setPosition(obj->getPosition() * PHYSICS_SCALE);
     _worldnode->addChild(node);
     if (auto item = std::dynamic_pointer_cast<ItemObstacle>(obj)) {
         _itemNodes.push_back({ item.get(), node });
     }
-    if (auto playerObs = std::dynamic_pointer_cast<PlayerObstacle>(obj)) {
-           bool alreadyTracked = false;
-           for (const auto& p : _playerFact->current) {
-               if (p == playerObs) {
-                   alreadyTracked = true;
-                   break;
-               }
-           }
-           if (!alreadyTracked) {
-               _playerFact -> addCurrent(playerObs);
-           }
-       }
+
     // Dynamic objects need constant updating
     if (obj->getBodyType() == b2_dynamicBody) {
         scene2::SceneNode* weak = node.get(); // No need for smart pointer in callback
         if (auto p = dynamic_pointer_cast<PlayerObstacle>(obj)) {
+            // Add player to set
+            if (!_playerFact->current.contains(p)) {
+                _playerFact->addCurrent(p);
+            }
+
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                    PlayerObstacle::AnimationState state = p->getState();
-                    if (p -> getSpell() == SpellType::NONE){
-                        state = PlayerObstacle::AnimationState::IDLE;
-                    }
-if (p->getSpell() != SpellType::NONE) {
-                        state = PlayerObstacle::AnimationState::CASTING;
-                    } else if (state == PlayerObstacle::AnimationState::CASTING) {
-                        state = PlayerObstacle::AnimationState::IDLE;
-                    }
-                    p_node->updateAnimationState(state);
-                    float leftover = Application::get()->getFixedRemainder() / 1000000.f;
-                    Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
-                    float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
-                    p_node->setPosition(pos * PHYSICS_SCALE);
-                    p_node->setAngle(angle);
-                    p_node->setVelocity(p->getLinearVelocity() * PHYSICS_SCALE);
+                _playerFact->linkFunc(p, p_node);
             });
-        }else if (auto p = dynamic_pointer_cast<EnemyObstacle>(obj)){
+
+            // Add animation
+            _animations.addNode(p_node);
+        }
+        else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
+            std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
-                e_node -> setFrozen(p -> isFroze());
-                e_node -> setStatue(p -> isMud());
-                e_node -> updateState();
-                float leftover = Application::get()->getFixedRemainder() / 1000000.f;
-                Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
-                float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
-                e_node->setPosition(pos * PHYSICS_SCALE);
-                e_node->setAngle(angle);
+                _enemyFact->linkFunc(e, e_node);
             });
-        } else {
+
+            // Add animation
+            _animations.addNode(e_node);
+        }
+        else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
                 Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();

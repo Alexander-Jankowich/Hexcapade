@@ -1,12 +1,50 @@
 {
     "player": {
-        "columns": 5,
-        "rows": 1,
-        "right_forward": 0,
-        "left_forward": 1,
-        "right_backward": 3,
-        "left_backward": 2,
-        "dead": 4
+        "columns": 8,
+        "rows": 5,
+
+        "walk-right_forward": 28,
+        "walk-left_forward": 28,
+        "walk-right_backward": 0,
+        "walk-left_backward": 0,
+
+        "idle-right_forward": 28,
+        "idle-left_forward": 28,
+        "idle-right_backward": 0,
+        "idle-left_backward": 0,
+
+        "start_cast-right_forward": 6,
+        "start_cast-left_forward": 6,
+        "start_cast-right_backward": 6,
+        "start_cast-left_backward": 6,
+
+        "casting-right_forward": 10,
+        "casting-left_forward": 10,
+        "casting-right_backward": 10,
+        "casting-left_backward": 10,
+
+        "end_cast-right_forward": 14,
+        "end_cast-left_forward": 14,
+        "end_cast-right_backward": 14,
+        "end_cast-left_backward": 14,
+
+        "dying-right_forward": 19,
+        "dying-left_forward": 19,
+        "dying-right_backward": 19,
+        "dying-left_backward": 19,
+
+        "dead-right_forward": 27,
+        "dead-left_forward": 27,
+        "dead-right_backward": 27,
+        "dead-left_backward": 27,
+
+        "walk_frames": 6,
+        "idle_frames": 1,
+        "start_cast_frames": 4,
+        "casting_frames": 4,
+        "end_cast_frames": 5,
+        "dying_frames": 8,
+        "death_frames": 1
     },
     "input": {
         "aim_time": 1,
@@ -80,7 +118,30 @@
         "ghost": {
             "health": 6,
             "speed": 2.0,
-            "range": 4.5
+            "range": 4.5,
+
+            "texture": "ghost",
+            "columns": 1,
+            "rows": 1,
+            "right_forward_walk": 0,
+            "left_forward_walk": 0,
+            "right_backward_walk": 0,
+            "left_backward_walk": 0,
+            "walk_frames": 1
+        },
+        "bat": {
+            "health": 3,
+            "speed": 6.0,
+            "range": 5,
+
+            "texture": "bat",
+            "columns": 8,
+            "rows": 4,
+            "right_forward_walk": 0,
+            "left_forward_walk": 8,
+            "right_backward_walk": 16,
+            "left_backward_walk": 24,
+            "walk_frames": 8
         }
     },
     "artifacts": {

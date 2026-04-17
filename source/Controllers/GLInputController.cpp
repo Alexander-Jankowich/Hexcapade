@@ -1095,18 +1095,18 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         //CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
         return;
     }
-    CULog("First Stroke points:");
-    for (const auto& p : currentStroke) {
-        CULog("{%f, %f},", p.x, p.y);
-    }
-    CULog("Second Stroke points:");
-    for (const auto& p : secondStroke) {
-        CULog("{%f, %f},", p.x, p.y);
-    }
-    CULog("Third Stroke points:");
-    for (const auto& p : thirdStroke) {
-        CULog("{%f, %f},", p.x, p.y);
-    }
+    //CULog("First Stroke points:");
+    //for (const auto& p : currentStroke) {
+    //    CULog("{%f, %f},", p.x, p.y);
+    //}
+    //CULog("Second Stroke points:");
+    //for (const auto& p : secondStroke) {
+    //    CULog("{%f, %f},", p.x, p.y);
+    //}
+    //CULog("Third Stroke points:");
+    //for (const auto& p : thirdStroke) {
+    //    CULog("{%f, %f},", p.x, p.y);
+    //}
     _timeSinceLastStroke = 0;
     _curStrokes++;
     if (_curStrokes > 3) {

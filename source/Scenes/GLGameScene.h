@@ -32,6 +32,7 @@
 #include "../Models/Events.h"
 
 #include "../Models/GameplayConfigLoader.h"
+#include "../Models/Animations.h"
 
 #include "InputDisplay.h"
 
@@ -72,6 +73,9 @@ protected:
     Uint32 _itemFactId;
 
     std::shared_ptr<PlayerObstacle> _player;
+
+    /** Action Timeline for animations */
+    Animator _animations;
     
     std::shared_ptr<Map> _map;
     RoomController _roomController;
@@ -133,7 +137,22 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(), _cameraBottomLeft(cugl::Vec2::ZERO), _cameraZoom(1.5f), _runRevision(0), _appliedRunRevision(-1), _mapSeed(0), _mapSceneSize(cugl::Size::ZERO), _quota(100), _playerWon(false), _gameEnded(false), _inventoryValue(0), _depositedValue(0), _canDeposit(false), _depositPosition(cugl::Vec2::ZERO), _depositRadius(42.0f) {}
+    GameScene() : cugl::scene2::Scene2(),
+        _cameraBottomLeft(cugl::Vec2::ZERO),
+        _cameraZoom(1.5f),
+        _runRevision(0),
+        _appliedRunRevision(-1),
+        _mapSeed(0),
+        _mapSceneSize(cugl::Size::ZERO),
+        _quota(100),
+        _playerWon(false),
+        _gameEnded(false),
+        _inventoryValue(0),
+        _depositedValue(0),
+        _canDeposit(false),
+        _depositPosition(cugl::Vec2::ZERO),
+        _depositRadius(42.0f) {}
+
 
     /**
      * Disposes of all (non-static) resources allocated to this mode.
