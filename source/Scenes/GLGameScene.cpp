@@ -947,14 +947,15 @@ void GameScene::render()
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
     
-    if (!_inventoryCardNode) {
-        drawDepositZone();
-    }
+    drawDepositZone();
     if(_player){
         renderHUD();
     }
     
     _inputDisplay->draw(_batch);
+    if (_inventoryCardNode) {
+        _inventoryCardNode->render(_batch);
+    }
     _batch->end();
 }
 
