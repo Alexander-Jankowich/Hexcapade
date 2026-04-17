@@ -205,7 +205,7 @@ public:
      *
      * @return true if the player is host.
      */
-    bool isHost() const { return _ishost; }
+    bool isHost() const { return _networkCtrl->isHost(); }
 
 
 

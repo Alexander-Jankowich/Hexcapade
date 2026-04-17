@@ -231,6 +231,7 @@ void GeometryApp::preUpdate(float dt) {
         if (_endScene.didPressReplay()) {
             _endScene.hide();
             _gameplay.reset();
+//            _scene =  _gameplay.isHost() ? State::HOST : State::CLIENT;
         }
         return;
     }

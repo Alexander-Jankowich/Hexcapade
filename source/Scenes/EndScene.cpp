@@ -74,6 +74,7 @@ void EndScene::touchEndCB(const TouchEvent& event, bool focus) {
 
     if (_buttonRect.contains(pos)) {
         _replayPressed = true;
+ //       _networkCtrl->resetGame();
     }
 }
 #else
