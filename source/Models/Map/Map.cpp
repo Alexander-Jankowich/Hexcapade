@@ -152,10 +152,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 _extruder.set(east_points,false);
                 _extruder.calculate(0.05f);
                 auto ep = _extruder.getPolygon();
-                addWallObstacle(ep, world);
-                
-//                addWallObstacle(ww, world);
-//                addWallObstacle(ew, world);
+                addWallObstacle(ep, world);                
+
                 to_skip = Door::Direction::SOUTH;
                 CULog("done adding halls - N");
                 break;
@@ -260,7 +258,9 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     // add top walls
                     addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 3), node);
                     addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 2), node);
+                    addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 1), node);
                     addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 1), node);
+
                     _mapGrid[door.pos.y-3][x] = 1;
                     _mapGrid[door.pos.y-2][x] = 1;
                     _mapGrid[door.pos.y-1][x] = 1;
@@ -328,12 +328,13 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     // add top walls
                     addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 3), node);
                     addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 2), node);
+                    addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 1), node);
                     addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(x, MAP_HEIGHT - door.pos.y + 1), node);
                     _mapGrid[door.pos.y-3][x] = 1;
                     _mapGrid[door.pos.y-2][x] = 1;
                     _mapGrid[door.pos.y-1][x] = 1;
-                    // add 5 floor tiles
-                    for (int y=door.pos.y; y < door.pos.y +5; y++){
+                    // add 7 floor tiles (vis fix stuff)
+                    for (int y=door.pos.y; y < door.pos.y + 5; y++){
                         addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - y), node);
                         _mapGrid[y][x] = 1;
                     }
@@ -364,7 +365,6 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 auto sp = _extruder.getPolygon();
                 addWallObstacle(sp, world);
                 
-                //TODO: hallway colliders
                 break;
             }
         }
