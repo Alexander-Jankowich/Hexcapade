@@ -675,23 +675,23 @@ void GameScene::preUpdate(float dt)
                 CULog("combo potential");
                 if (_player->getSpell() == SpellType::FIREBALL && p->getSpell() == SpellType::FIREBALL) {
                     t = SpellType::COMBO_FIREBALL;
-                    p->resolveSpell();
                     _networkCtrl->pushOutEvent(
                                 SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    p->resolveSpell();
                     CULog("combo fireball");
                     
                 }
                 else if (_player->getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::FREEZE) {
                     t = SpellType::COMBO_FREEZE;
-                    p->resolveSpell();
                     _networkCtrl->pushOutEvent(
                                 SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    p->resolveSpell();
                     
                 }else if ((_player -> getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::EARTH) || (_player -> getSpell() == SpellType::EARTH && p->getSpell() == SpellType::FREEZE) ){
                     t = SpellType::COMBO_EFREEZE;
-                    p -> resolveSpell();
                     _networkCtrl->pushOutEvent(
                                 SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    p -> resolveSpell();
                     
                 }
 
@@ -1159,7 +1159,10 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
                     PlayerObstacle::AnimationState state = p->getState();
-                    if (p->getSpell() != SpellType::NONE) {
+                    if (p -> getSpell() == SpellType::NONE){
+                        state = PlayerObstacle::AnimationState::IDLE;
+                    }
+if (p->getSpell() != SpellType::NONE) {
                         state = PlayerObstacle::AnimationState::CASTING;
                     } else if (state == PlayerObstacle::AnimationState::CASTING) {
                         state = PlayerObstacle::AnimationState::IDLE;
@@ -1279,6 +1282,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             return;
         }
         player -> setHealth(player->getHealth() - 1);
+        spell->markRemoved(true);
         
     }else if (player && enemy) {
         CULog("enemy and player");
@@ -1353,6 +1357,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }else if(enemy && item){
         contact -> SetEnabled(false);
         return;
+    }else if (spell && item){
+        contact -> SetEnabled(false);
     }
     
 }
