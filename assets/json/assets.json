@@ -11,6 +11,9 @@
     "bat": {
         "file": "textures/enemy_bat_sheet.png"
     },
+    "octoplush": {
+        "file": "textures/enemy_octoplush_sheet.png"
+    },
     "fireball": {
       "file": "textures/fireballv2.png"
     },

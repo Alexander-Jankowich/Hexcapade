@@ -72,18 +72,18 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
             CULog("END GAME GOT");
             processEndEvent(cse,_playerWon, _gameEnded);
         }else if (auto sse = std::dynamic_pointer_cast<SetSpellEvent>(e)){
-            CULog("SET SPELL GOT");
+            //CULog("SET SPELL GOT");
             for (auto& p : playerFact->current) {
-                    if (p->getPID() == sse->getPID()) {
-                        p->setSpell(sse->getSpell());
-                        if(sse->getSpell() == SpellType::NONE){
-                            p->setAniState(PlayerObstacle::AnimationState::IDLE);
-                        }else{
-                            p->setAniState(PlayerObstacle::AnimationState::CASTING);
-                        }
-                        break;
+                if (p->getPID() == sse->getPID()) {
+                    p->setSpell(sse->getSpell());
+                    if(sse->getSpell() == SpellType::NONE){
+                        p->setAniState(PlayerObstacle::AnimationState::IDLE);
+                    }else{
+                        p->setAniState(PlayerObstacle::AnimationState::CASTING);
                     }
+                    break;
                 }
+            }
         } else if (auto de = std::dynamic_pointer_cast<DepositEvent>(e)) {
             // 1. Host recieve 2. Host applies deposit 3. Client applies deposit
             if (isHost()) {
