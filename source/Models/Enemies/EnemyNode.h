@@ -38,7 +38,6 @@ private:
     bool frozen;
     bool statue;
 
-    int curFrame;
     AnimationType nextAnimation;
 
     const int LEFT_FORWARD_WALK;

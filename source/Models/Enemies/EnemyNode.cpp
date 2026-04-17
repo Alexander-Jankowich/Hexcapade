@@ -28,7 +28,6 @@ EnemyNode::EnemyNode(shared_ptr<graphics::Texture>& tex, shared_ptr<JsonValue>& 
     frozen = false;
     statue = false;
 
-    curFrame = 0;
     nextAnimation = AnimationType::IDLE;
     setFrame(0);
 }
