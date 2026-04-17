@@ -323,6 +323,7 @@ void GameScene::showInventoryCard(size_t slotIndex) {
 
     std::string textureKey = getInventoryCardTextureKey(_player->getInventory()[slotIndex].itemType);
     auto cardTex = _assets->get<graphics::Texture>(textureKey);
+    CULog("inventory slot %zu card %s opened", slotIndex, textureKey.c_str());
 
     _inventoryCardNode = scene2::PolygonNode::allocWithTexture(cardTex);
     _inventoryCardNode->setAnchor(Vec2::ANCHOR_CENTER);
@@ -613,7 +614,8 @@ void GameScene::preUpdate(float dt)
                                              offset.y + this->getSize().height * 0.5f / zoom));
     }
     if (_inventoryCardNode) {
-        if (_input.cardDismissTap() || _input.getMove().x != 0) {
+        if (_input.cardDismissTap()) {
+            CULog("click detected, card closed");
             hideInventoryCard();
         }
     }
@@ -643,6 +645,8 @@ void GameScene::preUpdate(float dt)
 
         if (tappedSlot) {
             if (tappedIndex >= 0) {
+                const auto& carried = _player->getInventory()[(size_t)tappedIndex];
+                CULog("slot %d card %s tapped", tappedIndex, carried.itemType.c_str());
                 showInventoryCard((size_t)tappedIndex);
             }
         } else {
@@ -674,7 +678,8 @@ void GameScene::preUpdate(float dt)
                     auto carried = _player->getInventory()[(size_t)depositIndex];
                     _player->depositItem((size_t)depositIndex);
                     _inventoryValue = _player->getInventoryVal();
-                    auto params = _itemFact->serializeParams(_player->getPosition(), carried.value, carried.itemType);
+                    Vec2 dropPos = _player->getPosition() + Vec2(0.0f, -0.35f);
+                    auto params = _itemFact->serializeParams(dropPos, carried.value, carried.itemType);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
@@ -928,7 +933,10 @@ void GameScene::render()
     Scene2::render();
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
-    drawDepositZone();
+    
+    if (!_inventoryCardNode) {
+        drawDepositZone();
+    }
     if(_player){
         renderHUD();
     }

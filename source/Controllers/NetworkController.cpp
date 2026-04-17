@@ -111,7 +111,7 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
                                     if (_player && p == _player) {
                                         inventoryValue = _player->getInventoryVal();
                                     }
-                                    auto params = itemFact->serializeParams(p->getPosition(), carried.value, carried.itemType);
+                                    auto params = itemFact->serializeParams(p->getPosition() + Vec2(0.0f, -0.35f), carried.value, carried.itemType);
                                     auto pair = getPhysController()->addSharedObstacle(itemFactId, params);
                                     getPhysController()->acquireObs(pair.first, 0);
                                     pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), 0, true, slotIndex));
