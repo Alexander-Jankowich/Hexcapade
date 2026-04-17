@@ -863,9 +863,7 @@ void InputController::update(float dt) {
  * are more appropriate for menus and buttons (like the loading screen).
  */
 void InputController::readInput(){
-    _pickupPressed = false;
     _depositPressed = false;
-    _inventoryReleased = false;
     _inventoryHotkeyIndex = -1;
     _resetPressed = false;
 

@@ -34,7 +34,7 @@
 
 #define COMBO_RADIUS 25
 
-#define ITEM_PICKUP_RADIUS 0.5f
+#define ITEM_PICKUP_RADIUS 2f
 
 
 using namespace cugl;
@@ -852,8 +852,10 @@ void GameScene::preUpdate(float dt)
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
         }
     }
-
+    CULog("%d", _currOverlappedItem);
+    CULog("pressed pickup %d", _input.pressedPickup());
     if (_input.pressedPickup() && _currOverlappedItem >= 0) {
+        CULog("trying to resolve pickup");
         auto item = _itemFact->getItem(_currOverlappedItem);
         // Checks if player can pick up anything so inventory doesn't overflow
         if (_player && _player->canAddItem() && item && !item->isRemoved()) {
