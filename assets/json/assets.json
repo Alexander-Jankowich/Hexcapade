@@ -73,6 +73,27 @@
     },
     "spellbook_earth": {
       "file": "textures/earth_spellbook.png"
+    },
+    "spellbook_water": {
+      "file": "textures/water_spellbook.png"
+    },
+    "fire_card": {
+      "file": "textures/inventory_cards/fire_card.png"
+    },
+    "freeze_card": {
+      "file": "textures/inventory_cards/freeze_card.png"
+    },
+    "heal_card": {
+      "file": "textures/inventory_cards/heal_card.png"
+    },
+    "water_card": {
+      "file": "textures/inventory_cards/water_card.png"
+    },
+    "earth_card": {
+      "file": "textures/inventory_cards/earth_card.png"
+    },
+    "disintegrate_card": {
+      "file": "textures/inventory_cards/disintegrate_card.png"
     }
 
   },

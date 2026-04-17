@@ -93,6 +93,27 @@ std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entrie
     }
     return item.itemType;
 }
+// Naming standard - Use this.
+std::string getInventoryCardTextureKey(const std::string& itemType) {
+    static const std::string prefix = "spellbook_";
+    static const std::string suffix = "_spellbook";
+    std::string cardBase;
+
+    if (itemType.rfind(prefix, 0) == 0) {
+        cardBase = itemType.substr(prefix.size());
+    } else if (itemType.size() > suffix.size() &&
+               itemType.compare(itemType.size() - suffix.size(), suffix.size(), suffix) == 0) {
+        cardBase = itemType.substr(0, itemType.size() - suffix.size());
+    } else {
+        return "";
+    }
+
+    if (cardBase == "death") {
+        cardBase = "disintegrate";
+    }
+
+    return cardBase + "_card";
+}
 }
 
 #pragma mark -
@@ -244,6 +265,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
 void GameScene::dispose()
 {
     // NOTHING TO DO THIS TIME
+    hideInventoryCard();
     _inputDisplay->dispose();
     _map = nullptr;
     _assets->dispose();
@@ -276,6 +298,9 @@ void GameScene::reset()
     _itemNodes.clear();
     _inventoryValue = 0;
     _canDeposit = false;
+    _dragInventoryIndex = -1;
+    _dragInventoryPos = Vec2::ZERO;
+    hideInventoryCard();
 
     _runRevision = std::max(1, _runRevision + 1);
     rebuildMapForRun();
@@ -303,6 +328,31 @@ void GameScene::removeItemNode(const std::shared_ptr<ItemObstacle>& item) {
         }
         _itemNodes.erase(it);
         return;
+    }
+}
+
+void GameScene::showInventoryCard(size_t slotIndex) {
+    hideInventoryCard();
+
+    std::string textureKey = getInventoryCardTextureKey(_player->getInventory()[slotIndex].itemType);
+    auto cardTex = _assets->get<graphics::Texture>(textureKey);
+    CULog("inventory slot %zu card %s opened", slotIndex, textureKey.c_str());
+
+    _inventoryCardNode = scene2::PolygonNode::allocWithTexture(cardTex);
+    _inventoryCardNode->setAnchor(Vec2::ANCHOR_CENTER);
+    float zoom = getActiveCameraZoom();
+    Vec2 offset = getHUDOffset();
+    _inventoryCardNode->setScale(1.0f / zoom);
+    _inventoryCardNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
+                                         offset.y + this->getSize().height * 0.5f / zoom));
+    addChild(_inventoryCardNode);
+}
+
+void GameScene::hideInventoryCard() {
+    if (_inventoryCardNode) {
+        // _inventoryCardNode->removeFromParent();
+        removeChild(_inventoryCardNode);
+        _inventoryCardNode = nullptr;
     }
 }
 
@@ -423,10 +473,7 @@ void GameScene::updateCameraFollow() {
 }
 
 float GameScene::getActiveCameraZoom() const {
-    if (auto orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera())) {
-        return std::max(orthographicCamera->getZoom(), 0.01f);
-    }
-    return 1.0f;
+    return std::max(std::dynamic_pointer_cast<OrthographicCamera>(getCamera())->getZoom(), 0.02f);
 }
 
 Vec2 GameScene::getHUDOffset() const {
@@ -573,6 +620,19 @@ void GameScene::preUpdate(float dt)
     _inputDisplay->setUIZoom(getActiveCameraZoom());
     _inputDisplay->update(playerScreenPos);
 
+    if (_inventoryCardNode) {
+        float zoom = getActiveCameraZoom();
+        _inventoryCardNode->setScale(1.0f / zoom);
+        _inventoryCardNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
+                                             offset.y + this->getSize().height * 0.5f / zoom));
+    }
+    if (_inventoryCardNode) {
+        if (_input.cardDismissTap()) {
+            CULog("click detected, card closed");
+            hideInventoryCard();
+        }
+    }
+    _input.resolvedCardDismissTap();
 
     bool depositRequested = false;
     int depositIndex = -1;
@@ -582,23 +642,60 @@ void GameScene::preUpdate(float dt)
         depositRequested = true;
         _input.resolvedDeposit();
     }
-    if (_input.pressedInventory()) {
-        depositIndex = getInventorySlotIndexAt(_input.getInventoryTap());
-        _input.resolvedInventory();
+    if (_input.inventoryHeld()) {
+        // consider having some sort of drag treshold bc rn jittery
+        if (_dragInventoryIndex < 0) {
+            _dragInventoryIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
+        }
+        if (_dragInventoryIndex >= 0) {
+            _dragInventoryPos = _input.getInventoryTouchPos();
+        }
+    }
+
+    if (_input.inventoryReleased()) {
+        int tappedIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
+        bool tappedSlot = _input.getInventoryAnchor().distance(_input.getInventoryTouchPos()) <= 5.0f;
+
+        if (tappedSlot) {
+            if (tappedIndex >= 0) {
+                const auto& carried = _player->getInventory()[(size_t)tappedIndex];
+                CULog("slot %d card %s tapped", tappedIndex, carried.itemType.c_str());
+                showInventoryCard((size_t)tappedIndex);
+            }
+        } else {
+            depositIndex = _dragInventoryIndex;
+        }
+        _dragInventoryIndex = -1;
+        _input.resolvedInventoryRelease();
     }
     if (_input.getInventoryHotkeyIndex() >= 0) {
         depositIndex = _input.getInventoryHotkeyIndex();
         _input.resolvedInventoryHotkeyIndex();
     }
 
-    // MOBILE DEPOSIT: TAP FOR ONE SLOT
-    if (depositIndex >= 0 && _canDeposit) {
-        if (_player && _player->hasInventory()) {
+    // MOBILE DEPOSIT: DRAG ONE SLOT WHILE THE PLAYER IS IN DEPOSIT RANGE
+    if (depositIndex >= 0) {
+        if (_player->hasInventory()) {
             if (_networkCtrl->isHost()) {
-                int deposited = _player->depositItem((size_t)depositIndex);
-                if (deposited > 0) {
+                if (_canDeposit) {
+                    int deposited = _player->depositItem((size_t)depositIndex);
+                    if (deposited > 0) {
+                        _inventoryValue = _player->getInventoryVal();
+                        _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
+                    }
+                }
+                
+                // Drop anywhere else in the world.
+                
+                else if ((size_t)depositIndex < _player->getInventory().size()) {
+                    auto carried = _player->getInventory()[(size_t)depositIndex];
+                    _player->depositItem((size_t)depositIndex);
                     _inventoryValue = _player->getInventoryVal();
-                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
+                    Vec2 dropPos = _player->getPosition() + Vec2(0.0f, -0.35f);
+                    auto params = _itemFact->serializeParams(dropPos, carried.value, carried.itemType);
+                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
+                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
                 }
             } else {
                 _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, false, depositIndex));
@@ -802,7 +899,7 @@ void GameScene::fixedUpdate(Uint64 step)
     // First process incoming events
     _networkCtrl->updateNet();
     
-    std::tuple<int,int> values = _networkCtrl->customEvents(_itemFact, _playerFact,
+    std::tuple<int,int> values = _networkCtrl->customEvents(_itemFact, _playerFact, _itemFactId,
                                  _player, _input, &_playerWon, &_gameEnded, _depositPosition, _depositRadius);
     _inventoryValue = std::get<0>(values);
     _depositedValue += std::get<1>(values);
@@ -849,12 +946,16 @@ void GameScene::render()
     Scene2::render();
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
+    
     drawDepositZone();
     if(_player){
         renderHUD();
     }
     
     _inputDisplay->draw(_batch);
+    if (_inventoryCardNode) {
+        _inventoryCardNode->render(_batch);
+    }
     _batch->end();
 }
 
@@ -927,6 +1028,9 @@ void GameScene::renderHUD()
 
                 // Draw item texture centered inside the frame
                 if (i < carriedItems.size()) {
+                    if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex == i) {
+                        continue;
+                    }
                     const auto& carried = carriedItems[i];
                     auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
                     if (itemTex) {
@@ -944,6 +1048,29 @@ void GameScene::renderHUD()
                         _batch->draw(itemTex, Rect(iconX, iconY, iconW, iconH));
 
                     }
+                }
+            }
+
+            // ?? Easier way to do it?
+            // While dragging, render the item icon at the current touch position instead of in its slot.
+            if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex < carriedItems.size()) {
+                const auto& carried = carriedItems[(size_t)_dragInventoryIndex];
+                auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
+                if (itemTex) {
+                    Rect dragSlot = getInventorySlotBounds((size_t)_dragInventoryIndex);
+                    float boxSize = dragSlot.size.width;
+                    float padding = 10.0f;
+                    float iconSize = boxSize - padding * 2;
+                    float iconX = _dragInventoryPos.x - iconSize * 0.5f + hudOffset.x;
+                    float iconY = _dragInventoryPos.y - iconSize * 0.5f + hudOffset.y;
+
+                    // ?? Drag when transparent? Or transparent in inventory while being dragged?
+                    // Color4 dragColor(255, 255, 255, 100);
+                    // _batch->draw(itemTex, dragColor, Rect(iconX, iconY, iconSize, iconSize));
+                    
+                    _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
+                    
+                    _batch->setColor(Color4::WHITE);
                 }
             }
         }
@@ -1119,6 +1246,7 @@ void GameScene::setActive(bool value)
         }
         else
         {
+            hideInventoryCard();
             _input.deactivate();
         }
     }
