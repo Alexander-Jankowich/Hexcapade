@@ -96,10 +96,23 @@ std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entrie
 // Naming standard - Use this.
 std::string getInventoryCardTextureKey(const std::string& itemType) {
     static const std::string prefix = "spellbook_";
-    if (itemType.rfind(prefix, 0) != 0) {
+    static const std::string suffix = "_spellbook";
+    std::string cardBase;
+
+    if (itemType.rfind(prefix, 0) == 0) {
+        cardBase = itemType.substr(prefix.size());
+    } else if (itemType.size() > suffix.size() &&
+               itemType.compare(itemType.size() - suffix.size(), suffix.size(), suffix) == 0) {
+        cardBase = itemType.substr(0, itemType.size() - suffix.size());
+    } else {
         return "";
     }
-    return itemType.substr(prefix.size()) + "_card";
+
+    if (cardBase == "death") {
+        cardBase = "disintegrate";
+    }
+
+    return cardBase + "_card";
 }
 }
 
