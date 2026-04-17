@@ -59,7 +59,7 @@ bool NetworkController::connectClient(string roomId) {
 
 
 std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory> itemFact,std::shared_ptr<PlayerFactory> playerFact,
-                                                    std::shared_ptr<PlayerObstacle> _player,InputController& _input, bool* _playerWon, bool* _gameEnded, cugl::Vec2 _depositPosition, float _depositRadius){
+                                                    Uint32 itemFactId, std::shared_ptr<PlayerObstacle> _player,InputController& _input, bool* _playerWon, bool* _gameEnded, cugl::Vec2 _depositPosition, float _depositRadius){
     // handle cast spell event
     int inventoryValue = 0;
     int depositedValue = 0;
@@ -95,9 +95,9 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
                         if (p->getPID() == de->getPID()) {
                             Vec2 playerScreenPos = p->getPosition() * PHYSICS_SCALE;
                             bool canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
-                            if (canDeposit) {
-                                int slotIndex = de->getSlotIndex();
-                                if (slotIndex >= 0) {
+                            int slotIndex = de->getSlotIndex();
+                            if (slotIndex >= 0) {
+                                if (canDeposit) {
                                     int deposited = p->depositItem((size_t)slotIndex);
                                     if (deposited > 0) {
                                         if (_player && p == _player) {
@@ -105,15 +105,24 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
                                         }
                                         pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true, slotIndex));
                                     }
-                                }
-                                else {
-                                    int deposited = p->depositItems();
-                                    if (deposited > 0) {
-                                        if (_player && p == _player) {
-                                            inventoryValue = _player->getInventoryVal();
-                                        }
-                                        pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true));
+                                } else if ((size_t)slotIndex < p->getInventory().size()) {
+                                    auto carried = p->getInventory()[(size_t)slotIndex];
+                                    p->depositItem((size_t)slotIndex);
+                                    if (_player && p == _player) {
+                                        inventoryValue = _player->getInventoryVal();
                                     }
+                                    auto params = itemFact->serializeParams(p->getPosition() + Vec2(0.0f, -0.35f), carried.value, carried.itemType);
+                                    auto pair = getPhysController()->addSharedObstacle(itemFactId, params);
+                                    getPhysController()->acquireObs(pair.first, 0);
+                                    pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), 0, true, slotIndex));
+                                }
+                            } else if (canDeposit) {
+                                int deposited = p->depositItems();
+                                if (deposited > 0) {
+                                    if (_player && p == _player) {
+                                        inventoryValue = _player->getInventoryVal();
+                                    }
+                                    pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true));
                                 }
                             }
                             break;

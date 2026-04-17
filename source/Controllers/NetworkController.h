@@ -79,6 +79,6 @@ public:
     }
     
     std::tuple<int,int> customEvents(std::shared_ptr<ItemFactory> itemFact,std::shared_ptr<PlayerFactory> playerFact,
-                                     std::shared_ptr<PlayerObstacle> _player, InputController& _input,bool* _playerWon, bool* _gameEnded, cugl::Vec2 _depositPosition, float _depositRadius);
+                                     Uint32 itemFactId, std::shared_ptr<PlayerObstacle> _player, InputController& _input,bool* _playerWon, bool* _gameEnded, cugl::Vec2 _depositPosition, float _depositRadius);
 };
 #endif // !__NETWORK_CONTROLLER_H__
