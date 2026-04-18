@@ -1311,12 +1311,7 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
     case Zone::TOP:
         _mouseDownZone = Zone::TOP;
         break;
-    case Zone::LEFT:
-        // Left is the floating joystick
-        _mouseDownZone = Zone::LEFT;
-
-        _joycenter = pos;
-        break;
+    case Zone::LEFT: // Do not use joystick for mouse input
     case Zone::RIGHT:
         // For now if pressed on right side attempt pickup, need to change to button
         _touchDown = true;
@@ -1350,13 +1345,7 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
     Vec2 pos = mouse2Screen(event.position);
     Zone zone = getZone(pos);
 
-    if (_mouseDownZone == Zone::LEFT) {
-        //CULog("(%.2f, %.2f) (%.2f, %.2f)", _joycenter.x, _joycenter.y, pos.x, pos.y);
-        _ltouch.touchids.clear();
-        _move = Vec2::ZERO;
-        _joystick = false;
-    }
-    else if (_mouseDownZone == Zone::RIGHT) {
+    if (_mouseDownZone == Zone::LEFT || _mouseDownZone == Zone::RIGHT) {
         _rtouch.touchids.clear();
         processGestureEnd(pos);
     }
@@ -1370,10 +1359,7 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
 void InputController::motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus) {
     Vec2 pos = mouse2Screen(event.position);
 
-    if (_mouseDownZone == Zone::LEFT) {
-        processJoystick(pos);
-    }
-    else if (_mouseDownZone == Zone::RIGHT) {
+    if (_mouseDownZone == Zone::LEFT || _mouseDownZone == Zone::RIGHT) {
         processDrag(pos);
     }
 }
