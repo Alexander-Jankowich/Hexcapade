@@ -35,7 +35,7 @@ bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
             });
     }
 #endif
-
+    setActive(false);
     return true;
 }
 
@@ -54,10 +54,10 @@ void EndScene::dispose() {
 
 void EndScene::show(bool won) {
     _state = won ? State::WIN : State::LOSE;
-    _replayPressed = false;
 }
 
 void EndScene::update(float dt) {
+    _networkCtrl->updateNet();
     // Input is handled via listeners; nothing to poll here.
     // Reset _replayPressed each frame so it only fires for one frame.
     // (Caller should read it before calling update again.)
@@ -74,7 +74,8 @@ void EndScene::touchEndCB(const TouchEvent& event, bool focus) {
 
     if (_buttonRect.contains(pos)) {
         _replayPressed = true;
- //       _networkCtrl->resetGame();
+        _networkCtrl->pushOutEvent(RestartGameEvent::allocRestartGameEvent(0));
+        _networkCtrl->resetHost();
     }
 }
 #else
@@ -90,6 +91,9 @@ void EndScene::mouseReleaseCB(const MouseEvent& event, Uint8 clicks, bool focus)
 
     if (_buttonRect.contains(pos)) {
         _replayPressed = true;
+        _networkCtrl->pushOutEvent(RestartGameEvent::allocRestartGameEvent(0));
+        _networkCtrl->updateNet(); // send event
+        _networkCtrl->resetHost();
     }
 }
 #endif
@@ -139,4 +143,16 @@ void EndScene::render() {
     }
 
     _batch->end();
+}
+
+void EndScene::setActive(bool active) {
+    if (isActive() != active) {
+        Scene2::setActive(active);
+        if (active) {
+            _replayPressed = false;
+        } else {
+            _state = State::NONE;
+            _replayPressed = false;
+        }
+    }
 }

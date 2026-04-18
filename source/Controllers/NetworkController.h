@@ -27,6 +27,7 @@ private:
     string uuid;
     string _currHost;
     unsigned int _randSeed;
+    std::shared_ptr<cugl::Random> _rng;
 
 
 #pragma mark Helpers
@@ -44,8 +45,8 @@ public:
         return f;
     }
     void init(const std::shared_ptr<AssetManager>& a);
-    // TODO ADJUST THIS
-    void setRandSeed(int s) {_randSeed=s;}
+    void setRandSeed(unsigned int r) {_randSeed = r;}
+
     unsigned int getRandSeed() {return _randSeed;}
     shared_ptr<cugl::netcode::NetcodeConnection> getNetwork() {
         return _network;
@@ -58,6 +59,12 @@ public:
     string getPID() {return _network->getUUID();}
     
     bool connectClient(string roomId);
+    bool connectHost() {
+        if (_randSeed==0)
+            _randSeed = _rng->getUint32();
+        if (_status==Status::CONNECTED) return true;
+        return connectAsHost();
+    }
 
     bool hasNetwork() { return _network != nullptr; }
     
@@ -72,11 +79,11 @@ public:
             player->resolveSpell();
         }
     }
-    void processEndEvent(const std::shared_ptr<EndGameEvent> &e,bool* _playerWon, bool* _gameEnded)
-    {
-        *_playerWon = e->getResult();
-        *_gameEnded = true;
-    }
+    void processEndEvent(const std::shared_ptr<EndGameEvent> &e,bool* _playerWon, bool* _gameEnded);
+    
+    void processRestartEvent(const std::shared_ptr<RestartGameEvent> &e);
+    
+    void resetHost();
     
     std::tuple<int,int> customEvents(std::shared_ptr<ItemFactory> itemFact,std::shared_ptr<PlayerFactory> playerFact,
                                      Uint32 itemFactId, std::shared_ptr<PlayerObstacle> _player, InputController& _input,bool* _playerWon, bool* _gameEnded, cugl::Vec2 _depositPosition, float _depositRadius);

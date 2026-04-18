@@ -20,7 +20,7 @@
 class GeometryApp : public cugl::Application {
 public:
     /** Top-level application states */
-    enum class State { LOAD, MENU, HOST, CLIENT, GAME };
+    enum class State { LOAD, MENU, HOST, CLIENT, GAME, END };
 
 protected:
     /** The global sprite batch for drawing (only want one of these) */
@@ -41,9 +41,9 @@ protected:
     HostScene   _hostScene;
     ClientScene _clientScene;
     GameScene   _gameplay;
+    EndScene    _endScene;
     bool _hostactive = false;
     bool _clientactive = false;
-    EndScene    _endScene;
 
 public:
     GeometryApp();
@@ -68,6 +68,8 @@ private:
     void updateHostScene(float dt);
     void updateClientScene(float dt);
     void updateGameScene(float dt);
+    void updateEndScene(float dt);
+
 };
 
 #endif /* __GL_APP_H__ */

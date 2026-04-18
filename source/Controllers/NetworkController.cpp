@@ -48,11 +48,15 @@ void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
     attachEventType<DepositEvent>();
     attachEventType<PickupEvent>();
     attachEventType<SetSpellEvent>();
+    attachEventType<RestartGameEvent>();
     cugl::physics2::distrib::NetEventController::init(a);
-    _randSeed=0;
+    _rng = Random::alloc();
+    _rng->init();
+    _randSeed = 0;
 }
 
 bool NetworkController::connectClient(string roomId) {
+    if (_status != Status::IDLE) return true; // already connected
     return connectAsClient(dec2hex(roomId)); // this will become custom translate fn later
 }
 
@@ -71,7 +75,10 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
         } else if (auto cse = std::dynamic_pointer_cast<EndGameEvent>(e)){
             CULog("END GAME GOT");
             processEndEvent(cse,_playerWon, _gameEnded);
-        }else if (auto sse = std::dynamic_pointer_cast<SetSpellEvent>(e)){
+        } else if (auto rse = std::dynamic_pointer_cast<RestartGameEvent>(e)){
+            CULog("RESTART GAME GOT");
+            processRestartEvent(rse);
+        } else if (auto sse = std::dynamic_pointer_cast<SetSpellEvent>(e)){
             //CULog("SET SPELL GOT");
             for (auto& p : playerFact->current) {
                 if (p->getPID() == sse->getPID()) {
@@ -177,3 +184,25 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
     }
     return std::tuple<int,int>(inventoryValue,depositedValue);
 };
+void NetworkController::processEndEvent(const std::shared_ptr<EndGameEvent> &e,bool* _playerWon, bool* _gameEnded)
+{
+    *_playerWon = e->getResult();
+    *_gameEnded = true;
+}
+
+void NetworkController::processRestartEvent(const std::shared_ptr<RestartGameEvent> &e)
+{
+    _status = Status::CONNECTED;
+    disablePhysics(); // prob necessary?
+    _shortUID = -1;
+}
+
+void NetworkController::resetHost() {
+    _status = Status::CONNECTED;
+    disablePhysics(); // prob necessary?
+    _numReady = 0;
+    _randSeed = 0;
+    _randSeed = _rng->getUint32();
+}
+
+

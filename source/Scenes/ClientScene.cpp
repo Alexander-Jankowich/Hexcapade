@@ -86,6 +86,8 @@ void ClientScene::update(float dt) {
     _networkCtrl->updateNet();
         
     // handle init event iff handshake is completed
+    // TODO: this also moves to networkcontroller probably?
+    CULog("client short uid %d + is in avail: %d", _networkCtrl->getShortUID(), _networkCtrl->isInAvailable());
     if(_networkCtrl->isInAvailable() && _networkCtrl->getShortUID()!=0){
         auto e = _networkCtrl->popInEvent();
         if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e) ){
@@ -143,7 +145,8 @@ void ClientScene::configureStartButton() {
 }
 
 void ClientScene::processInitEvent(const std::shared_ptr<GameInitEvent> &e) {
-    CULog("client recieved init!");
     _networkCtrl->setRandSeed(e->getSeed());
+    CULog("client recieved init! seed: %d", _networkCtrl->getRandSeed());
+
     canInitGame = true;
 }

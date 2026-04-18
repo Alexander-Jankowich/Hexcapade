@@ -300,10 +300,6 @@ void GameScene::reset()
     hideInventoryCard();
 
     _runRevision = std::max(1, _runRevision + 1);
-    rebuildMapForRun();
-    if (_networkCtrl->isHost()) {
-        _networkCtrl->startGame();
-    }
 }
 
 #pragma mark -
@@ -1005,8 +1001,11 @@ void GameScene::renderHUD()
     if (_font)
     {
         _batch->setColor(Color4::WHITE);
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2) << (_timer/60);
+        std::string timer_text = ss.str();
         std::shared_ptr<TextLayout> timerLabel = TextLayout::allocWithText(
-                    "Time Remaining: " + std::to_string(_timer/60), _font);
+                    "Time Remaining: " + timer_text, _font);
         timerLabel->layout();
         Affine2 timerTrans;
         timerTrans.scale(1.0f / zoom).translate(hudX(timerX + 10), hudY(timerY + 12));

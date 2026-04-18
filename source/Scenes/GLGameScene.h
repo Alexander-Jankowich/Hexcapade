@@ -16,7 +16,8 @@
 #define __GL_GAME_SCENE_H__
 #include <cugl/cugl.h>
 #include <vector>
-#include <cstddef> 
+#include <cstddef>
+#include <iomanip>
 #include "../Controllers/GLInputController.h"
 #include "../Controllers/NetworkController.h"
 #include "../Controllers/RoomController.h"
@@ -107,7 +108,7 @@ protected:
     /** Whether thegame has ended */
     bool  _gameEnded;
     /**Timer for end of game**/
-    float _timer = 7200;
+    float _timer = 1200;
 
     std::shared_ptr<cugl::AssetManager> _assets;
     /** list of rooms */
@@ -189,6 +190,7 @@ public:
     bool init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<std::vector<std::string>>& rooms);
     
     std::shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
+    void release() {_networkCtrl = nullptr;}
 
     int getDepositedValue() const { return _depositedValue; }
     int getQuota() const { return _quota; }

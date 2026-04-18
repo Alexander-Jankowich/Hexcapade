@@ -36,10 +36,15 @@ public:
     void dispose() override;
     void setNetwork(std::shared_ptr<NetworkController> n) {_networkCtrl=n;}
     void show(bool won);
-    void hide() { _state = State::NONE; _replayPressed = false; }
+    
 
     bool isVisible()      const { return _state != State::NONE; }
-    bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->getStatus()==NetworkController::Status::READY); }
+    bool isHost() const {return _networkCtrl->isHost();}
+    std::shared_ptr<NetworkController> getNetwork() const {return _networkCtrl;}
+    void setActive(bool active);
+
+    void release() {_networkCtrl = nullptr;}
+    bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->getStatus()==NetworkController::Status::CONNECTED); }
 
     void update(float dt);
     void render() override;
