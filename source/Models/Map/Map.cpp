@@ -112,8 +112,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     }
                     CULog("done walling off - N");
                     std::vector<Vec2> north_points = {
-                        Vec2((door.pos.x) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 1 ) * TILE_SIZE / PHYSICS_SCALE),
-                        Vec2((door.pos.x + 5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y  - 1) * TILE_SIZE / PHYSICS_SCALE)
+                        Vec2((door.pos.x - 2) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 1 ) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((door.pos.x + 8) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y  - 1) * TILE_SIZE / PHYSICS_SCALE)
                     };
                     _extruder.set(north_points,false);
                     _extruder.calculate(0.05f);
@@ -179,8 +179,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     CULog("done walling off - S");
                     
                     std::vector<Vec2> north_points = {
-                        Vec2((door.pos.x) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 1 ) * TILE_SIZE / PHYSICS_SCALE),
-                        Vec2((door.pos.x + 5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y  - 1) * TILE_SIZE / PHYSICS_SCALE)
+                        Vec2((door.pos.x - 2) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((door.pos.x + 8) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y) * TILE_SIZE / PHYSICS_SCALE)
                     };
                     _extruder.set(north_points,false);
                     _extruder.calculate(0.05f);
@@ -242,8 +242,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     }
                     // add collider
                     std::vector<Vec2> north_points = {
-                        Vec2((door.pos.x + 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y + 2 ) * TILE_SIZE / PHYSICS_SCALE),
-                        Vec2((door.pos.x + 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 6) * TILE_SIZE / PHYSICS_SCALE)
+                        Vec2((door.pos.x) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y + 2 ) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((door.pos.x) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 6) * TILE_SIZE / PHYSICS_SCALE)
                     };
                     _extruder.set(north_points,false);
                     _extruder.calculate(0.05f);
@@ -311,8 +311,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         if(door.pos.x > 0) _mapGrid[i][door.pos.x -1] = 1;
                     }
                     std::vector<Vec2> north_points = {
-                        Vec2((door.pos.x - 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y + 2 ) * TILE_SIZE / PHYSICS_SCALE),
-                        Vec2((door.pos.x - 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 6) * TILE_SIZE / PHYSICS_SCALE)
+                        Vec2((door.pos.x) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y + 2 ) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((door.pos.x) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - door.pos.y - 8) * TILE_SIZE / PHYSICS_SCALE)
                     };
                     _extruder.set(north_points,false);
                     _extruder.calculate(0.05f);

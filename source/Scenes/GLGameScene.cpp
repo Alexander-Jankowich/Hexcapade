@@ -74,7 +74,7 @@ float getTypicalItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
 }
 
 // Goal: enough item value to cover quota, but never spawn more than
-// the authored spawn points we actually have on the map
+// the authored spawn points we actually have on the ma
 size_t chooseSpawnCount(size_t totalSpawn, size_t roomCount, int quota,
                             float typicalItemValue, float quotaCoverageRatio) {
     int valueNeeded = (int)std::ceil((float)quota * quotaCoverageRatio);
