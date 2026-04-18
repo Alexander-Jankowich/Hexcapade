@@ -1,14 +1,14 @@
 {
     "textures": {
         "logo": {
-            "file":      "textures/Start.png",
+            "file":      "textures/KoalaTea_Logo.png",
             "wrapS":     "clamp",
             "wrapT":     "clamp",
             "minfilter": "linear",
             "magfilter": "linear"
         },
-        "name": {
-            "file":      "textures/cugl-name.png",
+        "start": {
+            "file":      "textures/Start.png",
             "wrapS":     "clamp",
             "wrapT":     "clamp",
             "minfilter": "linear",
@@ -42,7 +42,7 @@
                 "type" : "Anchored"
             },
             "data" : {
-                "color": [72,120,124,255],
+                "color": [222,193,220,255],
                 "size" : [1024,576]
             },
             "children"  : {
@@ -60,30 +60,12 @@
                             "data"   : {
                                 "texture"  : "logo",
                                 "anchor"   : [0.5,0.5],
-                                "scale"    : 0.75
-                            },
-                            "layout" : {
-                                "x_anchor" : "fill",
-                                "y_anchor" : "fill"
-                            }
-                        },
-                        
-                        
-                        
-                        "name"  : {
-                            "type"   : "Image",
-                            "format"    : {
-                                "type" : "Anchored"
-                            },
-                            "data"   : {
-                                "texture"  : "name",
-                                "anchor"   : [0.5,0.5],
-                                "scale"    : 0.75,
-                                "visible"  : false
+                                "scale"    : 0.34
                             },
                             "layout" : {
                                 "x_anchor" : "center",
                                 "y_anchor" : "middle",
+                                "y_offset" : 0,
                                 "absolute" : true
                             }
                         }
@@ -99,39 +81,18 @@
                         "type" : "Anchored"
                     },
                     "children"  : {
-                        "logo"  : {
+                        "background" : {
                             "type"   : "Image",
                             "format"    : {
                                 "type" : "Anchored"
                             },
                             "data"   : {
-                                "texture"  : "logo",
-                                "anchor"   : [0.5,0.5]
+                                "texture" : "start",
+                                "anchor"  : [0.5,0.5]
                             },
                             "layout" : {
                                 "x_anchor" : "fill",
                                 "y_anchor" : "fill"
-                            }
-                        },
-                        "name"  : {
-                            "type"   : "Image",
-                            "format"    : {
-                                "type" : "Anchored"
-                            },
-                            "data"   : {
-                                "texture"  : "name",
-                                "anchor"   : [0.5,0.5],
-                                "scale"    : 0.75,
-                                "visible"  : false
-                            },
-                            "layout" : {
-                                "x_anchor" : "center",
-                                "y_anchor" : "middle",
-                                
-                                
-                                
-                            
-                                "absolute" : true
                             }
                         }
                     },
