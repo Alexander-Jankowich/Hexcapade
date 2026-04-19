@@ -40,4 +40,4 @@ public:
 	void addNode(const shared_ptr<AnimatedSprite> node);
 };
 
-#endif
+#endif // !__ANIMATOR_H__

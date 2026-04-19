@@ -25,10 +25,10 @@
 
 #include "../Models/GameplayConfig.h"
 #include "../Models/Map/Map.h"
-#include "../Models/Items.h"
-#include "../Models/Players.h"
-#include "../Models/Spells.h"
-#include "../Models/Enemies.h"
+#include "../Models/Items/ItemFactory.h"
+#include "../Models/Players/PlayerFactory.h"
+#include "../Models/Spells/SpellFactory.h"
+#include "../Models/Enemies/EnemyFactory.h"
 #include "../Models/Events.h"
 
 #include "../Models/GameplayConfigLoader.h"

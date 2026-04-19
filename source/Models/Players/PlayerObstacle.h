@@ -4,7 +4,11 @@
 //
 //  Created by Serena Duncan on 3/18/26.
 //
-#include "../Spells.h"
+
+#ifndef __PLAYER_OBSTACLE_H__
+#define __PLAYER_OBSTACLE_H__
+
+#include "../Spells/SpellFactory.h"
 
 using namespace cugl;
 using namespace std;
@@ -252,3 +256,5 @@ public:
     //    return types;
     //}
 };
+
+#endif // !__PLAYER_OBSTACLE_H__
