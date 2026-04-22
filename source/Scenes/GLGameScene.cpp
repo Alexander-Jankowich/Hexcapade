@@ -1443,8 +1443,14 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID()==player->getPID()) return;
         if (spell->TYPE == SpellType::HEAL) {
+            if(player -> getHealth() < 0){
+                player->setHealth(1);
+                spell -> setRemove();
+                return;
+            }
             int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
+            CULog("player_health : %d", player->getHealth());
             spell->setRemove();
             return;
         }
@@ -1464,7 +1470,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         //We need a death message
         //We need to set ATTACKRESET and decrement some sort of timer
         contact -> SetEnabled(true);
-        if (player -> getHealth() == 0){
+        if(player -> getHealth() < 0){
+
             return;
         }
 
