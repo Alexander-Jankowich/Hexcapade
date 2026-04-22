@@ -108,7 +108,7 @@ protected:
     /** Whether thegame has ended */
     bool  _gameEnded;
     /**Timer for end of game**/
-    float _timer = 1200;
+    float _timer = 7200;
 
     std::shared_ptr<cugl::AssetManager> _assets;
     /** list of rooms */

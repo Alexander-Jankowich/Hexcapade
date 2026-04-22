@@ -74,7 +74,7 @@ public:
         return _network;
     }
     NCGameState gameState() {return _gameState;}
-    bool canHostStart() {return _numReady == getNumPlayers();}
+    bool canHostStart() {return _numReady == getNumPlayers() || getNumPlayers()==1;}
     void unreadyPlayers() {_numReady = 0;}
 
     void resetStatus() { _status = Status::IDLE; }
