@@ -89,13 +89,6 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             continue;
         }
 
-        // If attack is on cooldown, wait
-        if (en->getState() == EnemyObstacle::EnemyState::ATTACK_RESET) {
-            en->updateAttackCounter();
-            continue;
-        }
-
-
         // Get and set new target depending on enemy type
         Vec2 targ;
         switch (en->TYPE) {

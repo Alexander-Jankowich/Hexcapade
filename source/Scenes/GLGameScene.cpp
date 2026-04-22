@@ -295,8 +295,9 @@ void GameScene::reset()
     _itemNodes.clear();
     _inventoryValue = 0;
     _canDeposit = false;
-    _dragInventoryIndex = -1;
-    _dragInventoryPos = Vec2::ZERO;
+//    _dragInventoryIndex = -1;
+//    _dragInventoryPos = Vec2::ZERO;
+    _pendingInventoryTapIndex = -1;
     hideInventoryCard();
 
     _runRevision = std::max(1, _runRevision + 1);
@@ -577,6 +578,14 @@ void GameScene::preUpdate(float dt)
         }
         
     }
+    for (auto en : _enemyFact -> current){
+        // If attack is on cooldown, wait
+        if (en->getState() == EnemyObstacle::EnemyState::ATTACK_RESET) {
+            en->updateAttackCounter();
+            continue;
+        }
+    }
+    
     
     // Update animations
     _animations.update(dt);
@@ -641,6 +650,7 @@ void GameScene::preUpdate(float dt)
         if (_input.cardDismissTap()) {
             CULog("click detected, card closed");
             hideInventoryCard();
+            _pendingInventoryTapIndex = -1;
         }
     }
     _input.resolvedCardDismissTap();
@@ -653,32 +663,51 @@ void GameScene::preUpdate(float dt)
         depositRequested = true;
         _input.resolvedDeposit();
     }
-    if (_input.inventoryHeld()) {
-        // consider having some sort of drag treshold bc rn jittery
-        if (_dragInventoryIndex < 0) {
-            _dragInventoryIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
-        }
-        if (_dragInventoryIndex >= 0) {
-            _dragInventoryPos = _input.getInventoryTouchPos();
-        }
-    }
+//    if (_input.inventoryHeld()) {
+//        // consider having some sort of drag treshold bc rn jittery
+//        if (_dragInventoryIndex < 0) {
+//            _dragInventoryIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
+//        }
+//        if (_dragInventoryIndex >= 0) {
+//            _dragInventoryPos = _input.getInventoryTouchPos();
+//        }
+//    }
 
     if (_input.inventoryReleased()) {
         int tappedIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
         bool tappedSlot = _input.getInventoryAnchor().distance(_input.getInventoryTouchPos()) <= 5.0f;
 
-        if (tappedSlot) {
-            if (tappedIndex >= 0) {
-                const auto& carried = _player->getInventory()[(size_t)tappedIndex];
-                CULog("slot %d card %s tapped", tappedIndex, carried.itemType.c_str());
-                showInventoryCard((size_t)tappedIndex);
+        if (tappedSlot && tappedIndex >= 0) {
+            Timestamp now;
+            bool doubleTap = _pendingInventoryTapIndex == tappedIndex &&
+                             Timestamp::ellapsedMillis(_lastInventoryTapTime, now) <= 200;
+
+            if (doubleTap) {
+                CULog("slot double tapped");
+                depositIndex = tappedIndex;
+                _pendingInventoryTapIndex = -1;
+                hideInventoryCard();
+            }
+            else {
+                CULog("slot tapped");
+                hideInventoryCard();
+                _pendingInventoryTapIndex = tappedIndex;
+                _lastInventoryTapTime = now;
             }
         } else {
-            depositIndex = _dragInventoryIndex;
+            _pendingInventoryTapIndex = -1;
         }
-        _dragInventoryIndex = -1;
         _input.resolvedInventoryRelease();
     }
+    
+    if (_pendingInventoryTapIndex >= 0) {
+        Timestamp now;
+        if (Timestamp::ellapsedMillis(_lastInventoryTapTime, now) >200) {
+            showInventoryCard((size_t)_pendingInventoryTapIndex);
+            _pendingInventoryTapIndex = -1;
+        }
+    }
+    
     if (_input.getInventoryHotkeyIndex() >= 0) {
         depositIndex = _input.getInventoryHotkeyIndex();
         _input.resolvedInventoryHotkeyIndex();
@@ -874,8 +903,9 @@ void GameScene::preUpdate(float dt)
                 PickupEvent::allocPickupEvent(_player->getPID(), _currOverlappedItem)
             );
         }
+    }
+    if (_input.pressedPickup()) {
         _input.resolvedPickup();
-        _currOverlappedItem = -1;
     }
 
 }
@@ -1040,9 +1070,9 @@ void GameScene::renderHUD()
 
                 // Draw item texture centered inside the frame
                 if (i < carriedItems.size()) {
-                    if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex == i) {
-                        continue;
-                    }
+//                    if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex == i) {
+//                        continue;
+//                    }
                     const auto& carried = carriedItems[i];
                     auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
                     if (itemTex) {
@@ -1063,28 +1093,28 @@ void GameScene::renderHUD()
                 }
             }
 
-            // ?? Easier way to do it?
-            // While dragging, render the item icon at the current touch position instead of in its slot.
-            if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex < carriedItems.size()) {
-                const auto& carried = carriedItems[(size_t)_dragInventoryIndex];
-                auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
-                if (itemTex) {
-                    Rect dragSlot = getInventorySlotBounds((size_t)_dragInventoryIndex);
-                    float boxSize = dragSlot.size.width;
-                    float padding = 10.0f;
-                    float iconSize = boxSize - padding * 2;
-                    float iconX = _dragInventoryPos.x - iconSize * 0.5f + hudOffset.x;
-                    float iconY = _dragInventoryPos.y - iconSize * 0.5f + hudOffset.y;
-
-                    // ?? Drag when transparent? Or transparent in inventory while being dragged?
-                    // Color4 dragColor(255, 255, 255, 100);
-                    // _batch->draw(itemTex, dragColor, Rect(iconX, iconY, iconSize, iconSize));
-                    
-                    _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
-                    
-                    _batch->setColor(Color4::WHITE);
-                }
-            }
+//            // ?? Easier way to do it?
+//            // While dragging, render the item icon at the current touch position instead of in its slot.
+//            if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex < carriedItems.size()) {
+//                const auto& carried = carriedItems[(size_t)_dragInventoryIndex];
+//                auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
+//                if (itemTex) {
+//                    Rect dragSlot = getInventorySlotBounds((size_t)_dragInventoryIndex);
+//                    float boxSize = dragSlot.size.width;
+//                    float padding = 10.0f;
+//                    float iconSize = boxSize - padding * 2;
+//                    float iconX = _dragInventoryPos.x - iconSize * 0.5f + hudOffset.x;
+//                    float iconY = _dragInventoryPos.y - iconSize * 0.5f + hudOffset.y;
+//
+//                    // ?? Drag when transparent? Or transparent in inventory while being dragged?
+//                    // Color4 dragColor(255, 255, 255, 100);
+//                    // _batch->draw(itemTex, dragColor, Rect(iconX, iconY, iconSize, iconSize));
+//
+//                    _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
+//
+//                    _batch->setColor(Color4::WHITE);
+//                }
+//            }
         }
 
         auto texContainer = _assets->get<graphics::Texture>("health_bar");
@@ -1415,11 +1445,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         spell->markRemoved(true);
         
     }else if (player && enemy) {
-        CULog("enemy and player");
-        contact -> SetEnabled(false);
-        if(player -> getHealth() == 0){
-            return;
-        }
+        //We need a death message
+        //We need to set ATTACKRESET and decrement some sort of timer
+        contact -> SetEnabled(true);
         float knockbackSpeed = 10.0f;
         b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
         b2Vec2 dir = vel;
@@ -1429,8 +1457,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             dir.y /= len;
         }
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
-
-        
+        if(enemy -> getState() == EnemyObstacle::EnemyState::ATTACK_RESET) return;
+        if(player -> getPID() != _player -> getPID()) return;
+        CULog("enemy and player");
+        if(player -> getHealth() == 0){
+            return;
+        }
         player->setHealth(player->getHealth() - 1);
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;
