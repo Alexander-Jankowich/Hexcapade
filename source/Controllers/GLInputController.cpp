@@ -31,7 +31,7 @@ using namespace cugl;
 #define LISTENER_KEY      1
 
 /** How fast a double click must be in milliseconds */
-#define DOUBLE_CLICK    400
+//#define DOUBLE_CLICK    400
 std::vector<std::vector<Vec2>> DEATH_GESTURE_1 = {
     {
         {1058.320557, 465.343506},

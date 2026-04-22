@@ -69,5 +69,8 @@ pair<ActionFunction, float> SpellNode::getNextAnimation() {
             },
             endFrames / FPS
         };
+    default:
+        CULog("How did you get here? There are no other animation types.");
+        return { [this](float, ActionState) {}, -1 };
     }
 }
