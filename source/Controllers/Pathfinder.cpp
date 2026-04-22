@@ -72,20 +72,7 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
         shared_ptr<physics2::distrib::NetWorld> world) {
 
     for (auto en : enemyFact->current) {
-        // Check if frozen
-        if (en->getWaterPushTimer() > 0) {
-            en->tickWaterPush();
-            Vec2 pushVel = en->getWaterPushDir() * en->getSpeed() * 2.5f; 
-            en->setVelocity(pushVel);
-            continue;
-        }
-        if (en->isFroze()) {
-            en->setLinearVelocity(Vec2::ZERO);
-            int i = en->getFrozenTimer() - 1;
-            en->setFrozenTimer(i);
-            if (en->getFrozenTimer() == 0) {
-                en->setFrozen(false);
-            }
+        if (en->isFroze() || en->getWaterPushTimer() > 0) {
             continue;
         }
 

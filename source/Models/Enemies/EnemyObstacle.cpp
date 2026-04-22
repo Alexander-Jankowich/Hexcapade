@@ -47,13 +47,14 @@ void EnemyObstacle::setHealth(int value) {
  * Tracks this enemy's "reset" window after an attack. Once the time is up, sets enemy back to IDLE.
  */
 void EnemyObstacle::updateAttackCounter() {
-    CULog("attack_counter %d", _attackCounter);
-    if (_attackCounter < ATTACK_DELAY) _attackCounter++;
+    if (_attackCounter > 0) {
+        _attackCounter--;
+        CULog("attack_counter %d", _attackCounter);
+    }
     else {
         _attackCounter = 0;
         _state = EnemyState::IDLE;
     }
-    //CULog("attack counter: %d", _attackCounter);
 }
 
 void EnemyObstacle::setVelocity(Vec2 v) {

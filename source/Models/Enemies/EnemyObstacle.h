@@ -94,6 +94,8 @@ public:
     EnemyState getState() { return _state; }
     void setState(EnemyState s) { _state = s; }
     void updateAttackCounter();
+    void setAttackCounter(int frames) { _attackCounter = frames; }
+    bool canAttack() { return _attackCounter <= 0; }
 
     /**
      * Returns the current enemy health.
