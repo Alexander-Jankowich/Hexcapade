@@ -577,6 +577,14 @@ void GameScene::preUpdate(float dt)
         }
         
     }
+    for (auto en : _enemyFact -> current){
+        // If attack is on cooldown, wait
+        if (en->getState() == EnemyObstacle::EnemyState::ATTACK_RESET) {
+            en->updateAttackCounter();
+            continue;
+        }
+    }
+    
     
     // Update animations
     _animations.update(dt);
@@ -1407,11 +1415,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         spell->markRemoved(true);
         
     }else if (player && enemy) {
-        CULog("enemy and player");
-        contact -> SetEnabled(false);
-        if(player -> getHealth() == 0){
-            return;
-        }
+        //We need a death message
+        //We need to set ATTACKRESET and decrement some sort of timer
+        contact -> SetEnabled(true);
         float knockbackSpeed = 10.0f;
         b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
         b2Vec2 dir = vel;
@@ -1421,8 +1427,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             dir.y /= len;
         }
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
-
-        
+        if(enemy -> getState() == EnemyObstacle::EnemyState::ATTACK_RESET) return;
+        if(player -> getPID() != _player -> getPID()) return;
+        CULog("enemy and player");
+        if(player -> getHealth() == 0){
+            return;
+        }
         player->setHealth(player->getHealth() - 1);
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;
