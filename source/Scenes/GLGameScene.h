@@ -128,10 +128,12 @@ protected:
     float _depositRadius;
     /** id of item player is on, if they are on an item */
     int _currOverlappedItem = -1;
-    /** inventory slot currently being dragged from the top zone */
-    int _dragInventoryIndex = -1;
-    /** current screen-space pos for the floating drag */
-    cugl::Vec2 _dragInventoryPos = cugl::Vec2::ZERO;
+//    /** inventory slot currently being dragged from the top zone */
+//    int _dragInventoryIndex = -1;
+//    /** current screen-space pos for the floating drag */
+//    cugl::Vec2 _dragInventoryPos = cugl::Vec2::ZERO;
+    int _pendingInventoryTapIndex = -1;
+    cugl::Timestamp _lastInventoryTapTime;
 
 public:
 #pragma mark -
