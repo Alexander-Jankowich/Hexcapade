@@ -6,6 +6,7 @@
 //
 
 #include "SpellFactory.h"
+
 #define PHYSICS_SCALE 100
 
 using namespace std;
@@ -37,6 +38,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int
     _range = range;
     
     _caster = c;
+    _atEnd = false;
 
     setLinearVelocity(vel);
 }
@@ -108,25 +110,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     current.emplace(spell);
 
     // Create Spell! Hard code values for now, change later
-    auto sprite = std::make_shared<SpellNode>(pos, vel, 1, 1,type,
-        image);
-
-//    switch (type) {
-//    case SpellType::HEAL:
-//        sprite->setColor(Color4::GREEN);
-//        break;
-//    case SpellType::FIREBALL:
-//    case SpellType::COMBO_FIREBALL:
-//        sprite->setColor(Color4::RED);
-//        break;
-//    case SpellType::FREEZE:
-//    case SpellType::COMBO_FREEZE:
-//        sprite->setColor(Color4::BLUE);
-//        break;
-//    
-//    default:
-//        break;
-//    }
+    auto sprite = std::make_shared<SpellNode>(pos, vel, type, image);
 
     return std::make_pair(spell, sprite);
 }
@@ -179,19 +163,38 @@ std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode
 std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {
     std::unordered_set<std::shared_ptr<SpellObstacle>> remove;
 
-    for (auto it = current.begin(); it != current.end(); ) {
+    for (auto it = current.begin(); it != current.end();) {
         // Remove from set if removed from scene
         if ((*it)->isRemoved()) {
             remove.emplace(*it);
             it = current.erase(it);
             continue;
         }
-        // Mark spells to be removed when out of range
-        if ((*it)->getTraveled() > (*it)->getRange()) {
-            (*it)->markRemoved(true);
-        }
         it++;
     }
 
     return remove;
+}
+
+void SpellFactory::linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, shared_ptr<Animator> animations) {
+    // Mark spells to be removed when out of range
+    if (obs->getTraveled() > obs->getRange()) {
+        obs->setRemove();
+    }
+
+    if (obs->shouldRemove() && !node->shouldRemove()) {
+
+        node->setRemove();
+        obs->setLinearVelocity(Vec2::ZERO);
+        animations->addNextListener(node, [obs](string key, float time, float actual) {
+            obs->markRemoved(true);
+        });
+        animations->endAnimation(node);
+    }
+
+    float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+    Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+    float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+    node->setPosition(pos * PHYSICS_SCALE);
+    node->setAngle(angle);
 }

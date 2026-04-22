@@ -92,9 +92,18 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 }
 
 
-void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node) {
+void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, const shared_ptr<Animator>& animator) {
+    // Update frozen status if changed
+    if (obs->isFroze() && !node->getFrozen()) {
+        node->setFrozen(true);
+        animator->pauseAnimation(node);
+    }
+    else if (!obs->isFroze() && node->getFrozen()) {
+        node->setFrozen(false);
+        animator->resumeAnimation(node);
+    }
+
     // Update state for animation
-    node->setFrozen(obs->isFroze());
     node->setStatue(obs->isMud());
     node->updateState();
     node->updateAnimationState(obs->getState(), obs->getHealth());

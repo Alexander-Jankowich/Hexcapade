@@ -11,6 +11,7 @@
 #include <cugl/cugl.h>
 #include "EnemyObstacle.h"
 #include "EnemyNode.h"
+#include "../Animations.h"
 
 #define ATTACK_DELAY 1.3f
 
@@ -78,7 +79,7 @@ public:
     /**
     * The linking function for enemy obstacles -> enemy nodes
     */
-    void linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node);
+    void linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, const shared_ptr<Animator>& animator);
 
     /**
     * Returns a set of enemies that have been flagged for garbage collection and removes them from

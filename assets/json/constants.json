@@ -65,36 +65,43 @@
         }
     },
     "spells": {
-        "water":{
-            "speed" : 4,
-            "damage" : 0.125,
-            "range" : 1.5
+        "columns": 8,
+        "rows": 1,
+        "main-loop": 0,
+        "main-loop_frames": 4,
+        "end": 4,
+        "end_frames": 4,
+
+        "water": {
+            "speed": 4,
+            "damage": 0.125,
+            "range": 1.5
         },
-        "combo_efreeze":{
-            "speed" : 3,
-            "damage" : 2,
-            "range" : 10.0
-        },
-        "earth":{
+        "combo_efreeze": {
             "speed": 3,
             "damage": 2,
-            "range":5.0
+            "range": 10.0
         },
-        "death":{
+        "earth": {
+            "speed": 3,
+            "damage": 2,
+            "range": 5.0
+        },
+        "death": {
             "speed": 5,
             "damage": 500,
             "range": 5.0
         },
-        "combo_fireball":{
+        "combo_fireball": {
             "speed": 5,
             "damage": 10,
             "range": 10.0
         },
-        "combo_freeze":{
+        "combo_freeze": {
             "speed": 5,
             "damage": 4,
             "range": 10.0,
-            "freeze" : true
+            "freeze": true
         },
         "fireball": {
             "speed": 5,

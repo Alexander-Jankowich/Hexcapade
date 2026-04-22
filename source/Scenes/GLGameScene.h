@@ -77,7 +77,7 @@ protected:
     std::shared_ptr<PlayerObstacle> _player;
 
     /** Action Timeline for animations */
-    Animator _animations;
+    std::shared_ptr<Animator> _animations;
     
     std::shared_ptr<Map> _map;
     RoomController _roomController;
