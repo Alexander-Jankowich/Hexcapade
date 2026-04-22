@@ -18,7 +18,11 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
 
 void PlayerObstacle::setVelocity(Vec2 v) {
     _velocity = v;
-    
+    CULog("setVelocity called, state is %d", (int)_state);
+    if (_state == AnimationState::FROZEN) {
+            if (getBody()) getBody()->SetLinearVelocity(b2Vec2(0, 0));
+            return;
+        }
     if (!v.isZero()) {
         _angle = v.getNormalization();
 
@@ -32,7 +36,12 @@ void PlayerObstacle::setVelocity(Vec2 v) {
 
     if (!getBody()) return; // body not ready yet
     b2Vec2 currentVel = getBody()->GetLinearVelocity();
-    b2Vec2 targetVel = b2Vec2(v.x, v.y);
+    b2Vec2 targetVel;
+    if (mud){
+        targetVel = b2Vec2(v.x * 0.5f, v.y * 0.5f);
+    }else{
+        targetVel = b2Vec2(v.x, v.y);
+    }
     b2Vec2 velDiff = targetVel - currentVel;
     float mass = getBody()->GetMass();
     float scale = mass * 60.0f;

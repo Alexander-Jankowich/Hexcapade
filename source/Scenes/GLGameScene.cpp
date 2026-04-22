@@ -551,7 +551,7 @@ void GameScene::preUpdate(float dt)
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
                 // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
-                //_networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
+                _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
             }
         }
 
@@ -578,6 +578,14 @@ void GameScene::preUpdate(float dt)
         }
         
     }
+    for (auto en : _enemyFact -> current){
+        // If attack is on cooldown, wait
+        if (en->getState() == EnemyObstacle::EnemyState::ATTACK_RESET) {
+            en->updateAttackCounter();
+            continue;
+        }
+    }
+    
     
     // Update animations
     _animations.update(dt);
@@ -609,9 +617,12 @@ void GameScene::preUpdate(float dt)
 //        }
 //    }
 
-    _player->setVelocity(velocity);
-    
-    _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
+    if (_player->getState() == PlayerObstacle::AnimationState::FROZEN) {
+        _player->setVelocity(Vec2::ZERO);
+    } else {
+        _player->setVelocity(velocity);
+        _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
+    }
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
     updateCameraFollow();
@@ -770,11 +781,11 @@ void GameScene::preUpdate(float dt)
         _input.resolveSpell();
     } else if (_input.getGesture() != SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
-        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
+        //if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
             _player->setSpell(newSpell);
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-        }
+        //}
     }
 
     Vec2 angle = _input.getSpellAngle();
@@ -831,8 +842,8 @@ void GameScene::preUpdate(float dt)
             //CULog("Casting spell type: %d", t);
             switch (t) {
             case SpellType::DEATH:
-                for (int i = 0; i < 32; i++) {
-                    angle = angle.rotate((M_PI / 16) * i);
+                for (int i = 0; i < 16; i++) {
+                    angle = angle.rotate((M_PI / 8) * i);
                     auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
@@ -1402,11 +1413,11 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
     // Checking for collisions
     if (spell && spell2){
-        CULog("spell and spell");
         contact -> SetEnabled(false);
     }else if (player && spell) {
         CULog("spell and player");
         contact -> SetEnabled(false);
+        CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID()==player->getPID()) return;
         if (spell->TYPE == SpellType::HEAL) {
             int nh = player->getHealth() + HEAL_AMT;
@@ -1414,15 +1425,21 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             spell->markRemoved(true);
             return;
         }
+        if (spell->TYPE == SpellType::FREEZE || spell->TYPE == SpellType::COMBO_FREEZE) {
+            player->setFrozeTimer(60);
+            player->setAniState(PlayerObstacle::AnimationState::FROZEN);
+        }
+        if (spell->TYPE == SpellType::EARTH){
+            player->setMudTimer(240);
+            player -> setMud(true);
+        }
         player -> setHealth(player->getHealth() - 1);
         spell->markRemoved(true);
         
     }else if (player && enemy) {
-        CULog("enemy and player");
-        contact -> SetEnabled(false);
-        if(player -> getHealth() == 0){
-            return;
-        }
+        //We need a death message
+        //We need to set ATTACKRESET and decrement some sort of timer
+        contact -> SetEnabled(true);
         float knockbackSpeed = 10.0f;
         b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
         b2Vec2 dir = vel;
@@ -1432,8 +1449,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             dir.y /= len;
         }
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
-
-        
+        if(enemy -> getState() == EnemyObstacle::EnemyState::ATTACK_RESET) return;
+        if(player -> getPID() != _player -> getPID()) return;
+        CULog("enemy and player");
+        if(player -> getHealth() == 0){
+            return;
+        }
         player->setHealth(player->getHealth() - 1);
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         return;

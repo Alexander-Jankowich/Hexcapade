@@ -8,7 +8,7 @@
 #include "EnemyObstacle.h"
 
 #define PHYSICS_SCALE 100
-#define ATTACK_DELAY 1.3f
+#define ATTACK_DELAY 90.0f
 
 EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s)
     : TYPE(type) {
@@ -47,6 +47,7 @@ void EnemyObstacle::setHealth(int value) {
  * Tracks this enemy's "reset" window after an attack. Once the time is up, sets enemy back to IDLE.
  */
 void EnemyObstacle::updateAttackCounter() {
+    CULog("attack_counter %d", _attackCounter);
     if (_attackCounter < ATTACK_DELAY) _attackCounter++;
     else {
         _attackCounter = 0;

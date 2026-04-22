@@ -29,7 +29,7 @@ public:
         ATTACKED = 3,
         /** frozen  */
         FROZEN = 4,
-        DEAD = 5
+        DEAD = 5,
     };
 
     /** Category stored on each carried item. */
@@ -69,6 +69,10 @@ protected:
     vector<CarriedItem> _inventory;
     /** max carried item count for the current inventory flow */
     size_t _inventoryLimit;
+    int frozenTimer = 0;
+    bool mud = false;
+    int mudTimer = 0;
+    
 
 public:
     PlayerObstacle(Vec2 pos, string pid, cugl::Size s);
@@ -83,7 +87,11 @@ public:
     int getHealth() {return _health;}
     float getSpeed() { return hasHeavyArtifact() ? _speed * 0.5f : _speed; }
     AnimationState getState(){return _state;}
-    void setAniState(AnimationState s) {_state = s;}
+    void setAniState(AnimationState s){_state = s;}
+    void setMud(bool m) {mud = m;}
+    bool getMud() {return mud;}
+    void setFrozeTimer(int i) {frozenTimer = i;}
+    void setMudTimer(int i) {mudTimer = i;}
     
     cugl::Vec2 getDirection() { return _angle; }
     #pragma mark PO_Inventory
@@ -223,6 +231,26 @@ public:
                 return true;
         }
         return false;
+    }
+    
+    void updateTimers(float dt){
+        if (_state == AnimationState::FROZEN) {
+                frozenTimer -= 1;
+                if (frozenTimer <= 0) {
+                    frozenTimer = 0;
+                    _state = AnimationState::IDLE;
+                }
+                if (getBody()) {
+                    getBody()->SetLinearVelocity(b2Vec2(0, 0));
+                }
+            }
+        if(mud) {
+            mudTimer -= 1;
+            if(mudTimer <= 0){
+                mudTimer = 0;
+                mud = false;
+            }
+        }
     }
 
 
