@@ -11,7 +11,7 @@ using namespace cugl;
 using namespace std;
 using namespace cugl::graphics;
 
-#define FPS 8.0f
+#define FPS 10.0f
 
 int PlayerNode::rows = 1;
 int PlayerNode::cols = 1;

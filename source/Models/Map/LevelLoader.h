@@ -12,22 +12,27 @@
 
 using namespace std;
 using namespace cugl;
-struct Door {
-        enum Direction : int {
-            NORTH=0,
-            EAST=1,
-            SOUTH=2,
-            WEST=3
-        };
+
+class Door {
+public:
+    enum Direction : int {
+        NORTH=0,
+        EAST=1,
+        SOUTH=2,
+        WEST=3
+    };
+
     Direction _direction;
     Vec2 _tlCorner;
     Size _dimens;
-    Door(Direction d, int x, int y, int h, int w) {
+
+    Door (Direction d, int x, int y, int h, int w) {
         _direction = d;
         _tlCorner = Vec2(x, y);
         _dimens = Size(w, h);
     }
 };
+
 class SpawnPoint {
 public:
     enum SpawnType : int {
@@ -57,11 +62,11 @@ protected:
     vector<vector<int>> _deco;
     vector<vector<int>> _visfix;
     vector<vector<int>> _mask;
-    std::array<std::shared_ptr<Door>, 4> _doors;
+    shared_ptr<Door> _doors[4];
     vector<Vec2> _itemSpawnPoints;
     vector<Vec2> _enemSpawnPoints;
     Vec2 _playerSpawn;
-    vector<cugl::Path2> _colliders;
+    vector<Path2> _colliders;
 
 
     // hash map for doors? direction -> vec door objects
@@ -122,9 +127,13 @@ public:
     const vector<vector<int>>& getFixLayer() const {return _visfix;}
     const vector<vector<int>>& getMaskLayer() const {return _mask;}
     
-    std::vector<std::shared_ptr<Door>> getDoors() {
-        std::vector<std::shared_ptr<Door>> res;
-        for (auto d: _doors) if(d!=nullptr) res.push_back(d);
+    vector<shared_ptr<Door>> getDoors() {
+        vector<shared_ptr<Door>> res;
+        for (auto d : _doors) {
+            if (d) {
+                res.push_back(d);
+            }
+        }
         return res;
     }
     
@@ -142,7 +151,7 @@ public:
     bool hasSouthDoor() {return _doors[2] != nullptr;}
     bool hasWestDoor() {return _doors[3] != nullptr;}
     
-    std::shared_ptr<Door> getNorthDoor() {return _doors[0];}
+    shared_ptr<Door> getNorthDoor() {return _doors[0];}
     std::shared_ptr<Door> getEastDoor() {return _doors[1];}
     std::shared_ptr<Door> getSouthDoor() {return _doors[2];}
     std::shared_ptr<Door> getWestDoor() {return _doors[3];}

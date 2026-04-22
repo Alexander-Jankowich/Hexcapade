@@ -57,6 +57,7 @@ void PlayerObstacle::setHealth(int h) {
         setVelocity(Vec2::ZERO);
         _health = 0;
         _state = AnimationState::DEAD;
+        setLinearVelocity(Vec2::ZERO);
     }
     else if (_state == AnimationState::DEAD && _health > 0) {
         _state = AnimationState::IDLE;

@@ -15,13 +15,13 @@
       "file": "textures/enemy_octoplush_sheet.png"
     },
     "fireball": {
-      "file": "textures/fireballv2.png"
+      "file": "textures/fireball_sheet.png"
     },
     "freeze": {
-      "file": "textures/freeze.png"
+      "file": "textures/freeze_sheet.png"
     },
     "heal": {
-      "file": "textures/heal.png"
+      "file": "textures/heal_sheet.png"
     },
     "button": {
       "file": "textures/button.png"

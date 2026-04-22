@@ -92,9 +92,10 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 }
 
 
-void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node) {
+void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, const shared_ptr<Animator>& animator) {
     obs->updateAttackCounter();
 
+    // Update push and frozen
     if (obs->getWaterPushTimer() > 0) {
         obs->tickWaterPush();
         Vec2 pushVel = obs->getWaterPushDir() * obs->getSpeed() * 2.5f;
@@ -109,8 +110,17 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         }
     }
 
+    // Update frozen status for node if changed
+    if (obs->isFroze() && !node->getFrozen()) {
+        node->setFrozen(true);
+        animator->pauseAnimation(node);
+    }
+    else if (!obs->isFroze() && node->getFrozen()) {
+        node->setFrozen(false);
+        animator->resumeAnimation(node);
+    }
+
     // Update state for animation
-    node->setFrozen(obs->isFroze());
     node->setStatue(obs->isMud());
     node->updateState();
     node->updateAnimationState(obs->getState(), obs->getHealth());

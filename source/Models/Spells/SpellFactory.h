@@ -12,8 +12,12 @@
 #include "SpellNode.h"
 
 #define HEAL_AMT 3;
+
 using namespace cugl;
 using namespace cugl::physics2::distrib;
+using namespace std;
+
+
 /**
 * An extension of WheelObstacle to represent spell collision objects.
 */
@@ -26,6 +30,8 @@ protected:
     cugl::Vec2 _start;
     float _range;
 
+    bool _atEnd;
+
 public:
     const SpellType TYPE;
     SpellObstacle(const cugl::Vec2 pos, float rad, cugl::Vec2 vel, int dmg, float range,SpellType type, std::string c);
@@ -36,10 +42,14 @@ public:
         f->createFixtures();
         return f;
     }
+
     float getDamage() { return _damage; }
     std::string getCasterUID() {return _caster;}
     float getRange() { return _range; }
     float getTraveled() { return getPosition().distance(_start); }
+
+    void setRemove() { _atEnd = true; }
+    bool shouldRemove() { return _atEnd; }
 };
 
 /**
@@ -87,6 +97,7 @@ public:
     void init(std::shared_ptr<AssetManager>& assets) {
         _assets = assets;
         _spellConsts = _assets->get<JsonValue>("constants")->get("spells");
+        SpellNode::setConsts(_spellConsts);
     }
 
     /**
@@ -105,6 +116,11 @@ public:
     * @return a set of all spells to be removed from the world
     */
     std::unordered_set<std::shared_ptr<SpellObstacle>> update();
+
+    /**
+    * The linking function for spell obstacles -> spell nodes
+    */
+    void linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, shared_ptr<Animator> animations);
 };
 
 #endif // !__SPELL_FACTORY_H__

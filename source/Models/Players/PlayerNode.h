@@ -7,6 +7,7 @@
 
 #ifndef __GP_PLAYER_H__
 #define __GP_PLAYER_H__
+
 #include <cugl/cugl.h>
 #include "PlayerObstacle.h"
 #include "../Animations.h"
