@@ -7,6 +7,7 @@
 #ifndef __TD_LEVEL_MODEL_H__
 #define __TD_LEVEL_MODEL_H__
 #include <cugl/cugl.h>
+#include <array>
 
 using namespace std;
 using namespace cugl;

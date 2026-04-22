@@ -578,14 +578,13 @@ void GameScene::preUpdate(float dt)
         }
         
     }
-    for (auto en : _enemyFact -> current){
-        // If attack is on cooldown, wait
-        if (en->getState() == EnemyObstacle::EnemyState::ATTACK_RESET) {
-            CULog("here state");
-            en->updateAttackCounter();
-            continue;
-        }
-    }
+    //for (auto en : _enemyFact -> current){
+    //    // If attack is on cooldown, wait
+    //    if (en->getState() == EnemyObstacle::EnemyState::ATTACK_RESET) {
+    //        CULog("here state");
+    //        continue;
+    //    }
+    //}
     
     
     // Update animations
@@ -1451,8 +1450,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             dir.y /= len;
         }
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
-        if(enemy -> getState() == EnemyObstacle::EnemyState::ATTACK_RESET) return;
+        if(!enemy -> canAttack()) return;
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
+        enemy->setAttackCounter(90);
         
         if(player -> getPID() != _player -> getPID()) return;
         CULog("enemy and player");

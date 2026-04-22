@@ -93,6 +93,22 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 
 
 void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node) {
+    obs->updateAttackCounter();
+
+    if (obs->getWaterPushTimer() > 0) {
+        obs->tickWaterPush();
+        Vec2 pushVel = obs->getWaterPushDir() * obs->getSpeed() * 2.5f;
+        obs->setVelocity(pushVel);
+    }
+    else if (obs->isFroze()) {
+        obs->setLinearVelocity(Vec2::ZERO);
+        int i = obs->getFrozenTimer() - 1;
+        obs->setFrozenTimer(i);
+        if (obs->getFrozenTimer() == 0) {
+            obs->setFrozen(false);
+        }
+    }
+
     // Update state for animation
     node->setFrozen(obs->isFroze());
     node->setStatue(obs->isMud());
