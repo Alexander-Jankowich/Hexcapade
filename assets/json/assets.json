@@ -6,13 +6,13 @@
     },
   "textures": {
     "ghost": {
-        "file": "textures/enemy.png"
+      "file": "textures/enemy.png"
     },
     "bat": {
-        "file": "textures/enemy_bat_sheet.png"
+      "file": "textures/enemy_bat_sheet.png"
     },
     "octoplush": {
-        "file": "textures/enemy_octoplush_sheet.png"
+      "file": "textures/enemy_octoplush_sheet.png"
     },
     "fireball": {
       "file": "textures/fireballv2.png"
@@ -54,13 +54,16 @@
       "file": "textures/artifact_gem.png"
     },
     "artifact_gem_boost": {
-      "file": "textures/gem_green.png"
-    },
-    "artifact_protection": {
-      "file": "textures/gem_brown.png"
+      "file": "textures/gem_neon.png"
     },
     "artifact_heavy": {
       "file": "textures/gem_blue.png"
+    },
+    "artifact_dirt": {
+      "file": "textures/gem_brown.png"
+    },
+    "artifact_bomb": {
+      "file": "textures/gem_pink.png"
     },
     "artifact_scroll": {
       "file": "textures/artifact_scroll.png"

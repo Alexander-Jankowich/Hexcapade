@@ -4,6 +4,7 @@
 #ifndef __HEXCAPADE_MAP_H__
 #define __HEXCAPADE_MAP_H__
 
+#include <array> 
 #include <cugl/cugl.h>
 
 #include "../GameplayConfig.h"

@@ -42,6 +42,7 @@ public:
         std::string itemType;
         int value;
         ItemKind kind;
+        int bombTimer;
 
         static ItemKind kindFromType(const std::string& t) {
             return (t.rfind("spellbook", 0) == 0) ? ItemKind::SPELLBOOK : ItemKind::ARTIFACT;
@@ -72,7 +73,6 @@ protected:
     int frozenTimer = 0;
     bool mud = false;
     int mudTimer = 0;
-    
 
 public:
     PlayerObstacle(Vec2 pos, string pid, cugl::Size s);
@@ -82,7 +82,7 @@ public:
         f -> createFixtures();
         return f;
     }
-
+    bool _bombExpired = false;
     #pragma mark PO_Getters_and_Setters
     int getHealth() {return _health;}
     float getSpeed() { return hasHeavyArtifact() ? _speed * 0.5f : _speed; }
@@ -142,7 +142,8 @@ public:
         if (!canAddItem()) {
             return false;
         }
-        _inventory.push_back({ itemType, item_val, CarriedItem::kindFromType(itemType) });
+        int timer = (itemType == "artifact_bomb") ? 3600 : -1;
+        _inventory.push_back({ itemType, item_val, CarriedItem::kindFromType(itemType), timer});
         return true;
     }
 
@@ -244,13 +245,31 @@ public:
                     getBody()->SetLinearVelocity(b2Vec2(0, 0));
                 }
             }
-        if(mud) {
+        if (mud) {
             mudTimer -= 1;
             if(mudTimer <= 0){
                 mudTimer = 0;
                 mud = false;
             }
         }
+
+        //bomb erase
+        for (size_t i = 0; i < _inventory.size(); ++i) {
+            auto& item = _inventory[i];
+            if (item.bombTimer < 0) continue;
+            item.bombTimer -= 1;
+            if (item.bombTimer <= 0) {
+                _inventory.erase(_inventory.begin() + i);
+                _bombExpired = true;
+                break;
+            }
+        }
+    }
+
+    bool isNonDroppable(size_t index) const {
+        if (index >= _inventory.size()) return false;
+        const std::string& t = _inventory[index].itemType;
+        return t == "artifact_bomb" || t == "artifact_dirt";
     }
 
 
