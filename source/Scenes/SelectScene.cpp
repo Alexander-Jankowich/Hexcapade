@@ -65,8 +65,8 @@ void SelectScene::update(float dt) {
     _networkCtrl->updateNet();
     _networkCtrl->customEvents();
     configureStartButton();
-    // if host and all connected, broadcast startgame
-    if (_networkCtrl->canHostStart()) {
+    // if host and all connected AND map init, broadcast startgame
+    if (_networkCtrl->canHostStart() && _networkCtrl->getRandSeed()!=0) {
         _status=SSStatus::HANDSHAKE;
     }
     // as client, mark ready once player has selected and map was init
@@ -110,7 +110,7 @@ void SelectScene::updateText(const std::shared_ptr<scene2::Button>& button, cons
 }
 
 void SelectScene::configureStartButton() {
-    if(_status==SSStatus::SELECT && _networkCtrl->getNumPlayers() > 1) { // players choose their character, ONLY MULTIPLAYER
+    if(_status==SSStatus::SELECT) { // players choose their character, ONLY MULTIPLAYER
         auto text = _networkCtrl->isHost() ? "Waiting for Players" : "Ready";
         updateText(_startgame, text);
         if (!_networkCtrl->isHost()) _startgame->activate();

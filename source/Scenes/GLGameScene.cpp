@@ -185,8 +185,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
 
     _map = std::make_shared<Map>();
     _roomController.setMap(_map);
-    _runRevision = 0;
-    _appliedRunRevision = -1;
     _mapSeed = 0;
     loadGameplayConfig();
 
@@ -1165,7 +1163,7 @@ int GameScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {
 }
 
 void GameScene::drawDepositZone() {
-    if (!_map || _appliedRunRevision <= 0) {
+    if (!_map ) {
         return;
     }
 
