@@ -33,7 +33,7 @@ public:
     virtual void setActive(bool value) override;
 
 
-    void update(float dt) {}
+    void update(float dt) override {}
 
     Choice getChoice() const { return _choice; }
     void resetChoice() { _choice = Choice::NONE; }
