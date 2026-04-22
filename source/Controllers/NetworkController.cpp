@@ -42,13 +42,14 @@ std::string NetworkController::hex2dec(const std::string& hex) {
 #pragma mark PublicMethods
 
 void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
-    attachEventType<GameInitEvent>();
+    attachEventType<InitMapEvent>();
     attachEventType<CastSpellEvent>();
     attachEventType<EndGameEvent>();
     attachEventType<DepositEvent>();
     attachEventType<PickupEvent>();
     attachEventType<SetSpellEvent>();
     attachEventType<RestartGameEvent>();
+    attachEventType<StartGameEvent>();
     cugl::physics2::distrib::NetEventController::init(a);
     _rng = Random::alloc();
     _rng->init();
@@ -62,8 +63,10 @@ bool NetworkController::connectClient(string roomId) {
 
 
 
-std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory> itemFact,std::shared_ptr<PlayerFactory> playerFact,
-                                                    Uint32 itemFactId, std::shared_ptr<PlayerObstacle> _player,InputController& _input, bool* _playerWon, bool* _gameEnded, cugl::Vec2 _depositPosition, float _depositRadius){
+// this needs to be refactored heavily, give network controller pointers
+// booleans pop up into network controller state, accessed by endScene
+// idk what deposit radius is
+std::tuple<int,int> NetworkController::customEvents(){
     // handle cast spell event
     int inventoryValue = 0;
     int depositedValue = 0;
@@ -71,16 +74,22 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
         auto e = popInEvent();
         if(auto cse = std::dynamic_pointer_cast<CastSpellEvent>(e)){
             CULog("COMBO SPELL GOT");
-            processComboEvent(cse,_player, _input);
+            processComboEvent(cse);
         } else if (auto cse = std::dynamic_pointer_cast<EndGameEvent>(e)){
             CULog("END GAME GOT");
-            processEndEvent(cse,_playerWon, _gameEnded);
+            processEndEvent(cse);
+        } else if (auto cse = std::dynamic_pointer_cast<StartGameEvent>(e)){
+            CULog("START GAME GOT");
+            _gameState = NCGameState::RUNNING;
+        } else if (auto ime = std::dynamic_pointer_cast<InitMapEvent>(e)){
+            CULog("MAP INIT  GOT");
+            _randSeed = ime->getSeed();
         } else if (auto rse = std::dynamic_pointer_cast<RestartGameEvent>(e)){
             CULog("RESTART GAME GOT");
             processRestartEvent(rse);
         } else if (auto sse = std::dynamic_pointer_cast<SetSpellEvent>(e)){
             //CULog("SET SPELL GOT");
-            for (auto& p : playerFact->current) {
+            for (auto& p : _playerFactory->current) {
                 if (p->getPID() == sse->getPID()) {
                     p->setSpell(sse->getSpell());
                     if(sse->getSpell() == SpellType::NONE){
@@ -92,13 +101,14 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
                 }
             }
         } else if (auto de = std::dynamic_pointer_cast<DepositEvent>(e)) {
+            // TODO: rewrite
             // 1. Host recieve 2. Host applies deposit 3. Client applies deposit
             if (isHost()) {
                 if (!de->isSync()) {
                     // Clients send deposit request and the host sends back the
                     // final synced amount after checking zone and inventory
                     CULog("HOST deposit request");
-                    for (auto& p : playerFact->current) {
+                    for (auto& p : _playerFactory->current) {
                         if (p->getPID() == de->getPID()) {
                             Vec2 playerScreenPos = p->getPosition() * PHYSICS_SCALE;
                             bool canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
@@ -107,27 +117,27 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
                                 if (canDeposit) {
                                     int deposited = p->depositItem((size_t)slotIndex);
                                     if (deposited > 0) {
-                                        if (_player && p == _player) {
-                                            inventoryValue = _player->getInventoryVal();
+                                        if (p == _localPlayer) {
+                                            inventoryValue = _localPlayer->getInventoryVal();
                                         }
                                         pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true, slotIndex));
                                     }
                                 } else if ((size_t)slotIndex < p->getInventory().size()) {
                                     auto carried = p->getInventory()[(size_t)slotIndex];
                                     p->depositItem((size_t)slotIndex);
-                                    if (_player && p == _player) {
-                                        inventoryValue = _player->getInventoryVal();
+                                    if (p == _localPlayer) {
+                                        inventoryValue = _localPlayer->getInventoryVal();
                                     }
-                                    auto params = itemFact->serializeParams(p->getPosition() + Vec2(0.0f, -0.35f), carried.value, carried.itemType);
-                                    auto pair = getPhysController()->addSharedObstacle(itemFactId, params);
+                                    auto params = _itemFactory->serializeParams(p->getPosition() + Vec2(0.0f, -0.35f), carried.value, carried.itemType);
+                                    auto pair = getPhysController()->addSharedObstacle(_itemFactId, params);
                                     getPhysController()->acquireObs(pair.first, 0);
                                     pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), 0, true, slotIndex));
                                 }
                             } else if (canDeposit) {
                                 int deposited = p->depositItems();
                                 if (deposited > 0) {
-                                    if (_player && p == _player) {
-                                        inventoryValue = _player->getInventoryVal();
+                                    if (p == _localPlayer) {
+                                        inventoryValue = _localPlayer->getInventoryVal();
                                     }
                                     pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true));
                                 }
@@ -140,18 +150,18 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
                 }
             } else if (de->isSync()) {
                 // Clients only apply deposit updates that came back from host
-                for (auto& p : playerFact->current) {
+                for (auto& p : _playerFactory->current) {
                     if (p->getPID() == de->getPID()) {
                         if (de->getSlotIndex() >= 0) {
                             p->depositItem((size_t)de->getSlotIndex());
-                            if (_player && p == _player) {
-                                inventoryValue = _player->getInventoryVal();
+                            if (p == _localPlayer) {
+                                inventoryValue = _localPlayer->getInventoryVal();
                             }
                         }
                         else {
                             p->clearInventory();
-                            if (_player && p == _player) {
-                                inventoryValue = _player->getInventoryVal();
+                            if (p == _localPlayer) {
+                                inventoryValue = _localPlayer->getInventoryVal();
                             }
                         }
                         break;
@@ -160,17 +170,17 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
                 depositedValue += de->getAmount();
             }
         } else if (auto pre = std::dynamic_pointer_cast<PickupEvent>(e)) {
-            if (itemFact->getItem(pre->getItemID()) != nullptr) {
+            if (_itemFactory->getItem(pre->getItemID()) != nullptr) {
                 CULog("pickup event got!");
-                auto item = itemFact->getItem(pre->getItemID());
+                auto item = _itemFactory->getItem(pre->getItemID());
                 if (item && !item->isRemoved()) {
-                    for (auto& p : playerFact->current) {
+                    for (auto& p : _playerFactory->current) {
                         if (p->getPID() == pre->getPID()) {
                             if (p->addItem(item->getItemType(), item->getValue())) {
-                                if (_player && p == _player) {
-                                    inventoryValue = _player->getInventoryVal();
+                                if (p == _localPlayer) {
+                                    inventoryValue = _localPlayer->getInventoryVal();
                                 }
-                                itemFact->getItem(pre->getItemID())->markRemoved(true);
+                                _itemFactory->getItem(pre->getItemID())->markRemoved(true);
                                 getPhysController()->removeSharedObstacle(item);
                             }
                             break;
@@ -183,26 +193,21 @@ std::tuple<int,int> NetworkController::customEvents(std::shared_ptr<ItemFactory>
         }
     }
     return std::tuple<int,int>(inventoryValue,depositedValue);
-};
-void NetworkController::processEndEvent(const std::shared_ptr<EndGameEvent> &e,bool* _playerWon, bool* _gameEnded)
+}
+
+void NetworkController::processEndEvent(const std::shared_ptr<EndGameEvent> &e)
 {
-    *_playerWon = e->getResult();
-    *_gameEnded = true;
+    _gameState = e->getResult() ? NCGameState::WON : NCGameState::LOST;
 }
 
 void NetworkController::processRestartEvent(const std::shared_ptr<RestartGameEvent> &e)
 {
-    _status = Status::CONNECTED;
-    disablePhysics(); // prob necessary?
-    _shortUID = -1;
-}
-
-void NetworkController::resetHost() {
-    _status = Status::CONNECTED;
-    disablePhysics(); // prob necessary?
-    _numReady = 0;
+    _gameState=NCGameState::UNSTARTED;
     _randSeed = 0;
-    _randSeed = _rng->getUint32();
+    if (isHost()) {
+        _numReady = 0;
+        _randSeed = _rng->getUint32();
+    }
 }
 
 

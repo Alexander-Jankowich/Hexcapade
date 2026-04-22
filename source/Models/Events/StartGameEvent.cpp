@@ -1,11 +1,11 @@
 //
-//  GameInitEvent.cpp
-//  tech_final
+//  StartGameEvent.cpp
+//  alpha_final
 //
-//  Created by Serena Duncan on 3/21/26.
+//  Created by Serena Duncan on 4/20/26.
 //
 
-#include "GameInitEvent.h"
+#include "StartGameEvent.h"
 
 using namespace cugl::physics2::distrib;
 
@@ -16,22 +16,20 @@ using namespace cugl::physics2::distrib;
  * Not that this method is not static, it differs from the static alloc() method
  * and all methods must implement this method.
  */
-std::shared_ptr<NetEvent> GameInitEvent::newEvent(){
-    return std::make_shared<GameInitEvent>();
+std::shared_ptr<NetEvent> StartGameEvent::newEvent(){
+    return std::make_shared<StartGameEvent>();
 }
 
-std::shared_ptr<NetEvent> GameInitEvent::allocGameInitEvent(unsigned int s){
-    auto event = std::make_shared<GameInitEvent>();
-    event->_seed = s;
+std::shared_ptr<NetEvent> StartGameEvent::allocStartGameEvent(){
+    auto event = std::make_shared<StartGameEvent>();
     return event;
 }
 
 /**
  * Serialize any paramater that the event contains to a vector of bytes.
  */
-std::vector<std::byte> GameInitEvent::serialize(){
+std::vector<std::byte> StartGameEvent::serialize(){
     _serializer.reset();
-    _serializer.writeUint32((uint32_t)_seed);
     return _serializer.serialize();
 }
 /**
@@ -43,10 +41,7 @@ std::vector<std::byte> GameInitEvent::serialize(){
  * should be able to recreate a serialized event entirely, setting all the
  * useful parameters of this class.
  */
-void GameInitEvent::deserialize(const std::vector<std::byte>& data){
+void StartGameEvent::deserialize(const std::vector<std::byte>& data){
     _deserializer.reset();
     _deserializer.receive(data);
-    _seed = _deserializer.readUint32();
 }
-
-

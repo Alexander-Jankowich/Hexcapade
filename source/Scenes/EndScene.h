@@ -41,12 +41,12 @@ public:
     bool isVisible()      const { return _state != State::NONE; }
     bool isHost() const {return _networkCtrl->isHost();}
     std::shared_ptr<NetworkController> getNetwork() const {return _networkCtrl;}
-    void setActive(bool active);
+    void setActive(bool active) override;
 
     void release() {_networkCtrl = nullptr;}
-    bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->getStatus()==NetworkController::Status::CONNECTED); }
+    bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->gameState()==NetworkController::NCGameState::UNSTARTED); }
 
-    void update(float dt);
+    void update(float dt) override;
     void render() override;
 };
 

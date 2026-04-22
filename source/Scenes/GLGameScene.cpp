@@ -271,7 +271,7 @@ void GameScene::dispose()
 
 void GameScene::reset()
 {
-    CULog("reset game");
+    CULog("game scene reset called");
     loadGameplayConfig();
     _gameEnded = false;
     _playerWon = false;
@@ -496,6 +496,8 @@ void GameScene::preUpdate(float dt)
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
         //Have we set our player yet / received signal
         if (!_player) return;
+        _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
+                                    _player, _input, _depositPosition, _depositRadius);
     }
     if (_player && !_addedLWalls) {
         _worldnode->addChild(_map->getLowerWallNode());
@@ -896,8 +898,9 @@ void GameScene::fixedUpdate(Uint64 step)
     // First process incoming events
     _networkCtrl->updateNet();
     
-    std::tuple<int,int> values = _networkCtrl->customEvents(_itemFact, _playerFact, _itemFactId,
-                                 _player, _input, &_playerWon, &_gameEnded, _depositPosition, _depositRadius);
+    std::tuple<int,int> values = _networkCtrl->customEvents();
+    _gameEnded = _networkCtrl->gameState()==NetworkController::NCGameState::WON || _networkCtrl->gameState()==NetworkController::NCGameState::LOST;
+    _playerWon = _networkCtrl->gameState()==NetworkController::NCGameState::WON;
     _inventoryValue = std::get<0>(values);
     _depositedValue += std::get<1>(values);
     
@@ -1241,7 +1244,8 @@ void GameScene::setActive(bool value)
             CULog("I am trying to get a player using this id %s", _networkCtrl -> getPID().c_str());
             _player = _playerFact->getPlayerByPID(_networkCtrl -> getPID());
             
-           
+           _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
+                                       _player, _input, _depositPosition, _depositRadius);
 
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());

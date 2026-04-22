@@ -74,8 +74,9 @@ void EndScene::touchEndCB(const TouchEvent& event, bool focus) {
 
     if (_buttonRect.contains(pos)) {
         _replayPressed = true;
+        CULog("host sending restart");
         _networkCtrl->pushOutEvent(RestartGameEvent::allocRestartGameEvent(0));
-        _networkCtrl->resetHost();
+        _networkCtrl->updateNet(); // send event
     }
 }
 #else
@@ -91,9 +92,9 @@ void EndScene::mouseReleaseCB(const MouseEvent& event, Uint8 clicks, bool focus)
 
     if (_buttonRect.contains(pos)) {
         _replayPressed = true;
+        CULog("host sending restart");
         _networkCtrl->pushOutEvent(RestartGameEvent::allocRestartGameEvent(0));
         _networkCtrl->updateNet(); // send event
-        _networkCtrl->resetHost();
     }
 }
 #endif

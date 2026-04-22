@@ -26,10 +26,6 @@ private:
     std::shared_ptr<cugl::scene2::Label> _player;
     std::string _roomCode;
     
-    bool sentInit = false;
-
-    bool checkConnection();
-
 public:
     HostScene() : cugl::scene2::Scene2() {}
     ~HostScene() { dispose(); }
@@ -40,7 +36,6 @@ public:
 
 
     void update(float dt) override;
-    void sendInitMsg();
     void disconnect() {_networkCtrl->disconnect();}
     void release() { _networkCtrl = nullptr; }
     void obtainNetwork(std::shared_ptr<NetworkController> n) { _networkCtrl = n; }

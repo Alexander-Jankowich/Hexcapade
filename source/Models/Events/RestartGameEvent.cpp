@@ -31,7 +31,7 @@ std::shared_ptr<NetEvent> RestartGameEvent::allocRestartGameEvent(int d){
  */
 std::vector<std::byte> RestartGameEvent::serialize(){
     _serializer.reset();
-    _serializer.writeBool(_difficulty);
+    _serializer.writeUint32(_difficulty);
     return _serializer.serialize();
 }
 /**

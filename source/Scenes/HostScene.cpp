@@ -52,7 +52,6 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     // Create the server configuration
     _networkCtrl->init(_assets);
     
-    
     addChild(scene);
     setActive(false);
     return true;
@@ -90,14 +89,12 @@ void HostScene::setActive(bool value) {
             _backout->activate();
             _startgame->activate();
             _networkCtrl->connectHost();
-            sentInit = false;
         } else {
             _startgame->deactivate();
             _backout->deactivate();
             // If any were pressed, reset them
             _startgame->setDown(false);
             _backout->setDown(false);
-            sentInit = false;
         }
     }
 }
@@ -122,11 +119,4 @@ void HostScene::configureStartButton() {
         updateText(_startgame, "Starting Game");
         _startgame->deactivate();
     }
-}
-
-void HostScene::sendInitMsg() {
-    if(sentInit) return; // alr sent
-    CULog("host sending init event");
-    _networkCtrl->pushOutEvent(GameInitEvent::allocGameInitEvent(_networkCtrl->getRandSeed()));
-    sentInit = true;
 }

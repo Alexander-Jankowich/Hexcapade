@@ -4,6 +4,9 @@
 //
 //  Created by Serena Duncan on 3/18/26.
 //
+#pragma once
+#ifndef __PLAYER_OBSTACLE_H__
+#define __PLAYER_OBSTACLE_H__
 #include "../Spells.h"
 
 using namespace cugl;
@@ -252,3 +255,5 @@ public:
     //    return types;
     //}
 };
+
+#endif // !__PLAYER_OBSTACLE_H__
