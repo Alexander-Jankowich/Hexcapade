@@ -944,6 +944,7 @@ void GameScene::fixedUpdate(Uint64 step)
     _inventoryValue = std::get<0>(values);
     _depositedValue += std::get<1>(values);
     
+    _currOverlappedItem = -1;
     _world->update(step / 1000000.0f);
 }
 
