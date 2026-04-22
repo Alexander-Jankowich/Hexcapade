@@ -581,6 +581,14 @@ void GameScene::preUpdate(float dt)
     // Update animations
     _animations.update(dt);
 
+    if (_player->_bombExpired) {
+        _player->_bombExpired = false;
+        CULog("artifact_bomb expired for player %s", _player->getPID().c_str());
+        _inventoryValue = _player->getInventoryVal();
+        _networkCtrl->pushOutEvent(
+            DepositEvent::allocDepositEvent(_player->getPID(), 0, true));
+    }
+
     if (_player->getHealth()==0) return; // if dead ignore updates
 
     // Player movement
@@ -689,8 +697,8 @@ void GameScene::preUpdate(float dt)
                 }
                 
                 // Drop anywhere else in the world.
-                
-                else if ((size_t)depositIndex < _player->getInventory().size()) {
+                // Artifact bomb cannot be dropped!
+                else if ((size_t)depositIndex < _player->getInventory().size() && !_player->isNonDroppable((size_t)depositIndex)) {
                     auto carried = _player->getInventory()[(size_t)depositIndex];
                     _player->depositItem((size_t)depositIndex);
                     _inventoryValue = _player->getInventoryVal();
