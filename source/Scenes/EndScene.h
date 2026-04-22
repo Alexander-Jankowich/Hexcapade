@@ -41,7 +41,7 @@ public:
     bool isVisible()      const { return _state != State::NONE; }
     bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->getStatus()==NetworkController::Status::READY); }
 
-    void update(float dt);
+    void update(float dt) override;
     void render() override;
 };
 

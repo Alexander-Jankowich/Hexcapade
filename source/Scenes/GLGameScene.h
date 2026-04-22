@@ -173,7 +173,7 @@ public:
      * Disposes of all (non-static) resources allocated to this mode.
      */
     void dispose() override;
-    void reset();
+    void reset() override;
     
     bool gameEnded() { return _gameEnded && _gameEnded; }
 

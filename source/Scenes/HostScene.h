@@ -52,7 +52,7 @@ public:
 
     void resetStatus() { _networkCtrl->resetStatus(); }
 
-    void reset() {
+    void reset() override {
         _networkCtrl->disconnect();
         _gameid->setText("");
         _player->setText("1");

@@ -25,7 +25,7 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, SpellType t, st
     if(!(t == SpellType::COMBO_FREEZE or t == SpellType::COMBO_FIREBALL or t == SpellType::DEATH or t == SpellType::WATER)){
         setScale(0.5);
     }
-    if((t == SpellType::WATER)){
+    if(t == SpellType::WATER){
         CULog("im casting water");
         setColor(Color4::BLUE);
     }
