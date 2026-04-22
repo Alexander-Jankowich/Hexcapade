@@ -110,7 +110,7 @@ void SelectScene::updateText(const std::shared_ptr<scene2::Button>& button, cons
 }
 
 void SelectScene::configureStartButton() {
-    if(_status==SSStatus::SELECT) { // players choose their character
+    if(_status==SSStatus::SELECT && _networkCtrl->getNumPlayers() > 1) { // players choose their character, ONLY MULTIPLAYER
         auto text = _networkCtrl->isHost() ? "Waiting for Players" : "Ready";
         updateText(_startgame, text);
         if (!_networkCtrl->isHost()) _startgame->activate();

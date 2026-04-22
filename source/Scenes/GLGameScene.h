@@ -85,8 +85,6 @@ protected:
     RunBalanceConfig _runConfig;
     cugl::Vec2 _cameraBottomLeft;
     float _cameraZoom;
-    int _runRevision;
-    int _appliedRunRevision;
     unsigned int _mapSeed;
     cugl::Size _mapSceneSize;
     float lastEnemySpawn;
@@ -146,8 +144,6 @@ public:
     GameScene() : cugl::scene2::Scene2(),
         _cameraBottomLeft(cugl::Vec2::ZERO),
         _cameraZoom(1.5f),
-        _runRevision(0),
-        _appliedRunRevision(-1),
         _mapSeed(0),
         _mapSceneSize(cugl::Size::ZERO),
         _quota(100),

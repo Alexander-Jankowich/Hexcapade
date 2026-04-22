@@ -208,9 +208,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
     _depositRadius = 42.0f;
     _depositPosition = Vec2::ZERO;
     
-    //_mapSeed = chooseNonZeroSeed();
-    _runRevision = 1;
-    
     // Create all the factories
     _spellFact = SpellFactory::alloc(_assets);
     _playerFact = PlayerFactory::alloc(_assets);
@@ -226,7 +223,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
     // IMPORTANT: SCALING MUST BE UNIFORM
     // This means that we cannot change the aspect ratio of the physics world
     // Shift to center if a bad fit
-    Size dimen = getSize();
     //_scale = dimen.width == SCENE_WIDTH ? dimen.width / rect.size.width : dimen.height / rect.size.height;
     //Vec2 offset((dimen.width - SCENE_WIDTH) / 2.0f, (dimen.height - SCENE_HEIGHT) / 2.0f);
     Vec2 offset = Vec2::ZERO;
@@ -273,6 +269,9 @@ void GameScene::reset()
 {
     CULog("game scene reset called");
     loadGameplayConfig();
+    _mapSeed = 0;
+    _world->clear();
+    _worldnode->removeAllChildren();
     _gameEnded = false;
     _playerWon = false;
     _depositedValue = 0;
@@ -299,7 +298,6 @@ void GameScene::reset()
     _dragInventoryPos = Vec2::ZERO;
     hideInventoryCard();
 
-    _runRevision = std::max(1, _runRevision + 1);
 }
 
 #pragma mark -
@@ -369,7 +367,6 @@ void GameScene::rebuildMapForRun() {
     
     
     _roomController.setMap(_map);
-    _appliedRunRevision = _runRevision;
     
     _quota = std::max(1, _runConfig.quota);
     _depositPosition = _map->getPlayerSpawn();
