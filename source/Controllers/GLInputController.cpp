@@ -1171,6 +1171,9 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
     }
     else {
         CULog("here");
+        currentStroke.clear();
+        secondStroke.clear();
+        thirdStroke.clear();
         _pickupPressed = true;
     }
 }
