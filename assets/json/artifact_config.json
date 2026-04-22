@@ -26,20 +26,28 @@
       "texture_asset": "artifact_gem_boost"
     },
     {
-      "_comment": "gem artifact brown visual",
-      "id": "artifact_protection",
-      "name": "Gem_Boost",
-      "value": 30,
-      "weight": 1.0,
-      "texture_asset": "artifact_protection"
-    },
-    {
       "_comment": "gem artifact blue visual",
       "id": "artifact_heavy",
       "name": "Gem_Boost",
-      "value": 200,
+      "value": 150,
       "weight": 1.0,
       "texture_asset": "artifact_heavy"
+    },
+    {
+      "_comment": "gem artifact brown visual",
+      "id": "artifact_dirt",
+      "name": "Gem_Boost",
+      "value": 0,
+      "weight": 1.0,
+      "texture_asset": "artifact_dirt"
+    },
+    {
+      "_comment": "gem artifact pink visual",
+      "id": "artifact_bomb",
+      "name": "Gem_Boost",
+      "value": 120,
+      "weight": 1.0,
+      "texture_asset": "artifact_bomb"
     }
   ],
   "spellbooks": [
