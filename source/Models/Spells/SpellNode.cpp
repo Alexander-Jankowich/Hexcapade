@@ -29,9 +29,6 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, SpellType t, st
         CULog("im casting water");
         setColor(Color4::BLUE);
     }
-    if(t == SpellType::DEATH){
-        setColor(Color4::BLACK);
-    }
     if(t == SpellType::EARTH){
         setColor(Color4::PAPYRUS);
     }

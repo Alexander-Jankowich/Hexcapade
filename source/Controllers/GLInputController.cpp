@@ -990,15 +990,15 @@ void InputController::processJoystick(const cugl::Vec2 pos) {
     float dist = diff.length();
 
     // Clamp to joystick radius
-    if (dist > _joyradius) {
-        Vec2 excess = diff;
-        diff.normalize();
-        diff *= _joyradius;
+    //if (dist > _joyradius) {
+    //    Vec2 excess = diff;
+    //    diff.normalize();
+    //    diff *= _joyradius;
 
-        excess -= diff;
-        // Move joystick in excess direction
-        _joycenter += excess;
-    }
+    //    excess -= diff;
+    //    // Move joystick in excess direction
+    //    _joycenter += excess;
+    //}
 
     if (dist > _deadzone) {
         _joystick = true;
@@ -1099,8 +1099,8 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
 
         //CULog("%s", gesture.c_str());
     }
-    else {
-        CULog("here");
+    else if (currentStroke[0].distance(currentStroke[currentStroke.size() - 1]) < 10) {
+        CULog("Pickup, clear gesture");
         currentStroke.clear();
         secondStroke.clear();
         thirdStroke.clear();
@@ -1135,47 +1135,47 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     pos = touch2Screen(pos);
     
     switch (zone){
-        case Zone::TOP:
-            if (_itouch.touchids.empty()) {
-                _inventoryAnchor = pos;
-                _inventoryTouchPos = pos;
-                _itouch.position = pos;
-                _itouch.timestamp.mark();
-                _itouch.touchids.insert(event.touch);
-            }
-            break;
-        case Zone::LEFT:
-            // Only process if no touch in zone
-            if (_ltouch.touchids.empty()) {
-                // Left is the floating joystick
-                _ltouch.position = event.position;
-                _ltouch.timestamp.mark();
-                _ltouch.touchids.insert(event.touch);
+    case Zone::TOP:
+        if (_itouch.touchids.empty()) {
+            _inventoryAnchor = pos;
+            _inventoryTouchPos = pos;
+            _itouch.position = pos;
+            _itouch.timestamp.mark();
+            _itouch.touchids.insert(event.touch);
+        }
+        break;
+    case Zone::LEFT:
+        // Only process if no touch in zone
+        if (_ltouch.touchids.empty()) {
+            // Left is the floating joystick
+            _ltouch.position = event.position;
+            _ltouch.timestamp.mark();
+            _ltouch.touchids.insert(event.touch);
 
-                _joycenter = pos;
-                //_joycenter.y += JSTICK_OFFSET;
-            }
-            break;
-        case Zone::RIGHT:
-            // For now if pressed on right side attempt pickup, need to change to button
-            _touchDown = true;
-            _touchStart = pos;
+            _joycenter = pos;
+            //_joycenter.y += JSTICK_OFFSET;
+        }
+        break;
+    case Zone::RIGHT:
+        // For now if pressed on right side attempt pickup, need to change to button
+        _touchDown = true;
+        _touchStart = pos;
 
-            currentStroke.clear();
-            currentStroke.push_back(pos);
-            _rtouch.touchids.insert(event.touch);
-            if (!_isAiming) {
-                _gestureRecognized = false;
-                if (_curStrokes >= 3) {
-                    _curStrokes = 0;
-                }
+        currentStroke.clear();
+        currentStroke.push_back(pos);
+        _rtouch.touchids.insert(event.touch);
+        if (!_isAiming) {
+            _gestureRecognized = false;
+            if (_curStrokes >= 3) {
+                _curStrokes = 0;
             }
-            break;
-        case Zone::MAIN:
-            //not possible hopefully lol
-            break;
-        default:
-            break;
+        }
+        break;
+    case Zone::MAIN:
+        //not possible hopefully lol
+        break;
+    default:
+        break;
     }
     
 }

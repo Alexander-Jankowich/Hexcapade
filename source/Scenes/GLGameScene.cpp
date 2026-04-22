@@ -852,7 +852,7 @@ void GameScene::preUpdate(float dt)
             case SpellType::DEATH:
                 for (int i = 0; i < 16; i++) {
                     angle = angle.rotate((M_PI / 8) * i);
-                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
+                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), angle, t, _networkCtrl->getPID());
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
@@ -869,7 +869,6 @@ void GameScene::preUpdate(float dt)
 
                     auto params = _spellFact->serializeParams(
                         (playerScreenPos / PHYSICS_SCALE),
-                        _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f,
                         dir, t, _networkCtrl->getPID());
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
@@ -878,7 +877,7 @@ void GameScene::preUpdate(float dt)
             }
             default:
                 int damageBonus = _player->getDamageBonus();
-                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID(), damageBonus);
+                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _networkCtrl->getPID(), damageBonus);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 break;
@@ -1435,6 +1434,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     else if (player && spell) {
         //CULog("spell and player");
         contact -> SetEnabled(false);
+
+        // If spell is in end animation, do not do any calculations
+        if (spell->shouldRemove()) {
+            return;
+        }
+
         CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID()==player->getPID()) return;
         if (spell->TYPE == SpellType::HEAL) {
@@ -1466,6 +1471,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         //We need to set ATTACKRESET and decrement some sort of timer
         contact -> SetEnabled(true);
         if(player -> getHealth() < 0){
+
             return;
         }
 
@@ -1493,6 +1499,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     else if (enemy && spell) {
         //CULog("enemy and spell");
         contact -> SetEnabled(false);
+
+        // If spell is in end animation, do not do any calculations
+        if (spell->shouldRemove()) {
+            return;
+        }
+
         if (spell -> TYPE == SpellType::WATER){
             Vec2 pushDir = enemy->getPosition() - spell->getPosition();
             pushDir.normalize();
