@@ -608,9 +608,12 @@ void GameScene::preUpdate(float dt)
 //        }
 //    }
 
-    _player->setVelocity(velocity);
-    
-    _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
+    if (_player->getState() == PlayerObstacle::AnimationState::FROZEN) {
+        _player->setVelocity(Vec2::ZERO);
+    } else {
+        _player->setVelocity(velocity);
+        _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
+    }
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
     updateCameraFollow();
@@ -749,11 +752,11 @@ void GameScene::preUpdate(float dt)
         _input.resolveSpell();
     } else if (_input.getGesture() != SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
-        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
+        //if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
             _player->setSpell(newSpell);
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-        }
+        //}
     }
 
     Vec2 angle = _input.getSpellAngle();
@@ -810,8 +813,8 @@ void GameScene::preUpdate(float dt)
             //CULog("Casting spell type: %d", t);
             switch (t) {
             case SpellType::DEATH:
-                for (int i = 0; i < 32; i++) {
-                    angle = angle.rotate((M_PI / 16) * i);
+                for (int i = 0; i < 16; i++) {
+                    angle = angle.rotate((M_PI / 8) * i);
                     auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
@@ -1380,17 +1383,25 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
     // Checking for collisions
     if (spell && spell2){
-        CULog("spell and spell");
         contact -> SetEnabled(false);
     }else if (player && spell) {
         CULog("spell and player");
         contact -> SetEnabled(false);
+        CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID()==player->getPID()) return;
         if (spell->TYPE == SpellType::HEAL) {
             int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
             spell->markRemoved(true);
             return;
+        }
+        if (spell->TYPE == SpellType::FREEZE || spell->TYPE == SpellType::COMBO_FREEZE) {
+            player->setFrozeTimer(60);
+            player->setAniState(PlayerObstacle::AnimationState::FROZEN);
+        }
+        if (spell->TYPE == SpellType::EARTH){
+            player->setMudTimer(240);
+            player -> setMud(true);
         }
         player -> setHealth(player->getHealth() - 1);
         spell->markRemoved(true);

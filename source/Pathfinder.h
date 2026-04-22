@@ -13,8 +13,8 @@
 
 #include <cugl/cugl.h>
 
-#include "../Models/Enemies.h"
-#include "../Models/Players.h"
+#include "Models/Enemies.h"
+#include "Models/Players.h"
 
 using namespace std;
 using namespace cugl;

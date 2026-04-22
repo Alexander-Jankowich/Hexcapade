@@ -88,6 +88,8 @@ public:
     void addCurrent(shared_ptr<PlayerObstacle> p){
         current.emplace(p);
     }
+    
+    
 
     //void reset() {
     //    for (auto p : current) {

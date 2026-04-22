@@ -58,6 +58,10 @@ private:
 
     static int cols;
     static int rows;
+    
+    bool frozen = false;
+    
+    bool mud = false;
 
     int getDirection() { return (facingLeft ? 2 : 0) + (facingBack ? 1 : 0); }
 
@@ -132,6 +136,10 @@ public:
     void updateAnimationState(PlayerObstacle::AnimationState s);
 
     void setVelocity(cugl::Vec2 value);
+    
+    void setFrozen(bool f) {frozen = f;}
+    
+    void setMud(bool m) {mud = m;}
 
     std::pair<cugl::ActionFunction, float> getNextAnimation() override;
 };

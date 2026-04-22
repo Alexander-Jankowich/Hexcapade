@@ -55,6 +55,10 @@ void PlayerNode::setVelocity(cugl::Vec2 value) {
 
 void PlayerNode::updateAnimationState(PlayerObstacle::AnimationState s) {
     switch (s) {
+    case PlayerObstacle::AnimationState::FROZEN:
+        _nextAnimation = AnimationType::IDLE;
+        setColor(Color4::BLUE);
+        break;
     case PlayerObstacle::AnimationState::DEAD:
         _nextAnimation = AnimationType::DEAD;
         break;
@@ -63,6 +67,11 @@ void PlayerNode::updateAnimationState(PlayerObstacle::AnimationState s) {
         break;
     default:
         // Just get direction
+        if(mud){
+            setColor(Color4::GRAY);
+        }else{
+            setColor(Color4::WHITE);
+        }
         _nextAnimation = _velocity.isZero() ? AnimationType::IDLE : AnimationType::WALK;
         break;
     }

@@ -73,12 +73,21 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
 
 void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node) {
     PlayerObstacle::AnimationState state = obs->getState();
-    if (obs->getSpell() != SpellType::NONE) {
-        state = PlayerObstacle::AnimationState::CASTING;
+    obs->updateTimers(0);
+        if (state != PlayerObstacle::AnimationState::FROZEN) {
+            if (obs->getSpell() != SpellType::NONE) {
+                state = PlayerObstacle::AnimationState::CASTING;
+            }
+            else if (state == PlayerObstacle::AnimationState::CASTING) {
+                state = PlayerObstacle::AnimationState::IDLE;
+            }
+        }
+
+    node->setMud(obs->getMud());
+    if(state == PlayerObstacle::AnimationState::FROZEN){
+            node->setFrozen(true); 
     }
-    else if (state == PlayerObstacle::AnimationState::CASTING) {
-        state = PlayerObstacle::AnimationState::IDLE;
-    }
+       
     node->updateAnimationState(state);
     float leftover = Application::get()->getFixedRemainder() / 1000000.f;
     Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
