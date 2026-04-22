@@ -5,7 +5,7 @@
       "_comment": "scrollartifact visual",
       "id": "artifact_scroll",
       "name": "Scroll",
-      "value": 120,
+      "value": 200,
       "weight": 1.0,
       "texture_asset": "artifact_scroll"
     },
