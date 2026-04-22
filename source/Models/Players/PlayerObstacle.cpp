@@ -54,6 +54,7 @@ void PlayerObstacle::setHealth(int h) {
     _health = min(h, MAX_HEALTH);
 
     if (_health <= 0) {
+        setVelocity(Vec2::ZERO);
         _health = 0;
         _state = AnimationState::DEAD;
     }
