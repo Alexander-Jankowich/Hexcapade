@@ -18,11 +18,11 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
 
 void PlayerObstacle::setVelocity(Vec2 v) {
     _velocity = v;
-    CULog("setVelocity called, state is %d", (int)_state);
+    //CULog("setVelocity called, state is %d", (int)_state);
     if (_state == AnimationState::FROZEN) {
-            if (getBody()) getBody()->SetLinearVelocity(b2Vec2(0, 0));
-            return;
-        }
+        if (getBody()) getBody()->SetLinearVelocity(b2Vec2(0, 0));
+        return;
+    }
     if (!v.isZero()) {
         _angle = v.getNormalization();
 

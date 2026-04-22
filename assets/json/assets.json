@@ -23,6 +23,9 @@
     "heal": {
       "file": "textures/heal_sheet.png"
     },
+    "death": {
+      "file": "textures/death_sheet.png"  
+    },
     "button": {
       "file": "textures/button.png"
     },
