@@ -6,22 +6,14 @@
 //
 
 #include "SpellFactory.h"
-#define PHYSICS_SCALE 100
+
+#define PHYSICS_SCALE 100.0f
 
 using namespace std;
 using namespace cugl;
 
-SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int dmg, float range ,SpellType type, std::string c) : TYPE(type) {
-    if (type == SpellType::DEATH){
-        init(pos, (rad*2)/PHYSICS_SCALE);
-    }else if (type == SpellType::COMBO_FREEZE or type == SpellType::COMBO_FIREBALL){
-        init(pos, (rad*2)/PHYSICS_SCALE);
-    }else if (type == SpellType::WATER){
-        init(pos, (rad*2) / PHYSICS_SCALE);
-        setDensity(100);
-    }else{
-        init(pos, rad/PHYSICS_SCALE);
-    }
+SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range ,SpellType type, std::string c) : TYPE(type) {    
+    init(pos, radius);
     
     setAwake(true);
     setEnabled(true);
@@ -37,6 +29,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int
     _range = range;
     
     _caster = c;
+    _atEnd = false;
 
     setLinearVelocity(vel);
 }
@@ -44,7 +37,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos,float rad, cugl::Vec2 vel, int
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos,float rad, Vec2 angle, SpellType type, std::string c_uid, int damageBonus) {
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 angle, SpellType type, std::string c_uid, int damageBonus) {
     auto image = _assets->get<graphics::Texture>("fireball"); // default?
     
     // Create the SpellObstacle
@@ -77,7 +70,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::DEATH:
         values =_spellConsts->get("death");
-        image = _assets->get<graphics::Texture>("fireball");
+        image = _assets->get<graphics::Texture>("death");
         break;
     case SpellType::EARTH:
         values = _spellConsts->get("earth");
@@ -93,8 +86,10 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         CULog("Spell not implemented!!!! %d", (int) type);
     }
 
+    float radius = image->getHeight() / PHYSICS_SCALE;
+
     Vec2 vel = norm * values->getFloat("speed");
-    auto spell = SpellObstacle::alloc(pos, rad,vel,
+    auto spell = SpellObstacle::alloc(pos, vel, radius,
         std::max(1, values->getInt("damage") + damageBonus),
         values->getFloat("range"),type ,c_uid);
     //auto spell = SpellObstacle::alloc(pos, type);
@@ -108,25 +103,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     current.emplace(spell);
 
     // Create Spell! Hard code values for now, change later
-    auto sprite = std::make_shared<SpellNode>(pos, vel, 1, 1,type,
-        image);
-
-//    switch (type) {
-//    case SpellType::HEAL:
-//        sprite->setColor(Color4::GREEN);
-//        break;
-//    case SpellType::FIREBALL:
-//    case SpellType::COMBO_FIREBALL:
-//        sprite->setColor(Color4::RED);
-//        break;
-//    case SpellType::FREEZE:
-//    case SpellType::COMBO_FREEZE:
-//        sprite->setColor(Color4::BLUE);
-//        break;
-//    
-//    default:
-//        break;
-//    }
+    auto sprite = std::make_shared<SpellNode>(pos, vel, type, image);
 
     return std::make_pair(spell, sprite);
 }
@@ -134,7 +111,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 /**
  * Helper method for converting normal parameters into byte vectors used for syncing.
  */
-std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos,float rad, Vec2 angle, SpellType type, string c, int damageBonus) {
+std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, Vec2 angle, SpellType type, string c, int damageBonus) {
     /**
      * TODO: Use _serializer to serialize pos and scale (remember to make a
      * shared copy of the serializer reference, otherwise it will be lost if
@@ -143,7 +120,6 @@ std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos,f
     _serializer.reset();
     _serializer.writeFloat(pos.x);
     _serializer.writeFloat(pos.y);
-    _serializer.writeFloat(rad);
     _serializer.writeFloat(angle.x);
     _serializer.writeFloat(angle.y);
     _serializer.writeUint32((uint32_t)type);
@@ -166,32 +142,49 @@ std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode
     float x = _deserializer.readFloat();
     float y = _deserializer.readFloat();
     Vec2 pos = Vec2(x, y);
-    float rad = _deserializer.readFloat();
     float vx = _deserializer.readFloat();
     float vy = _deserializer.readFloat();
     Vec2 velocity = Vec2(vx, vy);
     SpellType type = (SpellType) _deserializer.readUint32();
     string c = _deserializer.readString();
     int damageBonus = _deserializer.readSint32();
-    return createObstacle(pos, rad,velocity, type, c, damageBonus);
+    return createObstacle(pos, velocity, type, c, damageBonus);
 }
 
 std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {
     std::unordered_set<std::shared_ptr<SpellObstacle>> remove;
 
-    for (auto it = current.begin(); it != current.end(); ) {
+    for (auto it = current.begin(); it != current.end();) {
         // Remove from set if removed from scene
         if ((*it)->isRemoved()) {
             remove.emplace(*it);
             it = current.erase(it);
             continue;
         }
-        // Mark spells to be removed when out of range
-        if ((*it)->getTraveled() > (*it)->getRange()) {
-            (*it)->markRemoved(true);
-        }
         it++;
     }
 
     return remove;
+}
+
+void SpellFactory::linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, shared_ptr<Animator> animations) {
+    // Mark spells to be removed when out of range
+    if (obs->getTraveled() > obs->getRange()) {
+        obs->setRemove();
+    }
+
+    if (obs->shouldRemove() && !node->shouldRemove()) {
+        node->setRemove();
+        obs->setLinearVelocity(Vec2::ZERO);
+        animations->addNextListener(node, [obs](string key, float time, float actual) {
+            obs->markRemoved(true);
+        });
+        animations->endAnimation(node);
+    }
+
+    float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+    Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+    float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+    node->setPosition(pos * PHYSICS_SCALE);
+    node->setAngle(angle);
 }

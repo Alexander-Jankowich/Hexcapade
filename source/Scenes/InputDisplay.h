@@ -9,8 +9,8 @@
 //  Version: 3/1/26
 //
 
-#ifndef __INPUT_MODEL_H__
-#define __INPUT_MODEL_H__
+#ifndef __INPUT_DISPLAY_H__
+#define __INPUT_DISPLAY_H__
 #include <cugl/cugl.h>
 #include "../Controllers/GLInputController.h"
 
@@ -79,4 +79,4 @@ private:
 	cugl::Color4 _arrowColor;
 };
 
-#endif
+#endif // !__INPUT_DISPLAY_H__

@@ -72,16 +72,20 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
 }
 
 void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node) {
+    if (obs->getHealth() <= 0) {
+        obs->setLinearVelocity(Vec2::ZERO);
+    }
+
     PlayerObstacle::AnimationState state = obs->getState();
     obs->updateTimers(0);
-        if (state != PlayerObstacle::AnimationState::FROZEN) {
-            if (obs->getSpell() != SpellType::NONE) {
-                state = PlayerObstacle::AnimationState::CASTING;
-            }
-            else if (state == PlayerObstacle::AnimationState::CASTING) {
-                state = PlayerObstacle::AnimationState::IDLE;
-            }
+    if (state != PlayerObstacle::AnimationState::FROZEN) {
+        if (obs->getSpell() != SpellType::NONE) {
+            state = PlayerObstacle::AnimationState::CASTING;
         }
+        else if (state == PlayerObstacle::AnimationState::CASTING) {
+            state = PlayerObstacle::AnimationState::IDLE;
+        }
+    }
 
     node->setMud(obs->getMud());
     if(state == PlayerObstacle::AnimationState::FROZEN){

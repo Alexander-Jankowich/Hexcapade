@@ -25,4 +25,4 @@ public:
 	virtual pair<ActionFunction, float> getNextAnimation() = 0;
 };
 
-#endif
+#endif // !__ANIMATED_SPRITE_H__

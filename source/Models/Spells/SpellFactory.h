@@ -12,8 +12,12 @@
 #include "SpellNode.h"
 
 #define HEAL_AMT 3;
+
 using namespace cugl;
 using namespace cugl::physics2::distrib;
+using namespace std;
+
+
 /**
 * An extension of WheelObstacle to represent spell collision objects.
 */
@@ -26,20 +30,26 @@ protected:
     cugl::Vec2 _start;
     float _range;
 
+    bool _atEnd;
+
 public:
     const SpellType TYPE;
-    SpellObstacle(const cugl::Vec2 pos, float rad, cugl::Vec2 vel, int dmg, float range,SpellType type, std::string c);
+    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range, SpellType type, std::string c);
 
-    static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos,float rad,
-        cugl::Vec2 vel, int dmg, float range, SpellType type, std::string c) {
-        auto f = std::make_shared<SpellObstacle>(pos, rad,vel, dmg, range,type, c);
+    static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos, cugl::Vec2 vel, float radius,
+        int dmg, float range, SpellType type, std::string c) {
+        auto f = std::make_shared<SpellObstacle>(pos, vel, radius, dmg, range, type, c);
         f->createFixtures();
         return f;
     }
+
     float getDamage() { return _damage; }
     std::string getCasterUID() {return _caster;}
     float getRange() { return _range; }
     float getTraveled() { return getPosition().distance(_start); }
+
+    void setRemove() { _atEnd = true; }
+    bool shouldRemove() { return _atEnd; }
 };
 
 /**
@@ -63,7 +73,7 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos,float rad, Vec2 velocity, SpellType type, std::string c_uid, int damageBonus);
+    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, SpellType type, std::string c_uid, int damageBonus);
 
 
 public:
@@ -87,12 +97,13 @@ public:
     void init(std::shared_ptr<AssetManager>& assets) {
         _assets = assets;
         _spellConsts = _assets->get<JsonValue>("constants")->get("spells");
+        SpellNode::setConsts(_spellConsts);
     }
 
     /**
      * Helper method for converting normal parameters into byte vectors used for syncing.
      */
-    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos,float rad,Vec2 velocity, SpellType type, std::string c, int damageBonus = 0);
+    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, Vec2 velocity, SpellType type, std::string c, int damageBonus = 0);
 
     /**
      * Generate a pair of Obstacle and SceneNode using serialized parameters.
@@ -105,6 +116,11 @@ public:
     * @return a set of all spells to be removed from the world
     */
     std::unordered_set<std::shared_ptr<SpellObstacle>> update();
+
+    /**
+    * The linking function for spell obstacles -> spell nodes
+    */
+    void linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, shared_ptr<Animator> animations);
 };
 
 #endif // !__SPELL_FACTORY_H__

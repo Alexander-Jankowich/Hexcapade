@@ -218,7 +218,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
     _itemFact = ItemFactory::alloc(_assets);
 
     // Create action timeline
-    _animations = Animator();
+    _animations = Animator::alloc();
 
     // Create other controllers
     _pathfinder = Pathfinder();
@@ -588,7 +588,7 @@ void GameScene::preUpdate(float dt)
     
     
     // Update animations
-    _animations.update(dt);
+    _animations->update(dt);
 
     if (_player->_bombExpired) {
         _player->_bombExpired = false;
@@ -852,7 +852,7 @@ void GameScene::preUpdate(float dt)
             case SpellType::DEATH:
                 for (int i = 0; i < 16; i++) {
                     angle = angle.rotate((M_PI / 8) * i);
-                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
+                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), angle, t, _networkCtrl->getPID());
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
@@ -869,7 +869,6 @@ void GameScene::preUpdate(float dt)
 
                     auto params = _spellFact->serializeParams(
                         (playerScreenPos / PHYSICS_SCALE),
-                        _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f,
                         dir, t, _networkCtrl->getPID());
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
@@ -878,7 +877,7 @@ void GameScene::preUpdate(float dt)
             }
             default:
                 int damageBonus = _player->getDamageBonus();
-                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID(), damageBonus);
+                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _networkCtrl->getPID(), damageBonus);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 break;
@@ -892,8 +891,6 @@ void GameScene::preUpdate(float dt)
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
         }
     }
-    CULog("%d", _currOverlappedItem);
-    CULog("pressed pickup %d", _input.pressedPickup());
     if (_input.pressedPickup() && _currOverlappedItem >= 0) {
         CULog("trying to resolve pickup");
         auto item = _itemFact->getItem(_currOverlappedItem);
@@ -946,6 +943,7 @@ void GameScene::fixedUpdate(Uint64 step)
     _inventoryValue = std::get<0>(values);
     _depositedValue += std::get<1>(values);
     
+    _currOverlappedItem = -1;
     _world->update(step / 1000000.0f);
 }
 
@@ -1332,16 +1330,25 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             });
 
             // Add animation
-            _animations.addNode(p_node);
+            _animations->addNode(p_node);
         }
         else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _enemyFact->linkFunc(e, e_node);
+                _enemyFact->linkFunc(e, e_node, _animations);
             });
 
             // Add animation
-            _animations.addNode(e_node);
+            _animations->addNode(e_node);
+        }
+        else if (auto s = dynamic_pointer_cast<SpellObstacle>(obj)) {
+            std::shared_ptr<SpellNode> s_node = std::dynamic_pointer_cast<SpellNode>(node);
+            obj->setListener([=, this](physics2::Obstacle* obs) {
+                _spellFact->linkFunc(s, s_node, _animations);
+            });
+
+            // Add animation
+            _animations->addNode(s_node);
         }
         else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
@@ -1415,22 +1422,30 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         item = w;
     }
     else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs2)) {
-        CULog("i am a wall");
+        //CULog("i am a wall");
         wall = w;
     } ;
 
     // Checking for collisions
     if (spell && spell2){
+        //CULog("spell and spell");
         contact -> SetEnabled(false);
-    }else if (player && spell) {
-        CULog("spell and player");
+    }
+    else if (player && spell) {
+        //CULog("spell and player");
         contact -> SetEnabled(false);
+
+        // If spell is in end animation, do not do any calculations
+        if (spell->shouldRemove()) {
+            return;
+        }
+
         CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID()==player->getPID()) return;
         if (spell->TYPE == SpellType::HEAL) {
             int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
-            spell->markRemoved(true);
+            spell->setRemove();
             return;
         }
         if (spell->TYPE == SpellType::FREEZE || spell->TYPE == SpellType::COMBO_FREEZE) {
@@ -1442,13 +1457,17 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player -> setMud(true);
         }
         player -> setHealth(player->getHealth() - 1);
-        spell->markRemoved(true);
+        spell->setRemove();
         
-    }else if (player && enemy) {
+    }
+    else if (player && enemy) {
         //We need a death message
         //We need to set ATTACKRESET and decrement some sort of timer
         contact -> SetEnabled(true);
-        
+        if (player -> getHealth() == 0){
+            return;
+        }
+
         float knockbackSpeed = 10.0f;
         b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
         b2Vec2 dir = vel;
@@ -1463,22 +1482,29 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         enemy->setAttackCounter(90);
         
         if(player -> getPID() != _player -> getPID()) return;
-        CULog("enemy and player");
+        //CULog("enemy and player");
         if(player -> getHealth() == 0){
             return;
         }
         player->setHealth(player->getHealth() - 1);
         return;
-    }else if (enemy && spell) {
-        CULog("enemy and spell");
+    }
+    else if (enemy && spell) {
+        //CULog("enemy and spell");
         contact -> SetEnabled(false);
-        if(spell -> TYPE == SpellType::WATER){
+
+        // If spell is in end animation, do not do any calculations
+        if (spell->shouldRemove()) {
+            return;
+        }
+
+        if (spell -> TYPE == SpellType::WATER){
             Vec2 pushDir = enemy->getPosition() - spell->getPosition();
             pushDir.normalize();
             enemy->setWaterPush(pushDir, 30);
         }
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
-        if(spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_EFREEZE){
+        if (spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_EFREEZE){
             enemy -> setFrozen(true);
             if(spell->TYPE == SpellType::FREEZE){
                 enemy->setFrozenTimer(60);
@@ -1488,39 +1514,48 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
                 enemy->setFrozenTimer(-1);
             }
             
-        }else if(spell->TYPE == SpellType::EARTH){
+        }
+        else if(spell->TYPE == SpellType::EARTH){
             enemy -> setMud(true);
             enemy -> setMudTimer(300);
-        }else if((spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
+        }
+        else if((spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
              or spell -> TYPE == SpellType::WATER)){
             if (enemy->getHealth()==0) enemy->markRemoved(true);
             return;
         }
         if (enemy->getHealth()==0) enemy->markRemoved(true);
-        spell->markRemoved(true);
-    }else if (wall && player){
+        spell->setRemove();
+    }
+    else if (wall && player){
         contact->SetEnabled(true);
         return;
-    }else if(wall && spell){
+    }
+    else if(wall && spell){
         contact->SetEnabled(false);
-        spell -> markRemoved(true);
+        spell -> setRemove();
         return;
-    }else if (wall && enemy){
+    }
+    else if (wall && enemy){
         if (enemy->TYPE == EnemyType::GHOST) {
             contact->SetEnabled(false);
             return;
         }
-    }else if(player && player2){
+    }
+    else if(player && player2){
         contact -> SetEnabled(false);
         return;
-    }else if(player && item){
+    }
+    else if(player && item){
         contact -> SetEnabled(false);
         _currOverlappedItem = item->getID();
         return;
-    }else if(enemy && item){
+    }
+    else if(enemy && item){
         contact -> SetEnabled(false);
         return;
-    }else if (spell && item){
+    }
+    else if (spell && item){
         contact -> SetEnabled(false);
     }
     

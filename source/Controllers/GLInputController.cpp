@@ -31,7 +31,7 @@ using namespace cugl;
 #define LISTENER_KEY      1
 
 /** How fast a double click must be in milliseconds */
-#define DOUBLE_CLICK    400
+//#define DOUBLE_CLICK    400
 std::vector<std::vector<Vec2>> DEATH_GESTURE_1 = {
     {
         {1058.320557, 465.343506},
@@ -160,136 +160,67 @@ std::vector<std::vector<Vec2>> DEATH_GESTURE = {
 std::vector<std::vector<Vec2>> X_GESTURE = {
     
         {
-            {923.167969, 431.843750},
-            {925.429688, 429.097656},
-            {937.640625, 414.460938},
-            {949.582031, 400.437500},
-            {965.078125, 383.250000},
-            {971.472656, 376.421875},
-            {977.101562, 370.742188},
-            {983.785156, 364.242188},
-            {990.917969, 357.292969},
-            {995.726562, 353.167969},
-            {998.125000, 350.859375},
-            {999.242188, 349.589844},
-            {1000.097656, 348.730469},
-            {1000.613281, 348.214844},
-            {1001.015625, 347.812500},
-            {1001.523438, 347.304688},
-            {1001.863281, 346.851562},
-            {1001.996094, 346.726562},
-            {1002.015625, 346.496094},
-            {1002.015625, 346.027344},
-            {1002.015625, 345.515625},
-            {999.671875, 342.500000},
-            {992.281250, 331.585938},
-            {976.230469, 307.644531},
-            {958.421875, 283.347656},
-            {950.636719, 273.031250},
-            {944.078125, 264.199219},
-            {940.757812, 260.218750},
-            {939.425781, 258.667969},
-            {938.921875, 258.031250},
-            {938.761719, 257.617188},
-            {938.496094, 257.355469},
-            {938.230469, 257.097656},
-            {938.097656, 257.023438},
-            {937.878906, 256.765625},
-            {937.863281, 256.519531},
-            {937.847656, 256.250000},
-            {937.843750, 256.000000},
-            {937.523438, 255.382812},
-            {936.449219, 253.937500},
-            {934.226562, 250.585938},
-            {930.847656, 245.257812},
-            {926.414062, 238.187500},
-            {924.710938, 235.347656},
-            {923.109375, 232.835938},
-            {922.375000, 231.667969},
-            {922.230469, 230.996094},
-            {922.132812, 230.687500},
-            {922.007812, 230.527344},
-            {921.859375, 230.386719},
-            {921.734375, 230.257812}
-        },
-        {
-            {915.171875, 437.257812},
-            {915.171875, 428.582031},
-            {915.171875, 399.500000},
-            {915.171875, 341.867188},
-            {915.171875, 284.054688},
-            {915.171875, 215.308594},
-            {915.171875, 182.179688},
-            {915.171875, 166.253906},
-            {915.171875, 152.480469},
-            {915.171875, 147.062500},
-            {915.171875, 145.773438},
-            {915.171875, 145.476562},
-            {915.042969, 146.156250},
-            {914.445312, 147.339844},
-            {914.445312, 147.339844}
-    }
+            {792.040039, 255.920410},
+            {793.632080, 253.134277},
+            {796.418213, 241.989990},
+            {796.418213, 239.203979},
+            {796.418213, 229.651733},
+            {796.816162, 195.820923},
+            {799.204102, 179.104492},
+            {801.592285, 163.184082},
+            {804.378418, 150.447754},
+            {806.368408, 141.691528},
+            {807.562500, 137.711426},
+            {807.960449, 137.711426},
+            {807.960449, 138.905518},
+            {807.960449, 140.497437},
+            {807.960449, 142.487549},
+            {807.960449, 145.671631},
+            {811.144531, 154.029907},
+            {818.308594, 171.940308},
+            {828.258789, 195.422852},
+            {837.811035, 215.721436},
+            {846.169434, 230.845825},
+            {852.935547, 239.601929},
+            {855.721680, 241.989990},
+            {856.517578, 241.989990},
+            {856.517578, 241.592041},
+            {856.517578, 240.796021},
+            {856.517578, 239.601929},
+            {856.517578, 238.805908},
+            {856.517578, 238.407959},
+            {856.517578, 236.815918},
+            {856.517578, 236.019897},
+            {856.915527, 233.233765},
+            {861.293701, 224.875610},
+            {866.865967, 207.761230},
+            {872.835938, 188.656738},
+            {877.612061, 172.736328},
+            {881.990234, 160.398071},
+            {885.174316, 151.641846},
+            {887.562500, 147.661621},
+            {889.154297, 145.671631},
+            {889.950439, 144.875610},
+            {890.348389, 144.875610},
+            {890.348389, 145.273682},
+            {890.348389, 148.059692},
+            {890.348389, 152.437744},
+            {893.532471, 163.582031},
+            {902.686768, 189.054688},
+            {914.626953, 217.711426},
+            {921.791260, 234.825928},
+            {924.577393, 241.592041},
+            {925.373291, 243.582031},
+            {926.567383, 243.980103},
+            {927.363281, 243.980103},
+            {928.159424, 243.980103},
+            {929.353516, 244.776123},
+            {930.149414, 245.572144}
+        }
     
 };
 
-std::vector<std::vector<Vec2>> X_GESTURE_1 = {
-    {
-        {878.277344, 405.074219},
-        {881.027344, 403.550781},
-        {886.910156, 399.488281},
-        {903.160156, 387.312500},
-        {930.191406, 366.410156},
-        {956.851562, 343.812500},
-        {977.363281, 326.332031},
-        {998.617188, 307.347656},
-        {1009.535156, 297.007812},
-        {1016.480469, 290.921875},
-        {1020.593750, 287.230469},
-        {1021.285156, 286.695312},
-        {1022.050781, 285.878906},
-        {1021.980469, 285.710938},
-        {1021.261719, 285.664062},
-        {1019.695312, 286.164062},
-        {1017.441406, 287.378906},
-        {1009.390625, 288.312500},
-        {998.335938, 287.667969},
-        {985.312500, 283.062500},
-        {966.898438, 273.855469},
-        {948.304688, 262.054688},
-        {926.550781, 246.937500},
-        {912.855469, 237.359375},
-        {904.312500, 231.402344},
-        {898.542969, 227.500000},
-        {895.843750, 225.800781},
-        {894.656250, 225.121094},
-        {894.328125, 224.578125},
-        {893.722656, 224.031250},
-        {892.207031, 223.437500},
-        {890.265625, 222.550781},
-        {887.707031, 221.335938},
-        {884.449219, 219.546875},
-        {882.289062, 218.449219},
-        {880.804688, 217.785156},
-        {880.035156, 217.351562},
-        {879.753906, 217.339844}
-    },
-    {
-        {872.335938, 399.859375},
-        {872.453125, 399.859375},
-        {872.570312, 391.015625},
-        {872.570312, 355.554688},
-        {872.570312, 266.503906},
-        {872.570312, 191.054688},
-        {872.570312, 136.773438},
-        {872.570312, 102.527344},
-        {872.570312, 84.859375},
-        {872.570312, 70.691406},
-        {872.570312, 65.781250},
-        {872.570312, 64.679688},
-        {871.390625, 64.777344},
-        {871.390625, 64.777344}
-    }
-};
+
 std::vector<std::vector<Vec2>> ARROW_GESTURE = {
     {
         {2033.129883, 749.465759},
@@ -741,7 +672,6 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     recognizer -> addGesture("Death", DEATH_GESTURE);
     recognizer -> addGesture("Death", DEATH_GESTURE_1);
     recognizer -> addGesture("Earth", X_GESTURE);
-    recognizer -> addGesture("Earth", X_GESTURE_1);
     recognizer -> addGesture("Fire", ARROW_GESTURE);
     recognizer -> addGesture("Fire", ARROW_GESTURE_2);
     recognizer -> addGesture("Fire", ARROW_GESTURE_3);
@@ -1060,15 +990,15 @@ void InputController::processJoystick(const cugl::Vec2 pos) {
     float dist = diff.length();
 
     // Clamp to joystick radius
-    if (dist > _joyradius) {
-        Vec2 excess = diff;
-        diff.normalize();
-        diff *= _joyradius;
+    //if (dist > _joyradius) {
+    //    Vec2 excess = diff;
+    //    diff.normalize();
+    //    diff *= _joyradius;
 
-        excess -= diff;
-        // Move joystick in excess direction
-        _joycenter += excess;
-    }
+    //    excess -= diff;
+    //    // Move joystick in excess direction
+    //    _joycenter += excess;
+    //}
 
     if (dist > _deadzone) {
         _joystick = true;
@@ -1098,18 +1028,18 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         //CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
         return;
     }
-    //CULog("First Stroke points:");
-    //for (const auto& p : currentStroke) {
-    //    CULog("{%f, %f},", p.x, p.y);
-    //}
-    //CULog("Second Stroke points:");
-    //for (const auto& p : secondStroke) {
-    //    CULog("{%f, %f},", p.x, p.y);
-    //}
-    //CULog("Third Stroke points:");
-    //for (const auto& p : thirdStroke) {
-    //    CULog("{%f, %f},", p.x, p.y);
-    //}
+    CULog("First Stroke points:");
+    for (const auto& p : currentStroke) {
+        CULog("{%f, %f},", p.x, p.y);
+    }
+    CULog("Second Stroke points:");
+    for (const auto& p : secondStroke) {
+        CULog("{%f, %f},", p.x, p.y);
+    }
+    CULog("Third Stroke points:");
+    for (const auto& p : thirdStroke) {
+        CULog("{%f, %f},", p.x, p.y);
+    }
     _timeSinceLastStroke = 0;
     _curStrokes++;
     if (_curStrokes > 3) {
@@ -1169,8 +1099,12 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
 
         //CULog("%s", gesture.c_str());
     }
-    else {
-        CULog("here");
+    else if (currentStroke[0].distance(currentStroke[currentStroke.size() - 1]) < 10) {
+        CULog("Pickup, clear gesture");
+        currentStroke.clear();
+        secondStroke.clear();
+        thirdStroke.clear();
+        _curStrokes = 0;
         _pickupPressed = true;
     }
 }
@@ -1201,47 +1135,47 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     pos = touch2Screen(pos);
     
     switch (zone){
-        case Zone::TOP:
-            if (_itouch.touchids.empty()) {
-                _inventoryAnchor = pos;
-                _inventoryTouchPos = pos;
-                _itouch.position = pos;
-                _itouch.timestamp.mark();
-                _itouch.touchids.insert(event.touch);
-            }
-            break;
-        case Zone::LEFT:
-            // Only process if no touch in zone
-            if (_ltouch.touchids.empty()) {
-                // Left is the floating joystick
-                _ltouch.position = event.position;
-                _ltouch.timestamp.mark();
-                _ltouch.touchids.insert(event.touch);
+    case Zone::TOP:
+        if (_itouch.touchids.empty()) {
+            _inventoryAnchor = pos;
+            _inventoryTouchPos = pos;
+            _itouch.position = pos;
+            _itouch.timestamp.mark();
+            _itouch.touchids.insert(event.touch);
+        }
+        break;
+    case Zone::LEFT:
+        // Only process if no touch in zone
+        if (_ltouch.touchids.empty()) {
+            // Left is the floating joystick
+            _ltouch.position = event.position;
+            _ltouch.timestamp.mark();
+            _ltouch.touchids.insert(event.touch);
 
-                _joycenter = pos;
-                //_joycenter.y += JSTICK_OFFSET;
-            }
-            break;
-        case Zone::RIGHT:
-            // For now if pressed on right side attempt pickup, need to change to button
-            _touchDown = true;
-            _touchStart = pos;
+            _joycenter = pos;
+            //_joycenter.y += JSTICK_OFFSET;
+        }
+        break;
+    case Zone::RIGHT:
+        // For now if pressed on right side attempt pickup, need to change to button
+        _touchDown = true;
+        _touchStart = pos;
 
-            currentStroke.clear();
-            currentStroke.push_back(pos);
-            _rtouch.touchids.insert(event.touch);
-            if (!_isAiming) {
-                _gestureRecognized = false;
-                if (_curStrokes >= 3) {
-                    _curStrokes = 0;
-                }
+        currentStroke.clear();
+        currentStroke.push_back(pos);
+        _rtouch.touchids.insert(event.touch);
+        if (!_isAiming) {
+            _gestureRecognized = false;
+            if (_curStrokes >= 3) {
+                _curStrokes = 0;
             }
-            break;
-        case Zone::MAIN:
-            //not possible hopefully lol
-            break;
-        default:
-            break;
+        }
+        break;
+    case Zone::MAIN:
+        //not possible hopefully lol
+        break;
+    default:
+        break;
     }
     
 }
@@ -1311,12 +1245,7 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
     case Zone::TOP:
         _mouseDownZone = Zone::TOP;
         break;
-    case Zone::LEFT:
-        // Left is the floating joystick
-        _mouseDownZone = Zone::LEFT;
-
-        _joycenter = pos;
-        break;
+    case Zone::LEFT: // Do not use joystick for mouse input
     case Zone::RIGHT:
         // For now if pressed on right side attempt pickup, need to change to button
         _touchDown = true;
@@ -1350,13 +1279,7 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
     Vec2 pos = mouse2Screen(event.position);
     Zone zone = getZone(pos);
 
-    if (_mouseDownZone == Zone::LEFT) {
-        //CULog("(%.2f, %.2f) (%.2f, %.2f)", _joycenter.x, _joycenter.y, pos.x, pos.y);
-        _ltouch.touchids.clear();
-        _move = Vec2::ZERO;
-        _joystick = false;
-    }
-    else if (_mouseDownZone == Zone::RIGHT) {
+    if (_mouseDownZone == Zone::LEFT || _mouseDownZone == Zone::RIGHT) {
         _rtouch.touchids.clear();
         processGestureEnd(pos);
     }
@@ -1370,10 +1293,7 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
 void InputController::motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus) {
     Vec2 pos = mouse2Screen(event.position);
 
-    if (_mouseDownZone == Zone::LEFT) {
-        processJoystick(pos);
-    }
-    else if (_mouseDownZone == Zone::RIGHT) {
+    if (_mouseDownZone == Zone::LEFT || _mouseDownZone == Zone::RIGHT) {
         processDrag(pos);
     }
 }

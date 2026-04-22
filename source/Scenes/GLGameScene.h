@@ -25,10 +25,10 @@
 
 #include "../Models/GameplayConfig.h"
 #include "../Models/Map/Map.h"
-#include "../Models/Items.h"
-#include "../Models/Players.h"
-#include "../Models/Spells.h"
-#include "../Models/Enemies.h"
+#include "../Models/Items/ItemFactory.h"
+#include "../Models/Players/PlayerFactory.h"
+#include "../Models/Spells/SpellFactory.h"
+#include "../Models/Enemies/EnemyFactory.h"
 #include "../Models/Events.h"
 
 #include "../Models/GameplayConfigLoader.h"
@@ -77,7 +77,7 @@ protected:
     std::shared_ptr<PlayerObstacle> _player;
 
     /** Action Timeline for animations */
-    Animator _animations;
+    std::shared_ptr<Animator> _animations;
     
     std::shared_ptr<Map> _map;
     RoomController _roomController;
@@ -173,7 +173,7 @@ public:
      * Disposes of all (non-static) resources allocated to this mode.
      */
     void dispose() override;
-    void reset();
+    void reset() override;
     
     bool gameEnded() { return _gameEnded && _gameEnded; }
 

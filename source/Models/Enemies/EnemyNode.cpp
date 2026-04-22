@@ -3,7 +3,7 @@
 using namespace cugl;
 using namespace std;
 
-#define FPS 8
+#define FPS 10.0f
 
 /**
  * Creates a ship wiht the given position and data.

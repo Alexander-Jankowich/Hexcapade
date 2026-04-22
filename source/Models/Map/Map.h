@@ -51,7 +51,8 @@ private:
         std::shared_ptr<LevelLoader> _tiledData;
     };
 
-    std::array<std::array<int, MAP_WIDTH>, MAP_HEIGHT> _mapGrid;
+    //std::array<std::array<int, MAP_WIDTH>, MAP_HEIGHT> _mapGrid;
+    int _mapGrid[MAP_HEIGHT][MAP_WIDTH];
     std::shared_ptr<AssetManager> _assets;
     
     cugl::Vec2 _origin;

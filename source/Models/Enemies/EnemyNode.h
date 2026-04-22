@@ -75,6 +75,7 @@ public:
 
     void setFrozen(bool f) { frozen = f; }
     bool getFrozen() { return frozen; }
+
     void setStatue(bool s) { statue = s; }
     bool getStatue() { return statue; }
     

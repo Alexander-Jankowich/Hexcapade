@@ -13,10 +13,10 @@
 
 #include <cugl/cugl.h>
 
-#include "../Models/Enemies.h"
-#include "../Models/Players.h"
+#include "../Models/Items/ItemFactory.h"
+#include "../Models/Players/PlayerFactory.h"
+#include "../Models/Enemies/EnemyFactory.h"
 #include "../Models/Map/Map.h"
-#include "../Models/Items.h"
 
 using namespace std;
 using namespace cugl;
