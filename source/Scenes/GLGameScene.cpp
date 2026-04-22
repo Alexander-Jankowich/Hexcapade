@@ -550,7 +550,7 @@ void GameScene::preUpdate(float dt)
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
                 // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
-                //_networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
+                _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
             }
         }
 
