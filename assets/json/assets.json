@@ -26,6 +26,9 @@
     "death": {
       "file": "textures/death_sheet.png"
     },
+    "earth": {
+      "file": "textures/earth_sheet.png"
+    },
     "button": {
       "file": "textures/button.png"
     },

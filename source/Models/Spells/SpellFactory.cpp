@@ -76,7 +76,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::EARTH:
         values = _spellConsts->get("earth");
-        image = _assets -> get<graphics::Texture>("freeze");
+        image = _assets -> get<graphics::Texture>("earth");
         break;
     case SpellType::COMBO_EFREEZE:
         values = _spellConsts->get("combo_efreeze");
