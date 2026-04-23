@@ -205,7 +205,6 @@ void NetworkController::processRestartEvent(const std::shared_ptr<RestartGameEve
     _gameState=NCGameState::UNSTARTED;
     _randSeed = 0;
     if (isHost()) {
-        _numReady = 0;
         _randSeed = _rng->getUint32();
     }
 }

@@ -18,7 +18,12 @@ _config() {
 
 std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
     _extruder = SimpleExtruder();
+    // ensure everything cleared before generation
     _mapGrid = {{0}};
+    _enemySpawnPoints.clear();
+    _itemSpawnPoints.clear();
+    _numRooms = 0;
+    
     _sceneSize = sceneSize;
     auto node = scene2::SceneNode::alloc();
     lw_node = scene2::SceneNode::alloc();

@@ -58,9 +58,7 @@ void EndScene::show(bool won) {
 
 void EndScene::update(float dt) {
     _networkCtrl->updateNet();
-    // Input is handled via listeners; nothing to poll here.
-    // Reset _replayPressed each frame so it only fires for one frame.
-    // (Caller should read it before calling update again.)
+    _networkCtrl->customEvents();
 }
 
 #ifdef CU_TOUCH_SCREEN
@@ -76,7 +74,6 @@ void EndScene::touchEndCB(const TouchEvent& event, bool focus) {
         _replayPressed = true;
         CULog("host sending restart");
         _networkCtrl->pushOutEvent(RestartGameEvent::allocRestartGameEvent(0));
-        _networkCtrl->updateNet(); // send event
     }
 }
 #else

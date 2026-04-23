@@ -36,7 +36,7 @@
 #include "../Models/Animations.h"
 
 #include "InputDisplay.h"
-
+#define ROUND_TIMER 500
 /**
  * This class is the primary gameplay constroller for the demo.
  *
@@ -106,7 +106,7 @@ protected:
     /** Whether thegame has ended */
     bool  _gameEnded;
     /**Timer for end of game**/
-    float _timer = 7200;
+    float _timer = ROUND_TIMER;
 
     std::shared_ptr<cugl::AssetManager> _assets;
     /** list of rooms */
@@ -170,7 +170,7 @@ public:
     void dispose() override;
     void reset();
     
-    bool gameEnded() { return _gameEnded && _gameEnded; }
+    bool gameEnded() { return _networkCtrl->gameState()==NetworkController::NCGameState::WON || _networkCtrl->gameState()==NetworkController::NCGameState::LOST; }
 
     /**
      * Initializes the controller contents, and starts the game
@@ -190,7 +190,7 @@ public:
 
     int getDepositedValue() const { return _depositedValue; }
     int getQuota() const { return _quota; }
-    bool hasWon() const { return _playerWon && _playerWon; }
+    bool hasWon() const { return _networkCtrl->gameState()==NetworkController::NCGameState::WON; }
 
     /** initializes the network and physics world */
     void initNetwork(std::shared_ptr<NetworkController> n);
@@ -299,8 +299,6 @@ public:
     void initHost(unsigned int randSeed);
 
 private:
-    void processComboEvent(const std::shared_ptr<CastSpellEvent>& e);
-    void processEndEvent(const std::shared_ptr<EndGameEvent>& e);
 
     cugl::Rect getInventorySlotBounds(size_t slotIndex) const;
     // this maps the last hud tap to an inventory slot index for the upcoming item flow

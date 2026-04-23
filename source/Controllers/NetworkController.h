@@ -75,7 +75,7 @@ public:
     }
     NCGameState gameState() {return _gameState;}
     bool canHostStart() {return _numReady == getNumPlayers() || getNumPlayers()==1;}
-    void unreadyPlayers() {_numReady = 0;}
+    void unreadyPlayers() {_numReady = 1;} // only called by host, always leave host as ready
 
     void resetStatus() { _status = Status::IDLE; }
     

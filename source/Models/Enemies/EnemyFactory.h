@@ -47,6 +47,8 @@ public:
 
     /** Set of all current enemies */
     std::unordered_set<std::shared_ptr<EnemyObstacle>> current;
+    
+    void reset() {current.clear();}
 
     /**
      * Allocates a new instance of the factory using the given AssetManager.

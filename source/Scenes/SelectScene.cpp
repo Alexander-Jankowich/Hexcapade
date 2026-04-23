@@ -65,15 +65,17 @@ void SelectScene::update(float dt) {
     _networkCtrl->updateNet();
     _networkCtrl->customEvents();
     configureStartButton();
-    // if host and all connected AND map init, broadcast startgame
+    // if host and all connected AND map init, handashake phase
     if (_networkCtrl->canHostStart() && _networkCtrl->getRandSeed()!=0) {
         _status=SSStatus::HANDSHAKE;
     }
     // as client, mark ready once player has selected and map was init
     // have to use pushOutEvent bc of checks in markReady()
-    if (!_networkCtrl->isHost() && _startPressed && _networkCtrl->getRandSeed()!=0) {
+    // TODO: may need to ensure this is not spammed
+    if (!_networkCtrl->isHost() && _startPressed && !_readySent && _networkCtrl->getRandSeed()!=0) {
         CULog("client is ready");
         _networkCtrl->pushOutEvent(GameStateEvent::allocReady());
+        _readySent = true;
     }
     // on recieve start game, transition to game
     if (_networkCtrl->gameState()==NetworkController::NCGameState::RUNNING) _status = SSStatus::START;
@@ -84,20 +86,22 @@ void SelectScene::setActive(bool value) {
         Scene2::setActive(value);
         if (value) {
             if (_networkCtrl->isHost()) {
-                _networkCtrl->pushOutEvent(InitMapEvent::allocInitMapEvent(_networkCtrl->getRandSeed()));
-                _startgame->deactivate();
                 // mark players unready
                 _networkCtrl->unreadyPlayers();
+                _networkCtrl->pushOutEvent(InitMapEvent::allocInitMapEvent(_networkCtrl->getRandSeed()));
+                _startgame->deactivate();
                 CULog("host set active");
             }
             _status = SSStatus::SELECT;
             _startPressed = false;
+            _readySent = false;
             _startgame->setDown(false);
             configureStartButton();
         } else {
             _startgame->deactivate();
             // If any were pressed, reset them
             _startPressed = false;
+            _readySent = false;
             _startgame->setDown(false);
         }
     }

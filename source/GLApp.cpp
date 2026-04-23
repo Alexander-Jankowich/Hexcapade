@@ -239,10 +239,10 @@ void GeometryApp::preUpdate(float dt) {
         _endScene.setNetwork(_gameplay.getNetwork());
         CULog("app: displaying end game scene");
         _endScene.show(_gameplay.hasWon());
+        _gameplay.reset();
         _gameplay.release();
         _endScene.setActive(true);
         _gameplay.setActive(false);
-        _gameplay.reset();
         _scene = State::END;
 
     }
@@ -442,6 +442,7 @@ void GeometryApp::updateSelectScene(float dt) {
         case SelectScene::SSStatus::HANDSHAKE:
             break;
         case SelectScene::SSStatus::START:
+            CULog("in start");
             _selectScene.setActive(false);
             _selectScene.release();
             _gameplay.setActive(true); // alr has connection from host/client scene

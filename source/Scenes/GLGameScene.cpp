@@ -270,6 +270,13 @@ void GameScene::reset()
     _mapSeed = 0;
     _world->clear();
     _worldnode->removeAllChildren();
+    _player = nullptr;
+    _enemyFact->reset();
+    _itemFact->reset();
+    _spellFact->reset();
+    _playerFact->reset();
+    
+    _addedLWalls = false;
     _gameEnded = false;
     _playerWon = false;
     _depositedValue = 0;
@@ -293,9 +300,10 @@ void GameScene::reset()
     _inventoryValue = 0;
     _canDeposit = false;
     _dragInventoryIndex = -1;
+    _currOverlappedItem = -1;
     _dragInventoryPos = Vec2::ZERO;
+    _timer = ROUND_TIMER;
     hideInventoryCard();
-
 }
 
 #pragma mark -
@@ -510,7 +518,6 @@ void GameScene::preUpdate(float dt)
         _timer -= 1;
     }
     if (_timer==0) {
-        _gameEnded=true;
         bool won = _quota <= _depositedValue;
         _playerWon = won;
         _networkCtrl->pushOutEvent(EndGameEvent::allocEndGameEvent(won));
@@ -1247,7 +1254,6 @@ void GameScene::setActive(bool value)
         }
         else
         {
-            hideInventoryCard();
             _input.deactivate();
         }
     }

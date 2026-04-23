@@ -24,9 +24,9 @@ private:
     std::shared_ptr<cugl::scene2::Button> _startgame;
     
     bool _startPressed = false;
+    bool _readySent = false;
 
     SSStatus _status;
-    bool sentInit = false;
 
     bool checkConnection();
 
