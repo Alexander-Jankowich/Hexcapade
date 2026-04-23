@@ -24,7 +24,7 @@
       "file": "textures/heal_sheet.png"
     },
     "death": {
-      "file": "textures/death_sheet.png"  
+      "file": "textures/death_sheet.png"
     },
     "button": {
       "file": "textures/button.png"
@@ -62,8 +62,11 @@
     "artifact_heavy": {
       "file": "textures/gem_blue.png"
     },
-    "artifact_dirt": {
+    "artifact_protection": {
       "file": "textures/gem_brown.png"
+    },
+    "artifact_gold": {
+      "file": "textures/gem_gold.png"
     },
     "artifact_bomb": {
       "file": "textures/gem_pink.png"

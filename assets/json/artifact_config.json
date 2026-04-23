@@ -35,11 +35,27 @@
     },
     {
       "_comment": "gem artifact brown visual",
-      "id": "artifact_dirt",
+      "id": "artifact_protection",
+      "name": "Gem_Boost",
+      "value": 120,
+      "weight": 1.0,
+      "texture_asset": "artifact_protection"
+    },
+    {
+      "_comment": "gem artifact gold visual (real)",
+      "id": "artifact_gold_real",
+      "name": "Gem_Boost",
+      "value": 200,
+      "weight": 1.0,
+      "texture_asset": "artifact_gold"
+    },
+    {
+      "_comment": "gem artifact gold visual (fake)",
+      "id": "artifact_gold_fake",
       "name": "Gem_Boost",
       "value": 0,
       "weight": 1.0,
-      "texture_asset": "artifact_dirt"
+      "texture_asset": "artifact_gold"
     },
     {
       "_comment": "gem artifact pink visual",

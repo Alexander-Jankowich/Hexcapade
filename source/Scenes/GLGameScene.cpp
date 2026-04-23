@@ -1456,7 +1456,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player->setMudTimer(240);
             player -> setMud(true);
         }
-        player -> setHealth(player->getHealth() - 1);
+        if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
+            player->consumeProtectionArtifact();
+            player->setHealth(2);
+        }
+        else {
+            player->setHealth(player->getHealth() - 1);
+        }
         spell->setRemove();
         
     }
@@ -1486,7 +1492,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if(player -> getHealth() == 0){
             return;
         }
-        player->setHealth(player->getHealth() - 1);
+        if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
+            player->consumeProtectionArtifact();
+            player->setHealth(2);
+        }
+        else {
+            player->setHealth(player->getHealth() - 1);
+        }
         return;
     }
     else if (enemy && spell) {
