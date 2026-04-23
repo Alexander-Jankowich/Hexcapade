@@ -12,14 +12,16 @@
 using namespace std;
 using namespace cugl;
 
-SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range ,SpellType type, std::string c) : TYPE(type) {    
+SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range, SpellType type, std::string c) : TYPE(type) {    
     init(pos, radius);
     
     setAwake(true);
     setEnabled(true);
     //setBullet(true);
     setBodyType(b2_dynamicBody);
-    setAngle(vel.getAngle());
+    if (type != SpellType::DEATH) {
+        setAngle(vel.getAngle());
+    }
     setFixedRotation(true);
     
     _damage = dmg;
