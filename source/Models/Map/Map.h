@@ -51,7 +51,7 @@ private:
     cugl::Vec2 _origin;
     cugl::Size _sceneSize;
     SimpleExtruder _extruder;
-    std::shared_ptr<cugl::scene2::SceneNode> lw_node;
+    std::shared_ptr<cugl::scene2::OrderedNode> lw_node;
     std::vector<std::shared_ptr<Room>> _rooms;
 
     std::vector<cugl::Vec2> _itemSpawnPoints;
