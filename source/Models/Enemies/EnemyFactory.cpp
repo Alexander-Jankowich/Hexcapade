@@ -6,104 +6,52 @@
 //
 
 #include "EnemyFactory.h"
-#define PHYSICS_SCALE 100
-#define FROZEN_FRAMES 60
 
 using namespace std;
 using namespace cugl;
 
-EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared_ptr<JsonValue> consts, Size s)
-        : TYPE(type) {
-    init(pos, s / PHYSICS_SCALE);
-    setAwake(true);
-    setEnabled(true);
-    setBodyType(b2_dynamicBody);
-    setDensity(1.0f);
-    setFixedRotation(true);
+#define PHYSICS_SCALE 50
+
+/**
+ * Generate a pair of Obstacle and SceneNode using the given parameters
+ */
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory::createObstacle(EnemyType type, Vec2 pos) {
 
     shared_ptr<JsonValue> vals;
     switch (type) {
     case EnemyType::GHOST:
-        vals = consts->get("ghost");
+        vals = _enemyConsts->get("ghost");
+        break;
+    case EnemyType::BAT:
+        vals = _enemyConsts->get("bat");
+        break;
+    case EnemyType::OCTO:
+        vals = _enemyConsts->get("octoplush");
         break;
     default:
         CULog("Error! Enemy type not found in JSON!!!");
         break;
     }
 
-    _health = vals->getInt("health");
-    _speed = vals->getFloat("speed");
-    _range = vals->getFloat("range");
-    _target = pos;
-
-    _state = EnemyState::IDLE;
-    _frozen = false;
-    _mud = false;
-    _mudTimer = 0;
-    _frozenTimer = 0;
-    _attackCounter = 0;
-}
-
-/**
- * Sets the current enemy health.
- *
- * When the health of the enemy is 0, it is "dead"
- *
- * @param value The current enemy health.
- */
-void EnemyObstacle::setHealth(int value) {
-    _health = value >= 0 ? value : 0;
-}
-
-/**
- * Tracks this enemy's "reset" window after an attack. Once the time is up, sets enemy back to IDLE.
- */
-void EnemyObstacle::updateAttackCounter() {
-    if (_attackCounter < ATTACK_DELAY) _attackCounter++;
-    else {
-        _attackCounter=0;
-        _state = EnemyState::IDLE;
-    }
-    //CULog("attack counter: %d", _attackCounter);
-}
-
-void EnemyObstacle::setVelocity(Vec2 v) {
-    if (!getBody()) return; // body not ready yet
-
-    //CULog("Setting velocity to %.2f, %.2f", v.x, v.y);
-    b2Vec2 currentVel = getBody()->GetLinearVelocity();
-    b2Vec2 targetVel = b2Vec2(v.x, v.y);
-    b2Vec2 velDiff = targetVel - currentVel;
-    float mass = getBody()->GetMass();
-    float scale = mass * 60.0f;
-    b2Vec2 force = b2Vec2(velDiff.x * scale, velDiff.y * scale);
-    getBody()->ApplyForceToCenter(force, true);
-}
-
-/**
- * Generate a pair of Obstacle and SceneNode using the given parameters
- */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory::createObstacle(EnemyType type, Vec2 pos) {
-    
-    auto image = _assets->get<graphics::Texture>("enemy"); // TODO this will need to update with additional metadata (which asset to get)
-    Size size = image->getSize();
+    auto img = _assets->get<graphics::Texture>(vals->getString("texture"));
+    Size size = img->getSize() / 2;
+    size.width /= vals->getInt("columns");
+    size.height /= vals->getInt("rows");
     
     // Create the EnemyObstacle
-
-    auto en = EnemyObstacle::alloc(type, pos, _enemyConsts, size);
+    auto en = EnemyObstacle::alloc(type, pos, vals, size);
 
 //    pl->setAngleSnap(0); // Snap to the nearest degree
 //
 //    // Set the physics attributes
     en->setLinearVelocity(Vec2::ZERO);
-    // which of those are needed...
 
     en->setShared(true);
 
     current.emplace(en);
 
     // Create enemy
-    auto sprite = make_shared<EnemyNode>(image);
+    auto sprite = make_shared<EnemyNode>(img, vals);
     sprite -> setScale(0.5);
 
     return std::make_pair(en, sprite);
@@ -141,6 +89,49 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     float y = _deserializer.readFloat();
     Vec2 pos = Vec2(x, y);
     return createObstacle(type, pos);
+}
+
+
+void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, const shared_ptr<Animator>& animator) {
+    obs->updateAttackCounter();
+
+    // Update push and frozen
+    if (obs->getWaterPushTimer() > 0) {
+        obs->tickWaterPush();
+        Vec2 pushVel = obs->getWaterPushDir() * obs->getSpeed() * 2.5f;
+        obs->setVelocity(pushVel);
+    }
+    else if (obs->isFroze()) {
+        obs->setLinearVelocity(Vec2::ZERO);
+        int i = obs->getFrozenTimer() - 1;
+        obs->setFrozenTimer(i);
+        if (obs->getFrozenTimer() == 0) {
+            obs->setFrozen(false);
+        }
+    }
+
+    // Update frozen status for node if changed
+    if (obs->isFroze() && !node->getFrozen()) {
+        node->setFrozen(true);
+        animator->pauseAnimation(node);
+    }
+    else if (!obs->isFroze() && node->getFrozen()) {
+        node->setFrozen(false);
+        animator->resumeAnimation(node);
+    }
+
+    // Update state for animation
+    node->setStatue(obs->isMud());
+    node->updateState();
+    node->updateAnimationState(obs->getState(), obs->getHealth());
+
+    // Update position
+    float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+    Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+    float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+    node->setPosition(pos * PHYSICS_SCALE);
+    node->setAngle(angle);
+    node->setVelocity(obs->getLinearVelocity() * PHYSICS_SCALE);
 }
 
 

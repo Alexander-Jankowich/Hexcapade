@@ -9,6 +9,11 @@ using namespace std;
 using namespace cugl;
 
 
+#define PHYSICS_SCALE 50
+
+int PlayerFactory::rows = 1;
+int PlayerFactory::cols = 1;
+
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
@@ -16,16 +21,11 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
     
     auto image = _assets->get<graphics::Texture>("player"); // TODO this will need to update with additional metadata (which asset to get)
     auto size = image->getSize();
+    size.width /= cols;
+    size.height /= rows;
     
     // Create the PlayerObstacle
     auto pl = PlayerObstacle::alloc(pos, pid, size);
-
-//    pl->setAngleSnap(0); // Snap to the nearest degree
-//
-//    // Set the physics attributes
-//    pl->setLinearVelocity(velocity);
-    // which of those are needed...
-
     pl->setShared(true);
 
     current.emplace(pl);
@@ -69,6 +69,41 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
     Vec2 pos = Vec2(x, y);
     string id =  _deserializer.readString(); // this is why i had to switch just this class to netcode de/serializers sorry abt that - serena
     return createObstacle(pos, id);
+}
+
+void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node) {
+    if (obs->getHealth() <= 0) {
+        obs->setLinearVelocity(Vec2::ZERO);
+    }
+
+    PlayerObstacle::AnimationState state;
+
+    if (obs->getHealth() <= 0) {
+        state = PlayerObstacle::AnimationState::DEAD;
+    }
+    else if (obs->getState() == PlayerObstacle::AnimationState::FROZEN) {
+        state = PlayerObstacle::AnimationState::FROZEN;
+    }
+    else if (obs->getSpell() != SpellType::NONE) {
+        state = PlayerObstacle::AnimationState::CASTING;
+    }
+    else {
+        state = PlayerObstacle::AnimationState::IDLE;
+    }
+
+    node->setMud(obs->getMud());
+    if(state == PlayerObstacle::AnimationState::FROZEN){
+            node->setFrozen(true); 
+    }
+    node -> setBuff(obs -> getBuff());
+       
+    node->updateAnimationState(state);
+    float leftover = Application::get()->getFixedRemainder() / 1000000.f;
+    Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
+    float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
+    node->setPosition(pos * PHYSICS_SCALE);
+    node->setAngle(angle);
+    node->setVelocity(obs->getLinearVelocity() * PHYSICS_SCALE);
 }
 
 PlayerFactory::PlayerFactory() {

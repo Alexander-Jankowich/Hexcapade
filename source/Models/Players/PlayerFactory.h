@@ -32,14 +32,15 @@ protected:
     /** Deserializer for supporting parameters */
     cugl::netcode::NetcodeDeserializer _deserializer;
 
-    /**
-     * Generate a pair of Obstacle and SceneNode using the given parameters
-     */
-    
+    static int rows;
+    static int cols;
 
 
 public:
     PlayerFactory();
+    unordered_set<shared_ptr<PlayerObstacle>> current;
+    
+    void reset() {current.clear();}
     pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, string pid);
     /**
      * Allocates a new instance of the factory using the given AssetManager.
@@ -55,7 +56,10 @@ public:
      */
     void init(shared_ptr<AssetManager>& assets) {
         _assets = assets;
-        PlayerNode::setConsts(_assets->get<JsonValue>("constants")->get("player"));
+        auto consts = _assets->get<JsonValue>("constants")->get("player");
+        PlayerNode::setConsts(consts);
+        rows = consts->getInt("rows");
+        cols = consts->getInt("columns");
     }
 
     /**
@@ -68,10 +72,14 @@ public:
      */
     pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(const vector<byte>& params) override;
 
-    std::unordered_set<std::shared_ptr<PlayerObstacle>> current;
+    /**
+    * The linking function for player obstacles -> player nodes
+    */
+    void linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node);
 
 
-    std::shared_ptr<PlayerObstacle> getPlayerByPID(std::string pid) {
+
+    shared_ptr<PlayerObstacle> getPlayerByPID(string pid) {
         for (auto p : current) {
             CULog("i am trying to get a player");
             if (p->getPID() == pid) return p;
@@ -79,9 +87,11 @@ public:
         return nullptr; // should NOT get here
     }
     
-    void addCurrent(std::shared_ptr<PlayerObstacle> p){
+    void addCurrent(shared_ptr<PlayerObstacle> p){
         current.emplace(p);
     }
+    
+    
 
     //void reset() {
     //    for (auto p : current) {

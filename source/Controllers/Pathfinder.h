@@ -13,8 +13,10 @@
 
 #include <cugl/cugl.h>
 
-#include "../Models/Enemies.h"
-#include "../Models/Players.h"
+#include "../Models/Items/ItemFactory.h"
+#include "../Models/Players/PlayerFactory.h"
+#include "../Models/Enemies/EnemyFactory.h"
+#include "../Models/Map/Map.h"
 
 using namespace std;
 using namespace cugl;
@@ -24,11 +26,23 @@ private:
     // All helper functions will be private
 
     Vec2 getClosestPlayer(Vec2 enemPos, unordered_set<shared_ptr<PlayerObstacle>> targs);
+    Vec2 getClosestPlayer(Vec2 enemPos, unordered_set<PlayerObstacle*> targs);
 
     /**
     * Returns a set of all players who are not dead and are within range of the enemy
     */
-    unordered_set<shared_ptr<PlayerObstacle>> getValidTargets(Vec2 pos, float range, shared_ptr<PlayerFactory> playerFact);
+    unordered_set<shared_ptr<PlayerObstacle>> getValidTargets(const Vec2 pos, float range, shared_ptr<PlayerFactory> playerFact);
+
+    unordered_set<PlayerObstacle*> visiblePos; // Only used for getClosestPlayerRaycast!!
+    unordered_set<PlayerObstacle*> getVisiblePlayers(shared_ptr<physics2::distrib::NetWorld> world, Vec2 enemPos,
+        float range, unordered_set<shared_ptr<PlayerObstacle>> targs);
+
+    Vec2 finalTarg;
+    physics2::PolygonObstacle* wall;
+    Vec2 findVelocity(shared_ptr<physics2::distrib::NetWorld> world, const Vec2 targ, const Vec2 pos, float radius);
+
+    /** Returns false if no walls were detected (path is clear), true otherwise */
+    bool performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> world, const Vec2 targ, const Vec2 pos, float radius);
 
 public:
     Pathfinder() {}
@@ -36,7 +50,7 @@ public:
     /**
     * Updates enemy targets, movement, and state based on the players
     */
-    void updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact);
+    void updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact, shared_ptr<physics2::distrib::NetWorld> world);
 };
 
 #endif // __PATHFINDER_H__

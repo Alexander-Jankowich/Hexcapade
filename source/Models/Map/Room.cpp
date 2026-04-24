@@ -1,36 +1,14 @@
 #include "Room.h"
 
-Room::Room() :
-_id(-1),
-_bounds(cugl::Rect::ZERO),
-_debugColor(cugl::Color4::WHITE) {
+
+Room::Room(cugl::Vec2 tlc, RoomModifier m, float w, float h){
+    _topLeftCornerPos = tlc;
+    _dimens = cugl::Size(w, h);
+    _modifier = m;
 }
 
-Room::Room(int id, const cugl::Rect& bounds, const cugl::Color4& debugColor,
-           const std::string& activeModifier) :
-_id(id),
-_bounds(bounds),
-_debugColor(debugColor),
-_activeModifier(activeModifier) {
-}
-
-bool Room::contains(const cugl::Vec2& worldPos) const {
-    return _bounds.contains(worldPos);
-}
-
-void Room::addConnection(int roomId) {
-    for (int existing : _connectedRooms) {
-        if (existing == roomId) {
-            return;
-        }
-    }
-    _connectedRooms.push_back(roomId);
-}
-
-void Room::addItemSpawn(const cugl::Vec2& worldPos) {
-    _itemSpawns.push_back(worldPos);
-}
-
-void Room::addEnemySpawn(const cugl::Vec2& worldPos) {
-    _enemySpawns.push_back(worldPos);
+bool Room::contains(const cugl::Vec2& pos) const {
+    bool inH = _topLeftCornerPos.y-_dimens.height <= pos.y && _topLeftCornerPos.y >= pos.y;
+    bool inW = _topLeftCornerPos.x-_dimens.width <= pos.x && _topLeftCornerPos.x >= pos.x;
+    return inH && inW;
 }

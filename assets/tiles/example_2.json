@@ -231,7 +231,9 @@
  "tilesets":[
         {
          "firstgid":1,
-         "source":"YAY TILESET.tsx"
+         "source":"tileset_V2.png",
+         "image-height": 520,
+         "image-width":402
         }],
  "tilewidth":40,
  "type":"map",

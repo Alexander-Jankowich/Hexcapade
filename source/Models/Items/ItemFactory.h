@@ -65,6 +65,11 @@ public:
 
     /** All currently live item obstacles in the world */
     std::map<int, std::shared_ptr<ItemObstacle>> current;
+    
+    void reset() {
+        _count = 0;
+        current.clear();
+    }
 
     static std::shared_ptr<ItemFactory> alloc(std::shared_ptr<cugl::AssetManager>& assets) {
         auto f = std::make_shared<ItemFactory>();

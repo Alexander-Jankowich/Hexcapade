@@ -17,6 +17,8 @@ sources:                            # The list of the source code files
     - source/Controllers/*.h
     - source/Models/*.cpp
     - source/Models/*.h
+    - source/Models/Animations/*.cpp
+    - source/Models/Animations/*.h
     - source/Models/Events/*.cpp
     - source/Models/Events/*.h
     - source/Models/Players/*.cpp

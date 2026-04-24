@@ -8,35 +8,24 @@
 #include <vector>
 
 class Room {
+public:
+    enum class RoomModifier {NONE};
 private:
-    int _id;
-    cugl::Rect _bounds;
-    cugl::Color4 _debugColor;
-    std::vector<int> _connectedRooms;
-    std::string _activeModifier;
-    std::vector<cugl::Vec2> _itemSpawns;
-    std::vector<cugl::Vec2> _enemySpawns;
+   cugl::Vec2 _topLeftCornerPos;
+    RoomModifier _modifier;
+    cugl::Size _dimens;
 
 public:
     Room();
-    Room(int id, const cugl::Rect& bounds, const cugl::Color4& debugColor,
-         const std::string& activeModifier = "");
+    Room(cugl::Vec2 tlc, RoomModifier m, float w, float h);
 
-    int getId() const { return _id; }
-    const cugl::Rect& getBounds() const { return _bounds; }
-    const cugl::Color4& getDebugColor() const { return _debugColor; }
-    const std::vector<int>& getConnectedRooms() const { return _connectedRooms; }
-    const std::string& getActiveModifier() const { return _activeModifier; }
-    bool hasActiveModifier() const { return !_activeModifier.empty() && _activeModifier != "none"; }
+    const RoomModifier getModifier() const { return _modifier; }
+    bool hasModifier() const { return _modifier != RoomModifier::NONE; }
+    cugl::Vec2 getTLCornerPos() {return _topLeftCornerPos;}
+    cugl::Size getDimensions() {return _dimens;}
 
     bool contains(const cugl::Vec2& worldPos) const;
 
-    void addConnection(int roomId);
-    void addItemSpawn(const cugl::Vec2& worldPos);
-    void addEnemySpawn(const cugl::Vec2& worldPos);
-
-    const std::vector<cugl::Vec2>& getItemSpawns() const { return _itemSpawns; }
-    const std::vector<cugl::Vec2>& getEnemySpawns() const { return _enemySpawns; }
 };
 
 #endif // __HEXCAPADE_ROOM_H__

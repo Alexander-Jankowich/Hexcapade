@@ -52,7 +52,6 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _gameid->addExitListener([this](const std::string& name, const std::string& value) {
         if (!value.empty()) {
             _networkCtrl->connectClient(value);
-            
         }
     });
 
@@ -84,18 +83,11 @@ void ClientScene::updateText(const std::shared_ptr<scene2::Button>& button, cons
 
 void ClientScene::update(float dt) {
     _networkCtrl->updateNet();
-        
-    // handle init event iff handshake is completed
-    if(_networkCtrl->isInAvailable() && _networkCtrl->getShortUID()!=0){
-        auto e = _networkCtrl->popInEvent();
-        if(auto cse = std::dynamic_pointer_cast<GameInitEvent>(e) ){
-            processInitEvent(cse);
-        }
-    }
     
     _player->setText(std::to_string(_networkCtrl->getNumPlayers()));
     configureStartButton();
-    //if (_networkCtrl->getRandSeed()>0) _networkCtrl->markReady();
+    // always mark ready once connected so we can move to INGAME
+    _networkCtrl->markReady();
 }
 
 void ClientScene::setActive(bool value) {
@@ -140,10 +132,4 @@ void ClientScene::configureStartButton() {
         default:
             break;
     }
-}
-
-void ClientScene::processInitEvent(const std::shared_ptr<GameInitEvent> &e) {
-    CULog("client recieved init!");
-    _networkCtrl->setRandSeed(e->getSeed());
-    canInitGame = true;
 }

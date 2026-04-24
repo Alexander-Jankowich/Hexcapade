@@ -4,7 +4,11 @@
 //
 //  Created by Serena Duncan on 3/18/26.
 //
-#include "../Spells.h"
+
+#ifndef __PLAYER_OBSTACLE_H__
+#define __PLAYER_OBSTACLE_H__
+
+#include "../Spells/SpellFactory.h"
 
 using namespace cugl;
 using namespace std;
@@ -29,7 +33,7 @@ public:
         ATTACKED = 3,
         /** frozen  */
         FROZEN = 4,
-        DEAD = 5
+        DEAD = 5,
     };
 
     /** Category stored on each carried item. */
@@ -42,6 +46,7 @@ public:
         std::string itemType;
         int value;
         ItemKind kind;
+        int bombTimer;
 
         static ItemKind kindFromType(const std::string& t) {
             return (t.rfind("spellbook", 0) == 0) ? ItemKind::SPELLBOOK : ItemKind::ARTIFACT;
@@ -66,9 +71,14 @@ protected:
     cugl::Vec2 _angle;
 
     /** carried items for the current pickup/deposit flow */
-    vector<CarriedItem> _inventory;
+    vector<CarriedItem> _inventory = { { "spellbook_fire", /*value*/0, CarriedItem::kindFromType("spellbook_fire"), /*bombTimer*/-1 } };
     /** max carried item count for the current inventory flow */
     size_t _inventoryLimit;
+    int frozenTimer = 0;
+    bool mud = false;
+    int mudTimer = 0;
+    bool buff = false;
+    int buffTimer = 0;
 
 public:
     PlayerObstacle(Vec2 pos, string pid, cugl::Size s);
@@ -78,12 +88,19 @@ public:
         f -> createFixtures();
         return f;
     }
-
+    bool _bombExpired = false;
     #pragma mark PO_Getters_and_Setters
     int getHealth() {return _health;}
     float getSpeed() { return hasHeavyArtifact() ? _speed * 0.5f : _speed; }
     AnimationState getState(){return _state;}
-    void setAniState(AnimationState s) {_state = s;}
+    void setAniState(AnimationState s){_state = s;}
+    void setMud(bool m) {mud = m;}
+    bool getMud() {return mud;}
+    void setFrozeTimer(int i) {frozenTimer = i;}
+    void setMudTimer(int i) {mudTimer = i;}
+    bool getBuff() {return buff;}
+    void setBuff(bool b) {buff = b;}
+    void setBuffTimer(int i) {buffTimer =i;}
     
     cugl::Vec2 getDirection() { return _angle; }
     #pragma mark PO_Inventory
@@ -121,7 +138,7 @@ public:
     * Sets the current spell of the player.
     */
     void setSpell(SpellType spell) {_curSpell = spell;}
-    void resolveSpell() { _curSpell = SpellType::NONE; }
+    void resolveSpell() { setSpell(SpellType::NONE); }
     void setHealth(int h);
     void setSpeed(float s) {_speed = s;}
 
@@ -134,7 +151,8 @@ public:
         if (!canAddItem()) {
             return false;
         }
-        _inventory.push_back({ itemType, item_val, CarriedItem::kindFromType(itemType) });
+        int timer = (itemType == "artifact_bomb") ? 3600 : -1;
+        _inventory.push_back({ itemType, item_val, CarriedItem::kindFromType(itemType), timer});
         return true;
     }
 
@@ -217,6 +235,15 @@ public:
         return false;
     }
 
+    void consumeProtectionArtifact() {
+        for (auto it = _inventory.begin(); it != _inventory.end(); ++it) {
+            if (it->kind == ItemKind::ARTIFACT && it->itemType == "artifact_protection") {
+                _inventory.erase(it);
+                return;
+            }
+        }
+    }
+
     bool hasHeavyArtifact() const {
         for (const auto& item : _inventory) {
             if (item.kind == ItemKind::ARTIFACT &&
@@ -224,6 +251,52 @@ public:
                 return true;
         }
         return false;
+    }
+    
+    void updateTimers(float dt){
+        if (_state == AnimationState::FROZEN) {
+                frozenTimer -= 1;
+                if (frozenTimer <= 0) {
+                    frozenTimer = 0;
+                    _state = AnimationState::IDLE;
+                }
+                if (getBody()) {
+                    getBody()->SetLinearVelocity(b2Vec2(0, 0));
+                }
+            }
+        if (mud) {
+            mudTimer -= 1;
+            if(mudTimer <= 0){
+                mudTimer = 0;
+                mud = false;
+            }
+        }
+        if(buff){
+            buffTimer -= 1;
+            if(buffTimer <= 0){
+                buffTimer = 0;
+                buff = false;
+            }
+        }
+
+        //bomb erase
+        for (size_t i = 0; i < _inventory.size(); ++i) {
+            auto& item = _inventory[i];
+            if (item.bombTimer < 0) continue;
+            item.bombTimer -= 1;
+            if (item.bombTimer <= 0) {
+                _inventory.erase(_inventory.begin() + i);
+                _bombExpired = true;
+                setHealth(_health - 2);
+                break;
+            }
+        }
+    }
+
+    bool isNonDroppable(size_t index) const {
+        if (index >= _inventory.size()) return false;
+        const std::string& t = _inventory[index].itemType;
+        return t == "artifact_bomb" || t == "artifact_gold";
     }
 
 
@@ -253,3 +326,6 @@ public:
     //    return types;
     //}
 };
+
+#endif // !__PLAYER_OBSTACLE_H__
+

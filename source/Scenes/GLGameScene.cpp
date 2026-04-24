@@ -29,14 +29,12 @@
 // Lock the screen size to fixed height regardless of aspect ratio
 #define SCENE_HEIGHT 720
 
-/** The ratio between the physics world and the screen. */
-#define PHYSICS_SCALE 100
+/** The ratio between the physics world and the screen. (40 px = 1 meter, 1 tile is 1m x 1m or 40px x 40px) */
+#define PHYSICS_SCALE 50
 
 #define COMBO_RADIUS 25
 
-#define PI 3.14159265358979323
-
-#define ITEM_PICKUP_RADIUS 0.5f
+#define ITEM_PICKUP_RADIUS 2f
 
 
 using namespace cugl;
@@ -76,7 +74,7 @@ float getTypicalItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
 }
 
 // Goal: enough item value to cover quota, but never spawn more than
-// the authored spawn points we actually have on the map
+// the authored spawn points we actually have on the ma
 size_t chooseSpawnCount(size_t totalSpawn, size_t roomCount, int quota,
                             float typicalItemValue, float quotaCoverageRatio) {
     int valueNeeded = (int)std::ceil((float)quota * quotaCoverageRatio);
@@ -146,19 +144,17 @@ void GameScene::beginContact(b2Contact* contact){
  *
  * @return true if the controller is initialized properly, false otherwise.
  */
-bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
+bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const std::shared_ptr<std::vector<std::string>>& rooms)
 {
     // Initialize the scene to a locked width
-    if (assets == nullptr)
+    if (assets == nullptr || !cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
     {
         return false;
     }
-    else if (!cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
-    {
-        return false;
-    }
-
+    
+    _addedLWalls = false;
     _assets = assets;
+    _rooms = rooms;
 
     auto orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera());
     if (orthographicCamera) {
@@ -188,10 +184,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     lastEnemySpawn = 0;
 
     _map = std::make_shared<Map>();
-    _map->init(); // initialize with tiled data
-    _roomController.setMap(_map);
-    _runRevision = 0;
-    _appliedRunRevision = -1;
+    _roomController.setRooms(_map->getRooms());
     _mapSeed = 0;
     loadGameplayConfig();
 
@@ -213,36 +206,21 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets)
     _depositRadius = 42.0f;
     _depositPosition = Vec2::ZERO;
     
-    //_mapSeed = chooseNonZeroSeed();
-    _runRevision = 1;
-    
     // Create all the factories
     _spellFact = SpellFactory::alloc(_assets);
     _playerFact = PlayerFactory::alloc(_assets);
     _enemyFact = EnemyFactory::alloc(_assets);
-    _rectFact = RectFactory::alloc(_assets, _map->_tiledRoomPrefab);
     _itemFact = ItemFactory::alloc(_assets);
+
+    // Create action timeline
+    _animations = Animator::alloc();
 
     // Create other controllers
     _pathfinder = Pathfinder();
-
-    // IMPORTANT: SCALING MUST BE UNIFORM
-    // This means that we cannot change the aspect ratio of the physics world
-    // Shift to center if a bad fit
-    Size dimen = getSize();
-    //_scale = dimen.width == SCENE_WIDTH ? dimen.width / rect.size.width : dimen.height / rect.size.height;
-    //Vec2 offset((dimen.width - SCENE_WIDTH) / 2.0f, (dimen.height - SCENE_HEIGHT) / 2.0f);
-    Vec2 offset = Vec2::ZERO;
-
-    // Create the scene graph
-    _worldnode = scene2::SceneNode::alloc();
-    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    _worldnode->setPosition(offset);
     
 
-    addChild(_worldnode);
 
-    _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, dimen.width * 1000 , SCENE_HEIGHT * 1000), Vec2::ZERO);
+    _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, 200 , 200), Vec2::ZERO);
     _world -> activateCollisionCallbacks(true);
     _world -> activateFilterCallbacks(false);
     _world -> activateDestructionCallbacks(true);
@@ -274,8 +252,24 @@ void GameScene::dispose()
 
 void GameScene::reset()
 {
-    CULog("reset game");
+    CULog("game scene reset called");
     loadGameplayConfig();
+    _mapSeed = 0;
+    _map->reset();
+    _world->clear(true); // reset box2d + phys world
+    // is this correct...?
+    _worldnode->removeAllChildren();
+    removeAllChildren();
+    _worldnode=nullptr;
+
+    
+    _player = nullptr;
+    _enemyFact->reset();
+    _itemFact->reset();
+    _spellFact->reset();
+    _playerFact->reset();
+    
+    _addedLWalls = false;
     _gameEnded = false;
     _playerWon = false;
     _depositedValue = 0;
@@ -283,12 +277,7 @@ void GameScene::reset()
     // Match startup behavior on replay: reset clears active enemies and restarts
     // the host spawn timer instead of forcing one immediate spawn.
     lastEnemySpawn = 0;
-    // TODO unbreak this
-    // for (const std::shared_ptr<Player>& player : _players->current) {
-    //     if (player->getInventory()) {
-    //         player->getInventory()->clear();
-    //     }
-    // }
+
     for (auto& playerObs : _playerFact->current) {
         if (playerObs) {
             playerObs->clearInventory();
@@ -298,16 +287,13 @@ void GameScene::reset()
     _itemNodes.clear();
     _inventoryValue = 0;
     _canDeposit = false;
-    _dragInventoryIndex = -1;
-    _dragInventoryPos = Vec2::ZERO;
+//    _dragInventoryIndex = -1;
+//    _dragInventoryPos = Vec2::ZERO;
+    _pendingInventoryTapIndex = -1;
+    _currOverlappedItem = -1;
+    _timer = ROUND_TIMER;
     hideInventoryCard();
-
-    _runRevision = std::max(1, _runRevision + 1);
-    rebuildMapForRun();
-    _map -> populateObtacles(_world);
-    if (_networkCtrl->isHost()) {
-        _networkCtrl->startGame();
-    }
+    Scene::reset();
 }
 
 #pragma mark -
@@ -345,6 +331,7 @@ void GameScene::showInventoryCard(size_t slotIndex) {
     _inventoryCardNode->setScale(1.0f / zoom);
     _inventoryCardNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
                                          offset.y + this->getSize().height * 0.5f / zoom));
+    _inventoryCardNode -> setPriority(1.0f);
     addChild(_inventoryCardNode);
 }
 
@@ -365,30 +352,19 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-    if (!_map->generate(_runConfig.map, _mapSeed)) {
-        CULog("map generation failed for run revision %d", _runRevision);
-        return;
-    }
-    _map -> populateObtacles(_world);
-    
-    auto n = _map -> draw2();
+    auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize(), _world);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
+    n->setPriority(0.0f);
     _worldnode -> addChild(n);
     
     
-    _roomController.setMap(_map);
-    _appliedRunRevision = _runRevision;
-    auto mapNode = _map->draw();
-    mapNode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    mapNode->setPosition(Vec2::ZERO);
-
-    _worldnode->addChild(mapNode);
+    _roomController.setRooms(_map->getRooms());
     
     _quota = std::max(1, _runConfig.quota);
     _depositPosition = _map->getPlayerSpawn();
 
-    if (_networkCtrl && _networkCtrl->isHost()) {
+    if (_networkCtrl->isHost()) {
         spawnItemsFromMap();
     }
     //updateItemPickupState();
@@ -399,7 +375,7 @@ void GameScene::rebuildMapForRun() {
 }
 
 void GameScene::spawnItemsFromMap() {
-    const std::vector<Vec2>& spawnPoints = _roomController.getInitialItemSpawnPoints();
+    const std::vector<Vec2>& spawnPoints = _map->getItemSpawnPoints();
     if (spawnPoints.empty()) {
         CULog("ItemFactory: no item spawn points found on map");
         return;
@@ -407,7 +383,7 @@ void GameScene::spawnItemsFromMap() {
 
     const std::vector<ItemCatalogEntryConfig>& entries = _runConfig.item.entries;
 
-    size_t roomCount = _map->getRooms().size();
+    int roomCount = _map->getNumRooms();
     float typicalItemValue = getTypicalItemValue(entries);
     size_t spawnCount = chooseSpawnCount(
         spawnPoints.size(), roomCount, _quota,
@@ -448,7 +424,7 @@ void GameScene::updateCameraFollow() {
     float halfW = getSize().width / (2.0f * zoom);
     float halfH = getSize().height / (2.0f * zoom);
 
-    const Rect& world = _map->getWorldBounds();
+    const Rect& world = Rect(0, 0, MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE);
     float minCenterX = world.origin.x + halfW;
     float maxCenterX = world.getMaxX() - halfW;
     float minCenterY = world.origin.y + halfH;
@@ -509,6 +485,14 @@ void GameScene::preUpdate(float dt)
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
         //Have we set our player yet / received signal
         if (!_player) return;
+        _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
+                                    _player, _input, _depositPosition, _depositRadius);
+    }
+    if (_player && !_addedLWalls) {
+        CULog("adding lower walls");
+        _map->getLowerWallNode() -> setPriority(1.0f);
+        _worldnode->addChild(_map->getLowerWallNode());
+        _addedLWalls = true;
     }
     //We have to acquire ourselves before we attempt to move
     //it is a little weird to do this every frame but this allows host to acquire themselves
@@ -522,7 +506,6 @@ void GameScene::preUpdate(float dt)
         _timer -= 1;
     }
     if (_timer==0) {
-        _gameEnded=true;
         bool won = _quota <= _depositedValue;
         _playerWon = won;
         _networkCtrl->pushOutEvent(EndGameEvent::allocEndGameEvent(won));
@@ -549,7 +532,9 @@ void GameScene::preUpdate(float dt)
                 std::uint64_t index = rand % spawns.size();
                 Vec2 pos = spawns[index];
 
-                auto params = _enemyFact->serializeParams(EnemyType::GHOST, pos / PHYSICS_SCALE);
+                EnemyType type = (EnemyType) (_random->getFloat() * 3);
+                //CULog("enemy type: %d", type);
+                auto params = _enemyFact->serializeParams(type, pos / PHYSICS_SCALE);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
                 // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
@@ -563,7 +548,7 @@ void GameScene::preUpdate(float dt)
         }
 
         // Update enemy movement
-        _pathfinder.updateEnemies(_enemyFact, _playerFact);
+        _pathfinder.updateEnemies(_enemyFact, _playerFact, _world);
         
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
@@ -580,37 +565,59 @@ void GameScene::preUpdate(float dt)
         }
         
     }
+    //for (auto en : _enemyFact -> current){
+    //    // If attack is on cooldown, wait
+    //    if (en->getState() == EnemyObstacle::EnemyState::ATTACK_RESET) {
+    //        CULog("here state");
+    //        continue;
+    //    }
+    //}
     
+    
+    // Update animations
+    _animations->update(dt);
+
+    if (_player->_bombExpired) {
+        _player->_bombExpired = false;
+        CULog("artifact_bomb expired for player %s", _player->getPID().c_str());
+        _inventoryValue = _player->getInventoryVal();
+        _networkCtrl->pushOutEvent(
+            DepositEvent::allocDepositEvent(_player->getPID(), 0, true));
+    }
+
     if (_player->getHealth()==0) return; // if dead ignore updates
 
     // Player movement
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
+//
+//    if (_map) {
+//        // Using from original Map code, might change depending on new Procgen.
+//        const Rect& world = _map->getWorldBounds();
+//        cugl::Vec2 playerWorldPos = _player->getPosition() * PHYSICS_SCALE;
+//        cugl::Vec2 clampedPos(
+//            std::clamp(playerWorldPos.x, world.origin.x, world.getMaxX()),
+//            std::clamp(playerWorldPos.y, world.origin.y, world.getMaxY())
+//        );
+//
+//        // slides when edge
+//        if ((clampedPos.x <= world.origin.x && velocity.x < 0) ||
+//            (clampedPos.x >= world.getMaxX() && velocity.x > 0)) {
+//            velocity.x = 0;
+//        }
+//
+//        if ((clampedPos.y <= world.origin.y && velocity.y < 0) ||
+//            (clampedPos.y >= world.getMaxY() && velocity.y > 0)) {
+//            velocity.y = 0;
+//        }
+//    }
 
-    if (_map) {
-        // Using from original Map code, might change depending on new Procgen.
-        const Rect& world = _map->getWorldBounds();
-        cugl::Vec2 playerWorldPos = _player->getPosition() * PHYSICS_SCALE;
-        cugl::Vec2 clampedPos(
-            std::clamp(playerWorldPos.x, world.origin.x, world.getMaxX()),
-            std::clamp(playerWorldPos.y, world.origin.y, world.getMaxY())
-        );
-
-        // slides when edge
-        if ((clampedPos.x <= world.origin.x && velocity.x < 0) ||
-            (clampedPos.x >= world.getMaxX() && velocity.x > 0)) {
-            velocity.x = 0;
-        }
-
-        if ((clampedPos.y <= world.origin.y && velocity.y < 0) ||
-            (clampedPos.y >= world.getMaxY() && velocity.y > 0)) {
-            velocity.y = 0;
-        }
+    if (_player->getState() == PlayerObstacle::AnimationState::FROZEN) {
+        _player->setVelocity(Vec2::ZERO);
+    } else {
+        _player->setVelocity(velocity);
+        _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     }
-
-    _player->setVelocity(velocity);
-    
-    _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
     updateCameraFollow();
@@ -630,6 +637,7 @@ void GameScene::preUpdate(float dt)
         if (_input.cardDismissTap()) {
             CULog("click detected, card closed");
             hideInventoryCard();
+            _pendingInventoryTapIndex = -1;
         }
     }
     _input.resolvedCardDismissTap();
@@ -642,32 +650,51 @@ void GameScene::preUpdate(float dt)
         depositRequested = true;
         _input.resolvedDeposit();
     }
-    if (_input.inventoryHeld()) {
-        // consider having some sort of drag treshold bc rn jittery
-        if (_dragInventoryIndex < 0) {
-            _dragInventoryIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
-        }
-        if (_dragInventoryIndex >= 0) {
-            _dragInventoryPos = _input.getInventoryTouchPos();
-        }
-    }
+//    if (_input.inventoryHeld()) {
+//        // consider having some sort of drag treshold bc rn jittery
+//        if (_dragInventoryIndex < 0) {
+//            _dragInventoryIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
+//        }
+//        if (_dragInventoryIndex >= 0) {
+//            _dragInventoryPos = _input.getInventoryTouchPos();
+//        }
+//    }
 
     if (_input.inventoryReleased()) {
         int tappedIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
         bool tappedSlot = _input.getInventoryAnchor().distance(_input.getInventoryTouchPos()) <= 5.0f;
 
-        if (tappedSlot) {
-            if (tappedIndex >= 0) {
-                const auto& carried = _player->getInventory()[(size_t)tappedIndex];
-                CULog("slot %d card %s tapped", tappedIndex, carried.itemType.c_str());
-                showInventoryCard((size_t)tappedIndex);
+        if (tappedSlot && tappedIndex >= 0) {
+            Timestamp now;
+            bool doubleTap = _pendingInventoryTapIndex == tappedIndex &&
+                             Timestamp::ellapsedMillis(_lastInventoryTapTime, now) <= 200;
+
+            if (doubleTap) {
+                CULog("slot double tapped");
+                depositIndex = tappedIndex;
+                _pendingInventoryTapIndex = -1;
+                hideInventoryCard();
+            }
+            else {
+                CULog("slot tapped");
+                hideInventoryCard();
+                _pendingInventoryTapIndex = tappedIndex;
+                _lastInventoryTapTime = now;
             }
         } else {
-            depositIndex = _dragInventoryIndex;
+            _pendingInventoryTapIndex = -1;
         }
-        _dragInventoryIndex = -1;
         _input.resolvedInventoryRelease();
     }
+    
+    if (_pendingInventoryTapIndex >= 0) {
+        Timestamp now;
+        if (Timestamp::ellapsedMillis(_lastInventoryTapTime, now) >200) {
+            showInventoryCard((size_t)_pendingInventoryTapIndex);
+            _pendingInventoryTapIndex = -1;
+        }
+    }
+    
     if (_input.getInventoryHotkeyIndex() >= 0) {
         depositIndex = _input.getInventoryHotkeyIndex();
         _input.resolvedInventoryHotkeyIndex();
@@ -686,8 +713,8 @@ void GameScene::preUpdate(float dt)
                 }
                 
                 // Drop anywhere else in the world.
-                
-                else if ((size_t)depositIndex < _player->getInventory().size()) {
+                // Artifact bomb cannot be dropped!
+                else if ((size_t)depositIndex < _player->getInventory().size() && !_player->isNonDroppable((size_t)depositIndex)) {
                     auto carried = _player->getInventory()[(size_t)depositIndex];
                     _player->depositItem((size_t)depositIndex);
                     _inventoryValue = _player->getInventoryVal();
@@ -703,22 +730,6 @@ void GameScene::preUpdate(float dt)
             }
         }
     }
-
-    // MOBILE DEPOSIT: TAP FOR ALL!
-    // if (depositIndex >= 0 && _canDeposit) {
-    //     if (_player && _player->hasInventory()) {
-    //         if (_networkCtrl->isHost()) {
-    //             int deposited = _player->depositItems();
-    //             if (deposited > 0) {
-    //                 _inventoryValue = _player->getInventoryVal();
-    //                 _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true));
-    //             }
-    //         } else {
-    //             _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID()));
-    //             CULog("CLIENT deposit request");
-    //         }
-    //     }
-    // }
 
     // DESKTOP DEPOSIT: F FOR ALL!
     if (depositRequested && _canDeposit) {
@@ -771,33 +782,34 @@ void GameScene::preUpdate(float dt)
         else {
             SpellType t = SpellType::NONE;
         for (auto p : _playerFact->current) {
-            CULog("pLayer fact size: %zu",_playerFact->current.size());
-            CULog("This is the spell %d",p->getSpell());
             if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
                 // calc combo spell + send combo event
-                CULog("combo potential");
                 if (_player->getSpell() == SpellType::FIREBALL && p->getSpell() == SpellType::FIREBALL) {
                     t = SpellType::COMBO_FIREBALL;
-                    p->resolveSpell();
                     _networkCtrl->pushOutEvent(
                                 SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                    CULog("combo fireball");
+                    p->resolveSpell();
                     
                 }
                 else if (_player->getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::FREEZE) {
                     t = SpellType::COMBO_FREEZE;
-                    p->resolveSpell();
                     _networkCtrl->pushOutEvent(
                                 SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    p->resolveSpell();
                     
                 }else if ((_player -> getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::EARTH) || (_player -> getSpell() == SpellType::EARTH && p->getSpell() == SpellType::FREEZE) ){
                     t = SpellType::COMBO_EFREEZE;
-                    p -> resolveSpell();
                     _networkCtrl->pushOutEvent(
                                 SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    p -> resolveSpell();
                     
                 }
-
+                else if ((_player -> getSpell() == SpellType::FIREBALL && p -> getSpell() == SpellType::HEAL) || (_player->getSpell()  == SpellType::HEAL && p -> getSpell() == SpellType::FIREBALL)){
+                    t = SpellType::BUFF;
+                    _networkCtrl->pushOutEvent(
+                                        SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    p -> resolveSpell();
+                    }
                     // Spell is combo-ed!
                     if (t != SpellType::NONE) {
                         _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
@@ -812,37 +824,40 @@ void GameScene::preUpdate(float dt)
             }
 
             //CULog("Casting spell type: %d", t);
-            if (t == SpellType::DEATH) {
-                for (int i = 0; i < 32; i++) {
-                    angle = angle.rotate((M_PI / 16) * i);
-                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID());
+            switch (t) {
+            case SpellType::DEATH:
+                for (int i = 0; i < 16; i++) {
+                    angle = angle.rotate((M_PI / 8) * i);
+                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), angle, t, _networkCtrl->getPID());
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
-            }else if (t == SpellType::WATER){
+                break;
+            case SpellType::WATER: {
                 int numShots = 8;
                 float start = M_PI / 6.0f;
-                float end   = -M_PI / 6.0f;
+                float end = -M_PI / 6.0f;
                 for (int i = 0; i < numShots; i++) {
-                    float alpha = (float)i / (numShots - 1); 
+                    float alpha = (float)i / (numShots - 1);
                     float theta = start + alpha * (end - start);
 
                     Vec2 dir = angle.getNormalization().rotate(theta);
 
                     auto params = _spellFact->serializeParams(
                         (playerScreenPos / PHYSICS_SCALE),
-                        _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f,
-                        dir,t,_networkCtrl->getPID());
-                        auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-                        _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                    }
+                        dir, t, _networkCtrl->getPID());
+                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                }
+                break;
             }
-
-            else {
+            default:
                 int damageBonus = _player->getDamageBonus();
-                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, _assets->get<graphics::Texture>("fireball")->getSize().height / 4.f, angle, t, _networkCtrl->getPID(), damageBonus);
+                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _networkCtrl->getPID(), damageBonus,
+                                                          _player->getBuff());
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                break;
             }
 
             //We must acquire an object if we create it if we fail to do so the network
@@ -853,8 +868,8 @@ void GameScene::preUpdate(float dt)
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
         }
     }
-
     if (_input.pressedPickup() && _currOverlappedItem >= 0) {
+        CULog("trying to resolve pickup");
         auto item = _itemFact->getItem(_currOverlappedItem);
         // Checks if player can pick up anything so inventory doesn't overflow
         if (_player && _player->canAddItem() && item && !item->isRemoved()) {
@@ -862,8 +877,9 @@ void GameScene::preUpdate(float dt)
                 PickupEvent::allocPickupEvent(_player->getPID(), _currOverlappedItem)
             );
         }
+    }
+    if (_input.pressedPickup()) {
         _input.resolvedPickup();
-        _currOverlappedItem = -1;
     }
 
 }
@@ -899,11 +915,13 @@ void GameScene::fixedUpdate(Uint64 step)
     // First process incoming events
     _networkCtrl->updateNet();
     
-    std::tuple<int,int> values = _networkCtrl->customEvents(_itemFact, _playerFact, _itemFactId,
-                                 _player, _input, &_playerWon, &_gameEnded, _depositPosition, _depositRadius);
+    std::tuple<int,int> values = _networkCtrl->customEvents();
+    _gameEnded = _networkCtrl->gameState()==NetworkController::NCGameState::WON || _networkCtrl->gameState()==NetworkController::NCGameState::LOST;
+    _playerWon = _networkCtrl->gameState()==NetworkController::NCGameState::WON;
     _inventoryValue = std::get<0>(values);
     _depositedValue += std::get<1>(values);
     
+    _currOverlappedItem = -1;
     _world->update(step / 1000000.0f);
 }
 
@@ -1004,8 +1022,11 @@ void GameScene::renderHUD()
     if (_font)
     {
         _batch->setColor(Color4::WHITE);
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2) << (_timer/60);
+        std::string timer_text = ss.str();
         std::shared_ptr<TextLayout> timerLabel = TextLayout::allocWithText(
-                    "Time Remaining: " + std::to_string(_timer/60), _font);
+                    "Time Remaining: " + timer_text, _font);
         timerLabel->layout();
         Affine2 timerTrans;
         timerTrans.scale(1.0f / zoom).translate(hudX(timerX + 10), hudY(timerY + 12));
@@ -1028,9 +1049,9 @@ void GameScene::renderHUD()
 
                 // Draw item texture centered inside the frame
                 if (i < carriedItems.size()) {
-                    if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex == i) {
-                        continue;
-                    }
+//                    if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex == i) {
+//                        continue;
+//                    }
                     const auto& carried = carriedItems[i];
                     auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
                     if (itemTex) {
@@ -1051,28 +1072,28 @@ void GameScene::renderHUD()
                 }
             }
 
-            // ?? Easier way to do it?
-            // While dragging, render the item icon at the current touch position instead of in its slot.
-            if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex < carriedItems.size()) {
-                const auto& carried = carriedItems[(size_t)_dragInventoryIndex];
-                auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
-                if (itemTex) {
-                    Rect dragSlot = getInventorySlotBounds((size_t)_dragInventoryIndex);
-                    float boxSize = dragSlot.size.width;
-                    float padding = 10.0f;
-                    float iconSize = boxSize - padding * 2;
-                    float iconX = _dragInventoryPos.x - iconSize * 0.5f + hudOffset.x;
-                    float iconY = _dragInventoryPos.y - iconSize * 0.5f + hudOffset.y;
-
-                    // ?? Drag when transparent? Or transparent in inventory while being dragged?
-                    // Color4 dragColor(255, 255, 255, 100);
-                    // _batch->draw(itemTex, dragColor, Rect(iconX, iconY, iconSize, iconSize));
-                    
-                    _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
-                    
-                    _batch->setColor(Color4::WHITE);
-                }
-            }
+//            // ?? Easier way to do it?
+//            // While dragging, render the item icon at the current touch position instead of in its slot.
+//            if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex < carriedItems.size()) {
+//                const auto& carried = carriedItems[(size_t)_dragInventoryIndex];
+//                auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
+//                if (itemTex) {
+//                    Rect dragSlot = getInventorySlotBounds((size_t)_dragInventoryIndex);
+//                    float boxSize = dragSlot.size.width;
+//                    float padding = 10.0f;
+//                    float iconSize = boxSize - padding * 2;
+//                    float iconX = _dragInventoryPos.x - iconSize * 0.5f + hudOffset.x;
+//                    float iconY = _dragInventoryPos.y - iconSize * 0.5f + hudOffset.y;
+//
+//                    // ?? Drag when transparent? Or transparent in inventory while being dragged?
+//                    // Color4 dragColor(255, 255, 255, 100);
+//                    // _batch->draw(itemTex, dragColor, Rect(iconX, iconY, iconSize, iconSize));
+//
+//                    _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
+//
+//                    _batch->setColor(Color4::WHITE);
+//                }
+//            }
         }
 
         auto texContainer = _assets->get<graphics::Texture>("health_bar");
@@ -1165,7 +1186,7 @@ int GameScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {
 }
 
 void GameScene::drawDepositZone() {
-    if (!_map || _appliedRunRevision <= 0) {
+    if (!_map ) {
         return;
     }
 
@@ -1182,12 +1203,16 @@ void GameScene::drawDepositZone() {
 void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
     if (_networkCtrl!=nullptr) return;
     _networkCtrl = n;
-    _map->init();
 }
 
 void GameScene::initMap() {
     if (_networkCtrl->getRandSeed()==0) return; // no randSeed
     if (_mapSeed==_networkCtrl->getRandSeed()) return; // already init
+    // Create the scene graph
+    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(Vec2::ZERO);
+    addChild(_worldnode);
     // initialize physics here, since this should be called post HANDSHAKE
     std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
         this->linkSceneToObs(obs, node);
@@ -1197,7 +1222,6 @@ void GameScene::initMap() {
     _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
     _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
     _enemyFactId = _networkCtrl->getPhysController()->attachFactory(_enemyFact);
-    _rectFactId = _networkCtrl->getPhysController()->attachFactory(_rectFact);
     _itemFactId = _networkCtrl->getPhysController()->attachFactory(_itemFact);
     CULog("Enemy factory ID: %u", _enemyFactId);
     CULog("Item factory ID: %u", _itemFactId);
@@ -1219,7 +1243,13 @@ void GameScene::initMap() {
             _networkCtrl->getPhysController()
                             ->addSharedObstacle(_playerFactId, params);
                     }
+        if (!_addedLWalls) {
+            CULog("adding lower walls in initmap");
+            _map -> getLowerWallNode() -> setPriority(1.0f);
+            _worldnode->addChild(_map->getLowerWallNode());
+            _addedLWalls = true;
         }
+    }
     
     if (!_networkCtrl->isHost()) {
         _networkCtrl->markReady();
@@ -1239,14 +1269,14 @@ void GameScene::setActive(bool value)
             CULog("I am trying to get a player using this id %s", _networkCtrl -> getPID().c_str());
             _player = _playerFact->getPlayerByPID(_networkCtrl -> getPID());
             
-           
+           _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
+                                       _player, _input, _depositPosition, _depositRadius);
 
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
         }
         else
         {
-            hideInventoryCard();
             _input.deactivate();
         }
     }
@@ -1265,58 +1295,50 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     const std::shared_ptr<scene2::SceneNode>& node) {
 
     if (node->getParent() != nullptr) {
-            return;
-        }
+        return;
+    }
     node->setPosition(obj->getPosition() * PHYSICS_SCALE);
     _worldnode->addChild(node);
     if (auto item = std::dynamic_pointer_cast<ItemObstacle>(obj)) {
         _itemNodes.push_back({ item.get(), node });
     }
-    if (auto playerObs = std::dynamic_pointer_cast<PlayerObstacle>(obj)) {
-           bool alreadyTracked = false;
-           for (const auto& p : _playerFact->current) {
-               if (p == playerObs) {
-                   alreadyTracked = true;
-                   break;
-               }
-           }
-           if (!alreadyTracked) {
-               _playerFact -> addCurrent(playerObs);
-           }
-       }
+
     // Dynamic objects need constant updating
     if (obj->getBodyType() == b2_dynamicBody) {
         scene2::SceneNode* weak = node.get(); // No need for smart pointer in callback
         if (auto p = dynamic_pointer_cast<PlayerObstacle>(obj)) {
+            // Add player to set
+            if (!_playerFact->current.contains(p)) {
+                _playerFact->addCurrent(p);
+            }
+
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                    PlayerObstacle::AnimationState state = p->getState();
-                    if (p->getSpell() != SpellType::NONE) {
-                        state = PlayerObstacle::AnimationState::CASTING;
-                    } else if (state == PlayerObstacle::AnimationState::CASTING) {
-                        state = PlayerObstacle::AnimationState::IDLE;
-                    }
-                    p_node->updateAnimationState(state);
-                    float leftover = Application::get()->getFixedRemainder() / 1000000.f;
-                    Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
-                    float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
-                    p_node->setPosition(pos * PHYSICS_SCALE);
-                    p_node->setAngle(angle);
-                    p_node->setVelocity(p->getLinearVelocity() * PHYSICS_SCALE);
+                _playerFact->linkFunc(p, p_node);
             });
-        }else if (auto p = dynamic_pointer_cast<EnemyObstacle>(obj)){
+
+            // Add animation
+            _animations->addNode(p_node);
+        }
+        else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
+            std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
-                e_node -> setFrozen(p -> isFroze());
-                e_node -> setStatue(p -> isMud());
-                e_node -> updateState();
-                float leftover = Application::get()->getFixedRemainder() / 1000000.f;
-                Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
-                float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
-                e_node->setPosition(pos * PHYSICS_SCALE);
-                e_node->setAngle(angle);
+                _enemyFact->linkFunc(e, e_node, _animations);
             });
-        } else {
+
+            // Add animation
+            _animations->addNode(e_node);
+        }
+        else if (auto s = dynamic_pointer_cast<SpellObstacle>(obj)) {
+            std::shared_ptr<SpellNode> s_node = std::dynamic_pointer_cast<SpellNode>(node);
+            obj->setListener([=, this](physics2::Obstacle* obs) {
+                _spellFact->linkFunc(s, s_node, _animations);
+            });
+
+            // Add animation
+            _animations->addNode(s_node);
+        }
+        else {
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 float leftover = Application::get()->getFixedRemainder() / 1000000.f;
                 Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
@@ -1350,10 +1372,11 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
 
     SpellObstacle* spell = nullptr;
+    SpellObstacle* spell2 = nullptr;
     PlayerObstacle* player = nullptr;
     PlayerObstacle* player2 = nullptr;
     EnemyObstacle* enemy = nullptr;
-    RectObstacle* wall = nullptr;
+    cugl::physics2::PolygonObstacle* wall = nullptr;
     ItemObstacle* item = nullptr;
 
     // Get types of the 2 obstacles; only care about collisions between different types of obstacles
@@ -1363,51 +1386,98 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         player = p;
     } else if (auto e = dynamic_cast<EnemyObstacle*>(obs1)) {
         enemy = e;
-    } else if (auto w = dynamic_cast<RectObstacle*>(obs1)) {
-        wall = w;
     } else if (auto w = dynamic_cast<ItemObstacle*>(obs1)){
         item = w;
+    }else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs1)) {
+        wall = w;
     }
 
     if (auto s = dynamic_cast<SpellObstacle*>(obs2)) {
-        spell = s;
+        if(!spell){
+            spell = s;
+        }else{
+            spell2 = s;
+        }
     } else if (auto p = dynamic_cast<PlayerObstacle*>(obs2)) {
         if(player){
             player2 = p;
         }else{
             player = p;
         }
-        
     } else if (auto e = dynamic_cast<EnemyObstacle*>(obs2)) {
         enemy = e;
-    } else if (auto w = dynamic_cast<RectObstacle*>(obs2)) {
-        wall = w;
     } else if (auto w = dynamic_cast<ItemObstacle*>(obs2)){
         item = w;
     }
+    else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs2)) {
+        //CULog("i am a wall");
+        wall = w;
+    } ;
 
     // Checking for collisions
-    if (spell && spell){
+    if (spell && spell2){
+        //CULog("spell and spell");
         contact -> SetEnabled(false);
     }
-    if (player && spell) {
+    else if (player && spell) {
+        //CULog("spell and player");
         contact -> SetEnabled(false);
+
+        // If spell is in end animation, do not do any calculations
+        if (spell->shouldRemove()) {
+            return;
+        }
+
+        //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID()==player->getPID()) return;
         if (spell->TYPE == SpellType::HEAL) {
+            if(player -> getHealth() < 0){
+                player->setHealth(1);
+                spell -> setRemove();
+                return;
+            }
             int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
-            spell->markRemoved(true);
+            CULog("player_health : %d", player->getHealth());
+            spell->setRemove();
+            return;
+        }
+        if (spell->TYPE == SpellType::FREEZE || spell->TYPE == SpellType::COMBO_FREEZE) {
+            player->setFrozeTimer(60);
+            player->setAniState(PlayerObstacle::AnimationState::FROZEN);
+        }
+        if (spell->TYPE == SpellType::EARTH){
+            player->setMudTimer(240);
+            player -> setMud(true);
+        }
+
+        if (spell->TYPE == SpellType::BUFF){
+            player -> setBuffTimer(3600);
+            player -> setBuff(true);
+            spell -> setRemove();
             return;
         }
         player -> setHealth(player->getHealth() - 1);
+        if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
+            player->consumeProtectionArtifact();
+            player->setHealth(2);
+        }
+        else {
+            player->setHealth(player->getHealth() - 1);
+        }
+
+        spell->setRemove();
         
-        return;
     }
-    if (player && enemy) {
-        contact -> SetEnabled(false);
-        if(player -> getHealth() == 0){
+    else if (player && enemy) {
+        //We need a death message
+        //We need to set ATTACKRESET and decrement some sort of timer
+        contact -> SetEnabled(true);
+        if(player -> getHealth() < 0){
+
             return;
         }
+
         float knockbackSpeed = 10.0f;
         b2Vec2 vel = enemy->getBody()->GetLinearVelocity();
         b2Vec2 dir = vel;
@@ -1417,65 +1487,93 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             dir.y /= len;
         }
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
-
-        
-        player->setHealth(player->getHealth() - 1);
+        if(!enemy -> canAttack()) return;
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
-        return;
+        enemy->setAttackCounter(90);
+        
+        if(player -> getPID() != _player -> getPID()) return;
+        //CULog("enemy and player");
+        if(player -> getHealth() == 0){
+            return;
         }
-    if (enemy && spell) {
+        if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
+            player->consumeProtectionArtifact();
+            player->setHealth(2);
+        }
+        else {
+            player->setHealth(player->getHealth() - 1);
+        }
+        return;
+    }
+    else if (enemy && spell) {
+        //CULog("enemy and spell");
         contact -> SetEnabled(false);
-        if(spell -> TYPE == SpellType::WATER){
+
+        // If spell is in end animation, do not do any calculations
+        if (spell->shouldRemove()) {
+            return;
+        }
+
+        if (spell -> TYPE == SpellType::WATER){
             Vec2 pushDir = enemy->getPosition() - spell->getPosition();
             pushDir.normalize();
-            enemy->setWaterPush(pushDir, 30);
+            enemy->setWaterPush(pushDir, 120);
+            return;
         }
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
-        if(spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_EFREEZE){
+        if (spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_EFREEZE){
             enemy -> setFrozen(true);
             if(spell->TYPE == SpellType::FREEZE){
                 enemy->setFrozenTimer(60);
             }else if (spell->TYPE == SpellType::COMBO_FREEZE){
-                enemy->setFrozenTimer(240);
+                enemy->setFrozenTimer(600);
             }else{
                 enemy->setFrozenTimer(-1);
             }
             
         }
-        if(spell->TYPE == SpellType::EARTH){
+        else if(spell->TYPE == SpellType::EARTH){
             enemy -> setMud(true);
             enemy -> setMudTimer(300);
         }
-        if(!(spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
+        else if((spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
              or spell -> TYPE == SpellType::WATER)){
-            spell->markRemoved(true);
+            if (enemy->getHealth()==0) enemy->markRemoved(true);
+            return;
         }
-        
         if (enemy->getHealth()==0) enemy->markRemoved(true);
+        spell->setRemove();
+    }
+    else if (wall && player){
+        contact->SetEnabled(true);
         return;
     }
-    if (wall && player){
-        contact->SetEnabled(true);
-    }
-    if(wall && spell){
+    else if(wall && spell){
         contact->SetEnabled(false);
-        spell -> markRemoved(true);
+        spell -> setRemove();
+        return;
     }
-    if (wall && enemy){
-        //CULog("here wall and enemy");
+    else if (wall && enemy){
         if (enemy->TYPE == EnemyType::GHOST) {
             contact->SetEnabled(false);
             return;
         }
     }
-    if(player && player2){
+    else if(player && player2){
         contact -> SetEnabled(false);
+        return;
     }
-    if(player && item){
+    else if(player && item){
         contact -> SetEnabled(false);
         _currOverlappedItem = item->getID();
+        return;
     }
-    if(enemy && item){
+    else if(enemy && item){
+        contact -> SetEnabled(false);
+        return;
+    }
+    else if (spell && item){
         contact -> SetEnabled(false);
     }
+    
 }

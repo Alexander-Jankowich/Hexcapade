@@ -5,17 +5,29 @@
         "gestures":  "json/gestures.json"
     },
   "textures": {
-    "enemy": {
+    "ghost": {
       "file": "textures/enemy.png"
     },
+    "bat": {
+      "file": "textures/enemy_bat_sheet.png"
+    },
+    "octoplush": {
+      "file": "textures/enemy_octoplush_sheet.png"
+    },
     "fireball": {
-      "file": "textures/fireballv2.png"
+      "file": "textures/fireball_sheet.png"
     },
     "freeze": {
-      "file": "textures/freeze.png"
+      "file": "textures/freeze_sheet.png"
     },
     "heal": {
-      "file": "textures/heal.png"
+      "file": "textures/heal_sheet.png"
+    },
+    "death": {
+      "file": "textures/death_sheet.png"
+    },
+    "earth": {
+      "file": "textures/earth_sheet.png"
     },
     "button": {
       "file": "textures/button.png"
@@ -48,13 +60,19 @@
       "file": "textures/artifact_gem.png"
     },
     "artifact_gem_boost": {
-      "file": "textures/gem_green.png"
+      "file": "textures/gem_neon.png"
+    },
+    "artifact_heavy": {
+      "file": "textures/gem_blue.png"
     },
     "artifact_protection": {
       "file": "textures/gem_brown.png"
     },
-    "artifact_heavy": {
-      "file": "textures/gem_blue.png"
+    "artifact_gold": {
+      "file": "textures/gem_gold.png"
+    },
+    "artifact_bomb": {
+      "file": "textures/gem_pink.png"
     },
     "artifact_scroll": {
       "file": "textures/artifact_scroll.png"
@@ -69,13 +87,13 @@
       "file": "textures/spellbook_heal.png"
     },
     "spellbook_death": {
-      "file": "textures/disintigrate_spellbook.png"
+      "file": "textures/spellbook_disintegrate.png"
     },
     "spellbook_earth": {
-      "file": "textures/earth_spellbook.png"
+      "file": "textures/spellbook_earth.png"
     },
     "spellbook_water": {
-      "file": "textures/water_spellbook.png"
+      "file": "textures/spellbook_water.png"
     },
     "fire_card": {
       "file": "textures/inventory_cards/fire_card.png"
@@ -163,6 +181,86 @@
                             0,
                             0
                         ]
+                    }
+                }
+            }
+        },
+        "char-select": {
+            "type": "Node",
+            "format": {
+                "type": "Anchored"
+            },
+            "children": {
+                "title": {
+                    "type": "Label",
+                    "data": {
+                        "anchor": [
+                            0.5,
+                            1.0
+                        ],
+                        "scale": 1.5,
+                        "font": "OpenSans",
+                        "text": "Temporary Character Selection",
+                        "padding": [
+                            20,
+                            20,
+                            20,
+                            20
+                        ],
+                        "halign": "center",
+                        "valign": "middle"
+                    },
+                    "layout": {
+                        "x_anchor": "center",
+                        "y_anchor": "top"
+                    }
+                },
+                "center": {
+                    "type": "Node",
+                    "format": {
+                        "type": "Float",
+                        "orientation": "vertical",
+                        "x_alignment": "center",
+                        "y_alignment": "middle"
+                    },
+                    "data": {
+                        "anchor": [
+                            0.5,
+                            0.0
+                        ],
+                        "size": [
+                            500,
+                            500
+                        ]
+                    },
+                    "children": {
+                        "start": {
+                            "type": "Widget",
+                            "data": {
+                                "key": "textbutton",
+                                "variables": {
+                                    "size": [
+                                        400,
+                                        100
+                                    ],
+                                    "text": "Waiting",
+                                    "color": "#000088"
+                                }
+                            },
+                            "layout": {
+                                "priority": 3,
+                                "padding": [
+                                    0,
+                                    50,
+                                    0,
+                                    0
+                                ]
+                            }
+                        }
+                    },
+                    "layout": {
+                        "x_anchor": "center",
+                        "y_anchor": "bottom"
                     }
                 }
             }

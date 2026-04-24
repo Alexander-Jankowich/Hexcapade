@@ -7,24 +7,67 @@
 
 #ifndef __GP_PLAYER_H__
 #define __GP_PLAYER_H__
+
 #include <cugl/cugl.h>
 #include "PlayerObstacle.h"
+#include "../Animations.h"
 
-class PlayerNode : public cugl::scene2::SpriteNode {
+class PlayerNode : public AnimatedSprite {
 private:
+    enum class AnimationType {
+        IDLE,
+        WALK,
+        CASTING,
+        DEAD
+    };
+
+    enum class Direction {
+        RIGHT_FORWARD = 0,
+        RIGHT_BACKWARD = 1,
+        LEFT_FORWARD = 2,
+        LEFT_BACKWARD = 3
+    };
+
     cugl::Vec2 _velocity;
 
     bool facingBack;
     bool facingLeft;
+
+    AnimationType _curAnimation;
+    AnimationType _nextAnimation;
     
-    static int leftFrontFrame;
-    static int rightFrontFrame;
-    static int leftBackFrame;
-    static int rightBackFrame;
-    static int deadFrame;
+    static int walk[4];
+    static int walkFrames;
+
+    static int idle[4];
+    static int idleFrames;
+
+    static int startCast[4];
+    static int startCastFrames;
+
+    static int casting[4];
+    static int castingFrames;
+
+    static int endCast[4];
+    static int endCastFrames;
+
+    static int dying[4];
+    static int dyingFrames;
+
+    static int dead[4];
+    static int deadFrames;
 
     static int cols;
     static int rows;
+    
+    bool frozen = false;
+    
+    bool mud = false;
+    
+    bool buff = false;
+    
+
+    int getDirection() { return (facingLeft ? 2 : 0) + (facingBack ? 1 : 0); }
 
 public:
 #pragma mark Constructors
@@ -43,14 +86,50 @@ public:
 #pragma mark Properties
     static void setConsts(std::shared_ptr<JsonValue> consts) {
         //CULog("set consts-------------");
-        PlayerNode::leftFrontFrame = consts->getInt("left_forward");
-        PlayerNode::rightFrontFrame = consts->getInt("right_forward");
-        PlayerNode::leftBackFrame = consts->getInt("left_backward");
-        PlayerNode::rightBackFrame = consts->getInt("right_backward");
-        PlayerNode::deadFrame = consts->getInt("dead");
-
         PlayerNode::cols = consts->getInt("columns");
         PlayerNode::rows = consts->getInt("rows");
+
+        PlayerNode::walk[(int)Direction::LEFT_FORWARD] = consts->getInt("walk-left_forward");
+        PlayerNode::walk[(int)Direction::RIGHT_FORWARD] = consts->getInt("walk-right_forward");
+        PlayerNode::walk[(int)Direction::LEFT_BACKWARD] = consts->getInt("walk-left_backward");
+        PlayerNode::walk[(int)Direction::RIGHT_BACKWARD] = consts->getInt("walk-right_backward");
+        PlayerNode::walkFrames = consts->getInt("walk_frames");
+
+        PlayerNode::idle[(int)Direction::LEFT_FORWARD] = consts->getInt("idle-left_forward");
+        PlayerNode::idle[(int)Direction::RIGHT_FORWARD] = consts->getInt("idle-right_forward");
+        PlayerNode::idle[(int)Direction::LEFT_BACKWARD] = consts->getInt("idle-left_backward");
+        PlayerNode::idle[(int)Direction::RIGHT_BACKWARD] = consts->getInt("idle-right_backward");
+        PlayerNode::idleFrames = consts->getInt("idle_frames");
+
+        PlayerNode::startCast[(int)Direction::LEFT_FORWARD] = consts->getInt("start_cast-left_forward");
+        PlayerNode::startCast[(int)Direction::RIGHT_FORWARD] = consts->getInt("start_cast-right_forward");
+        PlayerNode::startCast[(int)Direction::LEFT_BACKWARD] = consts->getInt("start_cast-left_backward");
+        PlayerNode::startCast[(int)Direction::RIGHT_BACKWARD] = consts->getInt("start_cast-right_backward");
+        PlayerNode::startCastFrames = consts->getInt("start_cast_frames");
+
+        PlayerNode::casting[(int)Direction::LEFT_FORWARD] = consts->getInt("casting-left_forward");
+        PlayerNode::casting[(int)Direction::RIGHT_FORWARD] = consts->getInt("casting-right_forward");
+        PlayerNode::casting[(int)Direction::LEFT_BACKWARD] = consts->getInt("casting-left_backward");
+        PlayerNode::casting[(int)Direction::RIGHT_BACKWARD] = consts->getInt("casting-right_backward");
+        PlayerNode::castingFrames = consts->getInt("casting_frames");
+
+        PlayerNode::endCast[(int)Direction::LEFT_FORWARD] = consts->getInt("end_cast-left_forward");
+        PlayerNode::endCast[(int)Direction::RIGHT_FORWARD] = consts->getInt("end_cast-right_forward");
+        PlayerNode::endCast[(int)Direction::LEFT_BACKWARD] = consts->getInt("end_cast-left_backward");
+        PlayerNode::endCast[(int)Direction::RIGHT_BACKWARD] = consts->getInt("end_cast-right_backward");
+        PlayerNode::endCastFrames = consts->getInt("end_cast_frames");
+
+        PlayerNode::dying[(int)Direction::LEFT_FORWARD] = consts->getInt("dying-left_forward");
+        PlayerNode::dying[(int)Direction::RIGHT_FORWARD] = consts->getInt("dying-right_forward");
+        PlayerNode::dying[(int)Direction::LEFT_BACKWARD] = consts->getInt("dying-left_backward");
+        PlayerNode::dying[(int)Direction::RIGHT_BACKWARD] = consts->getInt("dying-right_backward");
+        PlayerNode::dyingFrames = consts->getInt("dying_frames");
+
+        PlayerNode::dead[(int)Direction::LEFT_FORWARD] = consts->getInt("dead-left_forward");
+        PlayerNode::dead[(int)Direction::RIGHT_FORWARD] = consts->getInt("dead-right_forward");
+        PlayerNode::dead[(int)Direction::LEFT_BACKWARD] = consts->getInt("dead-left_backward");
+        PlayerNode::dead[(int)Direction::RIGHT_BACKWARD] = consts->getInt("dead-right_backward");
+        PlayerNode::deadFrames = consts->getInt("dead_frames");
     }
     
     void reset() {
@@ -61,6 +140,14 @@ public:
     void updateAnimationState(PlayerObstacle::AnimationState s);
 
     void setVelocity(cugl::Vec2 value);
+    
+    void setFrozen(bool f) {frozen = f;}
+    
+    void setMud(bool m) {mud = m;}
+    
+    void setBuff(bool b) {buff = b;}
+
+    std::pair<cugl::ActionFunction, float> getNextAnimation() override;
 };
 
 #endif // !__GP_PLAYER_H__
