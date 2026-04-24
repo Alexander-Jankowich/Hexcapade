@@ -23,6 +23,7 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared
     _speed = consts->getFloat("speed");
     _range = consts->getFloat("range");
     _target = pos;
+    _radius = Vec2(s.height, s.width).length() / 2;
 
     _state = EnemyState::IDLE;
     _frozen = false;
@@ -49,7 +50,7 @@ void EnemyObstacle::setHealth(int value) {
 void EnemyObstacle::updateAttackCounter() {
     if (_attackCounter > 0) {
         _attackCounter--;
-        CULog("attack_counter %d", _attackCounter);
+        //CULog("attack_counter %d", _attackCounter);
     }
     else {
         _attackCounter = 0;

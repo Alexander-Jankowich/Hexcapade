@@ -2,7 +2,7 @@
 
 #define FROZEN_FRAMES 60
 
-unordered_set<shared_ptr<PlayerObstacle>> Pathfinder::getValidTargets(Vec2 pos, float range,
+unordered_set<shared_ptr<PlayerObstacle>> Pathfinder::getValidTargets(const Vec2 pos, float range,
         shared_ptr<PlayerFactory> playerFact) {
     unordered_set <shared_ptr<PlayerObstacle>> out;
 
@@ -68,6 +68,89 @@ unordered_set<PlayerObstacle*> Pathfinder::getVisiblePlayers(shared_ptr<physics2
     return visiblePos;
 }
 
+Vec2 Pathfinder::findVelocity(shared_ptr<physics2::distrib::NetWorld> world, const Vec2 targ, const Vec2 pos, float radius) {
+    finalTarg = targ;
+
+    // Loop until finding a solution
+    Vec2 direction = Vec2(targ.y - pos.y, pos.x - targ.x).getNormalization();
+    while (performRaycastCheck(world, pos + direction * radius, finalTarg + direction * radius, radius) ||
+        performRaycastCheck(world, pos - direction * radius, finalTarg - direction * radius, radius)) {
+        direction = Vec2(targ.y - pos.y, pos.x - targ.x).getNormalization();
+        //CULog("in loop! from %s to %s", pos.toString().c_str(), targ.toString().c_str());
+    }
+
+    return finalTarg - pos;
+}
+
+bool Pathfinder::performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> world, const Vec2 targ, const Vec2 pos, float radius) {
+    wall = nullptr;
+    function<float(b2Fixture*, const Vec2&, const Vec2&, float)> callback =
+        [this](b2Fixture* fixture, const Vec2& point, const Vec2& normal, float fraction) {
+        physics2::Obstacle* obs = reinterpret_cast<physics2::Obstacle*>(fixture->GetBody()->GetUserData().pointer);
+        if (auto p = dynamic_cast<physics2::PolygonObstacle*>(obs)) {
+            wall = p;
+            //CULog("see wall");
+            return 0.0f;
+        }
+        //CULog("hit something");
+        return 1.0f;
+    };
+
+    //CULog("perform raycast");
+    world->rayCast(callback, pos, targ);
+
+    if (wall) {
+        float leftFar = 0, rightFar = 0;
+        Vec2 leftPoint, rightPoint;
+
+        auto exterior = wall->getPolygon().exterior();
+
+        // Loop through all points
+        for (const auto i : exterior) {
+            const auto point = wall->getPolygon().at(i);
+
+            // Find distance from line
+            float len = fabs((targ.y - pos.y) * point.x - (targ.x - pos.x) * point.y + targ.y * pos.x - targ.x * pos.y) /
+                    targ.distance(pos);
+
+            // Decide which side the point is on and keep farthest point
+            // Note: may want to ignore points on a concave side of the shape, add that if this code doesn't work...
+            // I think it should work without ignoring concave points...
+            if ((targ.x - pos.x) * (point.y - pos.y) - (targ.y - pos.y) * (point.x - pos.x) > 0) {
+                if (len > rightFar) {
+                    rightFar = len;
+                    rightPoint = point;
+                }
+            }
+            else {
+                if (len > leftFar) {
+                    leftFar = len;
+                    leftPoint = point;
+                }
+            }
+        }
+        
+        if (leftFar == 0 || rightFar == 0) {
+            // Just skimmed wall, can act as if no touch
+            return false;
+        }
+
+        // Go around side 
+        if (leftFar < rightFar) {
+            Vec2 norm = Vec2(targ.y - pos.y, pos.x - targ.x).getNormalization();
+            finalTarg = leftPoint + norm * radius;
+        }
+        else {
+            Vec2 norm = Vec2(pos.y - targ.y, targ.x - pos.x).getNormalization();
+            finalTarg = rightPoint + norm * radius;
+        }
+
+        return true;
+    }
+    return false;
+}
+
+
 void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact,
         shared_ptr<physics2::distrib::NetWorld> world) {
 
@@ -114,7 +197,8 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             // Set velocity to go to target
             Vec2 currentVel = en->getLinearVelocity();
 
-            Vec2 desiredVel = en->getTarget() - en->getPosition();
+            //Vec2 desiredVel = en->getTarget() - en->getPosition();
+            Vec2 desiredVel = findVelocity(world, en->getTarget(), en->getPosition(), en->getRadius());
             desiredVel.normalize();
             if (en -> isMud()){
                 desiredVel *= en->getSpeed()/2;

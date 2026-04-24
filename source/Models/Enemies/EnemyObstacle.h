@@ -37,6 +37,9 @@ protected:
     // Max speed of the enemy
     float _speed;
 
+    // The max length of the enemy from its center
+    float _radius;
+
     // Distance at which the enemy can see players
     float _range;
 
@@ -83,6 +86,8 @@ public:
     * This method makes it so that the enemy will still collide with walls and players
     */
     void setVelocity(Vec2 vel);
+
+    float getRadius() { return _radius; }
 
     /**
      * Returns the speed of this enemy.
