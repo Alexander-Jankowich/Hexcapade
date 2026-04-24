@@ -235,6 +235,15 @@ public:
         return false;
     }
 
+    void consumeProtectionArtifact() {
+        for (auto it = _inventory.begin(); it != _inventory.end(); ++it) {
+            if (it->kind == ItemKind::ARTIFACT && it->itemType == "artifact_protection") {
+                _inventory.erase(it);
+                return;
+            }
+        }
+    }
+
     bool hasHeavyArtifact() const {
         for (const auto& item : _inventory) {
             if (item.kind == ItemKind::ARTIFACT &&
@@ -278,6 +287,7 @@ public:
             if (item.bombTimer <= 0) {
                 _inventory.erase(_inventory.begin() + i);
                 _bombExpired = true;
+                setHealth(_health - 2);
                 break;
             }
         }
@@ -286,7 +296,7 @@ public:
     bool isNonDroppable(size_t index) const {
         if (index >= _inventory.size()) return false;
         const std::string& t = _inventory[index].itemType;
-        return t == "artifact_bomb" || t == "artifact_dirt";
+        return t == "artifact_bomb" || t == "artifact_gold";
     }
 
 

@@ -184,7 +184,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
     lastEnemySpawn = 0;
 
     _map = std::make_shared<Map>();
-    _roomController.setMap(_map);
+    _roomController.setRooms(_map->getRooms());
     _runRevision = 0;
     _appliedRunRevision = -1;
     _mapSeed = 0;
@@ -375,7 +375,7 @@ void GameScene::rebuildMapForRun() {
     _worldnode -> addChild(n);
     
     
-    _roomController.setMap(_map);
+    _roomController.setRooms(_map->getRooms());
     _appliedRunRevision = _runRevision;
     
     _quota = std::max(1, _runConfig.quota);
@@ -1462,6 +1462,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player->setMudTimer(240);
             player -> setMud(true);
         }
+
         if (spell->TYPE == SpellType::BUFF){
             player -> setBuffTimer(3600);
             player -> setBuff(true);
@@ -1469,6 +1470,14 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             return;
         }
         player -> setHealth(player->getHealth() - 1);
+        if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
+            player->consumeProtectionArtifact();
+            player->setHealth(2);
+        }
+        else {
+            player->setHealth(player->getHealth() - 1);
+        }
+
         spell->setRemove();
         
     }
@@ -1499,7 +1508,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if(player -> getHealth() == 0){
             return;
         }
-        player->setHealth(player->getHealth() - 1);
+        if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
+            player->consumeProtectionArtifact();
+            player->setHealth(2);
+        }
+        else {
+            player->setHealth(player->getHealth() - 1);
+        }
         return;
     }
     else if (enemy && spell) {

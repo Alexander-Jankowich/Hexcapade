@@ -5,29 +5,24 @@
 #define __HEXCAPADE_ROOM_CONTROLLER_H__
 
 #include <cugl/cugl.h>
-#include <memory>
-#include <string>
-#include <vector>
 
-#include "../Models/Map/Map.h"
+#include "../Models/Map/Room.h"
 
 class RoomController {
 private:
-    std::shared_ptr<Map> _map;
+    std::vector<std::shared_ptr<Room>> _rooms;
 
 public:
-    RoomController() = default;
+    RoomController() {};
+    ~RoomController() {};
 
-    void setMap(const std::shared_ptr<Map>& map) { _map = map; }
+    void setRooms(std::vector<std::shared_ptr<Room>> r) {_rooms = r;}
+    /**
+     * @return shared pointer to Room pos is in, nullptr if pos is not in a room
+     */
+    std::shared_ptr<Room> getCurrentRoom(const cugl::Vec2& pos) const;
 
-    int getCurrentRoomIndex(const cugl::Vec2& worldPos) const;
-    const std::vector<int>& getConnectedRooms(int roomIndex) const;
 
-    bool currentRoomHasModifier(const cugl::Vec2& worldPos) const;
-    std::string getCurrentRoomModifier(const cugl::Vec2& worldPos) const;
-
-    const std::vector<cugl::Vec2>& getInitialItemSpawnPoints() const;
-    const std::vector<cugl::Vec2>& getInitialEnemySpawnPoints() const;
 };
 
 #endif // __HEXCAPADE_ROOM_CONTROLLER_H__

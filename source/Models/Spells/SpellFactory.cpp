@@ -14,12 +14,15 @@ using namespace cugl;
 
 SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range ,SpellType type, std::string c) : TYPE(type) {    
     init(pos, radius / 3);
+
     
     setAwake(true);
     setEnabled(true);
     //setBullet(true);
     setBodyType(b2_dynamicBody);
-    setAngle(vel.getAngle());
+    if (type != SpellType::DEATH) {
+        setAngle(vel.getAngle());
+    }
     setFixedRotation(true);
     
     _damage = dmg;
@@ -74,7 +77,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::EARTH:
         values = _spellConsts->get("earth");
-        image = _assets -> get<graphics::Texture>("freeze");
+        image = _assets -> get<graphics::Texture>("earth");
         break;
     case SpellType::COMBO_EFREEZE:
         values = _spellConsts->get("combo_efreeze");
