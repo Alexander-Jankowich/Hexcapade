@@ -15,7 +15,7 @@
 #define MAP_HEIGHT 90
 #define MAP_WIDTH 90
 #define TILE_SIZE 40
-#define PHYSICS_SCALE 100 //TODO: find a way to like. not redefine it lol
+#define PHYSICS_SCALE 50 //TODO: find a way to like. not redefine it lol
 
 // GID defs for hallway gen
 #define FLOOR_GID 67
@@ -51,7 +51,7 @@ private:
     cugl::Vec2 _origin;
     cugl::Size _sceneSize;
     SimpleExtruder _extruder;
-    std::shared_ptr<cugl::scene2::OrderedNode> lw_node;
+    std::shared_ptr<cugl::scene2::SceneNode> lw_node;
     std::vector<std::shared_ptr<Room>> _rooms;
 
     std::vector<cugl::Vec2> _itemSpawnPoints;

@@ -9,7 +9,7 @@ using namespace std;
 using namespace cugl;
 
 
-#define PHYSICS_SCALE 100
+#define PHYSICS_SCALE 50
 
 int PlayerFactory::rows = 1;
 int PlayerFactory::cols = 1;
@@ -79,7 +79,7 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
     PlayerObstacle::AnimationState state;
 
     if (obs->getHealth() <= 0) {
-        state = PlayerObstacle::AnimationState::DEAD; 
+        state = PlayerObstacle::AnimationState::DEAD;
     }
     else if (obs->getState() == PlayerObstacle::AnimationState::FROZEN) {
         state = PlayerObstacle::AnimationState::FROZEN;

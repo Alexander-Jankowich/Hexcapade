@@ -1,5 +1,5 @@
 #include "PlayerObstacle.h"
-#define PHYSICS_SCALE 100
+#define PHYSICS_SCALE 50
 
 PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
     init(pos, (s * 0.4) / PHYSICS_SCALE);
@@ -11,7 +11,7 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
     setEnabled(true);
     setFixedRotation(true);
     _pid = pid;
-    _speed = 3;
+    _speed = 4;
     _health = 6;
     _inventoryLimit = 5;
 }

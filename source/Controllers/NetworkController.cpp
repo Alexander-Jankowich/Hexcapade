@@ -10,7 +10,7 @@
 using namespace cugl;
 using namespace cugl::netcode;
 using namespace std;
-#define PHYSICS_SCALE 100
+#define PHYSICS_SCALE 50
 
 #pragma mark PrivateClientHelpers
 

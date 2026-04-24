@@ -7,7 +7,7 @@
 
 #include "EnemyObstacle.h"
 
-#define PHYSICS_SCALE 100
+#define PHYSICS_SCALE 50
 #define ATTACK_DELAY 90.0f
 
 EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s)

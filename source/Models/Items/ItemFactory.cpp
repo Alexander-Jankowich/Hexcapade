@@ -7,7 +7,7 @@
 
 #include "ItemFactory.h"
 
-#define PHYSICS_SCALE 100
+#define PHYSICS_SCALE 50
 // Item half-size in physics units
 #define ITEM_SIZE 0.48f
 

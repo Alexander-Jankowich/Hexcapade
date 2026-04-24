@@ -27,7 +27,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
 
     _sceneSize = sceneSize;
     auto node = scene2::SceneNode::alloc();
-    lw_node = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+    lw_node = scene2::SceneNode::alloc();
     std::vector<MapDoor> doors;
     _rng.initWithSeed(seed);
     _assets = assets;

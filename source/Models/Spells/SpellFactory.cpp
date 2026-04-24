@@ -7,7 +7,7 @@
 
 #include "SpellFactory.h"
 
-#define PHYSICS_SCALE 100.0f
+#define PHYSICS_SCALE 50.0f
 
 using namespace std;
 using namespace cugl;

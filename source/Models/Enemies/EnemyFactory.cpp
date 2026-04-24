@@ -10,7 +10,7 @@
 using namespace std;
 using namespace cugl;
 
-#define PHYSICS_SCALE 100
+#define PHYSICS_SCALE 50
 
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters

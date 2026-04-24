@@ -89,7 +89,7 @@
         },
         "earth": {
             "speed": 3,
-            "damage": 1,
+            "damage": 2,
             "range": 5.0
         },
         "death": {
@@ -99,7 +99,7 @@
         },
         "combo_fireball": {
             "speed": 5,
-            "damage": 6,
+            "damage": 10,
             "range": 10.0
         },
         "combo_freeze": {
@@ -135,7 +135,7 @@
     "enemies": {
         "ghost": {
             "health": 6,
-            "speed": 2.0,
+            "speed": 4.0,
             "range": 4.5,
 
             "texture": "ghost",
@@ -149,7 +149,7 @@
         },
         "bat": {
             "health": 3,
-            "speed": 4.0,
+            "speed": 5.0,
             "range": 5,
 
             "texture": "bat",
@@ -163,7 +163,7 @@
         },
         "octoplush": {
             "health": 12,
-            "speed": 1.0,
+            "speed": 2.0,
             "range": 4.5,
 
             "texture": "octoplush",

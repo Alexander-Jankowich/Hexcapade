@@ -30,7 +30,7 @@
 #define SCENE_HEIGHT 720
 
 /** The ratio between the physics world and the screen. (40 px = 1 meter, 1 tile is 1m x 1m or 40px x 40px) */
-#define PHYSICS_SCALE 100
+#define PHYSICS_SCALE 50
 
 #define COMBO_RADIUS 25
 
@@ -1525,7 +1525,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (spell -> TYPE == SpellType::WATER){
             Vec2 pushDir = enemy->getPosition() - spell->getPosition();
             pushDir.normalize();
-            enemy->setWaterPush(pushDir, 30);
+            enemy->setWaterPush(pushDir, 120);
+            return;
         }
         enemy->setHealth(enemy->getHealth() - spell->getDamage());
         if (spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_EFREEZE){
