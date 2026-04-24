@@ -497,7 +497,6 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
-    //CULog("X :%f, Y : %f", _player->getPosition().x, _player->getPosition().y);
     if (!_player) {
         // Try to find our player now that replication may have run
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
@@ -1436,7 +1435,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             return;
         }
 
-        CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
+        //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID()==player->getPID()) return;
         if (spell->TYPE == SpellType::HEAL) {
             if(player -> getHealth() < 0){

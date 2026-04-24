@@ -31,12 +31,18 @@ private:
     /**
     * Returns a set of all players who are not dead and are within range of the enemy
     */
-    unordered_set<shared_ptr<PlayerObstacle>> getValidTargets(Vec2 pos, float range, shared_ptr<PlayerFactory> playerFact);
+    unordered_set<shared_ptr<PlayerObstacle>> getValidTargets(const Vec2 pos, float range, shared_ptr<PlayerFactory> playerFact);
 
     unordered_set<PlayerObstacle*> visiblePos; // Only used for getClosestPlayerRaycast!!
     unordered_set<PlayerObstacle*> getVisiblePlayers(shared_ptr<physics2::distrib::NetWorld> world, Vec2 enemPos,
         float range, unordered_set<shared_ptr<PlayerObstacle>> targs);
 
+    Vec2 finalTarg;
+    physics2::PolygonObstacle* wall;
+    Vec2 findVelocity(shared_ptr<physics2::distrib::NetWorld> world, const Vec2 targ, const Vec2 pos, float radius);
+
+    /** Returns false if no walls were detected (path is clear), true otherwise */
+    bool performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> world, const Vec2 targ, const Vec2 pos, float radius);
 
 public:
     Pathfinder() {}

@@ -990,15 +990,19 @@ void InputController::processJoystick(const cugl::Vec2 pos) {
     float dist = diff.length();
 
     // Clamp to joystick radius
-    //if (dist > _joyradius) {
-    //    Vec2 excess = diff;
-    //    diff.normalize();
-    //    diff *= _joyradius;
+    if (dist > _joyradius) {
+        Vec2 excess = diff;
+        diff.normalize();
+        diff *= _joyradius;
 
-    //    excess -= diff;
-    //    // Move joystick in excess direction
-    //    _joycenter += excess;
-    //}
+        excess -= diff;
+
+        // Move joystick center in excess direction
+        //_joycenter += excess;
+
+        // Move the joystick to be within the joystick radius
+        _joystickpos -= excess;
+    }
 
     if (dist > _deadzone) {
         _joystick = true;
@@ -1014,7 +1018,8 @@ void InputController::processJoystick(const cugl::Vec2 pos) {
         y = clampf(y, -1.0f, 1.0f);
 
         _move = Vec2(x, y);
-    } else {
+    }
+    else {
         _joystick = false;
         _move = Vec2(0,0);
     }
