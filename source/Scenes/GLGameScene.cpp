@@ -218,17 +218,10 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
     // Create other controllers
     _pathfinder = Pathfinder();
 
-    // IMPORTANT: SCALING MUST BE UNIFORM
-    // This means that we cannot change the aspect ratio of the physics world
-    // Shift to center if a bad fit
-    //_scale = dimen.width == SCENE_WIDTH ? dimen.width / rect.size.width : dimen.height / rect.size.height;
-    //Vec2 offset((dimen.width - SCENE_WIDTH) / 2.0f, (dimen.height - SCENE_HEIGHT) / 2.0f);
-    Vec2 offset = Vec2::ZERO;
-
     // Create the scene graph
     _worldnode = scene2::SceneNode::alloc();
     _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    _worldnode->setPosition(offset);
+    _worldnode->setPosition(Vec2::ZERO);
     
 
     addChild(_worldnode);
@@ -268,8 +261,12 @@ void GameScene::reset()
     CULog("game scene reset called");
     loadGameplayConfig();
     _mapSeed = 0;
-    _world->clear();
+    _map->reset();
+    _world->clear(true); // reset box2d + phys world
+    // is this correct...?
+    removeAllChildren();
     _worldnode->removeAllChildren();
+    
     _player = nullptr;
     _enemyFact->reset();
     _itemFact->reset();
@@ -360,11 +357,6 @@ void GameScene::rebuildMapForRun() {
     if (!_map) {
         _map = std::make_shared<Map>();
     }
-
-//    if (!_map->generate(_runConfig.map, _mapSeed, _assets, _rooms)) {
-//        CULog("map generation failed for run revision %d", _runRevision);
-//        return;
-//    }
     
     auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize(), _world);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
@@ -377,7 +369,7 @@ void GameScene::rebuildMapForRun() {
     _quota = std::max(1, _runConfig.quota);
     _depositPosition = _map->getPlayerSpawn();
 
-    if (_networkCtrl && _networkCtrl->isHost()) {
+    if (_networkCtrl->isHost()) {
         spawnItemsFromMap();
     }
     //updateItemPickupState();

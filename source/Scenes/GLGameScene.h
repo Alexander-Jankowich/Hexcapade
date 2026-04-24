@@ -168,7 +168,7 @@ public:
      * Disposes of all (non-static) resources allocated to this mode.
      */
     void dispose() override;
-    void reset();
+    void reset() override;
     
     bool gameEnded() { return _networkCtrl->gameState()==NetworkController::NCGameState::WON || _networkCtrl->gameState()==NetworkController::NCGameState::LOST; }
 
@@ -296,8 +296,6 @@ public:
 
     void setActive(bool value) override;
     
-    void initHost(unsigned int randSeed);
-
 private:
 
     cugl::Rect getInventorySlotBounds(size_t slotIndex) const;

@@ -69,6 +69,8 @@ private:
 
 public:
     Map();
+    
+    void reset();
     /** Procedurally generates the map for this run. Adds all created rooms to a SceneNode and generates collision obstacles accordingly
      * @param seed the random seed used to initialize this runs random number generator
      * @param assets the assetManager, which contains all loaded tiled data tied to proper room keys
