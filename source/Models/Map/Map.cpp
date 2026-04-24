@@ -290,8 +290,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 to_skip = Door::Direction::WEST;
                 CULog("done adding halls - E");
                 std::vector<Vec2> north_points = {
-                    Vec2((xPos ) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos + 3) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos - 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos + std::get<1>(res) + 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(north_points,false);
                 _extruder.calculate(0.05f);
@@ -320,8 +320,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                         if(xPos > 0) _mapGrid[i][xPos -1] = 1;
                     }
                     std::vector<Vec2> north_points = {
-                        Vec2((xPos) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 2 ) * TILE_SIZE / PHYSICS_SCALE),
-                        Vec2((xPos) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 8) * TILE_SIZE / PHYSICS_SCALE)
+                        Vec2((xPos + 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 2 ) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((xPos + 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 8) * TILE_SIZE / PHYSICS_SCALE)
                     };
                     _extruder.set(north_points,false);
                     _extruder.calculate(0.05f);
@@ -358,16 +358,16 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 to_skip = Door::Direction::EAST;
                 CULog("done adding halls - W");
                 std::vector<Vec2> north_points = {
-                    Vec2((xPos ) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos - 3) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos + 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos - std::get<1>(res) - 3) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(north_points,false);
                 _extruder.calculate(0.05f);
                 auto np = _extruder.getPolygon();
                 addWallObstacle(np, world);
                 std::vector<Vec2> south_points = {
-                    Vec2((xPos ) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos - 3) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos + 3) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos - std::get<1>(res)) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(south_points,false);
                 _extruder.calculate(0.05f);

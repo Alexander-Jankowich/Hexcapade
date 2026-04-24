@@ -11,7 +11,7 @@
 #include <cugl/cugl.h>
 #include "SpellNode.h"
 
-#define HEAL_AMT 3;
+#define HEAL_AMT 2;
 
 using namespace cugl;
 using namespace cugl::physics2::distrib;
@@ -73,7 +73,7 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, SpellType type, std::string c_uid, int damageBonus);
+    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, SpellType type, std::string c_uid, int damageBonus, bool buff);
 
 
 public:
@@ -103,7 +103,7 @@ public:
     /**
      * Helper method for converting normal parameters into byte vectors used for syncing.
      */
-    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, Vec2 velocity, SpellType type, std::string c, int damageBonus = 0);
+    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, Vec2 velocity, SpellType type, std::string c, int damageBonus = 0, bool buff = false);
 
     /**
      * Generate a pair of Obstacle and SceneNode using serialized parameters.

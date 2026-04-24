@@ -69,7 +69,12 @@ void PlayerNode::updateAnimationState(PlayerObstacle::AnimationState s) {
         // Just get direction
         if(mud){
             setColor(Color4::GRAY);
-        }else{
+        }
+        else if (buff){
+            CULog("coloring red");  
+            setColor(Color4::RED);
+        }
+        else{
             setColor(Color4::WHITE);
         }
         _nextAnimation = _velocity.isZero() ? AnimationType::IDLE : AnimationType::WALK;

@@ -13,7 +13,7 @@ using namespace std;
 using namespace cugl;
 
 SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range ,SpellType type, std::string c) : TYPE(type) {    
-    init(pos, radius);
+    init(pos, radius / 3);
     
     setAwake(true);
     setEnabled(true);
@@ -37,7 +37,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius,
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 angle, SpellType type, std::string c_uid, int damageBonus) {
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 angle, SpellType type, std::string c_uid, int damageBonus, bool buff) {
     auto image = _assets->get<graphics::Texture>("fireball"); // default?
     
     // Create the SpellObstacle
@@ -80,6 +80,10 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         values = _spellConsts->get("combo_efreeze");
         image =_assets -> get<graphics::Texture>("freeze");
         break;
+    case SpellType::BUFF:
+        values = _spellConsts->get("buff");
+        image = _assets->get<graphics::Texture>("heal");
+        break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
     default:
@@ -90,8 +94,9 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 
     Vec2 vel = norm * values->getFloat("speed");
     auto spell = SpellObstacle::alloc(pos, vel, radius,
-        std::max(1, values->getInt("damage") + damageBonus),
+        std::max(1, buff ? 2 * (values->getInt("damage") + damageBonus) : values->getInt("damage") + damageBonus),
         values->getFloat("range"),type ,c_uid);
+    CULog("buff is %d", buff);
     //auto spell = SpellObstacle::alloc(pos, type);
 
     spell->setAngleSnap(0); // Snap to the nearest degree
@@ -111,7 +116,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 /**
  * Helper method for converting normal parameters into byte vectors used for syncing.
  */
-std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, Vec2 angle, SpellType type, string c, int damageBonus) {
+std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, Vec2 angle, SpellType type, string c, int damageBonus, bool buff) {
     /**
      * TODO: Use _serializer to serialize pos and scale (remember to make a
      * shared copy of the serializer reference, otherwise it will be lost if
@@ -125,6 +130,8 @@ std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, 
     _serializer.writeUint32((uint32_t)type);
     _serializer.writeString(c);
     _serializer.writeSint32(damageBonus);
+    _serializer.writeBool(buff);
+   
     return std::make_shared<std::vector<std::byte>>(_serializer.serialize());
 }
 
@@ -148,7 +155,8 @@ std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode
     SpellType type = (SpellType) _deserializer.readUint32();
     string c = _deserializer.readString();
     int damageBonus = _deserializer.readSint32();
-    return createObstacle(pos, velocity, type, c, damageBonus);
+    int buff = _deserializer.readBool();
+    return createObstacle(pos, velocity, type, c, damageBonus, buff);
 }
 
 std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {

@@ -12,7 +12,7 @@
 
 EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s)
     : TYPE(type) {
-    init(pos, s / PHYSICS_SCALE);
+    init(pos, s / (2 * PHYSICS_SCALE));
     setAwake(true);
     setEnabled(true);
     setBodyType(b2_dynamicBody);

@@ -232,11 +232,11 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
     Vec2 offset = Vec2::ZERO;
 
     // Create the scene graph
-    _worldnode = scene2::SceneNode::alloc();
+    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
     _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     _worldnode->setPosition(offset);
     
-
+    
     addChild(_worldnode);
 
     _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, 200 , 200), Vec2::ZERO);
@@ -342,6 +342,7 @@ void GameScene::showInventoryCard(size_t slotIndex) {
     _inventoryCardNode->setScale(1.0f / zoom);
     _inventoryCardNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
                                          offset.y + this->getSize().height * 0.5f / zoom));
+    _inventoryCardNode -> setPriority(10.0);
     addChild(_inventoryCardNode);
 }
 
@@ -370,6 +371,7 @@ void GameScene::rebuildMapForRun() {
     auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize(), _world);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
+    n->setPriority(0.0);
     _worldnode -> addChild(n);
     
     
@@ -503,6 +505,8 @@ void GameScene::preUpdate(float dt)
         if (!_player) return;
     }
     if (_player && !_addedLWalls) {
+        CULog("adding lower walls");
+        _map->getLowerWallNode() -> setPriority(3.0);
         _worldnode->addChild(_map->getLowerWallNode());
         _addedLWalls = true;
     }
@@ -552,6 +556,7 @@ void GameScene::preUpdate(float dt)
                 //If we create it we MUST acquire it
                 // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
                 _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
+                pair.second -> setPriority(-100.0f);
             }
         }
 
@@ -744,22 +749,6 @@ void GameScene::preUpdate(float dt)
         }
     }
 
-    // MOBILE DEPOSIT: TAP FOR ALL!
-    // if (depositIndex >= 0 && _canDeposit) {
-    //     if (_player && _player->hasInventory()) {
-    //         if (_networkCtrl->isHost()) {
-    //             int deposited = _player->depositItems();
-    //             if (deposited > 0) {
-    //                 _inventoryValue = _player->getInventoryVal();
-    //                 _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true));
-    //             }
-    //         } else {
-    //             _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID()));
-    //             CULog("CLIENT deposit request");
-    //         }
-    //     }
-    // }
-
     // DESKTOP DEPOSIT: F FOR ALL!
     if (depositRequested && _canDeposit) {
         if (_player && _player->hasInventory()) {
@@ -832,8 +821,13 @@ void GameScene::preUpdate(float dt)
                                 SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
                     p -> resolveSpell();
                     
+                }
+                else if ((_player -> getSpell() == SpellType::FIREBALL && p -> getSpell() == SpellType::HEAL) || (_player->getSpell()  == SpellType::HEAL && p -> getSpell() == SpellType::FIREBALL)){
+                    t = SpellType::BUFF;
+                    _networkCtrl->pushOutEvent(
+                                        SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    p -> resolveSpell();
                     }
-
                     // Spell is combo-ed!
                     if (t != SpellType::NONE) {
                         _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
@@ -877,7 +871,8 @@ void GameScene::preUpdate(float dt)
             }
             default:
                 int damageBonus = _player->getDamageBonus();
-                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _networkCtrl->getPID(), damageBonus);
+                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _networkCtrl->getPID(), damageBonus,
+                                                          _player->getBuff());
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 break;
@@ -1258,6 +1253,8 @@ void GameScene::initMap() {
                             ->addSharedObstacle(_playerFactId, params);
                     }
         if (!_addedLWalls) {
+            CULog("adding lower walls in initmap");
+            _map -> getLowerWallNode() -> setPriority(3.0);
             _worldnode->addChild(_map->getLowerWallNode());
             _addedLWalls = true;
         }
@@ -1310,6 +1307,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         return;
     }
     node->setPosition(obj->getPosition() * PHYSICS_SCALE);
+    node -> setPriority(0.0);
     _worldnode->addChild(node);
     if (auto item = std::dynamic_pointer_cast<ItemObstacle>(obj)) {
         _itemNodes.push_back({ item.get(), node });
@@ -1339,6 +1337,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             });
 
             // Add animation
+            e_node -> setPriority(0.0);
             _animations->addNode(e_node);
         }
         else if (auto s = dynamic_pointer_cast<SpellObstacle>(obj)) {
@@ -1348,6 +1347,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             });
 
             // Add animation
+            s_node -> setPriority(0.0);
             _animations->addNode(s_node);
         }
         else {
@@ -1462,6 +1462,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player->setMudTimer(240);
             player -> setMud(true);
         }
+        if (spell->TYPE == SpellType::BUFF){
+            player -> setBuffTimer(3600);
+            player -> setBuff(true);
+            spell -> setRemove();
+            return;
+        }
         player -> setHealth(player->getHealth() - 1);
         spell->setRemove();
         
@@ -1516,7 +1522,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             if(spell->TYPE == SpellType::FREEZE){
                 enemy->setFrozenTimer(60);
             }else if (spell->TYPE == SpellType::COMBO_FREEZE){
-                enemy->setFrozenTimer(240);
+                enemy->setFrozenTimer(600);
             }else{
                 enemy->setFrozenTimer(-1);
             }

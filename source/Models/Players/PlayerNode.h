@@ -63,6 +63,9 @@ private:
     bool frozen = false;
     
     bool mud = false;
+    
+    bool buff = false;
+    
 
     int getDirection() { return (facingLeft ? 2 : 0) + (facingBack ? 1 : 0); }
 
@@ -141,6 +144,8 @@ public:
     void setFrozen(bool f) {frozen = f;}
     
     void setMud(bool m) {mud = m;}
+    
+    void setBuff(bool b) {buff = b;}
 
     std::pair<cugl::ActionFunction, float> getNextAnimation() override;
 };

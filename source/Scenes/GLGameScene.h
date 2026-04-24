@@ -56,7 +56,7 @@ protected:
     std::shared_ptr<cugl::Random> _random;
     bool _addedLWalls;
     /** Reference to the physics root of the scene graph */
-    std::shared_ptr<cugl::scene2::SceneNode> _worldnode;
+    std::shared_ptr<cugl::scene2::OrderedNode> _worldnode;
     
     /** Node for the currently open inventory card cente */
     std::shared_ptr<cugl::scene2::SceneNode> _inventoryCardNode;

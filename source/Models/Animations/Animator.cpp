@@ -12,7 +12,7 @@ void Animator::update(float dt) {
 	for (auto it = _active.begin(); it != _active.end(); ) {
 		string key = it->second;
 		shared_ptr<AnimatedSprite> node = it->first;
-
+        node -> setPriority(0.0f);
 		if (!_timeline->isActive(key)) {
 			// Action has ended, need to re-add
 			auto ani = node->getNextAnimation();
@@ -39,6 +39,7 @@ void Animator::update(float dt) {
 void Animator::addNode(const shared_ptr<AnimatedSprite> node) {
 	// In case we somehow get so many nodes that it overflows, make sure
 	// to skip keys already in use. Normally shouldn't get here!
+    node -> setPriority(-99.0);
 	while (_timeline->isActive(to_string(_nextKey))) {
 		_nextKey++;
 	}

@@ -71,12 +71,14 @@ protected:
     cugl::Vec2 _angle;
 
     /** carried items for the current pickup/deposit flow */
-    vector<CarriedItem> _inventory;
+    vector<CarriedItem> _inventory = { { "spellbook_fire", /*value*/0, CarriedItem::kindFromType("spellbook_fire"), /*bombTimer*/-1 } };
     /** max carried item count for the current inventory flow */
     size_t _inventoryLimit;
     int frozenTimer = 0;
     bool mud = false;
     int mudTimer = 0;
+    bool buff = false;
+    int buffTimer = 0;
 
 public:
     PlayerObstacle(Vec2 pos, string pid, cugl::Size s);
@@ -96,6 +98,9 @@ public:
     bool getMud() {return mud;}
     void setFrozeTimer(int i) {frozenTimer = i;}
     void setMudTimer(int i) {mudTimer = i;}
+    bool getBuff() {return buff;}
+    void setBuff(bool b) {buff = b;}
+    void setBuffTimer(int i) {buffTimer =i;}
     
     cugl::Vec2 getDirection() { return _angle; }
     #pragma mark PO_Inventory
@@ -133,7 +138,7 @@ public:
     * Sets the current spell of the player.
     */
     void setSpell(SpellType spell) {_curSpell = spell;}
-    void resolveSpell() { _curSpell = SpellType::NONE; }
+    void resolveSpell() { setSpell(SpellType::NONE); }
     void setHealth(int h);
     void setSpeed(float s) {_speed = s;}
 
@@ -156,7 +161,8 @@ public:
         switch (spell) {
         case SpellType::FIREBALL:
         case SpellType::COMBO_FIREBALL:
-            return true;
+            type.push_back("spellbook_fire");
+            break;
         case SpellType::FREEZE:
         case SpellType::COMBO_FREEZE:
             type.push_back("spellbook_freeze");
@@ -256,6 +262,13 @@ public:
                 mud = false;
             }
         }
+        if(buff){
+            buffTimer -= 1;
+            if(buffTimer <= 0){
+                buffTimer = 0;
+                buff = false;
+            }
+        }
 
         //bomb erase
         for (size_t i = 0; i < _inventory.size(); ++i) {
@@ -305,3 +318,4 @@ public:
 };
 
 #endif // !__PLAYER_OBSTACLE_H__
+

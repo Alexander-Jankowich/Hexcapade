@@ -76,21 +76,26 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
         obs->setLinearVelocity(Vec2::ZERO);
     }
 
-    PlayerObstacle::AnimationState state = obs->getState();
-    obs->updateTimers(0);
-    if (state != PlayerObstacle::AnimationState::FROZEN) {
-        if (obs->getSpell() != SpellType::NONE) {
-            state = PlayerObstacle::AnimationState::CASTING;
-        }
-        else if (state == PlayerObstacle::AnimationState::CASTING) {
-            state = PlayerObstacle::AnimationState::IDLE;
-        }
+    PlayerObstacle::AnimationState state;
+
+    if (obs->getHealth() <= 0) {
+        state = PlayerObstacle::AnimationState::DEAD; 
+    }
+    else if (obs->getState() == PlayerObstacle::AnimationState::FROZEN) {
+        state = PlayerObstacle::AnimationState::FROZEN;
+    }
+    else if (obs->getSpell() != SpellType::NONE) {
+        state = PlayerObstacle::AnimationState::CASTING;
+    }
+    else {
+        state = PlayerObstacle::AnimationState::IDLE;
     }
 
     node->setMud(obs->getMud());
     if(state == PlayerObstacle::AnimationState::FROZEN){
             node->setFrozen(true); 
     }
+    node -> setBuff(obs -> getBuff());
        
     node->updateAnimationState(state);
     float leftover = Application::get()->getFixedRemainder() / 1000000.f;
