@@ -71,33 +71,25 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
     return createObstacle(pos, id);
 }
 
-void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node) {
-    if (obs->getHealth() <= 0) {
+void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node, shared_ptr<Animator> animations) {
+    if (obs->getHealth() <= 0 || obs->isFrozen()) {
         obs->setLinearVelocity(Vec2::ZERO);
     }
 
-    PlayerObstacle::AnimationState state;
-
-    if (obs->getHealth() <= 0) {
-        state = PlayerObstacle::AnimationState::DEAD;
-    }
-    else if (obs->getState() == PlayerObstacle::AnimationState::FROZEN) {
-        state = PlayerObstacle::AnimationState::FROZEN;
-    }
-    else if (obs->getSpell() != SpellType::NONE) {
-        state = PlayerObstacle::AnimationState::CASTING;
-    }
-    else {
-        state = PlayerObstacle::AnimationState::IDLE;
+    if (obs->hasReleasedSpell()) {
+        obs->setReleasedSpell(false);
+        node->releasedSpell();
     }
 
-    node->setMud(obs->getMud());
-    if(state == PlayerObstacle::AnimationState::FROZEN){
-            node->setFrozen(true); 
+    // Update frozen status for node if changed
+    if (obs->isFrozen() && !node->isFrozen()) {
+        animations->pauseAnimation(node);
     }
-    node -> setBuff(obs -> getBuff());
+    else if (!obs->isFrozen() && node->isFrozen()) {
+        animations->resumeAnimation(node);
+    }
        
-    node->updateAnimationState(state);
+    node->updateAnimationState(obs->getHealth(), obs->isCasting(), obs->isFrozen(), obs->getMud(), obs->getBuff());
     float leftover = Application::get()->getFixedRemainder() / 1000000.f;
     Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
     float angle = obs->getAngle() + leftover * obs->getAngularVelocity();

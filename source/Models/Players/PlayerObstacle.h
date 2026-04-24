@@ -22,20 +22,6 @@ using namespace cugl::physics2::distrib;
 class PlayerObstacle : public physics2::CapsuleObstacle {
     /** enum for animation state bc its impacted by collisions (haha pun)*/
 public:
-    enum class AnimationState : int {
-        /** moving forward */
-        WALKING = 0,
-        /** not moving */
-        IDLE = 1,
-        /** casting spell */
-        CASTING = 2,
-        /** hit by enemy idk */
-        ATTACKED = 3,
-        /** frozen  */
-        FROZEN = 4,
-        DEAD = 5,
-    };
-
     /** Category stored on each carried item. */
     enum class ItemKind {
         ARTIFACT,
@@ -54,12 +40,12 @@ public:
     };
     
 protected:
-
-    AnimationState _state;
     std::string _pid;
 
     float _speed;
+
     SpellType _curSpell = SpellType::NONE;
+    bool _releasedSpell = false;
 
     /** Velocity of entity */
     cugl::Vec2 _velocity;
@@ -72,8 +58,10 @@ protected:
 
     /** carried items for the current pickup/deposit flow */
     vector<CarriedItem> _inventory = { { "spellbook_fire", /*value*/0, CarriedItem::kindFromType("spellbook_fire"), /*bombTimer*/-1 } };
+
     /** max carried item count for the current inventory flow */
     size_t _inventoryLimit;
+    bool frozen = false;
     int frozenTimer = 0;
     bool mud = false;
     int mudTimer = 0;
@@ -92,12 +80,15 @@ public:
     #pragma mark PO_Getters_and_Setters
     int getHealth() {return _health;}
     float getSpeed() { return hasHeavyArtifact() ? _speed * 0.5f : _speed; }
-    AnimationState getState(){return _state;}
-    void setAniState(AnimationState s){_state = s;}
+
     void setMud(bool m) {mud = m;}
     bool getMud() {return mud;}
+    void setMudTimer(int i) { mudTimer = i; }
+
+    void setFrozen(bool f) { frozen = f; }
+    bool isFrozen() { return frozen; }
     void setFrozeTimer(int i) {frozenTimer = i;}
-    void setMudTimer(int i) {mudTimer = i;}
+
     bool getBuff() {return buff;}
     void setBuff(bool b) {buff = b;}
     void setBuffTimer(int i) {buffTimer =i;}
@@ -109,6 +100,9 @@ public:
         for (const auto& item : _inventory) sum += item.value;
         return sum;
     }
+
+    void setReleasedSpell(bool released) { _releasedSpell = released; }
+    bool hasReleasedSpell() { return _releasedSpell; }
     
     const vector<CarriedItem>& getInventory() const { return _inventory; }
     size_t getInventoryCount() const { return _inventory.size(); }
@@ -139,10 +133,11 @@ public:
     */
     void setSpell(SpellType spell) {_curSpell = spell;}
     void resolveSpell() { setSpell(SpellType::NONE); }
+    bool isCasting() { return _curSpell != SpellType::NONE; }
+    SpellType getSpell() { return _curSpell; }
+
     void setHealth(int h);
     void setSpeed(float s) {_speed = s;}
-
-    SpellType getSpell() { return _curSpell; }
 
     const std::string getPID() const { return _pid; }
     void setPID(std::string pid) { _pid = pid; }
@@ -197,8 +192,8 @@ public:
         return false;
     }
     // ── Inventory query methods ──────────────────────────────────────────────
-// These mirror the Inventory class queries but work directly on CarriedItem.
-// Effect checks use the itemType string so no separate enum is needed. NOT USED YET.
+    // These mirror the Inventory class queries but work directly on CarriedItem.
+    // Effect checks use the itemType string so no separate enum is needed. NOT USED YET.
 
     bool blocksSpellcasting() const {
         for (const auto& item : _inventory) {
@@ -254,16 +249,16 @@ public:
     }
     
     void updateTimers(float dt){
-        if (_state == AnimationState::FROZEN) {
-                frozenTimer -= 1;
-                if (frozenTimer <= 0) {
-                    frozenTimer = 0;
-                    _state = AnimationState::IDLE;
-                }
-                if (getBody()) {
-                    getBody()->SetLinearVelocity(b2Vec2(0, 0));
-                }
+        if (isFrozen()) {
+            frozenTimer -= 1;
+            if (frozenTimer <= 0) {
+                frozenTimer = 0;
+                frozen = false;
             }
+            if (getBody()) {
+                getBody()->SetLinearVelocity(b2Vec2(0, 0));
+            }
+        }
         if (mud) {
             mudTimer -= 1;
             if(mudTimer <= 0){

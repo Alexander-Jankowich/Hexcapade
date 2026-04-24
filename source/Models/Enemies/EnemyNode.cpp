@@ -15,11 +15,16 @@ using namespace std;
  * @param data  The data defining the physics constants
  */
 EnemyNode::EnemyNode(shared_ptr<graphics::Texture>& tex, shared_ptr<JsonValue>& consts) :
-        LEFT_FORWARD_WALK(consts->getInt("left_forward_walk")),
-        RIGHT_FORWARD_WALK(consts->getInt("right_forward_walk")),
-        LEFT_BACKWARD_WALK(consts->getInt("left_backward_walk")),
-        RIGHT_BACKWARD_WALK(consts->getInt("right_backward_walk")),
-        NUM_WALK(consts->getInt("walk_frames")) {
+        WALK{ consts->getInt("right_forward_walk"),
+            consts->getInt("right_backward_walk"),
+            consts->getInt("left_forward_walk"),
+            consts->getInt("left_backward_walk") },
+        WALK_FRAMES(consts->getInt("walk_frames")),
+        IDLE{ consts->getInt("right_forward_idle"),
+            consts->getInt("right_backward_idle"),
+            consts->getInt("left_forward_idle"),
+            consts->getInt("left_backward_idle") },
+        IDLE_FRAMES(consts->getInt("idle_frames")) {
 
     initWithSheet(tex, consts->getInt("rows"), consts->getInt("columns"));
 
@@ -60,46 +65,50 @@ void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s, int health) {
         return;
     }
 
-    switch (s) {
-    case EnemyObstacle::EnemyState::IDLE:
-        nextAnimation = AnimationType::IDLE;
-        break;
-    case EnemyObstacle::EnemyState::CHASING:
-        nextAnimation = AnimationType::WALK;
-        break;
-    case EnemyObstacle::EnemyState::ATTACK_RESET:
+    //switch (s) {
+    //case EnemyObstacle::EnemyState::IDLE:
+    //    nextAnimation = AnimationType::IDLE;
+    //    break;
+    //case EnemyObstacle::EnemyState::CHASING:
+    //    nextAnimation = AnimationType::WALK;
+    //    break;
+    //case EnemyObstacle::EnemyState::ATTACK_RESET:
+    //    nextAnimation = AnimationType::ATTACK;
+    //    break;
+    //}
+    if (s == EnemyObstacle::EnemyState::ATTACK_RESET) {
         nextAnimation = AnimationType::ATTACK;
-        break;
+    }
+    else if (_velocity.length() < 0.05) {
+        nextAnimation = AnimationType::IDLE;
+    }
+    else {
+        nextAnimation = AnimationType::WALK;
     }
 }
 
 pair<ActionFunction, float> EnemyNode::getNextAnimation() {
+    const int* frameSet = {};
+    int numFrames = 0;
+
     switch (nextAnimation) {
     case AnimationType::DEAD:
         return { [this](float, ActionState) {}, -1 };
+    case AnimationType::IDLE:
+        frameSet = IDLE;
+        numFrames = IDLE_FRAMES;
+        break;
+    case AnimationType::WALK:
     default:
-        // Only have walking for now...
-        return {
-            [this](float t, ActionState state) {
-                int offset = min((int)(t * NUM_WALK), NUM_WALK-1);
-                if (facingLeft) {
-                    if (facingBack) {
-                        setFrame(LEFT_BACKWARD_WALK + offset);
-                    }
-                    else {
-                        setFrame(LEFT_FORWARD_WALK + offset);
-                    }
-                }
-                else {
-                    if (facingBack) {
-                        setFrame(RIGHT_BACKWARD_WALK + offset);
-                    }
-                    else {
-                        setFrame(RIGHT_FORWARD_WALK + offset);
-                    }
-                }
-            },
-            NUM_WALK / FPS
-        };
+        frameSet = WALK;
+        numFrames = WALK_FRAMES;
     }
+
+    return {
+        [this, frameSet, numFrames](float t, ActionState state) {
+            int offset = min((int)(t * numFrames), numFrames - 1);
+            setFrame(frameSet[getDirection()] + offset);
+        },
+        numFrames / FPS
+    };
 }

@@ -1,11 +1,12 @@
 #include "PlayerObstacle.h"
-#define PHYSICS_SCALE 50
+#define PHYSICS_SCALE 50.0f
 
 PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
     init(pos, (s * 0.4) / PHYSICS_SCALE);
     setBodyType(b2_dynamicBody);
     setDensity(1.0f);
     //setLinearDamping(15.0f);
+
     createFixtures();
     setAwake(true);
     setEnabled(true);
@@ -19,19 +20,13 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
 void PlayerObstacle::setVelocity(Vec2 v) {
     _velocity = v;
     //CULog("setVelocity called, state is %d", (int)_state);
-    if (_state == AnimationState::FROZEN) {
+    if (isFrozen()) {
         if (getBody()) getBody()->SetLinearVelocity(b2Vec2(0, 0));
         return;
     }
+
     if (!v.isZero()) {
         _angle = v.getNormalization();
-
-        if (_state == AnimationState::IDLE) {
-            _state = AnimationState::WALKING;
-        }
-    }
-    else if (_state == AnimationState::WALKING) {
-        _state = AnimationState::IDLE;
     }
 
     if (!getBody()) return; // body not ready yet
@@ -55,12 +50,9 @@ void PlayerObstacle::setHealth(int h) {
 
     if (_health <= 0) {
         setVelocity(Vec2::ZERO);
-        _health = 0;
-        _state = AnimationState::DEAD;
         setLinearVelocity(Vec2::ZERO);
-    }
-    else if (_state == AnimationState::DEAD && _health > 0) {
-        _state = AnimationState::IDLE;
+
+        _health = 0;
     }
 }
 

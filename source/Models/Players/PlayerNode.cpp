@@ -21,6 +21,7 @@ int PlayerNode::walk[4] = { 0,0,0,0 };
 int PlayerNode::startCast[4] = { 0,0,0,0 };
 int PlayerNode::casting[4] = { 0,0,0,0 };
 int PlayerNode::endCast[4] = { 0,0,0,0 };
+int PlayerNode::releaseCast[4] = { 0,0,0,0 };
 int PlayerNode::dying[4] = { 0,0,0,0 };
 int PlayerNode::dead[4] = { 0,0,0,0 };
 
@@ -29,6 +30,7 @@ int PlayerNode::walkFrames = 0;
 int PlayerNode::startCastFrames = 0;
 int PlayerNode::castingFrames = 0;
 int PlayerNode::endCastFrames = 0;
+int PlayerNode::releaseCastFrames = 0;
 int PlayerNode::dyingFrames = 0;
 int PlayerNode::deadFrames = 0;
 
@@ -53,32 +55,28 @@ void PlayerNode::setVelocity(cugl::Vec2 value) {
     }
 }
 
-void PlayerNode::updateAnimationState(PlayerObstacle::AnimationState s) {
-    switch (s) {
-    case PlayerObstacle::AnimationState::FROZEN:
-        _nextAnimation = AnimationType::IDLE;
+void PlayerNode::updateAnimationState(int health, bool casting, bool f, bool m, bool b) {
+    _frozen = f;
+    _mud = m;
+    _buff = b;
+
+    // Just get direction
+    if (_frozen) {
         setColor(Color4::BLUE);
-        break;
-    case PlayerObstacle::AnimationState::DEAD:
-        _nextAnimation = AnimationType::DEAD;
-        break;
-    case PlayerObstacle::AnimationState::CASTING:
-        _nextAnimation = AnimationType::CASTING;
-        break;
-    default:
-        // Just get direction
-        if(mud){
-            setColor(Color4::GRAY);
-        }
-        else if (buff){
-            CULog("coloring red");  
-            setColor(Color4::RED);
-        }
-        else{
-            setColor(Color4::WHITE);
-        }
-        _nextAnimation = _velocity.isZero() ? AnimationType::IDLE : AnimationType::WALK;
-        break;
+    }
+    else if (_mud){
+        setColor(Color4::GRAY);
+    }
+    else if (_buff){
+        CULog("coloring red");  
+        setColor(Color4::RED);
+    }
+    else {
+        setColor(Color4::WHITE);
+    }
+
+    if (_nextAnimation != AnimationType::CASTING && _nextAnimation != AnimationType::RELEASE_CAST && _nextAnimation != AnimationType::DEAD) {
+        _nextAnimation = _velocity.length() < 0.1 ? AnimationType::IDLE : AnimationType::WALK;
     }
 }
 
@@ -116,6 +114,10 @@ pair<ActionFunction, float> PlayerNode::getNextAnimation() {
             frameSet = casting;
             numFrames = castingFrames;
         }
+        break;
+    case AnimationType::RELEASE_CAST:
+        frameSet = releaseCast;
+        numFrames = releaseCastFrames;
         break;
     case AnimationType::DEAD:
         if (_curAnimation == AnimationType::CASTING) {
