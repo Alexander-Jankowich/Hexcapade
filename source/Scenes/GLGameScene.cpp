@@ -342,7 +342,7 @@ void GameScene::showInventoryCard(size_t slotIndex) {
     _inventoryCardNode->setScale(1.0f / zoom);
     _inventoryCardNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
                                          offset.y + this->getSize().height * 0.5f / zoom));
-    _inventoryCardNode -> setPriority(10.0);
+    _inventoryCardNode -> setPriority(1.0f);
     addChild(_inventoryCardNode);
 }
 
@@ -371,7 +371,7 @@ void GameScene::rebuildMapForRun() {
     auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize(), _world);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
-    n->setPriority(0.0);
+    n->setPriority(0.0f);
     _worldnode -> addChild(n);
     
     
@@ -506,7 +506,7 @@ void GameScene::preUpdate(float dt)
     }
     if (_player && !_addedLWalls) {
         CULog("adding lower walls");
-        _map->getLowerWallNode() -> setPriority(3.0);
+        _map->getLowerWallNode() -> setPriority(1.0f);
         _worldnode->addChild(_map->getLowerWallNode());
         _addedLWalls = true;
     }
@@ -556,7 +556,6 @@ void GameScene::preUpdate(float dt)
                 //If we create it we MUST acquire it
                 // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
                 _networkCtrl -> getPhysController() -> acquireObs(pair.first, 0);
-                pair.second -> setPriority(-100.0f);
             }
         }
 
@@ -1254,7 +1253,7 @@ void GameScene::initMap() {
                     }
         if (!_addedLWalls) {
             CULog("adding lower walls in initmap");
-            _map -> getLowerWallNode() -> setPriority(3.0);
+            _map -> getLowerWallNode() -> setPriority(1.0f);
             _worldnode->addChild(_map->getLowerWallNode());
             _addedLWalls = true;
         }
@@ -1307,7 +1306,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         return;
     }
     node->setPosition(obj->getPosition() * PHYSICS_SCALE);
-    node -> setPriority(0.0);
     _worldnode->addChild(node);
     if (auto item = std::dynamic_pointer_cast<ItemObstacle>(obj)) {
         _itemNodes.push_back({ item.get(), node });
@@ -1337,7 +1335,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             });
 
             // Add animation
-            e_node -> setPriority(0.0);
             _animations->addNode(e_node);
         }
         else if (auto s = dynamic_pointer_cast<SpellObstacle>(obj)) {
@@ -1347,7 +1344,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             });
 
             // Add animation
-            s_node -> setPriority(0.0);
             _animations->addNode(s_node);
         }
         else {

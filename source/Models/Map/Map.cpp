@@ -27,7 +27,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
 
     _sceneSize = sceneSize;
     auto node = scene2::SceneNode::alloc();
-    lw_node = scene2::SceneNode::alloc();
+    lw_node = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
     std::vector<MapDoor> doors;
     _rng.initWithSeed(seed);
     _assets = assets;
@@ -556,6 +556,9 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
         
         // Convert grid coordinates directly to world pixels
         // pos.y is already "flipped" in addRoomSceneNodes, so we don't flip it again here
+        if(world == lw_node){
+            sprite -> setPriority(100.0);
+        }
         int bl_y = pos.y - 1; // incoming pos is top left corner, but we need bottom left
         float x = pos.x * TILE_SIZE;
         float y = bl_y * TILE_SIZE;
