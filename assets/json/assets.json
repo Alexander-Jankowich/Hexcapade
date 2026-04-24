@@ -185,6 +185,86 @@
                 }
             }
         },
+        "char-select": {
+            "type": "Node",
+            "format": {
+                "type": "Anchored"
+            },
+            "children": {
+                "title": {
+                    "type": "Label",
+                    "data": {
+                        "anchor": [
+                            0.5,
+                            1.0
+                        ],
+                        "scale": 1.5,
+                        "font": "OpenSans",
+                        "text": "Temporary Character Selection",
+                        "padding": [
+                            20,
+                            20,
+                            20,
+                            20
+                        ],
+                        "halign": "center",
+                        "valign": "middle"
+                    },
+                    "layout": {
+                        "x_anchor": "center",
+                        "y_anchor": "top"
+                    }
+                },
+                "center": {
+                    "type": "Node",
+                    "format": {
+                        "type": "Float",
+                        "orientation": "vertical",
+                        "x_alignment": "center",
+                        "y_alignment": "middle"
+                    },
+                    "data": {
+                        "anchor": [
+                            0.5,
+                            0.0
+                        ],
+                        "size": [
+                            500,
+                            500
+                        ]
+                    },
+                    "children": {
+                        "start": {
+                            "type": "Widget",
+                            "data": {
+                                "key": "textbutton",
+                                "variables": {
+                                    "size": [
+                                        400,
+                                        100
+                                    ],
+                                    "text": "Waiting",
+                                    "color": "#000088"
+                                }
+                            },
+                            "layout": {
+                                "priority": 3,
+                                "padding": [
+                                    0,
+                                    50,
+                                    0,
+                                    0
+                                ]
+                            }
+                        }
+                    },
+                    "layout": {
+                        "x_anchor": "center",
+                        "y_anchor": "bottom"
+                    }
+                }
+            }
+        },
         "host": {
             "type": "Node",
             "format": {

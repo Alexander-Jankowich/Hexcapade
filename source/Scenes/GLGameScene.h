@@ -16,7 +16,8 @@
 #define __GL_GAME_SCENE_H__
 #include <cugl/cugl.h>
 #include <vector>
-#include <cstddef> 
+#include <cstddef>
+#include <iomanip>
 #include "../Controllers/GLInputController.h"
 #include "../Controllers/NetworkController.h"
 #include "../Controllers/RoomController.h"
@@ -35,7 +36,7 @@
 #include "../Models/Animations.h"
 
 #include "InputDisplay.h"
-
+#define ROUND_TIMER 7200
 /**
  * This class is the primary gameplay constroller for the demo.
  *
@@ -47,7 +48,6 @@ class GameScene : public cugl::scene2::Scene2 {
 protected:
     // CONTROLLERS are attached directly to the scene (no pointers)
     std::shared_ptr<NetworkController> _networkCtrl;
-    bool _ishost;
     /** uuid to players most recent update*/
     //std::unordered_map<std::string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
@@ -84,8 +84,6 @@ protected:
     RunBalanceConfig _runConfig;
     cugl::Vec2 _cameraBottomLeft;
     float _cameraZoom;
-    int _runRevision;
-    int _appliedRunRevision;
     unsigned int _mapSeed;
     cugl::Size _mapSceneSize;
     float lastEnemySpawn;
@@ -107,7 +105,7 @@ protected:
     /** Whether thegame has ended */
     bool  _gameEnded;
     /**Timer for end of game**/
-    float _timer = 7200;
+    float _timer = ROUND_TIMER;
 
     std::shared_ptr<cugl::AssetManager> _assets;
     /** list of rooms */
@@ -147,8 +145,6 @@ public:
     GameScene() : cugl::scene2::Scene2(),
         _cameraBottomLeft(cugl::Vec2::ZERO),
         _cameraZoom(1.5f),
-        _runRevision(0),
-        _appliedRunRevision(-1),
         _mapSeed(0),
         _mapSceneSize(cugl::Size::ZERO),
         _quota(100),
@@ -175,7 +171,7 @@ public:
     void dispose() override;
     void reset() override;
     
-    bool gameEnded() { return _gameEnded && _gameEnded; }
+    bool gameEnded() { return _networkCtrl->gameState()==NetworkController::NCGameState::WON || _networkCtrl->gameState()==NetworkController::NCGameState::LOST; }
 
     /**
      * Initializes the controller contents, and starts the game
@@ -191,10 +187,11 @@ public:
     bool init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<std::vector<std::string>>& rooms);
     
     std::shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
+    void release() {_networkCtrl = nullptr;}
 
     int getDepositedValue() const { return _depositedValue; }
     int getQuota() const { return _quota; }
-    bool hasWon() const { return _playerWon && _playerWon; }
+    bool hasWon() const { return _networkCtrl->gameState()==NetworkController::NCGameState::WON; }
 
     /** initializes the network and physics world */
     void initNetwork(std::shared_ptr<NetworkController> n);
@@ -300,11 +297,7 @@ public:
 
     void setActive(bool value) override;
     
-    void initHost(unsigned int randSeed);
-
 private:
-    void processComboEvent(const std::shared_ptr<CastSpellEvent>& e);
-    void processEndEvent(const std::shared_ptr<EndGameEvent>& e);
 
     cugl::Rect getInventorySlotBounds(size_t slotIndex) const;
     // this maps the last hud tap to an inventory slot index for the upcoming item flow

@@ -38,6 +38,9 @@ protected:
 
 public:
     PlayerFactory();
+    unordered_set<shared_ptr<PlayerObstacle>> current;
+    
+    void reset() {current.clear();}
     pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, string pid);
     /**
      * Allocates a new instance of the factory using the given AssetManager.
@@ -74,7 +77,6 @@ public:
     */
     void linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node);
 
-    unordered_set<shared_ptr<PlayerObstacle>> current;
 
 
     shared_ptr<PlayerObstacle> getPlayerByPID(string pid) {

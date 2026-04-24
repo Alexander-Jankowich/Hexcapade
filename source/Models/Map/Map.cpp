@@ -16,15 +16,28 @@ _playerSpawn(Vec2::ZERO),
 _config() {
 }
 
+void Map::reset() {
+    for (int r = 0; r < MAP_HEIGHT; r++) {
+            for (int c = 0; c < MAP_WIDTH; c++) {
+                _mapGrid[r][c] = 0;
+            }
+        }
+    _enemySpawnPoints.clear();
+    _itemSpawnPoints.clear();
+    lw_node->removeAllChildren();
+}
+
 std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
     _extruder = SimpleExtruder();
-    //_mapGrid = { {} };
+    // ensure everything cleared before generation
     for (int r = 0; r < MAP_HEIGHT; r++) {
-        for (int c = 0; c < MAP_WIDTH; c++) {
-            _mapGrid[r][c] = 0;
+            for (int c = 0; c < MAP_WIDTH; c++) {
+                _mapGrid[r][c] = 0;
+            }
         }
-    }
-
+    _enemySpawnPoints.clear();
+    _itemSpawnPoints.clear();
+    
     _sceneSize = sceneSize;
     auto node = scene2::SceneNode::alloc();
     lw_node = scene2::SceneNode::alloc();
@@ -425,7 +438,6 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
                 (MAP_HEIGHT - pt_mg.y) * TILE_SIZE / PHYSICS_SCALE
             );
             translatedPoints.push_back(tpt);
-            CULog("wall point x: %f y: %f", tpt.x, tpt.y);
         }
         
         _extruder.set(translatedPoints, true);
@@ -478,7 +490,7 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
                 }
             }
         }
-        CULog("world has %d children", (int) world->getChildCount());
+        CULog("world node has %d children", (int) world->getChildCount());
     }
     
     std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoor& d, std::vector<std::string>& rooms, Door::Direction connDir) {

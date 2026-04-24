@@ -1,28 +1,25 @@
 //
-//  GameInitEvent.h
-//  tech_final
+//  RestartGameEvent.h
+//  alpha_final
 //
-//  Created by Serena Duncan on 3/21/26.
+//  Created by Serena Duncan on 4/18/26.
 //
-
-#ifndef __NP_GAME_INIT_EVENT_H__
-#define __NP_GAME_INIT_EVENT_H__
+#ifndef __NP_RESTART_GAME_EVENT_H__
+#define __NP_RESTART_GAME_EVENT_H__
 
 #include <cugl/cugl.h>
 
 using namespace cugl;
 using namespace cugl::physics2::distrib;
 
-class GameInitEvent : public NetEvent {
+class RestartGameEvent : public NetEvent {
     
 protected:
     LWSerializer _serializer;
     LWDeserializer _deserializer;
     
-    
-    
 public:
-    unsigned int _seed;
+    int _difficulty;
 
     /**
      * This method is used by the NetEventController to create a new event of
@@ -33,7 +30,7 @@ public:
      */
     std::shared_ptr<NetEvent> newEvent() override;
     
-    static std::shared_ptr<NetEvent> allocGameInitEvent(unsigned int seed);
+    static std::shared_ptr<NetEvent> allocRestartGameEvent(int d);
     
     /**
      * Serialize any paramater that the event contains to a vector of bytes.
@@ -51,10 +48,8 @@ public:
      */
     void deserialize(const std::vector<std::byte>& data) override;
     
-    /** Gets the position of the event. */
-    int getSeed() { return _seed; }
+    
 
 };
 
-
-#endif // !__NP_GAME_INIT_EVENT_H__
+#endif // !__NP_RESTART_GAME_EVENT_H__

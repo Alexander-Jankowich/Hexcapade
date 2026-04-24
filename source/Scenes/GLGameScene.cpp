@@ -185,8 +185,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
 
     _map = std::make_shared<Map>();
     _roomController.setRooms(_map->getRooms());
-    _runRevision = 0;
-    _appliedRunRevision = -1;
     _mapSeed = 0;
     loadGameplayConfig();
 
@@ -208,9 +206,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
     _depositRadius = 42.0f;
     _depositPosition = Vec2::ZERO;
     
-    //_mapSeed = chooseNonZeroSeed();
-    _runRevision = 1;
-    
     // Create all the factories
     _spellFact = SpellFactory::alloc(_assets);
     _playerFact = PlayerFactory::alloc(_assets);
@@ -222,22 +217,8 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
 
     // Create other controllers
     _pathfinder = Pathfinder();
-
-    // IMPORTANT: SCALING MUST BE UNIFORM
-    // This means that we cannot change the aspect ratio of the physics world
-    // Shift to center if a bad fit
-    Size dimen = getSize();
-    //_scale = dimen.width == SCENE_WIDTH ? dimen.width / rect.size.width : dimen.height / rect.size.height;
-    //Vec2 offset((dimen.width - SCENE_WIDTH) / 2.0f, (dimen.height - SCENE_HEIGHT) / 2.0f);
-    Vec2 offset = Vec2::ZERO;
-
-    // Create the scene graph
-    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
-    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    _worldnode->setPosition(offset);
     
-    
-    addChild(_worldnode);
+
 
     _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, 200 , 200), Vec2::ZERO);
     _world -> activateCollisionCallbacks(true);
@@ -271,8 +252,24 @@ void GameScene::dispose()
 
 void GameScene::reset()
 {
-    CULog("reset game");
+    CULog("game scene reset called");
     loadGameplayConfig();
+    _mapSeed = 0;
+    _map->reset();
+    _world->clear(true); // reset box2d + phys world
+    // is this correct...?
+    _worldnode->removeAllChildren();
+    removeAllChildren();
+    _worldnode=nullptr;
+
+    
+    _player = nullptr;
+    _enemyFact->reset();
+    _itemFact->reset();
+    _spellFact->reset();
+    _playerFact->reset();
+    
+    _addedLWalls = false;
     _gameEnded = false;
     _playerWon = false;
     _depositedValue = 0;
@@ -280,12 +277,7 @@ void GameScene::reset()
     // Match startup behavior on replay: reset clears active enemies and restarts
     // the host spawn timer instead of forcing one immediate spawn.
     lastEnemySpawn = 0;
-    // TODO unbreak this
-    // for (const std::shared_ptr<Player>& player : _players->current) {
-    //     if (player->getInventory()) {
-    //         player->getInventory()->clear();
-    //     }
-    // }
+
     for (auto& playerObs : _playerFact->current) {
         if (playerObs) {
             playerObs->clearInventory();
@@ -298,13 +290,10 @@ void GameScene::reset()
 //    _dragInventoryIndex = -1;
 //    _dragInventoryPos = Vec2::ZERO;
     _pendingInventoryTapIndex = -1;
+    _currOverlappedItem = -1;
+    _timer = ROUND_TIMER;
     hideInventoryCard();
-
-    _runRevision = std::max(1, _runRevision + 1);
-    rebuildMapForRun();
-    if (_networkCtrl->isHost()) {
-        _networkCtrl->startGame();
-    }
+    Scene::reset();
 }
 
 #pragma mark -
@@ -363,11 +352,6 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-//    if (!_map->generate(_runConfig.map, _mapSeed, _assets, _rooms)) {
-//        CULog("map generation failed for run revision %d", _runRevision);
-//        return;
-//    }
-    
     auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize(), _world);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
@@ -376,12 +360,11 @@ void GameScene::rebuildMapForRun() {
     
     
     _roomController.setRooms(_map->getRooms());
-    _appliedRunRevision = _runRevision;
     
     _quota = std::max(1, _runConfig.quota);
     _depositPosition = _map->getPlayerSpawn();
 
-    if (_networkCtrl && _networkCtrl->isHost()) {
+    if (_networkCtrl->isHost()) {
         spawnItemsFromMap();
     }
     //updateItemPickupState();
@@ -502,6 +485,8 @@ void GameScene::preUpdate(float dt)
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
         //Have we set our player yet / received signal
         if (!_player) return;
+        _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
+                                    _player, _input, _depositPosition, _depositRadius);
     }
     if (_player && !_addedLWalls) {
         CULog("adding lower walls");
@@ -521,7 +506,6 @@ void GameScene::preUpdate(float dt)
         _timer -= 1;
     }
     if (_timer==0) {
-        _gameEnded=true;
         bool won = _quota <= _depositedValue;
         _playerWon = won;
         _networkCtrl->pushOutEvent(EndGameEvent::allocEndGameEvent(won));
@@ -931,8 +915,9 @@ void GameScene::fixedUpdate(Uint64 step)
     // First process incoming events
     _networkCtrl->updateNet();
     
-    std::tuple<int,int> values = _networkCtrl->customEvents(_itemFact, _playerFact, _itemFactId,
-                                 _player, _input, &_playerWon, &_gameEnded, _depositPosition, _depositRadius);
+    std::tuple<int,int> values = _networkCtrl->customEvents();
+    _gameEnded = _networkCtrl->gameState()==NetworkController::NCGameState::WON || _networkCtrl->gameState()==NetworkController::NCGameState::LOST;
+    _playerWon = _networkCtrl->gameState()==NetworkController::NCGameState::WON;
     _inventoryValue = std::get<0>(values);
     _depositedValue += std::get<1>(values);
     
@@ -1037,8 +1022,11 @@ void GameScene::renderHUD()
     if (_font)
     {
         _batch->setColor(Color4::WHITE);
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(2) << (_timer/60);
+        std::string timer_text = ss.str();
         std::shared_ptr<TextLayout> timerLabel = TextLayout::allocWithText(
-                    "Time Remaining: " + std::to_string(_timer/60), _font);
+                    "Time Remaining: " + timer_text, _font);
         timerLabel->layout();
         Affine2 timerTrans;
         timerTrans.scale(1.0f / zoom).translate(hudX(timerX + 10), hudY(timerY + 12));
@@ -1198,7 +1186,7 @@ int GameScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {
 }
 
 void GameScene::drawDepositZone() {
-    if (!_map || _appliedRunRevision <= 0) {
+    if (!_map ) {
         return;
     }
 
@@ -1220,6 +1208,11 @@ void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
 void GameScene::initMap() {
     if (_networkCtrl->getRandSeed()==0) return; // no randSeed
     if (_mapSeed==_networkCtrl->getRandSeed()) return; // already init
+    // Create the scene graph
+    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(Vec2::ZERO);
+    addChild(_worldnode);
     // initialize physics here, since this should be called post HANDSHAKE
     std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
         this->linkSceneToObs(obs, node);
@@ -1276,14 +1269,14 @@ void GameScene::setActive(bool value)
             CULog("I am trying to get a player using this id %s", _networkCtrl -> getPID().c_str());
             _player = _playerFact->getPlayerByPID(_networkCtrl -> getPID());
             
-           
+           _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
+                                       _player, _input, _depositPosition, _depositRadius);
 
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                   _networkCtrl->hasNetwork(), _networkCtrl->isHost());
         }
         else
         {
-            hideInventoryCard();
             _input.deactivate();
         }
     }

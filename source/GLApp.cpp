@@ -140,6 +140,7 @@ void GeometryApp::onShutdown() {
     _loading.dispose();
     _gameplay.dispose();
     _endScene.dispose();
+    _selectScene.dispose();
     _assets = nullptr;
     _batch = nullptr;
     // Shutdown input
@@ -224,25 +225,26 @@ void GeometryApp::preUpdate(float dt) {
     case State::MENU:   updateMenuScene(dt);    return;
     case State::HOST:   updateHostScene(dt);    return;
     case State::CLIENT: updateClientScene(dt);  return;
+    case State::SELECT: updateSelectScene(dt); return;
+    case State::END: updateEndScene(dt); return;
     default: break;
     }
-    if (_endScene.isVisible()) {
-        _endScene.update(dt);
-        if (_endScene.didPressReplay()) {
-            _endScene.hide();
-            _gameplay.reset();
-//            _scene =  _gameplay.isHost() ? State::HOST : State::CLIENT;
-        }
-        return;
-    }
+
     if(_gameplay.isActive()){
         _gameplay.preUpdate(dt);
     }
     
 
-    if (_gameplay.gameEnded()) { //TODO make this keyed on one bool in gameScene
-            _endScene.setNetwork(_gameplay.getNetwork());
-            _endScene.show(_gameplay.hasWon());
+    if (_gameplay.gameEnded()) {
+        _endScene.setNetwork(_gameplay.getNetwork());
+        CULog("app: displaying end game scene");
+        _endScene.show(_gameplay.hasWon());
+        _gameplay.reset();
+        _gameplay.release();
+        _endScene.setActive(true);
+        _gameplay.setActive(false);
+        _scene = State::END;
+
     }
 }
 
@@ -327,13 +329,14 @@ void GeometryApp::draw() {
     case State::CLIENT:
         _clientScene.render();
         break;
+    case State::SELECT:
+        _selectScene.render();
+        break;
     case State::GAME:
-        if (_endScene.isVisible()) {
-            _endScene.render();
-        }
-        else {
-            _gameplay.render();
-        }
+        _gameplay.render();
+        break;
+    case State::END:
+        _endScene.render();
         break;
     }
 }
@@ -359,7 +362,10 @@ void GeometryApp::updateLoadingScene(float dt) {
     
     _clientScene.init(_assets);
     _clientScene.setSpriteBatch(_batch);
-
+    
+    _selectScene.init(_assets);
+    _selectScene.setSpriteBatch(_batch);
+    
     _gameplay.init(_assets, _rooms);
     _gameplay.setSpriteBatch(_batch);
 
@@ -378,9 +384,8 @@ void GeometryApp::updateMenuScene(float dt) {
     switch (_mainmenu.getChoice()) {
     case MenuScene::Choice::HOST:
         //_mainmenu.resetChoice();
-            _mainmenu.setActive(false);
-            _hostScene.setActive(true);
-            CULog("set host scene active");
+        _mainmenu.setActive(false);
+        _hostScene.setActive(true);
         _scene = State::HOST;
         break;
     case MenuScene::Choice::JOIN:
@@ -396,7 +401,6 @@ void GeometryApp::updateMenuScene(float dt) {
 
 void GeometryApp::updateHostScene(float dt) {
     _hostScene.update(dt);
-
     switch (_hostScene.getStatus()) {
     case NetworkController::Status::NETERROR:
         
@@ -407,22 +411,19 @@ void GeometryApp::updateHostScene(float dt) {
         _scene = State::MENU;
         break;
     case NetworkController::Status::CONNECTED:
-        _gameplay.initNetwork(_hostScene.getNetwork());
+        _gameplay.initNetwork(_hostScene.getNetwork()); 
         break;
     case NetworkController::Status::HANDSHAKE:
     case NetworkController::Status::READY:
-        CULog("status, sending init: %d", _hostScene.getStatus());
-        _hostScene.sendInitMsg();
-        _gameplay.initMap();
+  //      CULog("status host handshake/ready %d", _hostScene.getStatus());
         break;
     case NetworkController::Status::INGAME:
-
-
         _hostScene.setActive(false);
         // Transfer connection ownership
+        _selectScene.obtainNetwork(_hostScene.getNetwork());
         _hostScene.release();
-        _gameplay.setActive(true);
-        _scene = State::GAME;
+        _selectScene.setActive(true);
+        _scene = State::SELECT;
 
         break;
     default: // should not happen but whatever
@@ -430,12 +431,27 @@ void GeometryApp::updateHostScene(float dt) {
     }
 }
 
+void GeometryApp::updateSelectScene(float dt) {
+    _selectScene.update(dt);
+    switch (_selectScene.getStatus()) {
+        case SelectScene::SSStatus::SELECT:
+        case SelectScene::SSStatus::HANDSHAKE:
+            if (_selectScene.canInitMap()) {
+                _gameplay.initMap();
+            }
+            break;
+        case SelectScene::SSStatus::START:
+            CULog("in start");
+            _selectScene.setActive(false);
+            _selectScene.release();
+            _gameplay.setActive(true); // alr has connection from host/client scene
+            _scene = State::GAME;
+            break;
+    }
+}
+
 void GeometryApp::updateClientScene(float dt) {
     _clientScene.update(dt);
-    if (_clientScene.canInitGame) {
-        _gameplay.initMap();
-        CULog("init client map");
-    }
 
     switch (_clientScene.getStatus()) {
     case NetworkController::Status::NETERROR:
@@ -449,19 +465,20 @@ void GeometryApp::updateClientScene(float dt) {
     case NetworkController::Status::CONNECTED:
         _gameplay.initNetwork(_clientScene.getNetwork());
         break;
+    case NetworkController::Status::HANDSHAKE:
+//            CULog("client entered handshake");
+            break;
     case NetworkController::Status::READY :
             CULog("ready freddy");
             break;
-//    case NetworkController::Status::HANDSHAKE:
-//            _gameplay.initMap();
-//            break;
     case NetworkController::Status::INGAME:
-            CULog("in game");
+            CULog("in select");
             _clientScene.setActive(false);
             // Transfer connection ownership
+            _selectScene.obtainNetwork(_clientScene.getNetwork());
             _clientScene.release();
-            _gameplay.setActive(true);
-            _scene = State::GAME;
+            _selectScene.setActive(true);
+            _scene = State::SELECT;
         break;
     default:
         break;
@@ -470,4 +487,20 @@ void GeometryApp::updateClientScene(float dt) {
 
 void GeometryApp::updateGameScene(float dt) {
     // Placeholder — gameplay logic lives in preUpdate/fixedUpdate/postUpdate
+}
+
+void GeometryApp::updateEndScene(float dt) {
+    _endScene.update(dt);
+    if (_endScene.didPressReplay()) {
+        // transfer connect ownership to new scene
+        CULog("replay was pressed");
+        _endScene.setActive(false);
+        _selectScene.obtainNetwork(_endScene.getNetwork()); // hand off network,
+        _gameplay.initNetwork(_endScene.getNetwork());
+        _endScene.release();
+        _selectScene.setActive(true);
+        _scene = State::SELECT;
+            
+    }
+    return;
 }
