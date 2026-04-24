@@ -48,7 +48,6 @@ class GameScene : public cugl::scene2::Scene2 {
 protected:
     // CONTROLLERS are attached directly to the scene (no pointers)
     std::shared_ptr<NetworkController> _networkCtrl;
-    bool _ishost;
     /** uuid to players most recent update*/
     //std::unordered_map<std::string, ClientInput> _clientInputs;
     /** The controller to manage the ship */

@@ -88,6 +88,7 @@ void SelectScene::setActive(bool value) {
             if (_networkCtrl->isHost()) {
                 // mark players unready
                 _networkCtrl->unreadyPlayers();
+                _networkCtrl->rerollRandSeed();
                 _networkCtrl->pushOutEvent(InitMapEvent::allocInitMapEvent(_networkCtrl->getRandSeed()));
                 _startgame->deactivate();
                 CULog("host set active");

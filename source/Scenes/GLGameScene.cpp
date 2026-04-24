@@ -217,14 +217,8 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
 
     // Create other controllers
     _pathfinder = Pathfinder();
-
-    // Create the scene graph
-    _worldnode = scene2::SceneNode::alloc();
-    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    _worldnode->setPosition(Vec2::ZERO);
     
 
-    addChild(_worldnode);
 
     _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, 200 , 200), Vec2::ZERO);
     _world -> activateCollisionCallbacks(true);
@@ -264,8 +258,10 @@ void GameScene::reset()
     _map->reset();
     _world->clear(true); // reset box2d + phys world
     // is this correct...?
-    removeAllChildren();
     _worldnode->removeAllChildren();
+    removeAllChildren();
+    _worldnode=nullptr;
+
     
     _player = nullptr;
     _enemyFact->reset();
@@ -281,12 +277,7 @@ void GameScene::reset()
     // Match startup behavior on replay: reset clears active enemies and restarts
     // the host spawn timer instead of forcing one immediate spawn.
     lastEnemySpawn = 0;
-    // TODO unbreak this
-    // for (const std::shared_ptr<Player>& player : _players->current) {
-    //     if (player->getInventory()) {
-    //         player->getInventory()->clear();
-    //     }
-    // }
+
     for (auto& playerObs : _playerFact->current) {
         if (playerObs) {
             playerObs->clearInventory();
@@ -301,6 +292,7 @@ void GameScene::reset()
     _dragInventoryPos = Vec2::ZERO;
     _timer = ROUND_TIMER;
     hideInventoryCard();
+    Scene::reset();
 }
 
 #pragma mark -
@@ -357,7 +349,7 @@ void GameScene::rebuildMapForRun() {
     if (!_map) {
         _map = std::make_shared<Map>();
     }
-    
+
     auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize(), _world);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
@@ -844,8 +836,6 @@ void GameScene::preUpdate(float dt)
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
         }
     }
-    CULog("%d", _currOverlappedItem);
-    CULog("pressed pickup %d", _input.pressedPickup());
     if (_input.pressedPickup() && _currOverlappedItem >= 0) {
         CULog("trying to resolve pickup");
         auto item = _itemFact->getItem(_currOverlappedItem);
@@ -1184,6 +1174,11 @@ void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
 void GameScene::initMap() {
     if (_networkCtrl->getRandSeed()==0) return; // no randSeed
     if (_mapSeed==_networkCtrl->getRandSeed()) return; // already init
+    // Create the scene graph
+    _worldnode = scene2::SceneNode::alloc();
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(Vec2::ZERO);
+    addChild(_worldnode);
     // initialize physics here, since this should be called post HANDSHAKE
     std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
         this->linkSceneToObs(obs, node);

@@ -67,7 +67,6 @@ public:
         _depositPosition = dp;
         _depositRadius = dr;
     }
-    void setRandSeed(unsigned int r) {_randSeed = r;}
 
     unsigned int getRandSeed() {return _randSeed;}
     shared_ptr<cugl::netcode::NetcodeConnection> getNetwork() {
@@ -76,8 +75,8 @@ public:
     NCGameState gameState() {return _gameState;}
     bool canHostStart() {return _numReady == getNumPlayers() || getNumPlayers()==1;}
     void unreadyPlayers() {_numReady = 1;} // only called by host, always leave host as ready
-
     void resetStatus() { _status = Status::IDLE; }
+    void rerollRandSeed() {_randSeed = _rng->getUint32();}
     
     unordered_set<string> getPlayers() {return _network->getPlayers();}
     

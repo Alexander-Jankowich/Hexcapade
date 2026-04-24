@@ -198,15 +198,12 @@ std::tuple<int,int> NetworkController::customEvents(){
 void NetworkController::processEndEvent(const std::shared_ptr<EndGameEvent> &e)
 {
     _gameState = e->getResult() ? NCGameState::WON : NCGameState::LOST;
+    _randSeed = 0;
 }
 
 void NetworkController::processRestartEvent(const std::shared_ptr<RestartGameEvent> &e)
 {
     _gameState=NCGameState::UNSTARTED;
-    _randSeed = 0;
-    if (isHost()) {
-        _randSeed = _rng->getUint32();
-    }
 }
 
 

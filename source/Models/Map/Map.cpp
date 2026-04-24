@@ -429,7 +429,6 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
                 (MAP_HEIGHT - pt_mg.y) * TILE_SIZE / PHYSICS_SCALE
             );
             translatedPoints.push_back(tpt);
-            CULog("wall point x: %f y: %f", tpt.x, tpt.y);
         }
         
         _extruder.set(translatedPoints, true);
@@ -482,7 +481,7 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
                 }
             }
         }
-        CULog("world has %d children", (int) world->getChildCount());
+        CULog("world node has %d children", (int) world->getChildCount());
     }
     
     std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoor& d, std::vector<std::string>& rooms, Door::Direction connDir) {

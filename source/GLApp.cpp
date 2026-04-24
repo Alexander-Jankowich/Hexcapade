@@ -435,11 +435,10 @@ void GeometryApp::updateSelectScene(float dt) {
     _selectScene.update(dt);
     switch (_selectScene.getStatus()) {
         case SelectScene::SSStatus::SELECT:
+        case SelectScene::SSStatus::HANDSHAKE:
             if (_selectScene.canInitMap()) {
                 _gameplay.initMap();
             }
-            break;
-        case SelectScene::SSStatus::HANDSHAKE:
             break;
         case SelectScene::SSStatus::START:
             CULog("in start");
