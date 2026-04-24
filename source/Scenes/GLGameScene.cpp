@@ -184,7 +184,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
     lastEnemySpawn = 0;
 
     _map = std::make_shared<Map>();
-    _roomController.setMap(_map);
+    _roomController.setRooms(_map->getRooms());
     _runRevision = 0;
     _appliedRunRevision = -1;
     _mapSeed = 0;
@@ -373,7 +373,7 @@ void GameScene::rebuildMapForRun() {
     _worldnode -> addChild(n);
     
     
-    _roomController.setMap(_map);
+    _roomController.setRooms(_map->getRooms());
     _appliedRunRevision = _runRevision;
     
     _quota = std::max(1, _runConfig.quota);

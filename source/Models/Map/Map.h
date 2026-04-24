@@ -43,13 +43,6 @@ private:
             dir = d;
         }
     };
-    struct GridRoom {
-        int x;
-        int y;
-        int w;
-        int h;
-        std::shared_ptr<LevelLoader> _tiledData;
-    };
 
     //std::array<std::array<int, MAP_WIDTH>, MAP_HEIGHT> _mapGrid;
     int _mapGrid[MAP_HEIGHT][MAP_WIDTH];
@@ -59,13 +52,12 @@ private:
     cugl::Size _sceneSize;
     SimpleExtruder _extruder;
     std::shared_ptr<cugl::scene2::SceneNode> lw_node;
-    //std::vector<Room> _rooms; IGNORING FOR NOW
+    std::vector<std::shared_ptr<Room>> _rooms;
 
     std::vector<cugl::Vec2> _itemSpawnPoints;
     std::vector<cugl::Vec2> _enemySpawnPoints;
     cugl::Vec2 _playerSpawn;
     MapGenerationConfig _config;
-    int _numRooms; //TEMP CHANGE LATER
 
     cugl::Random _rng;
 
@@ -83,7 +75,8 @@ public:
     Vec2 getPlayerSpawn() {return _playerSpawn;}
     const std::vector<Vec2>& getEnemySpawnPoints() const {return _enemySpawnPoints;}
     const std::vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
-    int getNumRooms() {return _numRooms;}
+    const std::vector<std::shared_ptr<Room>> getRooms() const {return _rooms;}
+    int getNumRooms() {return _rooms.size();}
 
 
 private:
