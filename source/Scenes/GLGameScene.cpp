@@ -497,7 +497,6 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
-    //CULog("X :%f, Y : %f", _player->getPosition().x, _player->getPosition().y);
     if (!_player) {
         // Try to find our player now that replication may have run
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
