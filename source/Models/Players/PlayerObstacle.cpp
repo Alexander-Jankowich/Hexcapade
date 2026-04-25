@@ -32,11 +32,14 @@ void PlayerObstacle::setVelocity(Vec2 v) {
     if (!getBody()) return; // body not ready yet
     b2Vec2 currentVel = getBody()->GetLinearVelocity();
     b2Vec2 targetVel;
-    if (mud){
+
+    if (_mud){
         targetVel = b2Vec2(v.x * 0.5f, v.y * 0.5f);
-    }else{
+    }
+    else{
         targetVel = b2Vec2(v.x, v.y);
     }
+
     b2Vec2 velDiff = targetVel - currentVel;
     float mass = getBody()->GetMass();
     float scale = mass * 60.0f;
@@ -46,6 +49,14 @@ void PlayerObstacle::setVelocity(Vec2 v) {
 }
 
 void PlayerObstacle::setHealth(int h) {
+    if (h < _health) {
+        if (_hurt) {
+            // Cannot be hit if already hit very recently
+            return;
+        }
+        _hurt = true;
+    }
+
     _health = min(h, MAX_HEALTH);
 
     if (_health <= 0) {

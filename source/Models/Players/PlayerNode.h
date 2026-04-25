@@ -19,6 +19,7 @@ private:
         WALK,
         CASTING,
         RELEASE_CAST,
+        DAMAGED,
         DEAD
     };
 
@@ -54,6 +55,9 @@ private:
 
     static int releaseCast[4];
     static int releaseCastFrames;
+
+    static int damage[4];
+    static int damageFrames;
 
     static int dying[4];
     static int dyingFrames;
@@ -128,6 +132,12 @@ public:
         PlayerNode::releaseCast[(int)Direction::RIGHT_BACKWARD] = consts->getInt("release_cast-right_backward");
         PlayerNode::releaseCastFrames = consts->getInt("release_cast_frames");
 
+        PlayerNode::damage[(int)Direction::LEFT_FORWARD] = consts->getInt("damage-left_forward");
+        PlayerNode::damage[(int)Direction::RIGHT_FORWARD] = consts->getInt("damage-right_forward");
+        PlayerNode::damage[(int)Direction::LEFT_BACKWARD] = consts->getInt("damage-left_backward");
+        PlayerNode::damage[(int)Direction::RIGHT_BACKWARD] = consts->getInt("damage-right_backward");
+        PlayerNode::damageFrames = consts->getInt("damage_frames");
+
         PlayerNode::dying[(int)Direction::LEFT_FORWARD] = consts->getInt("dying-left_forward");
         PlayerNode::dying[(int)Direction::RIGHT_FORWARD] = consts->getInt("dying-right_forward");
         PlayerNode::dying[(int)Direction::LEFT_BACKWARD] = consts->getInt("dying-left_backward");
@@ -155,7 +165,7 @@ public:
         _buff = false;
     }
     
-    void updateAnimationState(int health, bool casting, bool f, bool m, bool b);
+    void updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b);
 
     void setVelocity(cugl::Vec2 value);
 
@@ -165,7 +175,7 @@ public:
 
     bool isFrozen() { return _frozen; }
 
-    bool skipToNext() { return _curAnimation == AnimationType::IDLE && _nextAnimation != AnimationType::IDLE; }
+    bool skipToNext();
 };
 
 #endif // !__GP_PLAYER_H__

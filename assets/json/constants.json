@@ -35,6 +35,8 @@
 
         "damage-right_forward": 80,
         "damage-left_forward": 88,
+        "damage-right_backward": 80,
+        "damage-left_backward": 88,
 
         "dying-right_forward": 96,
         "dying-left_forward": 112,

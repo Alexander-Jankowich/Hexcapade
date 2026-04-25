@@ -65,6 +65,7 @@ public:
 
 	/**
 	* Stops the current animation and will get the next animation on the next update call.
+	* Only works if animation is not paused.
 	*/
 	void endAnimation(const shared_ptr<AnimatedSprite> node);
 

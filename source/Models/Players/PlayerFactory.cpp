@@ -79,7 +79,7 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
     if (obs->hasReleasedSpell()) {
         obs->setReleasedSpell(false);
         node->releasedSpell();
-        animations->endAnimation(node);
+        //animations->endAnimation(node);
     }
 
     // Update frozen status for node if changed
@@ -90,7 +90,19 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
         animations->resumeAnimation(node);
     }
        
-    node->updateAnimationState(obs->getHealth(), obs->isCasting(), obs->isFrozen(), obs->getMud(), obs->getBuff());
+    node->updateAnimationState(obs->getHealth(), obs->isHurt(), obs->isCasting(), obs->isFrozen(), obs->getMud(), obs->getBuff());
+
+    if (obs->getHealth() <= 0) {
+        animations->resumeAnimation(node);
+    }
+    if (obs->isHurt()) {
+        // Remove hurt state when animation finishes playing
+        animations->addNextListener(node, [obs](string key, float time, float actual) {
+            obs->setHurt(false);
+            CULog("not hurt now");
+        });
+    }
+
     float leftover = Application::get()->getFixedRemainder() / 1000000.f;
     Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
     float angle = obs->getAngle() + leftover * obs->getAngularVelocity();

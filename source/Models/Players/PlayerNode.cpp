@@ -22,6 +22,7 @@ int PlayerNode::startCast[4] = { 0,0,0,0 };
 int PlayerNode::casting[4] = { 0,0,0,0 };
 int PlayerNode::endCast[4] = { 0,0,0,0 };
 int PlayerNode::releaseCast[4] = { 0,0,0,0 };
+int PlayerNode::damage[4] = { 0,0,0,0 };
 int PlayerNode::dying[4] = { 0,0,0,0 };
 int PlayerNode::dead[4] = { 0,0,0,0 };
 
@@ -31,6 +32,7 @@ int PlayerNode::startCastFrames = 0;
 int PlayerNode::castingFrames = 0;
 int PlayerNode::endCastFrames = 0;
 int PlayerNode::releaseCastFrames = 0;
+int PlayerNode::damageFrames = 0;
 int PlayerNode::dyingFrames = 0;
 int PlayerNode::deadFrames = 0;
 
@@ -57,7 +59,7 @@ void PlayerNode::setVelocity(cugl::Vec2 value) {
     }
 }
 
-void PlayerNode::updateAnimationState(int health, bool casting, bool f, bool m, bool b) {
+void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b) {
     _frozen = f;
     _mud = m;
     _buff = b;
@@ -77,7 +79,13 @@ void PlayerNode::updateAnimationState(int health, bool casting, bool f, bool m, 
         setColor(Color4::WHITE);
     }
 
-    if (casting) {
+    if (health <= 0) {
+        _nextAnimation = AnimationType::DEAD;
+    }
+    else if (hurt && _curAnimation != AnimationType::DAMAGED) {
+        _nextAnimation = AnimationType::DAMAGED;
+    }
+    else if (casting) {
         _nextAnimation = AnimationType::CASTING;
     }
     else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation != AnimationType::RELEASE_CAST) 
@@ -114,7 +122,6 @@ pair<ActionFunction, float> PlayerNode::getNextAnimation() {
         if (_curAnimation != AnimationType::CASTING) {
             frameSet = startCast;
             numFrames = startCastFrames;
-            //CULog("frames: %d", startCastFrames);
         }
         else {
             frameSet = casting;
@@ -124,6 +131,10 @@ pair<ActionFunction, float> PlayerNode::getNextAnimation() {
     case AnimationType::RELEASE_CAST:
         frameSet = releaseCast;
         numFrames = releaseCastFrames;
+        break;
+    case AnimationType::DAMAGED:
+        frameSet = damage;
+        numFrames = damageFrames;
         break;
     case AnimationType::DEAD:
         if (_curAnimation == AnimationType::CASTING) {
@@ -157,4 +168,11 @@ pair<ActionFunction, float> PlayerNode::getNextAnimation() {
         },
         numFrames / FPS
     };
+}
+
+bool PlayerNode::skipToNext() {
+    return (_curAnimation == AnimationType::IDLE && _nextAnimation != AnimationType::IDLE) ||
+        (_curAnimation == AnimationType::CASTING && _nextAnimation != AnimationType::CASTING) ||
+        (_nextAnimation == AnimationType::DEAD && _curAnimation != AnimationType::DEAD) ||
+        (_nextAnimation == AnimationType::DAMAGED && _curAnimation != AnimationType::DAMAGED);
 }

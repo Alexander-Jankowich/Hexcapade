@@ -593,7 +593,7 @@ void GameScene::preUpdate(float dt)
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
 
-    if (_player->isFrozen()) {
+    if (_player->isFrozen() || _player->isHurt()) {
         //_player->setVelocity(Vec2::ZERO);
     }
     else {

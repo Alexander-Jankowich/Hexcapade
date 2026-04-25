@@ -61,12 +61,16 @@ protected:
 
     /** max carried item count for the current inventory flow */
     size_t _inventoryLimit;
-    bool frozen = false;
-    int frozenTimer = 0;
-    bool mud = false;
-    int mudTimer = 0;
-    bool buff = false;
-    int buffTimer = 0;
+    bool _frozen = false;
+    int _frozenTimer = 0;
+
+    bool _mud = false;
+    int _mudTimer = 0;
+    
+    bool _buff = false;
+    int _buffTimer = 0;
+
+    bool _hurt = false;
 
 public:
     PlayerObstacle(Vec2 pos, string pid, cugl::Size s);
@@ -77,21 +81,27 @@ public:
         return f;
     }
     bool _bombExpired = false;
-    #pragma mark PO_Getters_and_Setters
+
+#pragma mark PO_Getters_and_Setters
     int getHealth() {return _health;}
+    void setHealth(int h);
+    bool isHurt() { return _hurt; }
+    void setHurt(bool h) { _hurt = h; }
+
+    void setSpeed(float s) { _speed = s; }
     float getSpeed() { return hasHeavyArtifact() ? _speed * 0.5f : _speed; }
 
-    void setMud(bool m) {mud = m;}
-    bool getMud() {return mud;}
-    void setMudTimer(int i) { mudTimer = i; }
+    void setMud(bool m) {_mud = m;}
+    bool getMud() {return _mud;}
+    void setMudTimer(int i) { _mudTimer = i; }
 
-    void setFrozen(bool f) { frozen = f; }
-    bool isFrozen() { return frozen; }
-    void setFrozeTimer(int i) {frozenTimer = i;}
+    void setFrozen(bool f) { _frozen = f; }
+    bool isFrozen() { return _frozen; }
+    void setFrozeTimer(int i) {_frozenTimer = i;}
 
-    bool getBuff() {return buff;}
-    void setBuff(bool b) {buff = b;}
-    void setBuffTimer(int i) {buffTimer =i;}
+    bool getBuff() {return _buff;}
+    void setBuff(bool b) {_buff = b;}
+    void setBuffTimer(int i) {_buffTimer =i;}
     
     cugl::Vec2 getDirection() { return _angle; }
     #pragma mark PO_Inventory
@@ -135,9 +145,6 @@ public:
     void resolveSpell() { setSpell(SpellType::NONE); }
     bool isCasting() { return _curSpell != SpellType::NONE; }
     SpellType getSpell() { return _curSpell; }
-
-    void setHealth(int h);
-    void setSpeed(float s) {_speed = s;}
 
     const std::string getPID() const { return _pid; }
     void setPID(std::string pid) { _pid = pid; }
@@ -250,27 +257,27 @@ public:
     
     void updateTimers(float dt){
         if (isFrozen()) {
-            frozenTimer -= 1;
-            if (frozenTimer <= 0) {
-                frozenTimer = 0;
-                frozen = false;
+            _frozenTimer -= 1;
+            if (_frozenTimer <= 0) {
+                _frozenTimer = 0;
+                _frozen = false;
             }
             if (getBody()) {
                 getBody()->SetLinearVelocity(b2Vec2(0, 0));
             }
         }
-        if (mud) {
-            mudTimer -= 1;
-            if(mudTimer <= 0){
-                mudTimer = 0;
-                mud = false;
+        if (_mud) {
+            _mudTimer -= 1;
+            if(_mudTimer <= 0){
+                _mudTimer = 0;
+                _mud = false;
             }
         }
-        if(buff){
-            buffTimer -= 1;
-            if(buffTimer <= 0){
-                buffTimer = 0;
-                buff = false;
+        if(_buff){
+            _buffTimer -= 1;
+            if(_buffTimer <= 0){
+                _buffTimer = 0;
+                _buff = false;
             }
         }
 
