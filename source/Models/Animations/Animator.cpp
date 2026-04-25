@@ -77,7 +77,6 @@ void Animator::endAnimation(const shared_ptr<AnimatedSprite> node) {
 	if (it != _active.end()) {
 		// Node is in active
 		_timeline->remove(it->second);
-		CULog("end early!");
 	}
 }
 

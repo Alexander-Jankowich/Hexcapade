@@ -52,7 +52,9 @@ pair<ActionFunction, float> SpellNode::getNextAnimation() {
     case AnimationType::ACTIVE:
         return {
             [this](float t, ActionState state) {
-                int offset = min((int)(t * mainLoopFrames), mainLoopFrames - 1);
+                int offset = state == ActionState::FINISH ? mainLoopFrames - 1 :
+                    state == ActionState::BEGIN ? 0 :
+                    min((int)(t * mainLoopFrames), mainLoopFrames - 1);
                 setFrame(mainLoop + offset);
             },
             mainLoopFrames / FPS
@@ -61,7 +63,9 @@ pair<ActionFunction, float> SpellNode::getNextAnimation() {
         _deleteAtEnd = true;
         return {
             [this](float t, ActionState state) {
-                int offset = min((int)(t * endFrames), endFrames - 1);
+                int offset = state == ActionState::FINISH ? endFrames - 1 :
+                    state == ActionState::BEGIN ? 0 : 
+                    min((int)(t * endFrames), endFrames - 1);
                 setFrame(end + offset);
             },
             endFrames / FPS

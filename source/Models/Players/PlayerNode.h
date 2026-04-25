@@ -63,6 +63,8 @@ private:
 
     static int cols;
     static int rows;
+
+    static float idleThreshold;
     
     bool _frozen = false;
     bool _mud = false;
@@ -137,6 +139,8 @@ public:
         PlayerNode::dead[(int)Direction::LEFT_BACKWARD] = consts->getInt("dead-left_backward");
         PlayerNode::dead[(int)Direction::RIGHT_BACKWARD] = consts->getInt("dead-right_backward");
         PlayerNode::deadFrames = consts->getInt("dead_frames");
+
+        PlayerNode::idleThreshold = consts->getFloat("idle_threshold");
     }
     
     void reset() {
@@ -160,6 +164,8 @@ public:
     void releasedSpell() { _nextAnimation = AnimationType::RELEASE_CAST; }
 
     bool isFrozen() { return _frozen; }
+
+    bool skipToNext() { return _curAnimation == AnimationType::IDLE && _nextAnimation != AnimationType::IDLE; }
 };
 
 #endif // !__GP_PLAYER_H__

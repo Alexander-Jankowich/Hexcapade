@@ -106,7 +106,9 @@ pair<ActionFunction, float> EnemyNode::getNextAnimation() {
 
     return {
         [this, frameSet, numFrames](float t, ActionState state) {
-            int offset = min((int)(t * numFrames), numFrames - 1);
+            int offset = state == ActionState::FINISH ? numFrames - 1 :
+                state == ActionState::BEGIN ? 0 :
+                min((int)(t * numFrames), numFrames - 1);
             setFrame(frameSet[getDirection()] + offset);
         },
         numFrames / FPS

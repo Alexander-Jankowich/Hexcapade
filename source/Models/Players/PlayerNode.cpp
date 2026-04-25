@@ -34,6 +34,8 @@ int PlayerNode::releaseCastFrames = 0;
 int PlayerNode::dyingFrames = 0;
 int PlayerNode::deadFrames = 0;
 
+float PlayerNode::idleThreshold = 0.0;
+
 PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
     initWithSheet(tex, rows, cols);
 
@@ -47,10 +49,10 @@ PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
 
 void PlayerNode::setVelocity(cugl::Vec2 value) {
     _velocity = value;
-    if (_velocity.x != 0) {
+    if (fabs(_velocity.x) > idleThreshold) {
         facingLeft = _velocity.x < 0;
     }
-    if (_velocity.y != 0) {
+    if (fabs(_velocity.y) > idleThreshold) {
         facingBack = _velocity.y > 0;
     }
 }
@@ -80,7 +82,7 @@ void PlayerNode::updateAnimationState(int health, bool casting, bool f, bool m, 
     }
     else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation != AnimationType::RELEASE_CAST) 
             && _nextAnimation != AnimationType::DEAD) {
-        _nextAnimation = _velocity.length() < 0.1 ? AnimationType::IDLE : AnimationType::WALK;
+        _nextAnimation = _velocity.length() < idleThreshold ? AnimationType::IDLE : AnimationType::WALK;
     }
 }
 
@@ -90,7 +92,7 @@ pair<ActionFunction, float> PlayerNode::getNextAnimation() {
     switch (_nextAnimation) {
     case AnimationType::IDLE:
         if (_curAnimation == AnimationType::CASTING) {
-            frameSet = endCast;
+            frameSet = endCast;  
             numFrames = endCastFrames;
         }
         else {
@@ -148,7 +150,9 @@ pair<ActionFunction, float> PlayerNode::getNextAnimation() {
     //CULog("Loop player animation, %.2f", numFrames/FPS);
     return {
         [this, frameSet, numFrames](float t, ActionState state) {
-            int offset = min((int)(t * numFrames), numFrames - 1);
+            int offset = state == ActionState::FINISH ? numFrames - 1 :
+                state == ActionState::BEGIN ? 0 :
+                min((int)(t * numFrames), numFrames - 1);
             setFrame(frameSet[getDirection()] + offset);
         },
         numFrames / FPS

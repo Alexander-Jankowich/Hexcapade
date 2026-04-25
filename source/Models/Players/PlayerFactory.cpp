@@ -97,6 +97,10 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
     node->setPosition(pos * PHYSICS_SCALE);
     node->setAngle(angle);
     node->setVelocity(obs->getLinearVelocity() * PHYSICS_SCALE);
+
+    if (node->skipToNext()) {
+        animations->endAnimation(node);
+    }
 }
 
 PlayerFactory::PlayerFactory() {

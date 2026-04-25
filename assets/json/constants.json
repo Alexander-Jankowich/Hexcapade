@@ -54,7 +54,9 @@
         "release_cast_frames": 5,
         "damage_frames": 4,
         "dying_frames": 8,
-        "death_frames": 1
+        "death_frames": 1,
+
+        "idle_threshold": 0.5
     },
     "input": {
         "aim_time": 1,
