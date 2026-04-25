@@ -4,6 +4,14 @@ Animator::Animator() {
 	_timeline = ActionTimeline::alloc();
 	_nextKey = 0;
 	_active.clear();
+	_listeners.clear();
+}
+
+void Animator::reset() {
+	_active.clear();
+	_listeners.clear();
+	_timeline.reset();
+	_nextKey = 0;
 }
 
 void Animator::update(float dt) {

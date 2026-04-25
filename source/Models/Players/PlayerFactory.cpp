@@ -79,6 +79,7 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
     if (obs->hasReleasedSpell()) {
         obs->setReleasedSpell(false);
         node->releasedSpell();
+        animations->endAnimation(node);
     }
 
     // Update frozen status for node if changed

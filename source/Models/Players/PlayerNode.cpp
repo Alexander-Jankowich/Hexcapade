@@ -75,7 +75,11 @@ void PlayerNode::updateAnimationState(int health, bool casting, bool f, bool m, 
         setColor(Color4::WHITE);
     }
 
-    if (_nextAnimation != AnimationType::CASTING && _nextAnimation != AnimationType::RELEASE_CAST && _nextAnimation != AnimationType::DEAD) {
+    if (casting) {
+        _nextAnimation = AnimationType::CASTING;
+    }
+    else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation != AnimationType::RELEASE_CAST) 
+            && _nextAnimation != AnimationType::DEAD) {
         _nextAnimation = _velocity.length() < 0.1 ? AnimationType::IDLE : AnimationType::WALK;
     }
 }
