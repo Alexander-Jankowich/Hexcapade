@@ -15,7 +15,7 @@
       "name": "Gem_Reduce",
       "value": 100,
       "weight": 1.0,
-      "texture_asset": "artifact_gem_reduce"
+      "texture_asset": "artifact_reduce"
     },
     {
       "_comment": "gem artifact green visual",
@@ -23,7 +23,7 @@
       "name": "Gem_Boost",
       "value": 60,
       "weight": 1.0,
-      "texture_asset": "artifact_gem_boost"
+      "texture_asset": "artifact_boost"
     },
     {
       "_comment": "gem artifact blue visual",

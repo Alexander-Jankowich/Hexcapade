@@ -1412,7 +1412,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs2)) {
         //CULog("i am a wall");
         wall = w;
-    } ;
+    };
 
     // Checking for collisions
     if (spell && spell2){

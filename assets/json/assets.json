@@ -56,10 +56,10 @@
     "player": {
       "file": "textures/playerfox_sheet.png"
     },
-    "artifact_gem_reduce": {
+    "artifact_reduce": {
       "file": "textures/artifact_gem.png"
     },
-    "artifact_gem_boost": {
+    "artifact_boost": {
       "file": "textures/gem_neon.png"
     },
     "artifact_heavy": {
