@@ -85,8 +85,6 @@ public:
 #pragma mark PO_Getters_and_Setters
     int getHealth() {return _health;}
 
-    float getSpeed();
-    
     cugl::Vec2 getDirection() { return _angle; }
 
     void setHealth(int h);

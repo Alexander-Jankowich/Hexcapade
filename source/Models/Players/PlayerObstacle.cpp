@@ -22,10 +22,6 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
     _inventory.push_back({ "spellbook_fire", 0, CarriedItem::kindFromType("spellbook_fire"), -1, ArtifactEffect::NONE });
 }
 
-float PlayerObstacle::getSpeed() {
-    return hasHeavyArtifact() ? _speed * 0.5f : _speed;
-}
-
 void PlayerObstacle::setVelocity(Vec2 v) {
     _velocity = v;
     //CULog("setVelocity called, state is %d", (int)_state);
@@ -211,22 +207,21 @@ bool PlayerObstacle::isNonDroppable(size_t index) const {
 }
 
 void PlayerObstacle::updateTimers(float dt) {
-    if (_state == AnimationState::FROZEN) {
-        frozenTimer -= 1;
-        if (frozenTimer <= 0) {
-            frozenTimer = 0;
-            _state = AnimationState::IDLE;
+    if (_frozen) {
+        _frozenTimer -= 1;
+        if (_frozenTimer <= 0) {
+            _frozenTimer = 0;
         }
         if (getBody()) {
             getBody()->SetLinearVelocity(b2Vec2(0, 0));
         }
     }
 
-    if (mud) {
-        mudTimer -= 1;
-        if (mudTimer <= 0) {
-            mudTimer = 0;
-            mud = false;
+    if (_mud) {
+        _mudTimer -= 1;
+        if (_mudTimer <= 0) {
+            _mudTimer = 0;
+            _mud = false;
         }
     }
 
