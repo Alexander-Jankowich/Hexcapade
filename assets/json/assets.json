@@ -6,7 +6,7 @@
     },
     "textures": {
         "ghost": {
-            "file": "textures/enemy.png"
+            "file": "textures/enemy_ghost_sheet.png"
         },
         "bat": {
             "file": "textures/enemy_bat_sheet.png"

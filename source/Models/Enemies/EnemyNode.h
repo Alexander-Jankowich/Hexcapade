@@ -30,6 +30,13 @@ private:
         DEAD
     };
 
+    enum class Direction {
+        RIGHT_FORWARD = 0,
+        RIGHT_BACKWARD = 1,
+        LEFT_FORWARD = 2,
+        LEFT_BACKWARD = 3
+    };
+
     Vec2 _velocity;
 
     bool facingBack;
@@ -40,12 +47,13 @@ private:
 
     AnimationType nextAnimation;
 
-    const int LEFT_FORWARD_WALK;
-    const int RIGHT_FORWARD_WALK;
-    const int LEFT_BACKWARD_WALK;
-    const int RIGHT_BACKWARD_WALK;
-    const int NUM_WALK;
+    const int WALK[4];
+    const int WALK_FRAMES;
 
+    const int IDLE[4];
+    const int IDLE_FRAMES;
+
+    int getDirection() { return facingLeft * 2 + facingBack; }
 
 public:
 #pragma mark Constructors

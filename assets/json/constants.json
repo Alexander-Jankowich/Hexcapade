@@ -23,33 +23,42 @@
         "casting-right_backward": 52,
         "casting-left_backward": 68,
 
-        "end_cast-right_forward": 56,
-        "end_cast-left_forward": 72,
-        "end_cast-right_backward": 56,
-        "end_cast-left_backward": 72,
-        
-        "damage-right_forward":80,
-        "damage-left_forward":88,
-        
+        "end_cast-right_forward": 58,
+        "end_cast-left_forward": 74,
+        "end_cast-right_backward": 58,
+        "end_cast-left_backward": 74,
+
+        "release_cast-right_forward": 56,
+        "release_cast-left_forward": 72,
+        "release_cast-right_backward": 56,
+        "release_cast-left_backward": 72,
+
+        "damage-right_forward": 80,
+        "damage-left_forward": 88,
+        "damage-right_backward": 80,
+        "damage-left_backward": 88,
+
         "dying-right_forward": 96,
         "dying-left_forward": 112,
         "dying-right_backward": 96,
         "dying-left_backward": 112,
-        
+
         "dead-right_forward": 104,
         "dead-left_forward": 120,
         "dead-right_backward": 104,
         "dead-left_backward": 120,
-        
 
         "walk_frames": 6,
         "idle_frames": 8,
         "start_cast_frames": 4,
         "casting_frames": 4,
-        "end_cast_frames": 5,
+        "end_cast_frames": 3,
+        "release_cast_frames": 5,
         "damage_frames": 4,
         "dying_frames": 8,
-        "death_frames": 1
+        "death_frames": 1,
+
+        "idle_threshold": 0.5
     },
     "input": {
         "aim_time": 1,
@@ -139,13 +148,20 @@
             "range": 4.5,
 
             "texture": "ghost",
-            "columns": 1,
-            "rows": 1,
+            "columns": 8,
+            "rows": 4,
+
             "right_forward_walk": 0,
-            "left_forward_walk": 0,
-            "right_backward_walk": 0,
-            "left_backward_walk": 0,
-            "walk_frames": 1
+            "left_forward_walk": 8,
+            "right_backward_walk": 16,
+            "left_backward_walk": 24,
+            "walk_frames": 8,
+
+            "right_forward_idle": 0,
+            "left_forward_idle": 8,
+            "right_backward_idle": 16,
+            "left_backward_idle": 24,
+            "idle_frames": 8
         },
         "bat": {
             "health": 3,
@@ -154,12 +170,19 @@
 
             "texture": "bat",
             "columns": 8,
-            "rows": 4,
+            "rows": 8,
+
             "right_forward_walk": 0,
             "left_forward_walk": 8,
             "right_backward_walk": 16,
             "left_backward_walk": 24,
-            "walk_frames": 8
+            "walk_frames": 8,
+
+            "right_forward_idle": 32,
+            "left_forward_idle": 40,
+            "right_backward_idle": 48,
+            "left_backward_idle": 52,
+            "idle_frames": 8
         },
         "octoplush": {
             "health": 12,
@@ -169,11 +192,18 @@
             "texture": "octoplush",
             "columns": 8,
             "rows": 4,
+
             "right_forward_walk": 0,
             "left_forward_walk": 8,
             "right_backward_walk": 16,
             "left_backward_walk": 24,
-            "walk_frames": 8
+            "walk_frames": 8,
+
+            "right_forward_idle": 0,
+            "left_forward_idle": 8,
+            "right_backward_idle": 16,
+            "left_backward_idle": 24,
+            "idle_frames": 8
         }
     },
     "artifacts": {

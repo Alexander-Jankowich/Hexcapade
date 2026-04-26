@@ -36,6 +36,8 @@
 
 #define ITEM_PICKUP_RADIUS 2f
 
+// Uncomment for testing, allows players to use all spells regardless of what books they have in their inventory
+#define ENABLE_ALL_SPELLS
 
 using namespace cugl;
 using namespace std;
@@ -590,33 +592,13 @@ void GameScene::preUpdate(float dt)
     // Player movement
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
-//
-//    if (_map) {
-//        // Using from original Map code, might change depending on new Procgen.
-//        const Rect& world = _map->getWorldBounds();
-//        cugl::Vec2 playerWorldPos = _player->getPosition() * PHYSICS_SCALE;
-//        cugl::Vec2 clampedPos(
-//            std::clamp(playerWorldPos.x, world.origin.x, world.getMaxX()),
-//            std::clamp(playerWorldPos.y, world.origin.y, world.getMaxY())
-//        );
-//
-//        // slides when edge
-//        if ((clampedPos.x <= world.origin.x && velocity.x < 0) ||
-//            (clampedPos.x >= world.getMaxX() && velocity.x > 0)) {
-//            velocity.x = 0;
-//        }
-//
-//        if ((clampedPos.y <= world.origin.y && velocity.y < 0) ||
-//            (clampedPos.y >= world.getMaxY() && velocity.y > 0)) {
-//            velocity.y = 0;
-//        }
-//    }
 
-    if (_player->getState() == PlayerObstacle::AnimationState::FROZEN) {
-        _player->setVelocity(Vec2::ZERO);
-    } else {
+    if (_player->isFrozen() || _player->isHurt()) {
+        //_player->setVelocity(Vec2::ZERO);
+    }
+    else {
         _player->setVelocity(velocity);
-        _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
+        //_player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     }
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
@@ -635,7 +617,7 @@ void GameScene::preUpdate(float dt)
     }
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
-            CULog("click detected, card closed");
+            //CULog("click detected, card closed");
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
         }
@@ -650,15 +632,6 @@ void GameScene::preUpdate(float dt)
         depositRequested = true;
         _input.resolvedDeposit();
     }
-//    if (_input.inventoryHeld()) {
-//        // consider having some sort of drag treshold bc rn jittery
-//        if (_dragInventoryIndex < 0) {
-//            _dragInventoryIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
-//        }
-//        if (_dragInventoryIndex >= 0) {
-//            _dragInventoryPos = _input.getInventoryTouchPos();
-//        }
-//    }
 
     if (_input.inventoryReleased()) {
         int tappedIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
@@ -758,13 +731,18 @@ void GameScene::preUpdate(float dt)
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
         }
         _input.resolveSpell();
-    } else if (_input.getGesture() != SpellType::NONE) {
+    }
+    else if (_input.getGesture() != SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
-        //if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
+#ifndef ENABLE_ALL_SPELLS
+        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
+#endif
             _player->setSpell(newSpell);
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-        //}
+#ifndef ENABLE_ALL_SPELLS
+        }
+#endif
     }
 
     Vec2 angle = _input.getSpellAngle();
@@ -781,34 +759,34 @@ void GameScene::preUpdate(float dt)
         }
         else {
             SpellType t = SpellType::NONE;
-        for (auto p : _playerFact->current) {
-            if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
-                // calc combo spell + send combo event
-                if (_player->getSpell() == SpellType::FIREBALL && p->getSpell() == SpellType::FIREBALL) {
-                    t = SpellType::COMBO_FIREBALL;
-                    _networkCtrl->pushOutEvent(
-                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                    p->resolveSpell();
+            for (auto p : _playerFact->current) {
+                if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
+                    // calc combo spell + send combo event
+                    if (_player->getSpell() == SpellType::FIREBALL && p->getSpell() == SpellType::FIREBALL) {
+                        t = SpellType::COMBO_FIREBALL;
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        p->resolveSpell();
                     
-                }
-                else if (_player->getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::FREEZE) {
-                    t = SpellType::COMBO_FREEZE;
-                    _networkCtrl->pushOutEvent(
-                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                    p->resolveSpell();
+                    }
+                    else if (_player->getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::FREEZE) {
+                        t = SpellType::COMBO_FREEZE;
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        p->resolveSpell();
                     
-                }else if ((_player -> getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::EARTH) || (_player -> getSpell() == SpellType::EARTH && p->getSpell() == SpellType::FREEZE) ){
-                    t = SpellType::COMBO_EFREEZE;
-                    _networkCtrl->pushOutEvent(
-                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                    p -> resolveSpell();
+                    }else if ((_player -> getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::EARTH) || (_player -> getSpell() == SpellType::EARTH && p->getSpell() == SpellType::FREEZE) ){
+                        t = SpellType::COMBO_EFREEZE;
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        p -> resolveSpell();
                     
-                }
-                else if ((_player -> getSpell() == SpellType::FIREBALL && p -> getSpell() == SpellType::HEAL) || (_player->getSpell()  == SpellType::HEAL && p -> getSpell() == SpellType::FIREBALL)){
-                    t = SpellType::BUFF;
-                    _networkCtrl->pushOutEvent(
-                                        SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                    p -> resolveSpell();
+                    }
+                    else if ((_player -> getSpell() == SpellType::FIREBALL && p -> getSpell() == SpellType::HEAL) || (_player->getSpell()  == SpellType::HEAL && p -> getSpell() == SpellType::FIREBALL)){
+                        t = SpellType::BUFF;
+                        _networkCtrl->pushOutEvent(
+                                            SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        p -> resolveSpell();
                     }
                     // Spell is combo-ed!
                     if (t != SpellType::NONE) {
@@ -860,14 +838,16 @@ void GameScene::preUpdate(float dt)
                 break;
             }
 
-            //We must acquire an object if we create it if we fail to do so the network
-            //will consistently try to reset its position.
+            // We must acquire an object if we create it if we fail to do so the network
+            // will consistently try to reset its position.
             _input.resolveSpell();
             _player->resolveSpell();
+            _player->setReleasedSpell(true);
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
         }
     }
+
     if (_input.pressedPickup() && _currOverlappedItem >= 0) {
         CULog("trying to resolve pickup");
         auto item = _itemFact->getItem(_currOverlappedItem);
@@ -1208,11 +1188,13 @@ void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
 void GameScene::initMap() {
     if (_networkCtrl->getRandSeed()==0) return; // no randSeed
     if (_mapSeed==_networkCtrl->getRandSeed()) return; // already init
+
     // Create the scene graph
     _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
     _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     _worldnode->setPosition(Vec2::ZERO);
     addChild(_worldnode);
+
     // initialize physics here, since this should be called post HANDSHAKE
     std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
         this->linkSceneToObs(obs, node);
@@ -1232,9 +1214,9 @@ void GameScene::initMap() {
     if (_mapSeed != 0) {
         rebuildMapForRun();
     }
-    if(_networkCtrl -> isHost()){
+    if (_networkCtrl -> isHost()){
         auto players = _networkCtrl -> getPlayers();
-        for(auto& p : players){
+        for (auto& p : players) {
             CULog("i am making a player with the following id %s", p.c_str());
             auto params = _playerFact->serializeParams(
                             _map->getPlayerSpawn() / PHYSICS_SCALE,
@@ -1242,7 +1224,8 @@ void GameScene::initMap() {
                         );
             _networkCtrl->getPhysController()
                             ->addSharedObstacle(_playerFactId, params);
-                    }
+        }
+
         if (!_addedLWalls) {
             CULog("adding lower walls in initmap");
             _map -> getLowerWallNode() -> setPriority(1.0f);
@@ -1314,7 +1297,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
 
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _playerFact->linkFunc(p, p_node);
+                _playerFact->linkFunc(p, p_node, _animations);
             });
 
             // Add animation
@@ -1444,7 +1427,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
         if (spell->TYPE == SpellType::FREEZE || spell->TYPE == SpellType::COMBO_FREEZE) {
             player->setFrozeTimer(60);
-            player->setAniState(PlayerObstacle::AnimationState::FROZEN);
+            //player->setAniState(PlayerObstacle::AnimationState::FROZEN);
+            player->setFrozen(true);
         }
         if (spell->TYPE == SpellType::EARTH){
             player->setMudTimer(240);
