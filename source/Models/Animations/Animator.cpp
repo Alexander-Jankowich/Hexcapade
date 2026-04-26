@@ -4,6 +4,14 @@ Animator::Animator() {
 	_timeline = ActionTimeline::alloc();
 	_nextKey = 0;
 	_active.clear();
+	_listeners.clear();
+}
+
+void Animator::reset() {
+	_active.clear();
+	_listeners.clear();
+	_timeline.reset();
+	_nextKey = 0;
 }
 
 void Animator::update(float dt) {
@@ -68,8 +76,9 @@ void Animator::endAnimation(const shared_ptr<AnimatedSprite> node) {
 	auto it = _active.find(node);
 	if (it != _active.end()) {
 		// Node is in active
-		_timeline->remove(it->second);
-		CULog("end early!");
+		if (!_timeline->isPaused(it->second)) {
+			_timeline->remove(it->second);
+		}
 	}
 }
 

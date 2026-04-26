@@ -1,5 +1,5 @@
 #include "PlayerObstacle.h"
-#define PHYSICS_SCALE 50
+#define PHYSICS_SCALE 50.0f
 
 PlayerObstacle::ItemKind PlayerObstacle::CarriedItem::kindFromType(const std::string& t) {
     return (t.rfind("spellbook", 0) == 0) ? ItemKind::SPELLBOOK : ItemKind::ARTIFACT;
@@ -10,6 +10,7 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
     setBodyType(b2_dynamicBody);
     setDensity(1.0f);
     //setLinearDamping(15.0f);
+
     createFixtures();
     setAwake(true);
     setEnabled(true);
@@ -21,36 +22,29 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
     _inventory.push_back({ "spellbook_fire", 0, CarriedItem::kindFromType("spellbook_fire"), -1, ArtifactEffect::NONE });
 }
 
-float PlayerObstacle::getSpeed() {
-    return hasHeavyArtifact() ? _speed * 0.5f : _speed;
-}
-
 void PlayerObstacle::setVelocity(Vec2 v) {
     _velocity = v;
     //CULog("setVelocity called, state is %d", (int)_state);
-    if (_state == AnimationState::FROZEN) {
+    if (isFrozen()) {
         if (getBody()) getBody()->SetLinearVelocity(b2Vec2(0, 0));
         return;
     }
+
     if (!v.isZero()) {
         _angle = v.getNormalization();
-
-        if (_state == AnimationState::IDLE) {
-            _state = AnimationState::WALKING;
-        }
-    }
-    else if (_state == AnimationState::WALKING) {
-        _state = AnimationState::IDLE;
     }
 
     if (!getBody()) return; // body not ready yet
     b2Vec2 currentVel = getBody()->GetLinearVelocity();
     b2Vec2 targetVel;
-    if (mud){
+
+    if (_mud){
         targetVel = b2Vec2(v.x * 0.5f, v.y * 0.5f);
-    }else{
+    }
+    else{
         targetVel = b2Vec2(v.x, v.y);
     }
+
     b2Vec2 velDiff = targetVel - currentVel;
     float mass = getBody()->GetMass();
     float scale = mass * 60.0f;
@@ -60,16 +54,21 @@ void PlayerObstacle::setVelocity(Vec2 v) {
 }
 
 void PlayerObstacle::setHealth(int h) {
+    if (h < _health) {
+        if (_hurt) {
+            // Cannot be hit if already hit very recently
+            return;
+        }
+        _hurt = true;
+    }
+
     _health = min(h, MAX_HEALTH);
 
     if (_health <= 0) {
         setVelocity(Vec2::ZERO);
-        _health = 0;
-        _state = AnimationState::DEAD;
         setLinearVelocity(Vec2::ZERO);
-    }
-    else if (_state == AnimationState::DEAD && _health > 0) {
-        _state = AnimationState::IDLE;
+
+        _health = 0;
     }
 }
 
@@ -208,22 +207,21 @@ bool PlayerObstacle::isNonDroppable(size_t index) const {
 }
 
 void PlayerObstacle::updateTimers(float dt) {
-    if (_state == AnimationState::FROZEN) {
-        frozenTimer -= 1;
-        if (frozenTimer <= 0) {
-            frozenTimer = 0;
-            _state = AnimationState::IDLE;
+    if (_frozen) {
+        _frozenTimer -= 1;
+        if (_frozenTimer <= 0) {
+            _frozenTimer = 0;
         }
         if (getBody()) {
             getBody()->SetLinearVelocity(b2Vec2(0, 0));
         }
     }
 
-    if (mud) {
-        mudTimer -= 1;
-        if (mudTimer <= 0) {
-            mudTimer = 0;
-            mud = false;
+    if (_mud) {
+        _mudTimer -= 1;
+        if (_mudTimer <= 0) {
+            _mudTimer = 0;
+            _mud = false;
         }
     }
 

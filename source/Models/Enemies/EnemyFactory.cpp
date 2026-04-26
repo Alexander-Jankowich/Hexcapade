@@ -120,11 +120,6 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         animator->resumeAnimation(node);
     }
 
-    // Update state for animation
-    node->setStatue(obs->isMud());
-    node->updateState();
-    node->updateAnimationState(obs->getState(), obs->getHealth());
-
     // Update position
     float leftover = Application::get()->getFixedRemainder() / 1000000.f;
     Vec2 pos = obs->getPosition() + leftover * obs->getLinearVelocity();
@@ -132,6 +127,11 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
     node->setPosition(pos * PHYSICS_SCALE);
     node->setAngle(angle);
     node->setVelocity(obs->getLinearVelocity() * PHYSICS_SCALE);
+
+    // Update state for animation
+    node->setStatue(obs->isMud());
+    node->updateState();
+    node->updateAnimationState(obs->getState(), obs->getHealth());
 }
 
 

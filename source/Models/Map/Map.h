@@ -80,7 +80,7 @@ public:
     const std::vector<Vec2>& getEnemySpawnPoints() const {return _enemySpawnPoints;}
     const std::vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
     const std::vector<std::shared_ptr<Room>> getRooms() const {return _rooms;}
-    int getNumRooms() {return _rooms.size();}
+    int getNumRooms() { return (int)_rooms.size(); }
 
 
 private:
