@@ -37,7 +37,7 @@
 #define ITEM_PICKUP_RADIUS 2f
 
 // Uncomment for testing, allows players to use all spells regardless of what books they have in their inventory
-#define ENABLE_ALL_SPELLS
+//#define ENABLE_ALL_SPELLS
 
 using namespace cugl;
 using namespace std;
@@ -94,7 +94,34 @@ std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entrie
     return item.itemType;
 }
 // Naming standard - Use this.
+
+// Artifacts need renaming - galiba
 std::string getInventoryCardTextureKey(const std::string& itemType) {
+    if (itemType == "artifact_heavy" || itemType == "gem_blue") {
+        return "heavyTreasure_info";
+    }
+    if (itemType == "artifact_protection" || itemType == "gem_brown") {
+        return "zombieTotem_info";
+    }
+    if (itemType == "artifact_gold" || itemType == "artifact_gold_real" ||
+        itemType == "artifact_gold_fake" || itemType == "gem_gold") {
+        return "foolsGold_info";
+    }
+    if (itemType == "artifact_boost" || itemType == "artifact_gem_boost" ||
+        itemType == "gem_neon") {
+        return "mysticalBrooch_info";
+    }
+    if (itemType == "artifact_bomb" || itemType == "gem_pink") {
+        return "explodingPotion_info";
+    }
+    if (itemType == "artifact_reduce" || itemType == "artifact_gem_reduce" ||
+        itemType == "artifact_gem") {
+        return "antiMagic_info";
+    }
+    if (itemType == "artifact_scroll") {
+        return "cursedScroll_info";
+    }
+
     static const std::string prefix = "spellbook_";
     static const std::string suffix = "_spellbook";
     std::string cardBase;

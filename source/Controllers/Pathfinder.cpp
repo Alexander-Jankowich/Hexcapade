@@ -79,7 +79,7 @@ Vec2 Pathfinder::findVelocity(shared_ptr<physics2::distrib::NetWorld> world, con
         stop += 1;
         direction = Vec2(targ.y - pos.y, pos.x - targ.x).getNormalization();
         CULog("in loop! from %s to %s", pos.toString().c_str(), targ.toString().c_str());
-        if(stop > 3){
+        if(stop > 100){
             break;
         }
     }
