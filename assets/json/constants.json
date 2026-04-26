@@ -161,6 +161,20 @@
             "left_backward_walk": 24,
             "walk_frames": 8
         },
+        "slow-bat": {
+            "health": 3,
+            "speed": 3.0,
+            "range": 5,
+
+            "texture": "bat",
+            "columns": 8,
+            "rows": 4,
+            "right_forward_walk": 0,
+            "left_forward_walk": 8,
+            "right_backward_walk": 16,
+            "left_backward_walk": 24,
+            "walk_frames": 8
+        },
         "octoplush": {
             "health": 12,
             "speed": 2.0,
