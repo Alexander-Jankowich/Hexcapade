@@ -108,11 +108,11 @@ bool Pathfinder::performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> wor
         float leftFar = 0, rightFar = 0;
         Vec2 leftPoint, rightPoint;
 
-        auto exterior = wall->getPolygon().exterior();
+        //auto exterior = wall->getPolygon().exterior();
 
         // Loop through all points
-        for (const auto i : exterior) {
-            const auto point = wall->getPolygon().at(i);
+        for (const auto& point : wall->getPolygon().getVertices()) {
+            //const auto point = wall->getPolygon().at(i);
 
             // Find distance from line
             float len = fabs((targ.y - pos.y) * point.x - (targ.x - pos.x) * point.y + targ.y * pos.x - targ.x * pos.y) /

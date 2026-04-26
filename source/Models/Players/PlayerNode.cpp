@@ -21,6 +21,8 @@ int PlayerNode::walk[4] = { 0,0,0,0 };
 int PlayerNode::startCast[4] = { 0,0,0,0 };
 int PlayerNode::casting[4] = { 0,0,0,0 };
 int PlayerNode::endCast[4] = { 0,0,0,0 };
+int PlayerNode::releaseCast[4] = { 0,0,0,0 };
+int PlayerNode::damage[4] = { 0,0,0,0 };
 int PlayerNode::dying[4] = { 0,0,0,0 };
 int PlayerNode::dead[4] = { 0,0,0,0 };
 
@@ -29,8 +31,12 @@ int PlayerNode::walkFrames = 0;
 int PlayerNode::startCastFrames = 0;
 int PlayerNode::castingFrames = 0;
 int PlayerNode::endCastFrames = 0;
+int PlayerNode::releaseCastFrames = 0;
+int PlayerNode::damageFrames = 0;
 int PlayerNode::dyingFrames = 0;
 int PlayerNode::deadFrames = 0;
+
+float PlayerNode::idleThreshold = 0.0;
 
 PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
     initWithSheet(tex, rows, cols);
@@ -45,40 +51,46 @@ PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
 
 void PlayerNode::setVelocity(cugl::Vec2 value) {
     _velocity = value;
-    if (_velocity.x != 0) {
+    if (fabs(_velocity.x) > idleThreshold) {
         facingLeft = _velocity.x < 0;
     }
-    if (_velocity.y != 0) {
+    if (fabs(_velocity.y) > idleThreshold) {
         facingBack = _velocity.y > 0;
     }
 }
 
-void PlayerNode::updateAnimationState(PlayerObstacle::AnimationState s) {
-    switch (s) {
-    case PlayerObstacle::AnimationState::FROZEN:
-        _nextAnimation = AnimationType::IDLE;
+void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b) {
+    _frozen = f;
+    _mud = m;
+    _buff = b;
+
+    // Just get direction
+    if (_frozen) {
         setColor(Color4::BLUE);
-        break;
-    case PlayerObstacle::AnimationState::DEAD:
+    }
+    else if (_mud){
+        setColor(Color4::GRAY);
+    }
+    else if (_buff){
+        CULog("coloring red");  
+        setColor(Color4::RED);
+    }
+    else {
+        setColor(Color4::WHITE);
+    }
+
+    if (health <= 0) {
         _nextAnimation = AnimationType::DEAD;
-        break;
-    case PlayerObstacle::AnimationState::CASTING:
+    }
+    else if (hurt && _curAnimation != AnimationType::DAMAGED) {
+        _nextAnimation = AnimationType::DAMAGED;
+    }
+    else if (casting) {
         _nextAnimation = AnimationType::CASTING;
-        break;
-    default:
-        // Just get direction
-        if(mud){
-            setColor(Color4::GRAY);
-        }
-        else if (buff){
-            CULog("coloring red");  
-            setColor(Color4::RED);
-        }
-        else{
-            setColor(Color4::WHITE);
-        }
-        _nextAnimation = _velocity.isZero() ? AnimationType::IDLE : AnimationType::WALK;
-        break;
+    }
+    else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation != AnimationType::RELEASE_CAST) 
+            && _nextAnimation != AnimationType::DEAD) {
+        _nextAnimation = _velocity.length() < idleThreshold ? AnimationType::IDLE : AnimationType::WALK;
     }
 }
 
@@ -88,7 +100,7 @@ pair<ActionFunction, float> PlayerNode::getNextAnimation() {
     switch (_nextAnimation) {
     case AnimationType::IDLE:
         if (_curAnimation == AnimationType::CASTING) {
-            frameSet = endCast;
+            frameSet = endCast;  
             numFrames = endCastFrames;
         }
         else {
@@ -110,12 +122,19 @@ pair<ActionFunction, float> PlayerNode::getNextAnimation() {
         if (_curAnimation != AnimationType::CASTING) {
             frameSet = startCast;
             numFrames = startCastFrames;
-            //CULog("frames: %d", startCastFrames);
         }
         else {
             frameSet = casting;
             numFrames = castingFrames;
         }
+        break;
+    case AnimationType::RELEASE_CAST:
+        frameSet = releaseCast;
+        numFrames = releaseCastFrames;
+        break;
+    case AnimationType::DAMAGED:
+        frameSet = damage;
+        numFrames = damageFrames;
         break;
     case AnimationType::DEAD:
         if (_curAnimation == AnimationType::CASTING) {
@@ -142,9 +161,18 @@ pair<ActionFunction, float> PlayerNode::getNextAnimation() {
     //CULog("Loop player animation, %.2f", numFrames/FPS);
     return {
         [this, frameSet, numFrames](float t, ActionState state) {
-            int offset = min((int)(t * numFrames), numFrames - 1);
+            int offset = state == ActionState::FINISH ? numFrames - 1 :
+                state == ActionState::BEGIN ? 0 :
+                min((int)(t * numFrames), numFrames - 1);
             setFrame(frameSet[getDirection()] + offset);
         },
         numFrames / FPS
     };
+}
+
+bool PlayerNode::skipToNext() {
+    return (_curAnimation == AnimationType::IDLE && _nextAnimation != AnimationType::IDLE) ||
+        (_curAnimation == AnimationType::CASTING && _nextAnimation != AnimationType::CASTING) ||
+        (_nextAnimation == AnimationType::DEAD && _curAnimation != AnimationType::DEAD) ||
+        (_nextAnimation == AnimationType::DAMAGED && _curAnimation != AnimationType::DAMAGED);
 }

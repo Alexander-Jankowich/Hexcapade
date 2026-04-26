@@ -36,6 +36,11 @@ public:
 	}
 
 	/**
+	* Clears and resets the animator to its base state
+	*/
+	void reset();
+
+	/**
 	* Updates all animations. If an animation has completed, gets and starts
 	* the next animation. If there is no next animation, assumes that the node
 	* is no longer in use and removes it from the active list.
@@ -60,6 +65,7 @@ public:
 
 	/**
 	* Stops the current animation and will get the next animation on the next update call.
+	* Only works if animation is not paused.
 	*/
 	void endAnimation(const shared_ptr<AnimatedSprite> node);
 
