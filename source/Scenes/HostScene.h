@@ -25,6 +25,7 @@ private:
     /** The players label (for updating) */
     std::shared_ptr<cugl::scene2::Label> _player;
     std::string _roomCode;
+    bool _backPressed = false;
     
 public:
     HostScene() : cugl::scene2::Scene2() {}
@@ -41,6 +42,7 @@ public:
     void obtainNetwork(std::shared_ptr<NetworkController> n) { _networkCtrl = n; }
 
     NetworkController::Status getStatus(){return _networkCtrl->getStatus();}
+    bool didBackOut() const { return _backPressed; }
     std::shared_ptr<NetworkController> getConnection(){return _networkCtrl;}
     std::shared_ptr<NetworkController> getNetwork() {
         return _networkCtrl;
@@ -50,6 +52,7 @@ public:
 
     void reset() override {
         _networkCtrl->disconnect();
+        _backPressed = false;
         _gameid->setText("");
         _player->setText("1");
     }

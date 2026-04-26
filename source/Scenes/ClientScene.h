@@ -5,6 +5,7 @@
 #ifndef __CLIENT_SCENE_H__
 #define __CLIENT_SCENE_H__
 
+#include <array>
 #include <cugl/cugl.h>
 #include "../Controllers/NetworkController.h"
 
@@ -21,10 +22,13 @@ private:
     std::shared_ptr<cugl::scene2::Button> _startgame;
     /** The back button for the menu scene */
     std::shared_ptr<cugl::scene2::Button> _backout;
+    /** The on-screen keypad buttons */
+    std::array<std::shared_ptr<cugl::scene2::Button>, 10> _keypad;
     /** The game id label (for updating) */
-    std::shared_ptr<cugl::scene2::TextField> _gameid;
+    std::shared_ptr<cugl::scene2::Label> _gameid;
     /** The players label (for updating) */
     std::shared_ptr<cugl::scene2::Label> _player;
+    bool _backPressed = false;
     
 
 public:
@@ -43,6 +47,7 @@ public:
     void obtainNetwork(std::shared_ptr<NetworkController> n) { _networkCtrl = n; }
 
     NetworkController::Status getStatus() { return _networkCtrl->getStatus(); }
+    bool didBackOut() const { return _backPressed; }
     std::shared_ptr<NetworkController> getConnection(){return _networkCtrl;}
     std::shared_ptr<NetworkController> getNetwork() {
         return _networkCtrl;
@@ -52,7 +57,9 @@ public:
     
     void reset() override {
         _networkCtrl->disconnect();
-        _gameid->setText("");
+        _backPressed = false;
+        _roomInput.clear();
+        _gameid->setText(" ");
         _player->setText("1");
     }
 
