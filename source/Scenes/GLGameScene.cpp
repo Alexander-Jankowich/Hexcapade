@@ -160,7 +160,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
 
     auto orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera());
     if (orthographicCamera) {
-        orthographicCamera->setZoom(std::max(_cameraZoom, 0.02f));
+        orthographicCamera->setZoom(std::max(1.3f, 0.02f));
         orthographicCamera->update();
     }
 
@@ -550,7 +550,7 @@ void GameScene::preUpdate(float dt)
         }
 
         // Update enemy movement
-        _pathfinder.updateEnemies(_enemyFact, _playerFact, _world);
+        _pathfinder.updateEnemies(_enemyFact, _playerFact,_spellFact, _networkCtrl, _spellFactId, _world);
         
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
@@ -1426,8 +1426,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             return;
         }
         if (spell->TYPE == SpellType::FREEZE || spell->TYPE == SpellType::COMBO_FREEZE) {
-            player->setFrozeTimer(60);
-            //player->setAniState(PlayerObstacle::AnimationState::FROZEN);
+            player->setFrozeTimer(180);
             player->setFrozen(true);
         }
         if (spell->TYPE == SpellType::EARTH){
@@ -1439,6 +1438,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player -> setBuffTimer(3600);
             player -> setBuff(true);
             spell -> setRemove();
+            return;
+        }
+        if(spell -> TYPE == SpellType::WATER){
+            return;
+        }
+        if(spell -> TYPE == SpellType::DEATH){
+            player -> setHealth(0);
             return;
         }
         player -> setHealth(player->getHealth() - 1);
@@ -1492,6 +1498,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     else if (enemy && spell) {
         //CULog("enemy and spell");
         contact -> SetEnabled(false);
+        if(spell -> getCasterUID() == "bat"){
+            return;
+        }
 
         // If spell is in end animation, do not do any calculations
         if (spell->shouldRemove()) {
@@ -1508,7 +1517,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_EFREEZE){
             enemy -> setFrozen(true);
             if(spell->TYPE == SpellType::FREEZE){
-                enemy->setFrozenTimer(60);
+                enemy->setFrozenTimer(240);
             }else if (spell->TYPE == SpellType::COMBO_FREEZE){
                 enemy->setFrozenTimer(600);
             }else{

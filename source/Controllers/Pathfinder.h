@@ -15,6 +15,7 @@
 
 #include "../Models/Items/ItemFactory.h"
 #include "../Models/Players/PlayerFactory.h"
+#include "../Controllers/NetworkController.h"
 #include "../Models/Enemies/EnemyFactory.h"
 #include "../Models/Map/Map.h"
 
@@ -50,7 +51,7 @@ public:
     /**
     * Updates enemy targets, movement, and state based on the players
     */
-    void updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact, shared_ptr<physics2::distrib::NetWorld> world);
+    void updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact, shared_ptr<SpellFactory> spellFact, std::shared_ptr<NetworkController> networkCtrl,Uint32 spellFactId, shared_ptr<physics2::distrib::NetWorld> world);
 };
 
 #endif // __PATHFINDER_H__

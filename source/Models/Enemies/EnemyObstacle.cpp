@@ -22,6 +22,7 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared
     _health = consts->getInt("health");
     _speed = consts->getFloat("speed");
     _range = consts->getFloat("range");
+    _attackRange = consts -> getFloat("attack_range");
     _target = pos;
     _radius = Vec2(s.height, s.width).length() / 2;
 

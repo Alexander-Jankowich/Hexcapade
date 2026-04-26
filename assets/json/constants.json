@@ -146,7 +146,7 @@
             "health": 6,
             "speed": 4.0,
             "range": 4.5,
-
+            "attack_range": 0,
             "texture": "ghost",
             "columns": 8,
             "rows": 4,
@@ -166,8 +166,8 @@
         "bat": {
             "health": 3,
             "speed": 5.0,
-            "range": 5,
-
+            "range": 8,
+            "attack_range": 5,
             "texture": "bat",
             "columns": 8,
             "rows": 8,
@@ -188,7 +188,7 @@
             "health": 12,
             "speed": 2.0,
             "range": 4.5,
-
+            "attack_range" : 0,
             "texture": "octoplush",
             "columns": 8,
             "rows": 4,
