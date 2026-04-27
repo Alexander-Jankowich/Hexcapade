@@ -1,51 +1,62 @@
-//
-//  HostSelectScene.cpp
-//  alpha_final
-//
-//  Created by Serena Duncan on 4/20/26.
-//
 #include "SelectScene.h"
 using namespace cugl;
-using namespace cugl::netcode;
 using namespace cugl::graphics;
 
 #define SCENE_HEIGHT 720
 
-#pragma mark Init / Dispose
-
 bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
-    // Initialize the scene to a locked width
-    if (assets == nullptr) {
-        return false;
-    } else if (!Scene2::initWithHint(Size(0,SCENE_HEIGHT))) {
-        return false;
-    }
-    
-    // Start up the input handler
-    _assets = assets;
-    
-    Size dimen = getSize();
-    
-    // Acquire the scene built by the asset loader and resize it the scene
-    std::shared_ptr<scene2::SceneNode> scene = _assets->get<scene2::SceneNode>("char-select");
-    scene->setContentSize(dimen);
-    scene->doLayout(); // Repositions the HUD
+    if (assets == nullptr) return false;
+    if (!Scene2::initWithHint(Size(0, SCENE_HEIGHT))) return false;
 
-    _startgame = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("char-select.center.start"));
+    _assets = assets;
+    Size dimen = getSize();
+
+    std::shared_ptr<scene2::SceneNode> scene = _assets->get<scene2::SceneNode>("char-select");
+    if (!scene) return false;
+
+    scene->setContentSize(dimen);
+    scene->doLayout();
+
+    _startgame = std::dynamic_pointer_cast<scene2::Button>(scene->getChildByName("start"));
+    if (!_startgame) return false;
+
+    _portrait = std::dynamic_pointer_cast<scene2::PolygonNode>(scene->getChildByName("selected_char"));
+    if (!_portrait) return false;
+
+    auto charButtonsNode = scene->getChildByName("char_buttons");
+    if (!charButtonsNode) return false;
+
+    _catBtn = std::dynamic_pointer_cast<scene2::Button>(charButtonsNode->getChildByName("cat"));
+    _foxBtn = std::dynamic_pointer_cast<scene2::Button>(charButtonsNode->getChildByName("fox"));
+    _duckBtn = std::dynamic_pointer_cast<scene2::Button>(charButtonsNode->getChildByName("duck"));
+    _bunnyBtn = std::dynamic_pointer_cast<scene2::Button>(charButtonsNode->getChildByName("bunny"));
+
+    if (!_catBtn || !_foxBtn || !_duckBtn || !_bunnyBtn) return false;
 
     _startgame->addListener([this](const std::string& name, bool down) {
-        if (down) {
-            if (!_networkCtrl->isHost()){
-                _status = SSStatus::HANDSHAKE;
-            }
-            else { // host starting game
-                _networkCtrl->pushOutEvent(StartGameEvent::allocStartGameEvent());
-            }
-            _startPressed = true;
-            CULog("start pressed, is Host: %d", _networkCtrl->isHost());
+        if (!down) return;
+        if (_networkCtrl->isHost()) {
+            _networkCtrl->pushOutEvent(StartGameEvent::allocStartGameEvent());
         }
-    });
-    
+        else {
+            _status = SSStatus::HANDSHAKE;
+        }
+        _startPressed = true;
+        });
+
+    _catBtn->addListener([this](const std::string& name, bool down) {
+        if (down) onCharacterSelected(CharacterType::CAT);
+        });
+    _foxBtn->addListener([this](const std::string& name, bool down) {
+        if (down) onCharacterSelected(CharacterType::FOX);
+        });
+    _duckBtn->addListener([this](const std::string& name, bool down) {
+        if (down) onCharacterSelected(CharacterType::DUCK);
+        });
+    _bunnyBtn->addListener([this](const std::string& name, bool down) {
+        if (down) onCharacterSelected(CharacterType::BUNNY);
+        });
+
     addChild(scene);
     setActive(false);
     return true;
@@ -54,79 +65,103 @@ bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 void SelectScene::dispose() {
     if (_active) {
         removeAllChildren();
-        _networkCtrl=nullptr;
+        _networkCtrl = nullptr;
         _active = false;
     }
 }
 
-#pragma mark Update / Render
+void SelectScene::onCharacterSelected(CharacterType c) {
+    _selectedCharacter = c;
+    _characterChosen = true;
+
+    auto tex = _assets->get<graphics::Texture>(portraitKey(c));
+    if (tex) {
+        _portrait->setTexture(tex);
+        _portrait->setContentSize(Size(396, 475));
+        _portrait->setVisible(true);
+    }
+
+    configureStartButton();
+}
 
 void SelectScene::update(float dt) {
+    if (!_networkCtrl) return;
+
     _networkCtrl->updateNet();
     _networkCtrl->customEvents();
     configureStartButton();
-    // if host and all connected AND map init, handashake phase
-    if (_networkCtrl->canHostStart() && _networkCtrl->getRandSeed()!=0) {
-        _status=SSStatus::HANDSHAKE;
+
+    if (_networkCtrl->isHost() && _networkCtrl->canHostStart() && _networkCtrl->getRandSeed() != 0) {
+        _status = SSStatus::HANDSHAKE;
     }
-    // as client, mark ready once player has selected and map was init
-    // have to use pushOutEvent bc of checks in markReady()
-    // TODO: may need to ensure this is not spammed
-    if (!_networkCtrl->isHost() && _startPressed && !_readySent && _networkCtrl->getRandSeed()!=0) {
-        CULog("client is ready");
+
+    if (!_networkCtrl->isHost() && _startPressed && !_readySent && _networkCtrl->getRandSeed() != 0) {
         _networkCtrl->pushOutEvent(GameStateEvent::allocReady());
         _readySent = true;
     }
-    // on recieve start game, transition to game
-    if (_networkCtrl->gameState()==NetworkController::NCGameState::RUNNING) _status = SSStatus::START;
+
+    if (_networkCtrl->gameState() == NetworkController::NCGameState::RUNNING) {
+        _status = SSStatus::START;
+    }
 }
 
 void SelectScene::setActive(bool value) {
-    if (isActive() != value) {
-        Scene2::setActive(value);
-        if (value) {
-            if (_networkCtrl->isHost()) {
-                // mark players unready
-                _networkCtrl->unreadyPlayers();
-                _networkCtrl->rerollRandSeed();
-                _networkCtrl->pushOutEvent(InitMapEvent::allocInitMapEvent(_networkCtrl->getRandSeed()));
-                _startgame->deactivate();
-                CULog("host set active");
-            }
-            _status = SSStatus::SELECT;
-            _startPressed = false;
-            _readySent = false;
-            _startgame->setDown(false);
-            configureStartButton();
-        } else {
-            _startgame->deactivate();
-            // If any were pressed, reset them
-            _startPressed = false;
-            _readySent = false;
-            _startgame->setDown(false);
+    if (isActive() == value) return;
+    Scene2::setActive(value);
+
+    if (value) {
+        _selectedCharacter = CharacterType::FOX;
+        _characterChosen = false;
+        _startPressed = false;
+        _readySent = false;
+        _status = SSStatus::SELECT;
+
+        _portrait->setVisible(false);
+
+        _catBtn->activate();
+        _foxBtn->activate();
+        _duckBtn->activate();
+        _bunnyBtn->activate();
+
+        if (_networkCtrl && _networkCtrl->isHost()) {
+            _networkCtrl->unreadyPlayers();
+            _networkCtrl->rerollRandSeed();
+            _networkCtrl->pushOutEvent(InitMapEvent::allocInitMapEvent(_networkCtrl->getRandSeed()));
         }
+
+        configureStartButton();
+
     }
-}
-
-void SelectScene::updateText(const std::shared_ptr<scene2::Button>& button, const std::string text) {
-    auto label = std::dynamic_pointer_cast<scene2::Label>(button->getChildByName("up")->getChildByName("label"));
-    label->setText(text);
-
+    else {
+        _startgame->deactivate();
+        _startgame->setDown(false);
+        _catBtn->deactivate();
+        _foxBtn->deactivate();
+        _duckBtn->deactivate();
+        _bunnyBtn->deactivate();
+        _startPressed = false;
+        _readySent = false;
+    }
 }
 
 void SelectScene::configureStartButton() {
-    if(_status==SSStatus::SELECT) { // players choose their character, ONLY MULTIPLAYER
-        auto text = _networkCtrl->isHost() ? "Waiting for Players" : "Ready";
-        updateText(_startgame, text);
-        if (!_networkCtrl->isHost()) _startgame->activate();
+    if (_status == SSStatus::SELECT) {
+        if (_networkCtrl && !_networkCtrl->isHost() && _characterChosen) {
+            _startgame->activate();
+        }
+        else {
+            _startgame->deactivate();
+        }
     }
-    else if (_status==SSStatus::HANDSHAKE) {
-        auto text = _networkCtrl->isHost() ? "Start Game" : "Awaiting Host Start";
-        updateText(_startgame, text);
-        if (_networkCtrl->isHost()) _startgame->activate();
+    else if (_status == SSStatus::HANDSHAKE) {
+        if (_networkCtrl && _networkCtrl->isHost() && _characterChosen) {
+            _startgame->activate();
+        }
+        else {
+            _startgame->deactivate();
+        }
     }
     else {
-        updateText(_startgame, "Starting Game");
         _startgame->deactivate();
     }
 }
