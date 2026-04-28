@@ -91,6 +91,8 @@ void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool 
     else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation != AnimationType::RELEASE_CAST) 
             && _nextAnimation != AnimationType::DEAD) {
         _nextAnimation = _velocity.length() < idleThreshold ? AnimationType::IDLE : AnimationType::WALK;
+    }else{
+        _nextAnimation = AnimationType::IDLE;
     }
 }
 

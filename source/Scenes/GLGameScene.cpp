@@ -37,7 +37,7 @@
 #define ITEM_PICKUP_RADIUS 2f
 
 // Uncomment for testing, allows players to use all spells regardless of what books they have in their inventory
-//#define ENABLE_ALL_SPELLS
+#define ENABLE_ALL_SPELLS
 
 using namespace cugl;
 using namespace std;
