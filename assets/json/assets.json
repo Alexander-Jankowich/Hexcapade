@@ -142,6 +142,15 @@
         },
         "joinBg": {
             "file": "textures/joinBg.png"
+        },
+        "help_button": {
+            "file": "textures/tutorial_assets/help.png"
+        },
+        "tutorial_1": {
+            "file": "textures/tutorial_assets/tutorial_1.png"
+        },
+        "tutorial_2": {
+            "file": "textures/tutorial_assets/tutorial_2.png"
         }
     },
     "fonts": {

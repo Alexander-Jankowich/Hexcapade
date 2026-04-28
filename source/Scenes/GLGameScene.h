@@ -60,6 +60,8 @@ protected:
     
     /** Node for the currently open inventory card cente */
     std::shared_ptr<cugl::scene2::SceneNode> _inventoryCardNode;
+    /** Node for the currently open tutorial page */
+    std::shared_ptr<cugl::scene2::SceneNode> _tutorialNode;
 
     /** The Box2D world */
     std::shared_ptr<cugl::physics2::distrib::NetWorld> _world;
@@ -126,12 +128,10 @@ protected:
     float _depositRadius;
     /** id of item player is on, if they are on an item */
     int _currOverlappedItem = -1;
-//    /** inventory slot currently being dragged from the top zone */
-//    int _dragInventoryIndex = -1;
-//    /** current screen-space pos for the floating drag */
-//    cugl::Vec2 _dragInventoryPos = cugl::Vec2::ZERO;
     int _pendingInventoryTapIndex = -1;
     cugl::Timestamp _lastInventoryTapTime;
+    /** Which tutorial page is currently open, or 0 if closed */
+    int _tutorialPage = 0;
 
 public:
 #pragma mark -
@@ -300,10 +300,13 @@ public:
 private:
 
     cugl::Rect getInventorySlotBounds(size_t slotIndex) const;
+    cugl::Rect getHelpButtonBounds() const;
     // this maps the last hud tap to an inventory slot index for the upcoming item flow
     int getInventorySlotIndexAt(const cugl::Vec2& tapPos) const;
     void showInventoryCard(size_t slotIndex);
     void hideInventoryCard();
+    void showTutorialPage(int page);
+    void hideTutorial();
     /**
      * on recieving a pickup event from player, checks if it is valid.
      */
