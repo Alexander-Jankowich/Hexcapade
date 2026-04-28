@@ -1136,7 +1136,6 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     _touchDown = true;
     Vec2 pos = event.position;
     Zone zone = getZone(pos);
-    _cardDismissTap = true;
     pos = touch2Screen(pos);
     
     switch (zone){
@@ -1197,6 +1196,8 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
     Vec2 pos = event.position;
     Zone zone = getZone(pos);
     pos = touch2Screen(pos);
+    _cardDismissTap = true;
+    _inventoryTouchPos = pos;
    
 
     if (_ltouch.touchids.find(event.touch) != _ltouch.touchids.end()) {
@@ -1244,7 +1245,6 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
 
     Vec2 pos = mouse2Screen(event.position);
     Zone zone = getZone(pos);
-    _cardDismissTap = true;
 
     switch (zone) {
     case Zone::TOP:
@@ -1283,6 +1283,8 @@ void InputController::buttonUpCB(const cugl::MouseEvent& event, Uint8 clicks, bo
     // Reset all keys that might have been set
     Vec2 pos = mouse2Screen(event.position);
     Zone zone = getZone(pos);
+    _cardDismissTap = true;
+    _inventoryTouchPos = pos;
 
     if (_mouseDownZone == Zone::LEFT || _mouseDownZone == Zone::RIGHT) {
         _rtouch.touchids.clear();
