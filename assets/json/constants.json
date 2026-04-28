@@ -153,14 +153,14 @@
 
             "right_forward_walk": 0,
             "left_forward_walk": 8,
-            "right_backward_walk": 16,
-            "left_backward_walk": 24,
+            "right_backward_walk": 24,
+            "left_backward_walk": 16,
             "walk_frames": 8,
 
             "right_forward_idle": 0,
             "left_forward_idle": 8,
-            "right_backward_idle": 16,
-            "left_backward_idle": 24,
+            "right_backward_idle": 24,
+            "left_backward_idle": 16,
             "idle_frames": 8
         },
         "bat": {
