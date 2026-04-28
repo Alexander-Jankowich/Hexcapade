@@ -16,7 +16,8 @@ using namespace std;
 enum class EnemyType {
     GHOST = 0,
     BAT = 1,
-    OCTO = 2
+    OCTO = 2,
+    SLOWBAT = 3
 };
 
 /**
@@ -155,4 +156,4 @@ public:
     
 };
 
-#endif
+#endif // !__ENEMY_OBSTACLE_H__

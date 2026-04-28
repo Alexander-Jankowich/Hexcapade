@@ -31,6 +31,7 @@ private:
     unsigned int _randSeed;
     std::shared_ptr<cugl::Random> _rng;
     NCGameState _gameState = NCGameState::UNSTARTED;
+    int _round;
     
     // network controller ptrs to models it needs
     std::shared_ptr<ItemFactory> _itemFactory;
@@ -73,6 +74,7 @@ public:
         return _network;
     }
     NCGameState gameState() {return _gameState;}
+    int getRound() {return _round;}
     bool canHostStart() {return _numReady == getNumPlayers() || getNumPlayers()==1;}
     void unreadyPlayers() {_numReady = 1;} // only called by host, always leave host as ready
     void resetStatus() { _status = Status::IDLE; }

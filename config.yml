@@ -1,8 +1,8 @@
 ---
-name:   GP-Prototype             # The application display name
-short:  alpha_final             # A shortened name for reference
+name:   Hexcapade!             # The application display name
+short:  Hexcapade             # A shortened name for reference
 appid:  HEXCAPADE    # Application identifier for Mac, iOS, Android
-suffix: alpha_final
+suffix: open-beta
 
 build:  build                       # The build directory (targets are each a subdirectory)
 assets: assets                      # The folder with the game assets (do not list asset)

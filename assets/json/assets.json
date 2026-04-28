@@ -2,7 +2,8 @@
     "jsons": {
         "server": "json/server.json",
         "constants": "json/constants.json",
-        "gestures":  "json/gestures.json"
+        "gestures":  "json/gestures.json",
+        "level-config": "json/level_config.json"
     },
     "textures": {
         "ghost": {

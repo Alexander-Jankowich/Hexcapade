@@ -27,7 +27,7 @@ void Map::reset() {
     lw_node->removeAllChildren();
 }
 
-std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
+std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
     _extruder = SimpleExtruder();
     // ensure everything cleared before generation
     for (int r = 0; r < MAP_HEIGHT; r++) {
@@ -44,6 +44,9 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
     std::vector<MapDoor> doors;
     _rng.initWithSeed(seed);
     _assets = assets;
+    
+    loadLevelConfig(level, _assets->get<JsonValue>("level-config"));
+
     
     //get minimum room width/height
     int minRoomW = INT_MAX;
@@ -592,3 +595,23 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
         
     }
 
+void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
+    std::shared_ptr<JsonValue> data;
+    if (level < config->getInt("medium-start")) {
+        data = config->get("easy");
+    } else if (level < config->getInt("hard-start")) {
+        data = config->get("medium");
+    } else {
+        data = config->get("hard");
+    }
+    auto c = new LevelConfig();
+    for (auto e : data->get("enemies")->asStringArray()) {
+        if (e == "octoplush") _config._enemyTypes.push_back(EnemyType::OCTO);
+        else if (e == "ghost") _config._enemyTypes.push_back(EnemyType::GHOST);
+        else if (e == "bat") _config._enemyTypes.push_back(EnemyType::BAT);
+        else if (e == "slow-bat") _config._enemyTypes.push_back(EnemyType::SLOWBAT);
+    }
+    
+    
+    
+}

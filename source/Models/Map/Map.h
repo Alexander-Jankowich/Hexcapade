@@ -10,6 +10,8 @@
 #include "../GameplayConfig.h"
 #include "Room.h"
 #include "LevelLoader.h"
+#include "../Enemies/EnemyObstacle.h"
+
 //#include "../../Controllers/NetworkController.h"
 
 #define MAP_HEIGHT 90
@@ -33,6 +35,12 @@ using namespace cugl::graphics;
 
 class Map {
 private:
+    struct LevelConfig {
+        std::vector<EnemyType> _enemyTypes;
+        std::vector<float> _zone1Weights;
+        std::vector<float> _zone2Weights;
+        std::vector<float> _zone3Weights;
+    };
     struct MapDoor {
         Vec2 pos;
         Size size;
@@ -57,7 +65,8 @@ private:
     std::vector<cugl::Vec2> _itemSpawnPoints;
     std::vector<cugl::Vec2> _enemySpawnPoints;
     cugl::Vec2 _playerSpawn;
-    MapGenerationConfig _config;
+    //MapGenerationConfig _config;
+    LevelConfig _config;
 
     cugl::Random _rng;
 
@@ -71,9 +80,12 @@ public:
      * @param rooms the list of all string keys used to access each room in the AssetManager
      * @return a pair, the world node and the lower walls node
      */
-    std::shared_ptr<cugl::scene2::SceneNode> generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
+    std::shared_ptr<cugl::scene2::SceneNode> generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
     void generateItemSpawns();
-    void generateEnemySpawns();
+    /**
+     * called by GLGameScene to roll die for each zone and generate an enemy spawn if the zone die roll succeeds.
+     */
+    std::vector<std::pair<Vec2, EnemyType>> generateEnemySpawns();
     
     std::shared_ptr<cugl::scene2::SceneNode> getLowerWallNode() {return lw_node;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
@@ -111,6 +123,8 @@ private:
     void addSingleNode(std::shared_ptr<Texture> t, Vec2 pos, std::shared_ptr<cugl::scene2::SceneNode> world);
     
     void addWallObstacle(Poly2& poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
+    
+    void loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config);
 };
 
 #endif // __HEXCAPADE_MAP_H__

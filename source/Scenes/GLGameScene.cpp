@@ -381,7 +381,7 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-    auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize(), _world);
+    auto n = _map -> generate(_networkCtrl->getRound(), _mapSeed, _assets, _rooms, getSize(), _world);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
     n->setPriority(0.0f);
