@@ -280,8 +280,8 @@
               ],
               "angle": 0,
               "position": [
-                897,
-                29
+                0,
+                0
               ],
               "visible": true,
               "upnode": "Rectangle"
@@ -517,8 +517,8 @@
               ],
               "angle": 0,
               "position": [
-                14,
-                31
+                0,
+                0
               ],
               "visible": true
             },
@@ -859,8 +859,8 @@
               ],
               "angle": 0,
               "position": [
-                864,
-                222
+                0,
+                0
               ],
               "visible": true
             },
@@ -1124,8 +1124,8 @@
               ],
               "angle": 0,
               "position": [
-                61,
-                176
+                0,
+                0
               ],
               "visible": false
             },
