@@ -587,12 +587,13 @@ void GameScene::preUpdate(float dt)
         }
 
         // Remove spells that have gone out of range
-        auto spellRemove = _spellFact->update();
-        for (auto spell : spellRemove) {
-            _networkCtrl->getPhysController()->removeSharedObstacle(spell);
-            //CULog("Remove spell: %d", spell->isRemoved());
-        }
         
+        
+    }
+    auto spellRemove = _spellFact->update();
+    for (auto spell : spellRemove) {
+        _networkCtrl->getPhysController()->removeSharedObstacle(spell);
+        //CULog("Remove spell: %d", spell->isRemoved());
     }
     //for (auto en : _enemyFact -> current){
     //    // If attack is on cooldown, wait

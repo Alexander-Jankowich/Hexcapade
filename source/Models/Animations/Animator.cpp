@@ -47,7 +47,6 @@ void Animator::update(float dt) {
 void Animator::addNode(const shared_ptr<AnimatedSprite> node) {
 	// In case we somehow get so many nodes that it overflows, make sure
 	// to skip keys already in use. Normally shouldn't get here!
-    node -> setPriority(-99.0);
 	while (_timeline->isActive(to_string(_nextKey))) {
 		_nextKey++;
 	}
