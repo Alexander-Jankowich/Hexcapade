@@ -37,7 +37,7 @@
 #define ITEM_PICKUP_RADIUS 2f
 
 // Uncomment for testing, allows players to use all spells regardless of what books they have in their inventory
-//#define ENABLE_ALL_SPELLS
+#define ENABLE_ALL_SPELLS
 
 using namespace cugl;
 using namespace std;
@@ -273,6 +273,7 @@ void GameScene::dispose()
 {
     // NOTHING TO DO THIS TIME
     hideInventoryCard();
+    hideTutorial();
     _inputDisplay->dispose();
     _map = nullptr;
     _assets->dispose();
@@ -316,12 +317,11 @@ void GameScene::reset()
     _itemNodes.clear();
     _inventoryValue = 0;
     _canDeposit = false;
-//    _dragInventoryIndex = -1;
-//    _dragInventoryPos = Vec2::ZERO;
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
     _timer = ROUND_TIMER;
     hideInventoryCard();
+    hideTutorial();
     Scene::reset();
 }
 
@@ -370,6 +370,31 @@ void GameScene::hideInventoryCard() {
         removeChild(_inventoryCardNode);
         _inventoryCardNode = nullptr;
     }
+}
+
+void GameScene::showTutorialPage(int page) {
+    hideTutorial();
+    hideInventoryCard();
+
+    const std::string textureKey = (page == 2) ? "tutorial_2" : "tutorial_1";
+    auto tutorialTex = _assets->get<graphics::Texture>(textureKey);
+    _tutorialPage = page;
+    _tutorialNode = scene2::PolygonNode::allocWithTexture(tutorialTex);
+    _tutorialNode->setAnchor(Vec2::ANCHOR_CENTER);
+    float zoom = getActiveCameraZoom();
+    Vec2 offset = getHUDOffset();
+    _tutorialNode->setScale(1.0f / zoom);
+    _tutorialNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
+                                    offset.y + this->getSize().height * 0.5f / zoom));
+    addChild(_tutorialNode);
+}
+
+void GameScene::hideTutorial() {
+    if (_tutorialNode) {
+        removeChild(_tutorialNode);
+        _tutorialNode = nullptr;
+    }
+    _tutorialPage = 0;
 }
 
 void GameScene::loadGameplayConfig() {
@@ -587,12 +612,13 @@ void GameScene::preUpdate(float dt)
         }
 
         // Remove spells that have gone out of range
-        auto spellRemove = _spellFact->update();
-        for (auto spell : spellRemove) {
-            _networkCtrl->getPhysController()->removeSharedObstacle(spell);
-            //CULog("Remove spell: %d", spell->isRemoved());
-        }
         
+        
+    }
+    auto spellRemove = _spellFact->update();
+    for (auto spell : spellRemove) {
+        _networkCtrl->getPhysController()->removeSharedObstacle(spell);
+        //CULog("Remove spell: %d", spell->isRemoved());
     }
     //for (auto en : _enemyFact -> current){
     //    // If attack is on cooldown, wait
@@ -642,6 +668,46 @@ void GameScene::preUpdate(float dt)
         _inventoryCardNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
                                              offset.y + this->getSize().height * 0.5f / zoom));
     }
+    if (_tutorialNode) {
+        float zoom = getActiveCameraZoom();
+        _tutorialNode->setScale(1.0f / zoom);
+        _tutorialNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
+                                        offset.y + this->getSize().height * 0.5f / zoom));
+    }
+
+    if (_input.cardDismissTap()) {
+        Vec2 tapPos = _input.getInventoryTouchPos();
+        if (_tutorialPage > 0) {
+            Size tutorialSize = _tutorialNode->getSize();
+            Vec2 tutorialCenter = _tutorialNode->getPosition() - offset;
+            Rect tutorialBounds(tutorialCenter.x - tutorialSize.width * 0.5f,
+                                tutorialCenter.y - tutorialSize.height * 0.5f,
+                                tutorialSize.width,
+                                tutorialSize.height);
+            float pageMidX = tutorialBounds.origin.x + tutorialBounds.size.width * 0.5f;
+
+            if (tutorialBounds.contains(tapPos) && _tutorialPage == 1 && tapPos.x >= pageMidX) {
+                // right side of tutorial page clicked go to tutorial page 2
+                showTutorialPage(2);
+            } else if (tutorialBounds.contains(tapPos) && _tutorialPage == 2 && tapPos.x < pageMidX) {
+                // left side of tutorial page clicked go back to tutorial page 1
+                showTutorialPage(1);
+            } else {
+                // tutorial tap was not a page turn so close it
+                hideTutorial();
+            }
+            _input.resolvedInventoryRelease();
+            _input.resolvedCardDismissTap();
+            return;
+        } else if (getHelpButtonBounds().contains(tapPos)) {
+            // help button clicked open tutorial page 1
+            showTutorialPage(1);
+            _input.resolvedInventoryRelease();
+            _input.resolvedCardDismissTap();
+            return;
+        }
+    }
+
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
             //CULog("click detected, card closed");
@@ -981,6 +1047,9 @@ void GameScene::render()
     if (_inventoryCardNode) {
         _inventoryCardNode->render(_batch);
     }
+    if (_tutorialNode) {
+        _tutorialNode->render(_batch);
+    }
     _batch->end();
 }
 
@@ -1056,9 +1125,6 @@ void GameScene::renderHUD()
 
                 // Draw item texture centered inside the frame
                 if (i < carriedItems.size()) {
-//                    if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex == i) {
-//                        continue;
-//                    }
                     const auto& carried = carriedItems[i];
                     auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
                     if (itemTex) {
@@ -1078,29 +1144,16 @@ void GameScene::renderHUD()
                     }
                 }
             }
+        }
 
-//            // ?? Easier way to do it?
-//            // While dragging, render the item icon at the current touch position instead of in its slot.
-//            if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex < carriedItems.size()) {
-//                const auto& carried = carriedItems[(size_t)_dragInventoryIndex];
-//                auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
-//                if (itemTex) {
-//                    Rect dragSlot = getInventorySlotBounds((size_t)_dragInventoryIndex);
-//                    float boxSize = dragSlot.size.width;
-//                    float padding = 10.0f;
-//                    float iconSize = boxSize - padding * 2;
-//                    float iconX = _dragInventoryPos.x - iconSize * 0.5f + hudOffset.x;
-//                    float iconY = _dragInventoryPos.y - iconSize * 0.5f + hudOffset.y;
-//
-//                    // ?? Drag when transparent? Or transparent in inventory while being dragged?
-//                    // Color4 dragColor(255, 255, 255, 100);
-//                    // _batch->draw(itemTex, dragColor, Rect(iconX, iconY, iconSize, iconSize));
-//
-//                    _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
-//
-//                    _batch->setColor(Color4::WHITE);
-//                }
-//            }
+        auto helpTex = _assets->get<graphics::Texture>("help_button");
+        if (helpTex) {
+            Rect helpBounds = getHelpButtonBounds();
+            _batch->setColor(Color4::WHITE);
+            _batch->draw(helpTex, Rect(helpBounds.origin.x + hudOffset.x,
+                                       helpBounds.origin.y + hudOffset.y,
+                                       helpBounds.size.width,
+                                       helpBounds.size.height));
         }
 
         auto texContainer = _assets->get<graphics::Texture>("health_bar");
@@ -1177,6 +1230,18 @@ cugl::Rect GameScene::getInventorySlotBounds(size_t slotIndex) const {
     float topY = screenSize.height - margin - boxSize;
 
     return Rect((startX + slotIndex * (boxSize + boxGap)) / zoom, topY / zoom, boxSize / zoom, boxSize / zoom);
+}
+
+cugl::Rect GameScene::getHelpButtonBounds() const {
+    float zoom = getActiveCameraZoom();
+    float margin = 16.0f;
+    float buttonSize = 79.0f * 0.8f;
+    Size screenSize = this->getSize();
+
+    return Rect((screenSize.width - margin - buttonSize) / zoom,
+                (screenSize.height - margin - buttonSize) / zoom,
+                buttonSize / zoom,
+                buttonSize / zoom);
 }
 
 int GameScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {
@@ -1287,6 +1352,8 @@ void GameScene::setActive(bool value)
         }
         else
         {
+            hideInventoryCard();
+            hideTutorial();
             _input.deactivate();
         }
     }
