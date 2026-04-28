@@ -30,6 +30,9 @@ private:
     std::shared_ptr<cugl::scene2::Button>      _duckBtn;
     std::shared_ptr<cugl::scene2::Button>      _bunnyBtn;
 
+    std::shared_ptr<cugl::scene2::TextField> _nameField;
+    std::string _playerName = "PLAYER";
+
     CharacterType _selectedCharacter = CharacterType::FOX;
     bool _characterChosen = false;
     bool _startPressed = false;
@@ -58,6 +61,7 @@ public:
 
     std::shared_ptr<NetworkController> getNetwork() { return _networkCtrl; }
     CharacterType getSelectedCharacter() const { return _selectedCharacter; }
+    const std::string& getPlayerName() const { return _playerName; }
 };
 
 #endif

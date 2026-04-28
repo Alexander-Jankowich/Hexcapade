@@ -9,5 +9,6 @@
 #include "./Events/PickupEvent.h"
 #include "./Events/RestartGameEvent.h"
 #include "./Events/StartGameEvent.h"
+#include "./Events/PlayerNameEvent.h"
 
 #endif // !__EVENT_INCLUDES_H__

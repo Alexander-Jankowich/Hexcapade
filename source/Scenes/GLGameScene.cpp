@@ -966,6 +966,28 @@ void GameScene::render()
     _batch->begin();
     
     drawDepositZone();
+
+    if (_font && _playerFact) {
+        for (const auto& p : _playerFact->current) {
+            if (!p || p->isRemoved()) continue;
+            const std::string& name = _networkCtrl->getPlayerName(p->getPID());
+            if (name.empty()) continue;
+
+            auto label = TextLayout::allocWithText(name, _font);
+            label->layout();
+
+            cugl::Vec2 worldPos = p->getPosition() * PHYSICS_SCALE;
+            float nameOffsetY = 50.0f; // tune as needed
+
+            Affine2 t;
+            t.translate(worldPos.x - label->getBounds().size.width * 0.5f,
+                worldPos.y + nameOffsetY);
+
+            _batch->setColor(Color4::WHITE);
+            _batch->drawText(label, t);
+        }
+    }
+
     if(_player){
         renderHUD();
     }

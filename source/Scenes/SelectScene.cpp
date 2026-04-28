@@ -23,6 +23,11 @@ bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _portrait = std::dynamic_pointer_cast<scene2::PolygonNode>(scene->getChildByName("selected_char"));
     if (!_portrait) return false;
 
+    auto namingNode = scene->getChildByName("naming");
+    if (namingNode) {
+        _nameField = std::dynamic_pointer_cast<scene2::TextField>(namingNode->getChildByName("player_name"));
+    }
+
     auto charButtonsNode = scene->getChildByName("char_buttons");
     if (!charButtonsNode) return false;
 
@@ -118,6 +123,31 @@ void SelectScene::setActive(bool value) {
 
         _portrait->setVisible(false);
 
+        _playerName = "PLAYER";
+        if (_nameField) {
+            _nameField->setText("PLAYER");
+            _nameField->activate();
+            _nameField->addTypeListener([this](const std::string&, const std::string& value) {
+                std::string clamped = value.size() > 12 ? value.substr(0, 12) : value; // max 12 characters for now
+                if (clamped != value && _nameField) {
+                    _nameField->setText(clamped);
+                }
+                _playerName = clamped;
+                if (_networkCtrl) {
+                    _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
+                    _networkCtrl->pushOutEvent(
+                        PlayerNameEvent::allocPlayerNameEvent(
+                            _networkCtrl->getPID(), _playerName));
+                }
+                });
+            if (_networkCtrl) {
+                _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
+                _networkCtrl->pushOutEvent(
+                    PlayerNameEvent::allocPlayerNameEvent(
+                        _networkCtrl->getPID(), _playerName));
+            }
+        }
+
         _catBtn->activate();
         _foxBtn->activate();
         _duckBtn->activate();
@@ -139,6 +169,9 @@ void SelectScene::setActive(bool value) {
         _foxBtn->deactivate();
         _duckBtn->deactivate();
         _bunnyBtn->deactivate();
+        if (_nameField) {
+            _nameField->deactivate();
+        }
         _startPressed = false;
         _readySent = false;
     }
