@@ -18,7 +18,8 @@
             }
         ],
         "enemies": ["slow-bat", "ghost", "octoplush"],
-        "enemies-prob": [ [1, 0, 0], [.6, .4, 0], [.1, .45, .45]]
+        "enemies-probs": [ [1, 0, 0], [.6, .4, 0], [.1, .45, .45]],
+        "zone-probs": [.33, .33, .33]
     },
     "medium": {
         "map-size": 90,

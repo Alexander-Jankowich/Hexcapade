@@ -54,7 +54,7 @@ void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
     _rng = Random::alloc();
     _rng->init();
     _randSeed = 0;
-    _round = 0;
+    _round = 1;
     _itemFactory = nullptr;
     _playerFactory = nullptr;
     _itemFactId = -1;

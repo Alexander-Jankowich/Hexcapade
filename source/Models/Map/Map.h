@@ -36,10 +36,17 @@ using namespace cugl::graphics;
 class Map {
 private:
     struct LevelConfig {
+        int _mapSize;
         std::vector<EnemyType> _enemyTypes;
-        std::vector<float> _zone1Weights;
-        std::vector<float> _zone2Weights;
-        std::vector<float> _zone3Weights;
+        std::vector<float> _zone1WeightsEn;
+        std::vector<float> _zone2WeightsEn;
+        std::vector<float> _zone3WeightsEn;
+        
+        float _zone1EnemyProb;
+        float _zone2EnemyProb;
+        float _zone3EnemyProb;
+        
+        // TODO: add item data
     };
     struct MapDoor {
         Vec2 pos;
@@ -53,7 +60,7 @@ private:
     };
 
     //std::array<std::array<int, MAP_WIDTH>, MAP_HEIGHT> _mapGrid;
-    int _mapGrid[MAP_HEIGHT][MAP_WIDTH];
+    std::vector<std::vector<int>> _mapGrid;
     std::shared_ptr<AssetManager> _assets;
     
     cugl::Vec2 _origin;
@@ -64,8 +71,11 @@ private:
 
     std::vector<cugl::Vec2> _itemSpawnPoints;
     std::vector<cugl::Vec2> _enemySpawnPoints;
+    std::vector<cugl::Vec2> _z1enemySpawnPoints;
+    std::vector<cugl::Vec2> _z2enemySpawnPoints;
+    std::vector<cugl::Vec2> _z3enemySpawnPoints;
+
     cugl::Vec2 _playerSpawn;
-    //MapGenerationConfig _config;
     LevelConfig _config;
 
     cugl::Random _rng;
@@ -82,6 +92,7 @@ public:
      */
     std::shared_ptr<cugl::scene2::SceneNode> generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
     void generateItemSpawns();
+    
     /**
      * called by GLGameScene to roll die for each zone and generate an enemy spawn if the zone die roll succeeds.
      */
