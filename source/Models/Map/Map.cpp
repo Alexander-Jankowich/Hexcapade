@@ -417,7 +417,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
             // Just map grid units to world pixels.
             // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
             _enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
-            //TODO: z1 if dist(pt, plspawn) < .25 * map_size
+            
+            auto dist = pl_mg.distance(ep_mg);
+            
+            if (.1 * _config._mapSize < dist && dist < .5 * _config._mapSize) _z1enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
+            else if (dist < 75. * _config._mapSize) _z2enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
+            else _z3enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
         }
         // add colliders
         addRoomObstacles(std::get<0>(res), std::get<2>(res), world);
@@ -628,10 +633,53 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
     // TODO: add parsing for item data
 }
 
-std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns() {
+std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns(const std::vector<Vec2> playersPos) {
     std::vector<std::pair<Vec2, EnemyType>> res;
     // it is fine to use the random number generator here since we re-init for next round
-    bool z1 = _rng.getFloat() <= .33;
+    bool z1 = _rng.getFloat() <= _config._zone1EnemyProb;
+    bool z2 = _rng.getFloat() <= _config._zone2EnemyProb;
+    bool z3 = _rng.getFloat() <= _config._zone3EnemyProb;
     
+    if (z1) {
+        auto spawn = chooseEnemySpawnPoint(_z1enemySpawnPoints, playersPos, _config._zone1WeightsEn);
+        res.push_back(spawn);
+    }
+    
+    if (z2) {
+        auto spawn = chooseEnemySpawnPoint(_z2enemySpawnPoints, playersPos, _config._zone2WeightsEn);
+        res.push_back(spawn);
+    }
+    
+    if (z3) {
+        auto spawn = chooseEnemySpawnPoint(_z3enemySpawnPoints, playersPos, _config._zone3WeightsEn);
+        res.push_back(spawn);
+    }
     return res;
+}
+
+std::pair<Vec2, EnemyType> Map::chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates) {
+    // filter to valid points
+    vector<Vec2> validPts;
+    
+    for (auto p : zonePoints) {
+        bool valid = true;
+        for (auto pos : playersPos) {
+            if (p.distance(pos) < 10 * TILE_SIZE) { // since points are in tile coords
+                valid = false;
+                break;
+            }
+        }
+        if (valid) validPts.push_back(p);
+    }
+    auto idx = _rng.getOpenSint64(0, validPts.size());
+    
+    float enem = _rng.getFloat();
+
+    float acc = 0;
+    int enemIdx = -1;
+    while (acc < enem) {
+        enemIdx++;
+        acc += zoneRates[enemIdx];
+    }
+    return std::make_pair(validPts.at(idx), _config._enemyTypes[enemIdx]);
 }

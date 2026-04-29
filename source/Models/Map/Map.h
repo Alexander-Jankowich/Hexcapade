@@ -96,7 +96,7 @@ public:
     /**
      * called by GLGameScene to roll die for each zone and generate an enemy spawn if the zone die roll succeeds.
      */
-    std::vector<std::pair<Vec2, EnemyType>> generateEnemySpawns();
+    std::vector<std::pair<Vec2, EnemyType>> generateEnemySpawns(const std::vector<Vec2> playersPos);
     
     std::shared_ptr<cugl::scene2::SceneNode> getLowerWallNode() {return lw_node;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
@@ -136,6 +136,8 @@ private:
     void addWallObstacle(Poly2& poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
     
     void loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config);
+    
+    std::pair<Vec2, EnemyType> chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates);
 };
 
 #endif // __HEXCAPADE_MAP_H__
