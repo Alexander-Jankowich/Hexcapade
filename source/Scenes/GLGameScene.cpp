@@ -642,6 +642,8 @@ void GameScene::preUpdate(float dt)
 
     if (_player->getHealth()==0) return; // if dead ignore updates
 
+    _player->updateTimers(dt);
+
     // Player movement
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
@@ -1039,6 +1041,40 @@ void GameScene::render()
     _batch->begin();
     
     drawDepositZone();
+
+    if (_font && _playerFact) {
+        auto nameBgTex = _assets->get<graphics::Texture>("name_bg");
+        for (const auto& p : _playerFact->current) {
+            if (!p || p->isRemoved()) continue;
+            const std::string& name = _networkCtrl->getPlayerName(p->getPID());
+            if (name.empty()) continue;
+
+            auto label = TextLayout::allocWithText(name, _font);
+            label->layout();
+
+            cugl::Vec2 worldPos = p->getPosition() * PHYSICS_SCALE;
+            float nameOffsetY = 30.0f;
+            float labelW = label->getBounds().size.width;
+            float labelH = label->getBounds().size.height;
+            float padX = 10.0f;
+     
+            float bgH = 20.0f;
+            float bgW = labelW + padX * 2.0f;
+            float bgX = worldPos.x - bgW * 0.5f;
+            float bgY = worldPos.y + nameOffsetY;
+
+            if (nameBgTex) {
+                _batch->setColor(Color4::WHITE);
+                _batch->draw(nameBgTex, Rect(bgX, bgY, bgW, bgH));
+            }
+
+            Affine2 t;
+            t.translate(worldPos.x - labelW * 0.5f, worldPos.y + nameOffsetY);
+            _batch->setColor(Color4(213, 233, 239, 255));
+            _batch->drawText(label, t);
+        }
+    }
+
     if(_player){
         renderHUD();
     }

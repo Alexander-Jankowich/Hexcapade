@@ -31,6 +31,7 @@ private:
     unsigned int _randSeed;
     std::shared_ptr<cugl::Random> _rng;
     NCGameState _gameState = NCGameState::UNSTARTED;
+    std::unordered_map<std::string, std::string> _playerNames;
     
     // network controller ptrs to models it needs
     std::shared_ptr<ItemFactory> _itemFactory;
@@ -111,6 +112,16 @@ public:
     void processRestartEvent(const std::shared_ptr<RestartGameEvent> &e);
     
     void resetHost();
+
+    const std::string& getPlayerName(const std::string& pid) const {
+        static const std::string fallback = "";
+        auto it = _playerNames.find(pid);
+        return it != _playerNames.end() ? it->second : fallback;
+    }
+
+    void setPlayerName(const std::string& pid, const std::string& name) {
+        _playerNames[pid] = name;
+    }
     
     std::tuple<int,int> customEvents();
 };
