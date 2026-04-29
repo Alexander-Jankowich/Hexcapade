@@ -740,7 +740,7 @@
           0
         ],
         "size": [
-          1280,
+          1278,
           720
         ],
         "angle": 0,
@@ -771,8 +771,8 @@
             "visible": true
           },
           "layout": {
-            "x_anchor": "center",
-            "y_anchor": "middle",
+            "x_anchor": "fill",
+            "y_anchor": "fill",
             "absolute": false,
             "x_offset": 0,
             "y_offset": 0
