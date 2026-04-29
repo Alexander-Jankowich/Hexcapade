@@ -420,8 +420,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
             
             auto dist = pl_mg.distance(ep_mg);
             
-            if (.1 * _config._mapSize < dist && dist < .5 * _config._mapSize) _z1enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
-            else if (dist < 75. * _config._mapSize) _z2enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
+            if (.1 * _config._mapSize < dist && dist < .4 * _config._mapSize) _z1enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
+            else if (dist < 7. * _config._mapSize) _z2enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
             else _z3enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
         }
         // add colliders
@@ -623,11 +623,11 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
     
     _config._zone1WeightsEn = data->get("enemies-probs")->get(0)->asFloatArray();
     _config._zone2WeightsEn = data->get("enemies-probs")->get(1)->asFloatArray();
-    _config._zone3WeightsEn = data->get("enemies-probs")->get(3)->asFloatArray();
+    _config._zone3WeightsEn = data->get("enemies-probs")->get(2)->asFloatArray();
     
-    _config._zone1EnemyProb = data->get("zone-probs")->asIntArray()[0];
-    _config._zone2EnemyProb = data->get("zone-probs")->asIntArray()[1];
-    _config._zone3EnemyProb = data->get("zone-probs")->asIntArray()[2];
+    _config._zone1EnemyProb = data->get("zone-probs")->asFloatArray()[0];
+    _config._zone2EnemyProb = data->get("zone-probs")->asFloatArray()[1];
+    _config._zone3EnemyProb = data->get("zone-probs")->asFloatArray()[2];
 
     
     // TODO: add parsing for item data
@@ -640,17 +640,20 @@ std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns(const std::vect
     bool z2 = _rng.getFloat() <= _config._zone2EnemyProb;
     bool z3 = _rng.getFloat() <= _config._zone3EnemyProb;
     
-    if (z1) {
+    if (z1 && _z1enemySpawnPoints.size()>0) {
+        CULog("zone 1 spawn");
         auto spawn = chooseEnemySpawnPoint(_z1enemySpawnPoints, playersPos, _config._zone1WeightsEn);
         res.push_back(spawn);
     }
     
-    if (z2) {
+    if (z2 && _z2enemySpawnPoints.size()>0) {
+        CULog("zone 2 spawn");
         auto spawn = chooseEnemySpawnPoint(_z2enemySpawnPoints, playersPos, _config._zone2WeightsEn);
         res.push_back(spawn);
     }
     
-    if (z3) {
+    if (z3 && _z3enemySpawnPoints.size()>0) {
+        CULog("zone 3 spawn");
         auto spawn = chooseEnemySpawnPoint(_z3enemySpawnPoints, playersPos, _config._zone3WeightsEn);
         res.push_back(spawn);
     }

@@ -6,20 +6,13 @@
         "map-size-incr": 10,
         "quota": 150,
         "quota-incr": 50,
-        "items": [
-            {
-                "type": "spellbook-heal",
-                "min-depth": 0,
-                "max-depth": 100,
-                "value": 40,
-                "effect": "none",
-                "base-prob": .1,
-                "prob-incr": -.01
-            }
-        ],
         "enemies": ["slow-bat", "ghost", "octoplush"],
-        "enemies-probs": [ [1, 0, 0], [.6, .4, 0], [.1, .45, .45]],
-        "zone-probs": [.33, .33, .33]
+        "enemies-probs": [
+            [1.0, 0.0, 0.0],
+            [0.6, 0.4, 0.0],
+            [0.1, 0.45, 0.45]
+        ],
+        "zone-probs": [0.33, 0.4, 0.5]
     },
     "medium": {
         "map-size": 90,
@@ -27,7 +20,12 @@
         "quota": 375,
         "quota-incr": 50,
         "enemies": ["bat", "ghost", "octoplush"],
-        "enemies-prob": [ [.9, .1, 0], [.5, .4, .1], [.1, .35, .55]]
+        "enemies-prob": [
+            [0.9, 0.1, 0.0],
+            [0.5, 0.4, 0.1],
+            [0.1, 0.35, 0.55]
+        ],
+        "zone-probs": [0.33, 0.33, 0.33]
     },
     "hard": {
         "map-size": 100,
@@ -35,6 +33,11 @@
         "quota": 450,
         "quota-incr": 50,
         "enemies": ["bat", "ghost", "octoplush"],
-        "enemies-prob": [ [.8, .15, .05], [.45, .35, .2], [.1, .4, .5]]
+        "enemies-prob": [
+            [0.8, 0.15, 0.05],
+            [0.45, 0.35, 0.2],
+            [0.1, 0.4, 0.5]
+        ],
+        "zone-probs": [0.33, 0.33, 0.33]
     }
 }
