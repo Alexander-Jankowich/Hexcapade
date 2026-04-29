@@ -1590,8 +1590,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         //We need a death message
         //We need to set ATTACKRESET and decrement some sort of timer
         contact -> SetEnabled(true);
-        if(player -> getHealth() < 0){
-
+        if(player -> getHealth() <= 0 || enemy->isDead()){
             return;
         }
 

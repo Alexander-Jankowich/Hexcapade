@@ -21,7 +21,6 @@
 #include "../Controllers/GLInputController.h"
 #include "../Controllers/NetworkController.h"
 #include "../Controllers/RoomController.h"
-#include "../Controllers/CollisionController.h"
 #include "../Controllers/Pathfinder.h"
 
 #include "../Models/GameplayConfig.h"
@@ -91,8 +90,6 @@ protected:
     float lastEnemySpawn;
 
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
-    CollisionController _collisions;
-
     Pathfinder _pathfinder;
 
     std::vector<std::pair<ItemObstacle*, std::shared_ptr<cugl::scene2::SceneNode>>> _itemNodes;
