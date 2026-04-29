@@ -1661,6 +1661,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     else if (spell && item){
         contact -> SetEnabled(false);
+    }else{
+        contact -> SetEnabled(false);
     }
     
 }

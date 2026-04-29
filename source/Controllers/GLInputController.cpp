@@ -815,6 +815,7 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     _screenToWorld = screenToWorld;
     recognizer = cugl::PGestureRecognizer::alloc();
     recognizer -> addGesture("Death", DEATH_GESTURE);
+    recognizer -> addGesture("Death", DEATH_GESTURE_1);
     recognizer -> addGesture("Earth", X_GESTURE);
     recognizer -> addGesture("Earth", X_GESTURE_1);
     recognizer -> addGesture("Fire", ARROW_GESTURE);
