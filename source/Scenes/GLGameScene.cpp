@@ -1050,6 +1050,7 @@ void GameScene::render()
             if (name.empty()) continue;
 
             auto label = TextLayout::allocWithText(name, _font);
+
             label->layout();
 
             cugl::Vec2 worldPos = p->getPosition() * PHYSICS_SCALE;
@@ -1063,14 +1064,14 @@ void GameScene::render()
             float bgX = worldPos.x - bgW * 0.5f;
             float bgY = worldPos.y + nameOffsetY;
 
-            if (nameBgTex) {
-                _batch->setColor(Color4::WHITE);
-                _batch->draw(nameBgTex, Rect(bgX, bgY, bgW, bgH));
-            }
+//            if (nameBgTex) {
+//                _batch->setColor(Color4::WHITE);
+//                _batch->draw(nameBgTex, Rect(bgX, bgY, bgW, bgH));
+//            }
 
             Affine2 t;
             t.translate(worldPos.x - labelW * 0.5f, worldPos.y + nameOffsetY);
-            _batch->setColor(Color4(213, 233, 239, 255));
+            _batch->setColor(Color4::BLACK);
             _batch->drawText(label, t);
         }
     }
