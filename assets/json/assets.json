@@ -50,6 +50,9 @@
     "health_bar": {
       "file": "textures/health_bg.png"
     },
+    "name_bg": {
+      "file": "textures/name_bg.png"
+    },
     "left": {
       "file": "textures/left_arrow.png"
     },

@@ -968,6 +968,7 @@ void GameScene::render()
     drawDepositZone();
 
     if (_font && _playerFact) {
+        auto nameBgTex = _assets->get<graphics::Texture>("name_bg");
         for (const auto& p : _playerFact->current) {
             if (!p || p->isRemoved()) continue;
             const std::string& name = _networkCtrl->getPlayerName(p->getPID());
@@ -977,13 +978,24 @@ void GameScene::render()
             label->layout();
 
             cugl::Vec2 worldPos = p->getPosition() * PHYSICS_SCALE;
-            float nameOffsetY = 50.0f; // tune as needed
+            float nameOffsetY = 30.0f;
+            float labelW = label->getBounds().size.width;
+            float labelH = label->getBounds().size.height;
+            float padX = 10.0f;
+     
+            float bgH = 20.0f;
+            float bgW = labelW + padX * 2.0f;
+            float bgX = worldPos.x - bgW * 0.5f;
+            float bgY = worldPos.y + nameOffsetY;
+
+            if (nameBgTex) {
+                _batch->setColor(Color4::WHITE);
+                _batch->draw(nameBgTex, Rect(bgX, bgY, bgW, bgH));
+            }
 
             Affine2 t;
-            t.translate(worldPos.x - label->getBounds().size.width * 0.5f,
-                worldPos.y + nameOffsetY);
-
-            _batch->setColor(Color4::WHITE);
+            t.translate(worldPos.x - labelW * 0.5f, worldPos.y + nameOffsetY);
+            _batch->setColor(Color4(213, 233, 239, 255));
             _batch->drawText(label, t);
         }
     }
