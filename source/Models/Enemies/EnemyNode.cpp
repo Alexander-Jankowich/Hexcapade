@@ -59,11 +59,7 @@ void EnemyNode::setVelocity(Vec2 value) {
     }
 }
 
-void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s, int health) {
-    if (health <= 0) {
-        nextAnimation = AnimationType::DEAD;
-        return;
-    }
+void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s) {
 
     //switch (s) {
     //case EnemyObstacle::EnemyState::IDLE:
@@ -76,7 +72,10 @@ void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s, int health) {
     //    nextAnimation = AnimationType::ATTACK;
     //    break;
     //}
-    if (s == EnemyObstacle::EnemyState::ATTACK_RESET) {
+    if (s == EnemyObstacle::EnemyState::DEATH) {
+        nextAnimation = AnimationType::DEAD;
+    }
+    else if (s == EnemyObstacle::EnemyState::ATTACK_RESET) {
         nextAnimation = AnimationType::ATTACK;
     }
     else if (_velocity.length() < 0.05) {

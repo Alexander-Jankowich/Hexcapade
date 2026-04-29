@@ -1,9 +1,9 @@
 //
-//  GLApp.h
+//  App.h
 //  Hexcapade
 //
-#ifndef __GL_APP_H__
-#define __GL_APP_H__
+#ifndef __APP_H__
+#define __APP_H__
 
 #include <cugl/cugl.h>
 #include "Scenes/GameScene.h"
@@ -73,4 +73,4 @@ private:
 
 };
 
-#endif /* __GL_APP_H__ */
+#endif /* __APP_H__ */

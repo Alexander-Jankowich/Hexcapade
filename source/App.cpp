@@ -1,8 +1,8 @@
 //
-//  GLApp.cpp
+// App.cpp
 // Root Class for the game contains all scene switching logic and updating of core gameplay loops
-//Authors: Serena Duncan, Alexander Jankowich
-#include "GLApp.h"
+// Author: Serena Duncan
+#include "App.h"
 
 
 using namespace cugl;

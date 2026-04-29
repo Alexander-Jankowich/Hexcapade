@@ -1,6 +1,6 @@
 //
-//  GameScene.cpp
-//  This is the primary class file for running the game.  It contains all core gameplay loop logic as well as
+// GameScene.cpp
+// This is the primary class file for running the game.  It contains all core gameplay loop logic as well as
 // calls to the network controller for processing networked events. 
 // Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
 #include <cugl/cugl.h>
@@ -1580,6 +1580,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             if(player -> getShieldCount() == 0){
                 player -> setShield(false);
             }
+            spell -> setRemove();
+            return;
+            
         }
         if(spell -> TYPE == SpellType::DEATH){
             player -> setHealth(0);
@@ -1598,13 +1601,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         //We need a death message
         //We need to set ATTACKRESET and decrement some sort of timer
         contact -> SetEnabled(true);
-        if(player -> hasShield()){
-            player -> setShieldCount(player -> getShieldCount() - 1);
-            if(player -> getShieldCount() == 0){
-                player -> setShield(false);
-            }
-        }
-        if(player -> getHealth() < 0){
+        
+        if(player -> getHealth() <= 0 || enemy->isDead()){
+
             return;
         }
 
@@ -1620,6 +1619,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if(!enemy -> canAttack()) return;
         enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
         enemy->setAttackCounter(90);
+        if(player -> hasShield()){
+            player -> setShieldCount(player -> getShieldCount() - 1);
+            if(player -> getShieldCount() == 0){
+                player -> setShield(false);
+            }
+            return;
+        }
         
         if(player -> getPID() != _player -> getPID()) return;
         //CULog("enemy and player");

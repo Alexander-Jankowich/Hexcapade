@@ -94,7 +94,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
     default:
-        CULog("Spell not implemented!!!! %d", (int) type);
+        CULog("Spell not implemented!!!! SpellFactory 93, type = %d", (int) type);
     }
 
     float radius = image->getHeight() / PHYSICS_SCALE;
