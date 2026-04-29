@@ -184,6 +184,27 @@
             "left_backward_idle": 52,
             "idle_frames": 8
         },
+        "slow-bat": {
+            "health": 3,
+            "speed": 3.0,
+            "range": 8,
+            "attack_range": 5,
+            "texture": "bat",
+            "columns": 8,
+            "rows": 8,
+            
+            "right_forward_walk": 0,
+            "left_forward_walk": 8,
+            "right_backward_walk": 16,
+            "left_backward_walk": 24,
+            "walk_frames": 8,
+
+            "right_forward_idle": 32,
+            "left_forward_idle": 40,
+            "right_backward_idle": 48,
+            "left_backward_idle": 52,
+            "idle_frames": 8
+        },
         "octoplush": {
             "health": 12,
             "speed": 2.0,
@@ -204,7 +225,29 @@
             "right_backward_idle": 16,
             "left_backward_idle": 24,
             "idle_frames": 8
+        },
+        "mini-octoplush": {
+            "health": 5,
+            "speed": 2.0,
+            "range": 4.5,
+            "attack_range" : 0,
+            "texture": "octoplush",
+            "columns": 8,
+            "rows": 4,
+
+            "right_forward_walk": 0,
+            "left_forward_walk": 8,
+            "right_backward_walk": 16,
+            "left_backward_walk": 24,
+            "walk_frames": 8,
+
+            "right_forward_idle": 0,
+            "left_forward_idle": 8,
+            "right_backward_idle": 16,
+            "left_backward_idle": 24,
+            "idle_frames": 8
         }
+        
     },
     "artifacts": {
 

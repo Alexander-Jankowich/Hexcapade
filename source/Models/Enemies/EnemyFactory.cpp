@@ -25,6 +25,9 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     case EnemyType::BAT:
         vals = _enemyConsts->get("bat");
         break;
+    case EnemyType::SLOWBAT:
+        vals = _enemyConsts->get("slow-bat");
+        break;
     case EnemyType::OCTO:
         vals = _enemyConsts->get("octoplush");
         break;

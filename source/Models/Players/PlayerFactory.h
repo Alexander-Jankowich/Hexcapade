@@ -10,6 +10,7 @@
 
 #include <cugl/cugl.h>
 #include "PlayerNode.h"
+#define PHYSICS_SCALE 50
 
 using namespace cugl;
 using namespace std;
@@ -87,6 +88,12 @@ public:
     
     void addCurrent(shared_ptr<PlayerObstacle> p){
         current.emplace(p);
+    }
+    
+    std::vector<Vec2> getPlayerPositions() {
+        std::vector<Vec2> res;
+        for (auto p : current) res.push_back(p->getPosition() / PHYSICS_SCALE);
+        return res;
     }
     
     

@@ -14,27 +14,23 @@ Map::Map() :
 _origin(Vec2::ZERO),
 _playerSpawn(Vec2::ZERO),
 _config() {
+    _config._mapSize = 70; // just in case
 }
 
 void Map::reset() {
-    for (int r = 0; r < MAP_HEIGHT; r++) {
-            for (int c = 0; c < MAP_WIDTH; c++) {
-                _mapGrid[r][c] = 0;
-            }
-        }
     _enemySpawnPoints.clear();
     _itemSpawnPoints.clear();
     lw_node->removeAllChildren();
 }
 
-std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
+std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
     _extruder = SimpleExtruder();
     // ensure everything cleared before generation
-    for (int r = 0; r < MAP_HEIGHT; r++) {
-            for (int c = 0; c < MAP_WIDTH; c++) {
-                _mapGrid[r][c] = 0;
-            }
-        }
+    for (int r = 0; r < _config._mapSize; r++) {
+        vector<int> v;
+        v.assign(_config._mapSize, 0);
+        _mapGrid.push_back(v);
+    }
     _enemySpawnPoints.clear();
     _itemSpawnPoints.clear();
     
@@ -44,6 +40,10 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
     std::vector<MapDoor> doors;
     _rng.initWithSeed(seed);
     _assets = assets;
+    
+    // initialize level config
+    loadLevelConfig(level, _assets->get<JsonValue>("level-config"));
+
     
     //get minimum room width/height
     int minRoomW = INT_MAX;
@@ -72,7 +72,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
     auto tiledData = _assets->get<LevelLoader>(room);
     
     // room top left corner ON THE MAP GRID at (width/2 - roomW /2, height/2 - roomH/2) since up is 0
-    auto tlcorner = Vec2(MAP_WIDTH/2 - tiledData->getWidth()/2, MAP_HEIGHT/2 - tiledData->getHeight()/2);
+    auto tlcorner = Vec2(_config._mapSize/2 - tiledData->getWidth()/2, _config._mapSize/2 - tiledData->getHeight()/2);
     CULog("tlcorner first room is x: %f y: %f", tlcorner.x, tlcorner.y);
     
     addRoomSceneNodes(tiledData, tlcorner, node, lw_node);
@@ -80,12 +80,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
     
     // get playerSpawn: (mapwidth/2 - roomw /2 + playerSpawn.x, mapheight/2 - roomH/2 + (roomH - playerspawn.y)
     // Corrected player spawn calculation
-    auto pl_mg = cugl::Vec2(MAP_WIDTH/2 - tiledData->getWidth() / 2 + tiledData->getPlayerSpawn().x,
-                            MAP_HEIGHT / 2 - tiledData->getHeight() / 2 + tiledData->getPlayerSpawn().y);
+    auto pl_mg = cugl::Vec2(_config._mapSize/2 - tiledData->getWidth() / 2 + tiledData->getPlayerSpawn().x,
+                            _config._mapSize / 2 - tiledData->getHeight() / 2 + tiledData->getPlayerSpawn().y);
     
     // Just map grid units to world pixels.
     // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
-    _playerSpawn = Vec2(pl_mg.x * TILE_SIZE, (MAP_HEIGHT - pl_mg.y) * TILE_SIZE);
+    _playerSpawn = Vec2(pl_mg.x * TILE_SIZE, (_config._mapSize - pl_mg.y) * TILE_SIZE);
     // add all doors in room to doors queue
     for (auto d : tiledData->getDoors()) {
         // pos is the TOP LEFT corner of door
@@ -122,20 +122,20 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     CULog("walling off - N");
                     for (int i = xPos; i < xPos + 5; i++) {
                         // wall 1
-                        addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(i, MAP_HEIGHT - yPos + 1), node);
+                        addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(i, _config._mapSize - yPos + 1), node);
                         if (yPos-1 >= 0) _mapGrid[yPos-1][i] = 1;
                         // wall 2
-                        addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(i, MAP_HEIGHT - yPos), node);
+                        addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(i, _config._mapSize - yPos), node);
                         if (yPos >= 0)_mapGrid[yPos][i] = 1;
                         // wall 3
-                        addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(i, MAP_HEIGHT - yPos - 1), node);
+                        addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(i, _config._mapSize - yPos - 1), node);
                         if (yPos + 1 >= 0)_mapGrid[yPos+1][i] = 1;
                         
                     }
                     CULog("done walling off - N");
                     std::vector<Vec2> north_points = {
-                        Vec2((xPos - 2) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos) * TILE_SIZE / PHYSICS_SCALE),
-                        Vec2((xPos + 8) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos) * TILE_SIZE / PHYSICS_SCALE)
+                        Vec2((xPos - 2) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((xPos + 8) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos) * TILE_SIZE / PHYSICS_SCALE)
                     };
                     _extruder.set(north_points,false);
                     _extruder.calculate(0.05f);
@@ -146,26 +146,26 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 CULog("adding halls - N");
                 for (int y= yPos; y >= yPos - std::get<1>(res); y--) {
                     // add west wall
-                    addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(xPos - 1, MAP_HEIGHT - y), node);
+                    addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(xPos - 1, _config._mapSize - y), node);
                     _mapGrid[y][xPos -1] = 1;
                     // add 5 floor tiles
                     for (int x= xPos; x < xPos +5; x++){
-                        addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - y), node);
+                        addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, _config._mapSize - y), node);
                         _mapGrid[y][x] = 1;
                     }
                     // add east wall
-                    addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(xPos +5, MAP_HEIGHT - y), node);
+                    addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(xPos +5, _config._mapSize - y), node);
                     _mapGrid[y][xPos +5] = 1;
                     
                 }
                 int height = std::get<1>(res)+2; // bc <=
                 std::vector<Vec2> west_points = {
-                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 4) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - height + 3) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 4) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - height + 3) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 std::vector<Vec2> east_points = {
-                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 4) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - height + 3) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 4) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - height + 3) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(west_points,false);
                 _extruder.calculate(0.05f);
@@ -189,20 +189,20 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     CULog("walling off - S");
                     for (int i = xPos; i < xPos + 5; i++) {
                         // wall 1
-                        addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(i, MAP_HEIGHT - yPos + 2), lw_node);
+                        addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(i, _config._mapSize - yPos + 2), lw_node);
                         _mapGrid[yPos-2][i] = 1;
                         // wall 2
-                        addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(i, MAP_HEIGHT - yPos + 1), lw_node);
+                        addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(i, _config._mapSize - yPos + 1), lw_node);
                         _mapGrid[yPos-1][i] = 1;
                         // wall 3
-                        addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(i, MAP_HEIGHT - yPos), lw_node);
+                        addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(i, _config._mapSize - yPos), lw_node);
                         _mapGrid[yPos][i] = 1;
                     }
                     CULog("done walling off - S");
                     
                     std::vector<Vec2> north_points = {
-                        Vec2((xPos - 2) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 1) * TILE_SIZE / PHYSICS_SCALE),
-                        Vec2((xPos + 8) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 1) * TILE_SIZE / PHYSICS_SCALE)
+                        Vec2((xPos - 2) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 1) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((xPos + 8) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 1) * TILE_SIZE / PHYSICS_SCALE)
                     };
                     _extruder.set(north_points,false);
                     _extruder.calculate(0.05f);
@@ -214,15 +214,15 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 
                 for (int y=yPos; y < yPos + std::get<1>(res); y++) {
                     // add west wall
-                    addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(xPos - 1, MAP_HEIGHT - y), node);
+                    addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(xPos - 1, _config._mapSize - y), node);
                     _mapGrid[y][xPos - 1] = 1;
                     // add 5 floor tiles
                     for (int x=xPos; x < xPos +5; x++){
-                        addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - y), node);
+                        addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, _config._mapSize - y), node);
                         _mapGrid[y][x] = 1;
                     }
                     // add east wall
-                    addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(xPos +5, MAP_HEIGHT - y), node);
+                    addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(xPos +5, _config._mapSize - y), node);
                     _mapGrid[y][xPos+5] = 1;
                     
                 }
@@ -231,12 +231,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 // hallway colliders
                 int height = std::get<1>(res)+1; // bc <=
                 std::vector<Vec2> west_points = {
-                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 1) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - height) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 1) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - height) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 std::vector<Vec2> east_points = {
-                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 1) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - height) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 1) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - height) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(west_points,false);
                 _extruder.calculate(0.05f);
@@ -259,13 +259,13 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     CULog("walling off - E");
                     
                     for (int i = yPos - 2; i < yPos + 4; i++) {
-                        addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(xPos+1, MAP_HEIGHT - i), node);
-                        if(xPos < MAP_WIDTH - 1) _mapGrid[i][xPos + 1] = 1;
+                        addSingleNode(tiledData->getTileForGid(EAST_GID), Vec2(xPos+1, _config._mapSize - i), node);
+                        if(xPos < _config._mapSize - 1) _mapGrid[i][xPos + 1] = 1;
                     }
                     // add collider
                     std::vector<Vec2> north_points = {
-                        Vec2((xPos + 0.2) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 2 ) * TILE_SIZE / PHYSICS_SCALE),
-                        Vec2((xPos + 0.2) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 6) * TILE_SIZE / PHYSICS_SCALE)
+                        Vec2((xPos + 0.2) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 2 ) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((xPos + 0.2) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 6) * TILE_SIZE / PHYSICS_SCALE)
                     };
                     _extruder.set(north_points,false);
                     _extruder.calculate(0.05f);
@@ -278,10 +278,10 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 
                 for (int x=xPos; x <= xPos + std::get<1>(res); x++) {
                     // add top walls
-                    addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(x, MAP_HEIGHT - yPos + 3), node);
-                    addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(x, MAP_HEIGHT - yPos + 2), node);
-                    addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - yPos + 1), node);
-                    addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(x, MAP_HEIGHT - yPos + 1), node);
+                    addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(x, _config._mapSize - yPos + 3), node);
+                    addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(x, _config._mapSize - yPos + 2), node);
+                    addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, _config._mapSize - yPos + 1), node);
+                    addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(x, _config._mapSize - yPos + 1), node);
 
                     _mapGrid[yPos-3][x] = 1;
                     _mapGrid[yPos-2][x] = 1;
@@ -289,13 +289,13 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     
                     // add 5 floor tiles
                     for (int y=yPos; y < yPos +5; y++){
-                        addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - y), node);
+                        addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, _config._mapSize - y), node);
                         _mapGrid[y][x] = 1;
                     }
                     // add bottom walls
-                    addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(x, MAP_HEIGHT - yPos - 3), lw_node);
-                    addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, MAP_HEIGHT - yPos - 4), lw_node);
-                    addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, MAP_HEIGHT - yPos - 5), lw_node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(x, _config._mapSize - yPos - 3), lw_node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, _config._mapSize - yPos - 4), lw_node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, _config._mapSize - yPos - 5), lw_node);
                     _mapGrid[yPos+5][x] = 1;
                     _mapGrid[yPos+4][x] = 1;
                     _mapGrid[yPos+3][x] = 1;
@@ -303,16 +303,16 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 to_skip = Door::Direction::WEST;
                 CULog("done adding halls - E");
                 std::vector<Vec2> north_points = {
-                    Vec2((xPos + 0.5) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos + std::get<1>(res) + 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos + 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos + std::get<1>(res) + 1) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(north_points,false);
                 _extruder.calculate(0.05f);
                 auto np = _extruder.getPolygon();
                 addWallObstacle(np, world);
                 std::vector<Vec2> south_points = {
-                    Vec2((xPos ) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos + 3) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos ) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos + 3) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(south_points,false);
                 _extruder.calculate(0.05f);
@@ -329,12 +329,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                     CULog("walling off - W");
                     
                     for (int i = yPos - 2; i < yPos + 4; i++) {
-                        addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(xPos-1, MAP_HEIGHT - i), node);
+                        addSingleNode(tiledData->getTileForGid(WEST_GID), Vec2(xPos-1, _config._mapSize - i), node);
                         if(xPos > 0) _mapGrid[i][xPos -1] = 1;
                     }
                     std::vector<Vec2> north_points = {
-                        Vec2((xPos) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 2 ) * TILE_SIZE / PHYSICS_SCALE),
-                        Vec2((xPos) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 8) * TILE_SIZE / PHYSICS_SCALE)
+                        Vec2((xPos) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 2 ) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((xPos) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 8) * TILE_SIZE / PHYSICS_SCALE)
                     };
                     _extruder.set(north_points,false);
                     _extruder.calculate(0.05f);
@@ -348,22 +348,22 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 for (int x=xPos; x >= xPos - std::get<1>(res); x--) {
                     CULog("adding hall at %d", x);
                     // add top walls
-                    addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(x, MAP_HEIGHT - yPos + 3), node);
-                    addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(x, MAP_HEIGHT - yPos + 2), node);
-                    addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - yPos + 1), node);
-                    addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(x, MAP_HEIGHT - yPos + 1), node);
+                    addSingleNode(tiledData->getTileForGid(NORTH_TOP_GID), Vec2(x, _config._mapSize - yPos + 3), node);
+                    addSingleNode(tiledData->getTileForGid(NORTH_MID_GID), Vec2(x, _config._mapSize - yPos + 2), node);
+                    addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, _config._mapSize - yPos + 1), node);
+                    addSingleNode(tiledData->getTileForGid(NORTH_LOW_GID), Vec2(x, _config._mapSize - yPos + 1), node);
                     _mapGrid[yPos-3][x] = 1;
                     _mapGrid[yPos-2][x] = 1;
                     _mapGrid[yPos-1][x] = 1;
                     // add 7 floor tiles (vis fix stuff)
                     for (int y=yPos; y < yPos + 5; y++){
-                        addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, MAP_HEIGHT - y), node);
+                        addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, _config._mapSize - y), node);
                         _mapGrid[y][x] = 1;
                     }
                     // add bottom walls
-                    addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(x, MAP_HEIGHT - yPos - 3), lw_node);
-                    addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, MAP_HEIGHT - yPos - 4), lw_node);
-                    addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, MAP_HEIGHT - yPos - 5), lw_node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(x, _config._mapSize - yPos - 3), lw_node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, _config._mapSize - yPos - 4), lw_node);
+                    addSingleNode(tiledData->getTileForGid(SOUTH_LOW_GID), Vec2(x, _config._mapSize - yPos - 5), lw_node);
                     _mapGrid[yPos+3][x] = 1;
                     _mapGrid[yPos+4][x] = 1;
                     _mapGrid[yPos+5][x] = 1;
@@ -371,16 +371,16 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                 to_skip = Door::Direction::EAST;
                 CULog("done adding halls - W");
                 std::vector<Vec2> north_points = {
-                    Vec2((xPos + 1) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos - std::get<1>(res) - 3) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos + 1) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos - std::get<1>(res) - 3) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(north_points,false);
                 _extruder.calculate(0.05f);
                 auto np = _extruder.getPolygon();
                 addWallObstacle(np, world);
                 std::vector<Vec2> south_points = {
-                    Vec2((xPos + 3) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos - std::get<1>(res)) * TILE_SIZE / PHYSICS_SCALE, (MAP_HEIGHT - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos + 3) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos - std::get<1>(res)) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 5.5) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(south_points,false);
                 _extruder.calculate(0.05f);
@@ -407,7 +407,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                                     std::get<2>(res).y + ip.y);
             // Just map grid units to world pixels.
             // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
-            _itemSpawnPoints.push_back(Vec2(ip_mg.x * TILE_SIZE, (MAP_HEIGHT - ip_mg.y) * TILE_SIZE));
+            _itemSpawnPoints.push_back(Vec2(ip_mg.x * TILE_SIZE, (_config._mapSize - ip_mg.y) * TILE_SIZE));
         }
         // add enemy spawns
         for (auto ep : std::get<0>(res)->getEnemSpawnPoints()) {
@@ -416,7 +416,13 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(const MapGenerationConfig
                                     std::get<2>(res).y + ep.y);
             // Just map grid units to world pixels.
             // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
-            _enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (MAP_HEIGHT - ep_mg.y) * TILE_SIZE));
+            _enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
+            
+            auto dist = pl_mg.distance(ep_mg);
+            
+            if (.1 * _config._mapSize < dist && dist < .4 * _config._mapSize) _z1enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
+            else if (dist < 7. * _config._mapSize) _z2enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
+            else _z3enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
         }
         // add colliders
         addRoomObstacles(std::get<0>(res), std::get<2>(res), world);
@@ -435,7 +441,7 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
                                     tlCorner.y + pt.y);
             Vec2 tpt = Vec2(
                 (pt_mg.x - 0.5f) * TILE_SIZE / PHYSICS_SCALE,
-                (MAP_HEIGHT - pt_mg.y) * TILE_SIZE / PHYSICS_SCALE
+                (_config._mapSize - pt_mg.y) * TILE_SIZE / PHYSICS_SCALE
             );
             translatedPoints.push_back(tpt);
         }
@@ -465,7 +471,7 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
                 int maskGid  = maskLayer[y][x];
                 int lwGid = lwallLayer[y][x];
                 // subtract y bc going top down
-                Vec2 pos = Vec2((tlCorner.x+x), (MAP_HEIGHT - tlCorner.y-y));
+                Vec2 pos = Vec2((tlCorner.x+x), (_config._mapSize - tlCorner.y-y));
                 //Size s = Size(tiledRmData->getTileW(), tiledRmData->getTileH());
                 //auto cell = Rect(pos, s);
                 // add tile layers in order, skip if gid zero
@@ -537,7 +543,7 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
                 const auto& mask = rmData->getMaskLayer();
                 for(int row=0; row<rmData->getHeight(); row++){
                     for(int col=0; col<rmData->getWidth(); col++){
-                        if(tlCornerX+col >= MAP_WIDTH || tlCornerX < 0 || tlCornerY+row>=MAP_HEIGHT || tlCornerY < 0) {
+                        if(tlCornerX+col >= _config._mapSize || tlCornerX < 0 || tlCornerY+row>=_config._mapSize || tlCornerY < 0) {
                             CULog("out of bounds");
                             overlap=true;
                             goto exit;
@@ -592,3 +598,91 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
         
     }
 
+void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
+    std::shared_ptr<JsonValue> data;
+    int incr = 0;
+    if (level < config->getInt("medium-start")) {
+        data = config->get("easy");
+        incr = level - 1;
+    } else if (level < config->getInt("hard-start")) {
+        data = config->get("medium");
+        incr = level - 4;
+    } else {
+        data = config->get("hard");
+        incr = level - 7;
+    }
+    
+    _config._mapSize = data->getInt("map-size") + data->getInt("map-size-incr") * incr;
+    
+    for (auto e : data->get("enemies")->asStringArray()) {
+        if (e == "octoplush") _config._enemyTypes.push_back(EnemyType::OCTO);
+        else if (e == "ghost") _config._enemyTypes.push_back(EnemyType::GHOST);
+        else if (e == "bat") _config._enemyTypes.push_back(EnemyType::BAT);
+        else if (e == "slow-bat") _config._enemyTypes.push_back(EnemyType::SLOWBAT);
+    }
+    
+    _config._zone1WeightsEn = data->get("enemies-probs")->get(0)->asFloatArray();
+    _config._zone2WeightsEn = data->get("enemies-probs")->get(1)->asFloatArray();
+    _config._zone3WeightsEn = data->get("enemies-probs")->get(2)->asFloatArray();
+    
+    _config._zone1EnemyProb = data->get("zone-probs")->asFloatArray()[0];
+    _config._zone2EnemyProb = data->get("zone-probs")->asFloatArray()[1];
+    _config._zone3EnemyProb = data->get("zone-probs")->asFloatArray()[2];
+
+    
+    // TODO: add parsing for item data
+}
+
+std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns(const std::vector<Vec2> playersPos) {
+    std::vector<std::pair<Vec2, EnemyType>> res;
+    // it is fine to use the random number generator here since we re-init for next round
+    bool z1 = _rng.getFloat() <= _config._zone1EnemyProb;
+    bool z2 = _rng.getFloat() <= _config._zone2EnemyProb;
+    bool z3 = _rng.getFloat() <= _config._zone3EnemyProb;
+    
+    if (z1 && _z1enemySpawnPoints.size()>0) {
+        CULog("zone 1 spawn");
+        auto spawn = chooseEnemySpawnPoint(_z1enemySpawnPoints, playersPos, _config._zone1WeightsEn);
+        res.push_back(spawn);
+    }
+    
+    if (z2 && _z2enemySpawnPoints.size()>0) {
+        CULog("zone 2 spawn");
+        auto spawn = chooseEnemySpawnPoint(_z2enemySpawnPoints, playersPos, _config._zone2WeightsEn);
+        res.push_back(spawn);
+    }
+    
+    if (z3 && _z3enemySpawnPoints.size()>0) {
+        CULog("zone 3 spawn");
+        auto spawn = chooseEnemySpawnPoint(_z3enemySpawnPoints, playersPos, _config._zone3WeightsEn);
+        res.push_back(spawn);
+    }
+    return res;
+}
+
+std::pair<Vec2, EnemyType> Map::chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates) {
+    // filter to valid points
+    vector<Vec2> validPts;
+    
+    for (auto p : zonePoints) {
+        bool valid = true;
+        for (auto pos : playersPos) {
+            if (p.distance(pos) < 10 * TILE_SIZE) { // since points are in tile coords
+                valid = false;
+                break;
+            }
+        }
+        if (valid) validPts.push_back(p);
+    }
+    auto idx = _rng.getOpenSint64(0, validPts.size());
+    
+    float enem = _rng.getFloat();
+
+    float acc = 0;
+    int enemIdx = -1;
+    while (acc < enem) {
+        enemIdx++;
+        acc += zoneRates[enemIdx];
+    }
+    return std::make_pair(validPts.at(idx), _config._enemyTypes[enemIdx]);
+}
