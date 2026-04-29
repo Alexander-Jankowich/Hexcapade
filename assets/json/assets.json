@@ -30,6 +30,9 @@
     "earth": {
       "file": "textures/earth_sheet.png"
     },
+    "shield_entity": {
+      "file": "textures/shield_sheet.png"
+    },
     "button": {
       "file": "textures/button.png"
     },

@@ -1573,6 +1573,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if(spell -> TYPE == SpellType::SHIELD){
             player -> setShield(true);
             player -> setShieldCount(3);
+            spell -> setRemove();
             return;
         }
         if(player -> hasShield()){
