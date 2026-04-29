@@ -642,6 +642,8 @@ void GameScene::preUpdate(float dt)
 
     if (_player->getHealth()==0) return; // if dead ignore updates
 
+    _player->updateTimers(dt);
+
     // Player movement
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
