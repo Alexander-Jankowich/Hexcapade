@@ -73,6 +73,7 @@ private:
     bool _frozen = false;
     bool _mud = false;
     bool _buff = false;
+    bool _shield = false;
     
     int getDirection() { return facingLeft * 2 + facingBack; }
 
@@ -165,7 +166,7 @@ public:
         _buff = false;
     }
     
-    void updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b);
+    void updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b, bool s);
 
     void setVelocity(cugl::Vec2 value);
 

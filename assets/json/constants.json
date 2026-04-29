@@ -139,6 +139,12 @@
             "damage": 0,
             "range": 5.0,
             "heal": false
+        },
+        "shield" : {
+            "speed": 5,
+            "damage": 0,
+            "range": 5.0,
+            "heal" : false
         }
     },
     "enemies": {

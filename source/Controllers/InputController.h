@@ -1,18 +1,11 @@
 //
-//  GLInputController.h
-//  Geometry Lab
-//
+//  InputController.h
+
 //  This class buffers in input from the devices and converts it into its
-//  semantic meaning. If your game had an option that allows the player to
-//  remap the control keys, you would store this information in this class.
-//  That way, the main game scene does not have to keep track of the current
-//  key mapping.
-//
-//  Author: Walker M. White
-//  Version: 1/29/24
-//
-#ifndef __GL_INPUT_CONTROLLER_H__
-#define __GL_INPUT_CONTROLLER_H__
+//  semantic meaning. Contains the logic for gesture processing, movement controls, and item pickup / drop logic
+// Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
+#ifndef __INPUT_CONTROLLER_H__
+#define __INPUT_CONTROLLER_H__
 #include "../Models/Spells/SpellFactory.h"
 
 /**
@@ -572,4 +565,4 @@ public:
     
 };
 
-#endif /* __GL_INPUT_CONTROLLER_H__ */
+#endif /* __INPUT_CONTROLLER_H__ */

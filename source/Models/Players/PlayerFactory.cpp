@@ -90,7 +90,7 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
         animations->resumeAnimation(node);
     }
        
-    node->updateAnimationState(obs->getHealth(), obs->isHurt(), obs->isCasting(), obs->isFrozen(), obs->getMud(), obs->getBuff());
+    node->updateAnimationState(obs->getHealth(), obs->isHurt(), obs->isCasting(), obs->isFrozen(), obs->getMud(), obs->getBuff(), obs -> hasShield());
 
     if (obs->getHealth() <= 0) {
         animations->resumeAnimation(node);

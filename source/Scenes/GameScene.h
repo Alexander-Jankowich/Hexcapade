@@ -1,24 +1,15 @@
+//  GameScene.h
 //
-//  GLGameScene.h
-//  Geometry Lab
-//
-//  This is the primary class file for running the game.  You should study this 
-//  file for ideas on how to structure your primary game scene. This class 
-//  illustrates how to use the geometry tools in CUGL, and how to combine
-//  them with the physics engine.
-//
-//  Note that this time we do not have any additional model classes.
-//
-//  Author: Walker White
-//  Version: 1/29/24
-//
-#ifndef __GL_GAME_SCENE_H__
-#define __GL_GAME_SCENE_H__
+//  This is the primary class file for running the game.  It contains all core gameplay loop logic as well as
+// calls to the network controller for processing networked events.
+// Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
+#ifndef __GAME_SCENE_H__
+#define __GAME_SCENE_H__
 #include <cugl/cugl.h>
 #include <vector>
 #include <cstddef>
 #include <iomanip>
-#include "../Controllers/GLInputController.h"
+#include "../Controllers/InputController.h"
 #include "../Controllers/NetworkController.h"
 #include "../Controllers/RoomController.h"
 #include "../Controllers/CollisionController.h"
@@ -361,4 +352,4 @@ private:
     void beforeSolve(b2Contact* contact, const b2Manifold* oldManifold);
 };
 
-#endif // !__GL_GAME_SCENE_H__
+#endif // !__GAME_SCENE_H__

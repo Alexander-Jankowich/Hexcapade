@@ -1,29 +1,20 @@
 //
-//  GLGameScene.cpp
-//  Geometry Lab
-//
-//  This is the primary class file for running the game.  You should study this
-//  file for ideas on how to structure your primary game scene. This class
-//  illustrates how to use the geometry tools in CUGL, and how to combine
-//  them with the physics engine.
-//
-//  Note that this time we do not have any additional model classes.
-//
-//  Author: Walker White
-//  Version: 1/29/24
-//
+//  GameScene.cpp
+//  This is the primary class file for running the game.  It contains all core gameplay loop logic as well as
+// calls to the network controller for processing networked events. 
+// Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
 #include <cugl/cugl.h>
 #include <cugl/core/math/polygon/CUPathFactory.h> // Bug that this is not in <cugl/cugl.h>
 #include <cmath>
 #include <iostream>
 #include <sstream>
-#include <random> //itemssss
+#include <random>
 #include <box2d/b2_draw.h>
 #include <box2d/b2_world.h>
 #include <box2d/b2_contact.h>
 #include <box2d/b2_collision.h>
 
-#include "GLGameScene.h"
+#include "GameScene.h"
 
 
 // Lock the screen size to fixed height regardless of aspect ratio
@@ -534,6 +525,7 @@ Vec2 GameScene::getHUDOffset() const {
  */
 void GameScene::preUpdate(float dt)
 {
+#pragma mark Input Updates and Player Initialiation
     if (!_player) {
         // Try to find our player now that replication may have run
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
@@ -573,7 +565,7 @@ void GameScene::preUpdate(float dt)
         _input.resolvedReset();
         return;
     }
-    
+#pragma mark Enemy Spawning Logic, Pathfinding, and Removal
     if (_networkCtrl->isHost()) {
         // spawn an enemy if host and need to spawn
         lastEnemySpawn += dt;
@@ -613,6 +605,7 @@ void GameScene::preUpdate(float dt)
     }
     auto spellRemove = _spellFact->update();
     for (auto spell : spellRemove) {
+        spell -> markRemoved(true);
         _networkCtrl->getPhysController()->removeSharedObstacle(spell);
         //CULog("Remove spell: %d", spell->isRemoved());
     }
@@ -653,6 +646,7 @@ void GameScene::preUpdate(float dt)
     }
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
+#pragma mark Inventory Card, Tutorial Card, and Camera Logic
     updateCameraFollow();
     Vec2 offset = getHUDOffset();
     _input.setCameraOffset(offset);
@@ -715,6 +709,7 @@ void GameScene::preUpdate(float dt)
     }
     _input.resolvedCardDismissTap();
 
+#pragma mark Deposit handling and Inventory card display
     bool depositRequested = false;
     int depositIndex = -1;
     _canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
@@ -812,7 +807,7 @@ void GameScene::preUpdate(float dt)
             }
         }
     }
-
+#pragma mark Spellcasting, Combos, Blocking, and Casting logic
     // Spellcasting
     if (_player->blocksSpellcasting()) {
         // restriction artifact needs to supress all spells (even the ones casted alr)
@@ -849,6 +844,7 @@ void GameScene::preUpdate(float dt)
             _player->resolveSpell();
         }
         else {
+            //Spell and Combo Logic
             SpellType t = SpellType::NONE;
             for (auto p : _playerFact->current) {
                 if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
@@ -872,11 +868,15 @@ void GameScene::preUpdate(float dt)
                                     SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
                         p -> resolveSpell();
                     
-                    }
-                    else if ((_player -> getSpell() == SpellType::FIREBALL && p -> getSpell() == SpellType::HEAL) || (_player->getSpell()  == SpellType::HEAL && p -> getSpell() == SpellType::FIREBALL)){
+                    }else if ((_player -> getSpell() == SpellType::FIREBALL && p -> getSpell() == SpellType::HEAL) || (_player->getSpell()  == SpellType::HEAL && p -> getSpell() == SpellType::FIREBALL)){
                         t = SpellType::BUFF;
                         _networkCtrl->pushOutEvent(
-                                            SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        p -> resolveSpell();
+                    }else if ((_player -> getSpell() == SpellType::EARTH && p -> getSpell() == SpellType::HEAL) || (_player->getSpell()  == SpellType::HEAL && p -> getSpell() == SpellType::EARTH)){
+                        t = SpellType::SHIELD;
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
                         p -> resolveSpell();
                     }
                     // Spell is combo-ed!
@@ -938,7 +938,7 @@ void GameScene::preUpdate(float dt)
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
         }
     }
-
+#pragma mark Pickup Logic
     if (_input.pressedPickup() && _currOverlappedItem >= 0) {
         CULog("trying to resolve pickup");
         auto item = _itemFact->getItem(_currOverlappedItem);
@@ -1570,19 +1570,27 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if(spell -> TYPE == SpellType::WATER){
             return;
         }
+        if(spell -> TYPE == SpellType::SHIELD){
+            player -> setShield(true);
+            player -> setShieldCount(3);
+            return;
+        }
+        if(player -> hasShield()){
+            player -> setShieldCount(player -> getShieldCount() - 1);
+            if(player -> getShieldCount() == 0){
+                player -> setShield(false);
+            }
+        }
         if(spell -> TYPE == SpellType::DEATH){
             player -> setHealth(0);
             return;
         }
-        player -> setHealth(player->getHealth() - 1);
         if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
             player->consumeProtectionArtifact();
             player->setHealth(2);
+            return;
         }
-        else {
-            player->setHealth(player->getHealth() - 1);
-        }
-
+        player -> setHealth(player->getHealth() - 1);
         spell->setRemove();
         
     }
@@ -1590,8 +1598,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         //We need a death message
         //We need to set ATTACKRESET and decrement some sort of timer
         contact -> SetEnabled(true);
+        if(player -> hasShield()){
+            player -> setShieldCount(player -> getShieldCount() - 1);
+            if(player -> getShieldCount() == 0){
+                player -> setShield(false);
+            }
+        }
         if(player -> getHealth() < 0){
-
             return;
         }
 

@@ -35,6 +35,9 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, SpellType t, st
     if(t == SpellType::BUFF){
         setColor(Color4::RED);
     }
+    if(t == SpellType::SHIELD){
+        setColor(Color4::YELLOW);
+    }
     
     _velocity = vel;
     _position = pos;

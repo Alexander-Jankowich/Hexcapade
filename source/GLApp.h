@@ -6,7 +6,7 @@
 #define __GL_APP_H__
 
 #include <cugl/cugl.h>
-#include "Scenes/GLGameScene.h"
+#include "Scenes/GameScene.h"
 #include "Scenes/EndScene.h"
 #include "Scenes/MenuScene.h"
 #include "Scenes/HostScene.h"

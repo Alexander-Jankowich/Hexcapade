@@ -87,6 +87,10 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         values = _spellConsts->get("buff");
         image = _assets->get<graphics::Texture>("heal");
         break;
+    case SpellType::SHIELD:
+        values = _spellConsts->get("shield");
+        image = _assets->get<graphics::Texture>("heal");
+        break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
     default:

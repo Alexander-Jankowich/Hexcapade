@@ -59,10 +59,11 @@ void PlayerNode::setVelocity(cugl::Vec2 value) {
     }
 }
 
-void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b) {
+void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b, bool s) {
     _frozen = f;
     _mud = m;
     _buff = b;
+    _shield = s;
 
     // Just get direction
     if (_frozen) {
@@ -75,7 +76,9 @@ void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool 
         CULog("coloring red");  
         setColor(Color4::RED);
     }
-    else {
+    else if (_shield){
+        setColor(Color4::YELLOW);
+    }else{
         setColor(Color4::WHITE);
     }
 

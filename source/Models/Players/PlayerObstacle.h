@@ -71,6 +71,10 @@ protected:
     int _buffTimer = 0;
 
     bool _hurt = false;
+    
+    bool _shield = false;
+    
+    int _shieldCount = 0;
 
 public:
     PlayerObstacle(Vec2 pos, string pid, cugl::Size s);
@@ -101,6 +105,11 @@ public:
     void setFrozen(bool f) { _frozen = f; }
     bool isFrozen() { return _frozen; }
     void setFrozeTimer(int i) {_frozenTimer = i;}
+    
+    void setShield(bool s) {_shield = s; }
+    bool hasShield() { return _shield; }
+    void setShieldCount(int c) { _shieldCount = c; }
+    int getShieldCount() { return _shieldCount; }
 
     bool getBuff() {return _buff;}
     void setBuff(bool b) {_buff = b;}

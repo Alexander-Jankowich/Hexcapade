@@ -1,18 +1,7 @@
 //
 //  GLApp.cpp
-//  Geometry Lab
-//
-//  This is the root class for your game. You need to use CU_ROOTCLASS in your
-//  .cpp file to register this as the root with CUGL. Otherwise, it will not
-//  know where to start. All root classes are subclasses of Application.
-//
-//  With that said, root classes often do not do all that much stuff. They
-//  often delegate their work to individual scenes and just handle the scene
-//  switching.
-//
-//  Author: Walker White
-//  Version: 1/20/26
-//
+// Root Class for the game contains all scene switching logic and updating of core gameplay loops
+//Authors: Serena Duncan, Alexander Jankowich
 #include "GLApp.h"
 
 
