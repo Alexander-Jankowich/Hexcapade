@@ -73,10 +73,15 @@ Vec2 Pathfinder::findVelocity(shared_ptr<physics2::distrib::NetWorld> world, con
 
     // Loop until finding a solution
     Vec2 direction = Vec2(targ.y - pos.y, pos.x - targ.x).getNormalization();
+    int stop = 0;
     while (performRaycastCheck(world, pos + direction * radius, finalTarg + direction * radius, radius) ||
         performRaycastCheck(world, pos - direction * radius, finalTarg - direction * radius, radius)) {
+        stop += 1;
         direction = Vec2(targ.y - pos.y, pos.x - targ.x).getNormalization();
-        //CULog("in loop! from %s to %s", pos.toString().c_str(), targ.toString().c_str());
+        CULog("in loop! from %s to %s", pos.toString().c_str(), targ.toString().c_str());
+        if(stop > 100){
+            break;
+        }
     }
 
     return finalTarg - pos;
@@ -103,11 +108,11 @@ bool Pathfinder::performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> wor
         float leftFar = 0, rightFar = 0;
         Vec2 leftPoint, rightPoint;
 
-        auto exterior = wall->getPolygon().exterior();
+        //auto exterior = wall->getPolygon().exterior();
 
         // Loop through all points
-        for (const auto i : exterior) {
-            const auto point = wall->getPolygon().at(i);
+        for (const auto& point : wall->getPolygon().getVertices()) {
+            //const auto point = wall->getPolygon().at(i);
 
             // Find distance from line
             float len = fabs((targ.y - pos.y) * point.x - (targ.x - pos.x) * point.y + targ.y * pos.x - targ.x * pos.y) /
@@ -151,8 +156,7 @@ bool Pathfinder::performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> wor
 }
 
 
-void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact,
-        shared_ptr<physics2::distrib::NetWorld> world) {
+void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact, shared_ptr<SpellFactory> spellFact,std::shared_ptr<NetworkController> networkCtrl,Uint32 spellFactId, shared_ptr<physics2::distrib::NetWorld> world) {
 
     for (auto en : enemyFact->current) {
         if (en->isFroze() || en->getWaterPushTimer() > 0) {
@@ -167,8 +171,24 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
                 getValidTargets(en->getPosition(), en->getRange(), playerFact));
             break;
         case EnemyType::BAT:
+            //if closest player in attack_range shoot spell
             targ = getClosestPlayer(en->getPosition(),
                 getVisiblePlayers(world, en->getPosition(), en->getRange(), playerFact->current));
+            if(targ.distance(en->getPosition()) <= en -> getAttackRange()){
+                Vec2 player_pos = targ;
+                targ = en->getPosition();
+                Vec2 angle = player_pos - targ;
+                if(en -> getAttackTimer() == 0){
+                    auto params = spellFact->serializeParams((en -> getPosition()), angle, SpellType::FIREBALL, "bat");
+                    auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
+                    networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                    en -> setAttackTimer(240);
+                }else{
+                    en -> setAttackTimer(en -> getAttackTimer() - 1);
+                }
+                
+                
+            }
             break;
         case EnemyType::OCTO:
             targ = getClosestPlayer(en->getPosition(),

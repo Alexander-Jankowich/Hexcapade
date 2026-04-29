@@ -93,11 +93,6 @@ std::tuple<int,int> NetworkController::customEvents(){
             for (auto& p : _playerFactory->current) {
                 if (p->getPID() == sse->getPID()) {
                     p->setSpell(sse->getSpell());
-                    if(sse->getSpell() == SpellType::NONE){
-                        p->setAniState(PlayerObstacle::AnimationState::IDLE);
-                    }else{
-                        p->setAniState(PlayerObstacle::AnimationState::CASTING);
-                    }
                     break;
                 }
             }

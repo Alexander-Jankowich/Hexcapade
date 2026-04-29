@@ -36,6 +36,8 @@
 
 #define ITEM_PICKUP_RADIUS 2f
 
+// Uncomment for testing, allows players to use all spells regardless of what books they have in their inventory
+#define ENABLE_ALL_SPELLS
 
 using namespace cugl;
 using namespace std;
@@ -92,7 +94,34 @@ std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entrie
     return item.itemType;
 }
 // Naming standard - Use this.
+
+// Artifacts need renaming - galiba
 std::string getInventoryCardTextureKey(const std::string& itemType) {
+    if (itemType == "artifact_heavy" || itemType == "gem_blue") {
+        return "heavyTreasure_info";
+    }
+    if (itemType == "artifact_protection" || itemType == "gem_brown") {
+        return "zombieTotem_info";
+    }
+    if (itemType == "artifact_gold" || itemType == "artifact_gold_real" ||
+        itemType == "artifact_gold_fake" || itemType == "gem_gold") {
+        return "foolsGold_info";
+    }
+    if (itemType == "artifact_boost" || itemType == "artifact_gem_boost" ||
+        itemType == "gem_neon") {
+        return "mysticalBrooch_info";
+    }
+    if (itemType == "artifact_bomb" || itemType == "gem_pink") {
+        return "explodingPotion_info";
+    }
+    if (itemType == "artifact_reduce" || itemType == "artifact_gem_reduce" ||
+        itemType == "artifact_gem") {
+        return "antiMagic_info";
+    }
+    if (itemType == "artifact_scroll") {
+        return "cursedScroll_info";
+    }
+
     static const std::string prefix = "spellbook_";
     static const std::string suffix = "_spellbook";
     std::string cardBase;
@@ -158,7 +187,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
 
     auto orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera());
     if (orthographicCamera) {
-        orthographicCamera->setZoom(std::max(_cameraZoom, 0.02f));
+        orthographicCamera->setZoom(std::max(1.3f, 0.02f));
         orthographicCamera->update();
     }
 
@@ -244,6 +273,7 @@ void GameScene::dispose()
 {
     // NOTHING TO DO THIS TIME
     hideInventoryCard();
+    hideTutorial();
     _inputDisplay->dispose();
     _map = nullptr;
     _assets->dispose();
@@ -287,12 +317,11 @@ void GameScene::reset()
     _itemNodes.clear();
     _inventoryValue = 0;
     _canDeposit = false;
-//    _dragInventoryIndex = -1;
-//    _dragInventoryPos = Vec2::ZERO;
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
     _timer = ROUND_TIMER;
     hideInventoryCard();
+    hideTutorial();
     Scene::reset();
 }
 
@@ -341,6 +370,31 @@ void GameScene::hideInventoryCard() {
         removeChild(_inventoryCardNode);
         _inventoryCardNode = nullptr;
     }
+}
+
+void GameScene::showTutorialPage(int page) {
+    hideTutorial();
+    hideInventoryCard();
+
+    const std::string textureKey = (page == 2) ? "tutorial_2" : "tutorial_1";
+    auto tutorialTex = _assets->get<graphics::Texture>(textureKey);
+    _tutorialPage = page;
+    _tutorialNode = scene2::PolygonNode::allocWithTexture(tutorialTex);
+    _tutorialNode->setAnchor(Vec2::ANCHOR_CENTER);
+    float zoom = getActiveCameraZoom();
+    Vec2 offset = getHUDOffset();
+    _tutorialNode->setScale(1.0f / zoom);
+    _tutorialNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
+                                    offset.y + this->getSize().height * 0.5f / zoom));
+    addChild(_tutorialNode);
+}
+
+void GameScene::hideTutorial() {
+    if (_tutorialNode) {
+        removeChild(_tutorialNode);
+        _tutorialNode = nullptr;
+    }
+    _tutorialPage = 0;
 }
 
 void GameScene::loadGameplayConfig() {
@@ -548,7 +602,7 @@ void GameScene::preUpdate(float dt)
         }
 
         // Update enemy movement
-        _pathfinder.updateEnemies(_enemyFact, _playerFact, _world);
+        _pathfinder.updateEnemies(_enemyFact, _playerFact,_spellFact, _networkCtrl, _spellFactId, _world);
         
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
@@ -558,12 +612,13 @@ void GameScene::preUpdate(float dt)
         }
 
         // Remove spells that have gone out of range
-        auto spellRemove = _spellFact->update();
-        for (auto spell : spellRemove) {
-            _networkCtrl->getPhysController()->removeSharedObstacle(spell);
-            //CULog("Remove spell: %d", spell->isRemoved());
-        }
         
+        
+    }
+    auto spellRemove = _spellFact->update();
+    for (auto spell : spellRemove) {
+        _networkCtrl->getPhysController()->removeSharedObstacle(spell);
+        //CULog("Remove spell: %d", spell->isRemoved());
     }
     //for (auto en : _enemyFact -> current){
     //    // If attack is on cooldown, wait
@@ -590,33 +645,13 @@ void GameScene::preUpdate(float dt)
     // Player movement
     cugl::Vec2 input = _input.getMove();
     cugl::Vec2 velocity = input * _player->getSpeed();
-//
-//    if (_map) {
-//        // Using from original Map code, might change depending on new Procgen.
-//        const Rect& world = _map->getWorldBounds();
-//        cugl::Vec2 playerWorldPos = _player->getPosition() * PHYSICS_SCALE;
-//        cugl::Vec2 clampedPos(
-//            std::clamp(playerWorldPos.x, world.origin.x, world.getMaxX()),
-//            std::clamp(playerWorldPos.y, world.origin.y, world.getMaxY())
-//        );
-//
-//        // slides when edge
-//        if ((clampedPos.x <= world.origin.x && velocity.x < 0) ||
-//            (clampedPos.x >= world.getMaxX() && velocity.x > 0)) {
-//            velocity.x = 0;
-//        }
-//
-//        if ((clampedPos.y <= world.origin.y && velocity.y < 0) ||
-//            (clampedPos.y >= world.getMaxY() && velocity.y > 0)) {
-//            velocity.y = 0;
-//        }
-//    }
 
-    if (_player->getState() == PlayerObstacle::AnimationState::FROZEN) {
-        _player->setVelocity(Vec2::ZERO);
-    } else {
+    if (_player->isFrozen() || _player->isHurt()) {
+        //_player->setVelocity(Vec2::ZERO);
+    }
+    else {
         _player->setVelocity(velocity);
-        _player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
+        //_player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     }
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
@@ -633,9 +668,49 @@ void GameScene::preUpdate(float dt)
         _inventoryCardNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
                                              offset.y + this->getSize().height * 0.5f / zoom));
     }
+    if (_tutorialNode) {
+        float zoom = getActiveCameraZoom();
+        _tutorialNode->setScale(1.0f / zoom);
+        _tutorialNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
+                                        offset.y + this->getSize().height * 0.5f / zoom));
+    }
+
+    if (_input.cardDismissTap()) {
+        Vec2 tapPos = _input.getInventoryTouchPos();
+        if (_tutorialPage > 0) {
+            Size tutorialSize = _tutorialNode->getSize();
+            Vec2 tutorialCenter = _tutorialNode->getPosition() - offset;
+            Rect tutorialBounds(tutorialCenter.x - tutorialSize.width * 0.5f,
+                                tutorialCenter.y - tutorialSize.height * 0.5f,
+                                tutorialSize.width,
+                                tutorialSize.height);
+            float pageMidX = tutorialBounds.origin.x + tutorialBounds.size.width * 0.5f;
+
+            if (tutorialBounds.contains(tapPos) && _tutorialPage == 1 && tapPos.x >= pageMidX) {
+                // right side of tutorial page clicked go to tutorial page 2
+                showTutorialPage(2);
+            } else if (tutorialBounds.contains(tapPos) && _tutorialPage == 2 && tapPos.x < pageMidX) {
+                // left side of tutorial page clicked go back to tutorial page 1
+                showTutorialPage(1);
+            } else {
+                // tutorial tap was not a page turn so close it
+                hideTutorial();
+            }
+            _input.resolvedInventoryRelease();
+            _input.resolvedCardDismissTap();
+            return;
+        } else if (getHelpButtonBounds().contains(tapPos)) {
+            // help button clicked open tutorial page 1
+            showTutorialPage(1);
+            _input.resolvedInventoryRelease();
+            _input.resolvedCardDismissTap();
+            return;
+        }
+    }
+
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
-            CULog("click detected, card closed");
+            //CULog("click detected, card closed");
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
         }
@@ -650,15 +725,6 @@ void GameScene::preUpdate(float dt)
         depositRequested = true;
         _input.resolvedDeposit();
     }
-//    if (_input.inventoryHeld()) {
-//        // consider having some sort of drag treshold bc rn jittery
-//        if (_dragInventoryIndex < 0) {
-//            _dragInventoryIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
-//        }
-//        if (_dragInventoryIndex >= 0) {
-//            _dragInventoryPos = _input.getInventoryTouchPos();
-//        }
-//    }
 
     if (_input.inventoryReleased()) {
         int tappedIndex = getInventorySlotIndexAt(_input.getInventoryAnchor());
@@ -758,13 +824,18 @@ void GameScene::preUpdate(float dt)
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
         }
         _input.resolveSpell();
-    } else if (_input.getGesture() != SpellType::NONE) {
+    }
+    else if (_input.getGesture() != SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
-        //if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
+#ifndef ENABLE_ALL_SPELLS
+        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
+#endif
             _player->setSpell(newSpell);
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-        //}
+#ifndef ENABLE_ALL_SPELLS
+        }
+#endif
     }
 
     Vec2 angle = _input.getSpellAngle();
@@ -781,34 +852,34 @@ void GameScene::preUpdate(float dt)
         }
         else {
             SpellType t = SpellType::NONE;
-        for (auto p : _playerFact->current) {
-            if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
-                // calc combo spell + send combo event
-                if (_player->getSpell() == SpellType::FIREBALL && p->getSpell() == SpellType::FIREBALL) {
-                    t = SpellType::COMBO_FIREBALL;
-                    _networkCtrl->pushOutEvent(
-                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                    p->resolveSpell();
+            for (auto p : _playerFact->current) {
+                if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
+                    // calc combo spell + send combo event
+                    if (_player->getSpell() == SpellType::FIREBALL && p->getSpell() == SpellType::FIREBALL) {
+                        t = SpellType::COMBO_FIREBALL;
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        p->resolveSpell();
                     
-                }
-                else if (_player->getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::FREEZE) {
-                    t = SpellType::COMBO_FREEZE;
-                    _networkCtrl->pushOutEvent(
-                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                    p->resolveSpell();
+                    }
+                    else if (_player->getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::FREEZE) {
+                        t = SpellType::COMBO_FREEZE;
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        p->resolveSpell();
                     
-                }else if ((_player -> getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::EARTH) || (_player -> getSpell() == SpellType::EARTH && p->getSpell() == SpellType::FREEZE) ){
-                    t = SpellType::COMBO_EFREEZE;
-                    _networkCtrl->pushOutEvent(
-                                SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                    p -> resolveSpell();
+                    }else if ((_player -> getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::EARTH) || (_player -> getSpell() == SpellType::EARTH && p->getSpell() == SpellType::FREEZE) ){
+                        t = SpellType::COMBO_EFREEZE;
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        p -> resolveSpell();
                     
-                }
-                else if ((_player -> getSpell() == SpellType::FIREBALL && p -> getSpell() == SpellType::HEAL) || (_player->getSpell()  == SpellType::HEAL && p -> getSpell() == SpellType::FIREBALL)){
-                    t = SpellType::BUFF;
-                    _networkCtrl->pushOutEvent(
-                                        SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                    p -> resolveSpell();
+                    }
+                    else if ((_player -> getSpell() == SpellType::FIREBALL && p -> getSpell() == SpellType::HEAL) || (_player->getSpell()  == SpellType::HEAL && p -> getSpell() == SpellType::FIREBALL)){
+                        t = SpellType::BUFF;
+                        _networkCtrl->pushOutEvent(
+                                            SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                        p -> resolveSpell();
                     }
                     // Spell is combo-ed!
                     if (t != SpellType::NONE) {
@@ -860,14 +931,16 @@ void GameScene::preUpdate(float dt)
                 break;
             }
 
-            //We must acquire an object if we create it if we fail to do so the network
-            //will consistently try to reset its position.
+            // We must acquire an object if we create it if we fail to do so the network
+            // will consistently try to reset its position.
             _input.resolveSpell();
             _player->resolveSpell();
+            _player->setReleasedSpell(true);
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), SpellType::NONE));
         }
     }
+
     if (_input.pressedPickup() && _currOverlappedItem >= 0) {
         CULog("trying to resolve pickup");
         auto item = _itemFact->getItem(_currOverlappedItem);
@@ -1008,6 +1081,9 @@ void GameScene::render()
     if (_inventoryCardNode) {
         _inventoryCardNode->render(_batch);
     }
+    if (_tutorialNode) {
+        _tutorialNode->render(_batch);
+    }
     _batch->end();
 }
 
@@ -1083,9 +1159,6 @@ void GameScene::renderHUD()
 
                 // Draw item texture centered inside the frame
                 if (i < carriedItems.size()) {
-//                    if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex == i) {
-//                        continue;
-//                    }
                     const auto& carried = carriedItems[i];
                     auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
                     if (itemTex) {
@@ -1105,29 +1178,16 @@ void GameScene::renderHUD()
                     }
                 }
             }
+        }
 
-//            // ?? Easier way to do it?
-//            // While dragging, render the item icon at the current touch position instead of in its slot.
-//            if (_dragInventoryIndex >= 0 && (size_t)_dragInventoryIndex < carriedItems.size()) {
-//                const auto& carried = carriedItems[(size_t)_dragInventoryIndex];
-//                auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
-//                if (itemTex) {
-//                    Rect dragSlot = getInventorySlotBounds((size_t)_dragInventoryIndex);
-//                    float boxSize = dragSlot.size.width;
-//                    float padding = 10.0f;
-//                    float iconSize = boxSize - padding * 2;
-//                    float iconX = _dragInventoryPos.x - iconSize * 0.5f + hudOffset.x;
-//                    float iconY = _dragInventoryPos.y - iconSize * 0.5f + hudOffset.y;
-//
-//                    // ?? Drag when transparent? Or transparent in inventory while being dragged?
-//                    // Color4 dragColor(255, 255, 255, 100);
-//                    // _batch->draw(itemTex, dragColor, Rect(iconX, iconY, iconSize, iconSize));
-//
-//                    _batch->draw(itemTex, Rect(iconX, iconY, iconSize, iconSize));
-//
-//                    _batch->setColor(Color4::WHITE);
-//                }
-//            }
+        auto helpTex = _assets->get<graphics::Texture>("help_button");
+        if (helpTex) {
+            Rect helpBounds = getHelpButtonBounds();
+            _batch->setColor(Color4::WHITE);
+            _batch->draw(helpTex, Rect(helpBounds.origin.x + hudOffset.x,
+                                       helpBounds.origin.y + hudOffset.y,
+                                       helpBounds.size.width,
+                                       helpBounds.size.height));
         }
 
         auto texContainer = _assets->get<graphics::Texture>("health_bar");
@@ -1206,6 +1266,18 @@ cugl::Rect GameScene::getInventorySlotBounds(size_t slotIndex) const {
     return Rect((startX + slotIndex * (boxSize + boxGap)) / zoom, topY / zoom, boxSize / zoom, boxSize / zoom);
 }
 
+cugl::Rect GameScene::getHelpButtonBounds() const {
+    float zoom = getActiveCameraZoom();
+    float margin = 16.0f;
+    float buttonSize = 79.0f * 0.8f;
+    Size screenSize = this->getSize();
+
+    return Rect((screenSize.width - margin - buttonSize) / zoom,
+                (screenSize.height - margin - buttonSize) / zoom,
+                buttonSize / zoom,
+                buttonSize / zoom);
+}
+
 int GameScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {
     if (!_player) {
         return -1;
@@ -1242,11 +1314,13 @@ void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
 void GameScene::initMap() {
     if (_networkCtrl->getRandSeed()==0) return; // no randSeed
     if (_mapSeed==_networkCtrl->getRandSeed()) return; // already init
+
     // Create the scene graph
     _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
     _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     _worldnode->setPosition(Vec2::ZERO);
     addChild(_worldnode);
+
     // initialize physics here, since this should be called post HANDSHAKE
     std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
         this->linkSceneToObs(obs, node);
@@ -1266,9 +1340,9 @@ void GameScene::initMap() {
     if (_mapSeed != 0) {
         rebuildMapForRun();
     }
-    if(_networkCtrl -> isHost()){
+    if (_networkCtrl -> isHost()){
         auto players = _networkCtrl -> getPlayers();
-        for(auto& p : players){
+        for (auto& p : players) {
             CULog("i am making a player with the following id %s", p.c_str());
             auto params = _playerFact->serializeParams(
                             _map->getPlayerSpawn() / PHYSICS_SCALE,
@@ -1276,7 +1350,8 @@ void GameScene::initMap() {
                         );
             _networkCtrl->getPhysController()
                             ->addSharedObstacle(_playerFactId, params);
-                    }
+        }
+
         if (!_addedLWalls) {
             CULog("adding lower walls in initmap");
             _map -> getLowerWallNode() -> setPriority(1.0f);
@@ -1311,6 +1386,8 @@ void GameScene::setActive(bool value)
         }
         else
         {
+            hideInventoryCard();
+            hideTutorial();
             _input.deactivate();
         }
     }
@@ -1348,7 +1425,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
 
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _playerFact->linkFunc(p, p_node);
+                _playerFact->linkFunc(p, p_node, _animations);
             });
 
             // Add animation
@@ -1477,8 +1554,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             return;
         }
         if (spell->TYPE == SpellType::FREEZE || spell->TYPE == SpellType::COMBO_FREEZE) {
-            player->setFrozeTimer(60);
-            player->setAniState(PlayerObstacle::AnimationState::FROZEN);
+            player->setFrozeTimer(180);
+            player->setFrozen(true);
         }
         if (spell->TYPE == SpellType::EARTH){
             player->setMudTimer(240);
@@ -1489,6 +1566,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player -> setBuffTimer(3600);
             player -> setBuff(true);
             spell -> setRemove();
+            return;
+        }
+        if(spell -> TYPE == SpellType::WATER){
+            return;
+        }
+        if(spell -> TYPE == SpellType::DEATH){
+            player -> setHealth(0);
             return;
         }
         player -> setHealth(player->getHealth() - 1);
@@ -1542,6 +1626,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     else if (enemy && spell) {
         //CULog("enemy and spell");
         contact -> SetEnabled(false);
+        if(spell -> getCasterUID() == "bat"){
+            return;
+        }
 
         // If spell is in end animation, do not do any calculations
         if (spell->shouldRemove()) {
@@ -1558,7 +1645,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_EFREEZE){
             enemy -> setFrozen(true);
             if(spell->TYPE == SpellType::FREEZE){
-                enemy->setFrozenTimer(60);
+                enemy->setFrozenTimer(240);
             }else if (spell->TYPE == SpellType::COMBO_FREEZE){
                 enemy->setFrozenTimer(600);
             }else{

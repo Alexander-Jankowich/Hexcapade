@@ -77,6 +77,7 @@ public:
 
     void setRemove() { _nextAnimation = AnimationType::END; }
     bool shouldRemove() { return _nextAnimation == AnimationType::END; }
+    void setNextAnimation(AnimationType type) { _nextAnimation = type; }
 };
 
 

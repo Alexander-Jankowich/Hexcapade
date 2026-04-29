@@ -31,14 +31,15 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     scene->setContentSize(dimen);
     scene->doLayout(); // Repositions the HUD
 
-    _startgame = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("host.center.start"));
-    _backout = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("host.back"));
-    _gameid = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("host.center.game.field.text"));
-    _player = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("host.center.players.field.text"));
+    _startgame = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("host.join"));
+    _backout = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("host.return"));
+    _gameid = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("host.code.numpad_code"));
+    _player = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("host.players.party_size"));
     
     // Program the buttons
     _backout->addListener([this](const std::string& name, bool down) {
         if (down) {
+            _backPressed = true;
             disconnect();
         }
     });
@@ -85,6 +86,7 @@ void HostScene::setActive(bool value) {
     if (isActive() != value) {
         Scene2::setActive(value);
         if (value) {
+            _backPressed = false;
             configureStartButton();
             _backout->activate();
             _startgame->activate();
@@ -100,7 +102,7 @@ void HostScene::setActive(bool value) {
 }
 
 void HostScene::updateText(const std::shared_ptr<scene2::Button>& button, const std::string text) {
-    auto label = std::dynamic_pointer_cast<scene2::Label>(button->getChildByName("up")->getChildByName("label"));
+    auto label = std::dynamic_pointer_cast<scene2::Label>(button->getChildByName("Start"));
     label->setText(text);
 
 }
@@ -112,7 +114,7 @@ void HostScene::configureStartButton() {
 
     }
     else if(_networkCtrl->getStatus()==NetworkController::Status::CONNECTED) {
-        updateText(_startgame, "Start Game");
+        updateText(_startgame, "Start");
         _startgame->activate();
     }
     else if (_networkCtrl->getStatus()==NetworkController::Status::HANDSHAKE) {

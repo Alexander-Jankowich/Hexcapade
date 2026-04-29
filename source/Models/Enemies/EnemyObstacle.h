@@ -66,6 +66,8 @@ protected:
 
     Vec2 _waterPushDir = Vec2::ZERO;
     int _waterPushTimer = 0;
+    float _attackRange = 0;
+    int _attackTimer = 0;
 
 
 
@@ -146,6 +148,11 @@ public:
     Vec2 getWaterPushDir() const { return _waterPushDir; }
     int getWaterPushTimer() const { return _waterPushTimer; }
     void tickWaterPush() { if (_waterPushTimer > 0) _waterPushTimer--; }
+    
+    float getAttackRange() const { return _attackRange; }
+    int getAttackTimer() const { return _attackTimer;}
+    void setAttackTimer(int a) { _attackTimer = a; }
+    
 };
 
 #endif

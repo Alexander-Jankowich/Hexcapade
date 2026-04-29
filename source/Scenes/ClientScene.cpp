@@ -31,29 +31,38 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     scene->setContentSize(dimen);
     scene->doLayout(); // Repositions the HUD
     
-    _startgame = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("client.center.start"));
-    _backout = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("client.back"));
-    _gameid = std::dynamic_pointer_cast<scene2::TextField>(_assets->get<scene2::SceneNode>("client.center.game.field.text"));
-    _player = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("client.center.players.field.text"));
+    _startgame = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("client.join"));
+    _backout = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("client.return"));
+    _gameid = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("client.code.numpad_code"));
+    _player = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("client.players.party_size"));
+    for (int ii = 0; ii < 10; ii++) {
+        std::string key = "client.keypad." + std::to_string(ii);
+        _keypad[ii] = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>(key));
+    }
     
     _backout->addListener([this](const std::string& name, bool down) {
         if (down) {
+            _backPressed = true;
             disconnect();
         }
     });
 
     _startgame->addListener([=,this](const std::string& name, bool down) {
         if (down) {
-            // This will call the _gameid listener
-            _gameid->releaseFocus();
+            if (!_roomInput.empty()) {
+                _networkCtrl->connectClient(_roomInput);
+            }
         }
     });
     
-    _gameid->addExitListener([this](const std::string& name, const std::string& value) {
-        if (!value.empty()) {
-            _networkCtrl->connectClient(value);
-        }
-    });
+    for (int ii = 0; ii < 10; ii++) {
+        _keypad[ii]->addListener([this, ii](const std::string& name, bool down) {
+            if (down && _roomInput.size() < 5) {
+                _roomInput.push_back((char)('0' + ii));
+                _gameid->setText(_roomInput);
+            }
+        });
+    }
 
     // Create the server configuration
     _networkCtrl->init(_assets);
@@ -76,7 +85,7 @@ void ClientScene::dispose() {
 
 
 void ClientScene::updateText(const std::shared_ptr<scene2::Button>& button, const std::string text) {
-    auto label = std::dynamic_pointer_cast<scene2::Label>(button->getChildByName("up")->getChildByName("label"));
+    auto label = std::dynamic_pointer_cast<scene2::Label>(button->getChildByName("Start"));
     label->setText(text);
 
 }
@@ -94,16 +103,22 @@ void ClientScene::setActive(bool value) {
     if (isActive() != value) {
         Scene2::setActive(value);
         if (value) {
-            _gameid->activate();
+            _backPressed = false;
             _startgame->activate();
             _backout->activate();
+            for (auto& button : _keypad) {
+                button->activate();
+            }
             _player->setText("1");
             configureStartButton();
             // Don't reset the room id
         } else {
-            _gameid->deactivate();
             _startgame->deactivate();
             _backout->deactivate();
+            for (auto& button : _keypad) {
+                button->deactivate();
+                button->setDown(false);
+            }
             // If any were pressed, reset them
             _startgame->setDown(false);
             _backout->setDown(false);
@@ -120,7 +135,7 @@ void ClientScene::setActive(bool value) {
 void ClientScene::configureStartButton() {
     switch (_networkCtrl->getStatus()) {
         case NetworkController::Status::IDLE:
-            updateText(_startgame, "Join Game");
+            updateText(_startgame, "Join");
             break;
         case NetworkController::Status::CONNECTING:
             updateText(_startgame, "Connecting");

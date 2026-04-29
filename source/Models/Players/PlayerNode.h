@@ -18,6 +18,8 @@ private:
         IDLE,
         WALK,
         CASTING,
+        RELEASE_CAST,
+        DAMAGED,
         DEAD
     };
 
@@ -51,6 +53,12 @@ private:
     static int endCast[4];
     static int endCastFrames;
 
+    static int releaseCast[4];
+    static int releaseCastFrames;
+
+    static int damage[4];
+    static int damageFrames;
+
     static int dying[4];
     static int dyingFrames;
 
@@ -59,15 +67,14 @@ private:
 
     static int cols;
     static int rows;
-    
-    bool frozen = false;
-    
-    bool mud = false;
-    
-    bool buff = false;
-    
 
-    int getDirection() { return (facingLeft ? 2 : 0) + (facingBack ? 1 : 0); }
+    static float idleThreshold;
+    
+    bool _frozen = false;
+    bool _mud = false;
+    bool _buff = false;
+    
+    int getDirection() { return facingLeft * 2 + facingBack; }
 
 public:
 #pragma mark Constructors
@@ -119,6 +126,18 @@ public:
         PlayerNode::endCast[(int)Direction::RIGHT_BACKWARD] = consts->getInt("end_cast-right_backward");
         PlayerNode::endCastFrames = consts->getInt("end_cast_frames");
 
+        PlayerNode::releaseCast[(int)Direction::LEFT_FORWARD] = consts->getInt("release_cast-left_forward");
+        PlayerNode::releaseCast[(int)Direction::RIGHT_FORWARD] = consts->getInt("release_cast-right_forward");
+        PlayerNode::releaseCast[(int)Direction::LEFT_BACKWARD] = consts->getInt("release_cast-left_backward");
+        PlayerNode::releaseCast[(int)Direction::RIGHT_BACKWARD] = consts->getInt("release_cast-right_backward");
+        PlayerNode::releaseCastFrames = consts->getInt("release_cast_frames");
+
+        PlayerNode::damage[(int)Direction::LEFT_FORWARD] = consts->getInt("damage-left_forward");
+        PlayerNode::damage[(int)Direction::RIGHT_FORWARD] = consts->getInt("damage-right_forward");
+        PlayerNode::damage[(int)Direction::LEFT_BACKWARD] = consts->getInt("damage-left_backward");
+        PlayerNode::damage[(int)Direction::RIGHT_BACKWARD] = consts->getInt("damage-right_backward");
+        PlayerNode::damageFrames = consts->getInt("damage_frames");
+
         PlayerNode::dying[(int)Direction::LEFT_FORWARD] = consts->getInt("dying-left_forward");
         PlayerNode::dying[(int)Direction::RIGHT_FORWARD] = consts->getInt("dying-right_forward");
         PlayerNode::dying[(int)Direction::LEFT_BACKWARD] = consts->getInt("dying-left_backward");
@@ -130,24 +149,33 @@ public:
         PlayerNode::dead[(int)Direction::LEFT_BACKWARD] = consts->getInt("dead-left_backward");
         PlayerNode::dead[(int)Direction::RIGHT_BACKWARD] = consts->getInt("dead-right_backward");
         PlayerNode::deadFrames = consts->getInt("dead_frames");
+
+        PlayerNode::idleThreshold = consts->getFloat("idle_threshold");
     }
     
     void reset() {
         setPosition(getSize() / 2);
         setVelocity(cugl::Vec2::ZERO);
+
+        _curAnimation = AnimationType::IDLE;
+        _nextAnimation = AnimationType::IDLE;
+
+        _frozen = false;
+        _mud = false;
+        _buff = false;
     }
     
-    void updateAnimationState(PlayerObstacle::AnimationState s);
+    void updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b);
 
     void setVelocity(cugl::Vec2 value);
-    
-    void setFrozen(bool f) {frozen = f;}
-    
-    void setMud(bool m) {mud = m;}
-    
-    void setBuff(bool b) {buff = b;}
 
     std::pair<cugl::ActionFunction, float> getNextAnimation() override;
+
+    void releasedSpell() { _nextAnimation = AnimationType::RELEASE_CAST; }
+
+    bool isFrozen() { return _frozen; }
+
+    bool skipToNext();
 };
 
 #endif // !__GP_PLAYER_H__

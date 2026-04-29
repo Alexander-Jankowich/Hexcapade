@@ -401,6 +401,14 @@ void GeometryApp::updateMenuScene(float dt) {
 
 void GeometryApp::updateHostScene(float dt) {
     _hostScene.update(dt);
+    if (_hostScene.didBackOut()) {
+        _hostScene.setActive(false);
+        _hostScene.reset();
+        _hostScene.resetStatus();
+        _mainmenu.setActive(true);
+        _scene = State::MENU;
+        return;
+    }
     switch (_hostScene.getStatus()) {
     case NetworkController::Status::NETERROR:
         
@@ -452,6 +460,14 @@ void GeometryApp::updateSelectScene(float dt) {
 
 void GeometryApp::updateClientScene(float dt) {
     _clientScene.update(dt);
+    if (_clientScene.didBackOut()) {
+        _clientScene.setActive(false);
+        _clientScene.reset();
+        _clientScene.resetStatus();
+        _mainmenu.setActive(true);
+        _scene = State::MENU;
+        return;
+    }
 
     switch (_clientScene.getStatus()) {
     case NetworkController::Status::NETERROR:
