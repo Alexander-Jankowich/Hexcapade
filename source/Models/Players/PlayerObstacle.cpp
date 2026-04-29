@@ -87,7 +87,7 @@ bool PlayerObstacle::addItem(const std::string& itemType, int item_val) {
     ArtifactEffect effect = (kind == ItemKind::ARTIFACT)
         ? Artifact::effectFromItemType(itemType)
         : ArtifactEffect::NONE;
-    int bombTimer = (effect == ArtifactEffect::BOMB) ? 3600 : -1;
+    int bombTimer = (effect == ArtifactEffect::BOMB) ? 1200 : -1;
 
     _inventory.push_back({ itemType, item_val, kind, bombTimer, effect });
     return true;
