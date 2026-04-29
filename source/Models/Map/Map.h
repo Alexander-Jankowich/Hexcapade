@@ -14,8 +14,8 @@
 
 //#include "../../Controllers/NetworkController.h"
 
-#define MAP_HEIGHT 90
-#define MAP_WIDTH 90
+#define MAP_HEIGHT 120
+#define MAP_WIDTH 120
 #define TILE_SIZE 40
 #define PHYSICS_SCALE 50 //TODO: find a way to like. not redefine it lol
 

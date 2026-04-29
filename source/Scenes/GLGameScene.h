@@ -36,7 +36,7 @@
 #include "../Models/Animations.h"
 
 #include "InputDisplay.h"
-#define ROUND_TIMER 7200
+#define ROUND_TIMER 5400
 /**
  * This class is the primary gameplay constroller for the demo.
  *

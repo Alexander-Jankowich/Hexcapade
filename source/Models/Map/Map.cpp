@@ -24,13 +24,18 @@ void Map::reset() {
 }
 
 std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
+    _assets = assets;
+    loadLevelConfig(level, _assets->get<JsonValue>("level-config"));
     _extruder = SimpleExtruder();
     // ensure everything cleared before generation
+    _mapGrid.clear();
     for (int r = 0; r < _config._mapSize; r++) {
         vector<int> v;
         v.assign(_config._mapSize, 0);
         _mapGrid.push_back(v);
     }
+   
+    
     _enemySpawnPoints.clear();
     _itemSpawnPoints.clear();
     
@@ -39,10 +44,10 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
     lw_node = scene2::SceneNode::alloc();
     std::vector<MapDoor> doors;
     _rng.initWithSeed(seed);
-    _assets = assets;
+    
     
     // initialize level config
-    loadLevelConfig(level, _assets->get<JsonValue>("level-config"));
+    
 
     
     //get minimum room width/height
