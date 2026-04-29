@@ -20,6 +20,7 @@ _config() {
 void Map::reset() {
     _enemySpawnPoints.clear();
     _itemSpawnPoints.clear();
+    _itemZoneFarthestPointDistance = 0.0f;
     lw_node->removeAllChildren();
 }
 
@@ -425,6 +426,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
             
         }
     
+        updateItemZoneMaxDistance();
         return node;
     }
 
@@ -626,6 +628,31 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
 
     
     // TODO: add parsing for item data
+}
+
+// finds the farthest item spawn point from player start
+void Map::updateItemZoneMaxDistance() {
+    _itemZoneFarthestPointDistance = 0.0f;
+    for (const auto& spawnPoint : _itemSpawnPoints) {
+        float distance = spawnPoint.distance(_playerSpawn);
+        if (distance > _itemZoneFarthestPointDistance) {
+            _itemZoneFarthestPointDistance = distance;
+        }
+    }
+}
+
+// splits item spawn points into zones by comparing each point to
+// the farthest spawn point on this run
+int Map::getItemSpawnZone(const Vec2& worldPoint) const {
+    float distancePercentOfFarthestPoint =
+        worldPoint.distance(_playerSpawn) / _itemZoneFarthestPointDistance;
+    if (distancePercentOfFarthestPoint < (1.0f / 3.0f)) {
+        return 1;
+    }
+    if (distancePercentOfFarthestPoint < (2.0f / 3.0f)) {
+        return 2;
+    }
+    return 3;
 }
 
 std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns() {

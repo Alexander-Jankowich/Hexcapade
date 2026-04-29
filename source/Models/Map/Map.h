@@ -74,6 +74,7 @@ private:
     std::vector<cugl::Vec2> _z1enemySpawnPoints;
     std::vector<cugl::Vec2> _z2enemySpawnPoints;
     std::vector<cugl::Vec2> _z3enemySpawnPoints;
+    float _itemZoneFarthestPointDistance = 0.0f;
 
     cugl::Vec2 _playerSpawn;
     LevelConfig _config;
@@ -102,6 +103,7 @@ public:
     Vec2 getPlayerSpawn() {return _playerSpawn;}
     const std::vector<Vec2>& getEnemySpawnPoints() const {return _enemySpawnPoints;}
     const std::vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
+    int getItemSpawnZone(const Vec2& worldPoint) const;
     const std::vector<std::shared_ptr<Room>> getRooms() const {return _rooms;}
     int getNumRooms() { return (int)_rooms.size(); }
 
@@ -136,6 +138,7 @@ private:
     void addWallObstacle(Poly2& poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
     
     void loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config);
+    void updateItemZoneMaxDistance();
 };
 
 #endif // __HEXCAPADE_MAP_H__

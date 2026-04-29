@@ -75,8 +75,36 @@ float getTypicalItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
     return totalValue / totalWeight;
 }
 
+// finds the highest value item in the current catalog so the zone cutoffs
+// used the board img percentages of max item value for now (should be in config?)
+int getMaxItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
+    int maxValue = 0;
+    for (const auto& item : entries) {
+        maxValue = std::max(maxValue, item.value);
+    }
+    return maxValue;
+}
+
+// checks whether one item belongs in what zone for the
+// zone we assigned to this spawn point using the cutoffs we came up 
+bool isItemEligibleForZone(const ItemCatalogEntryConfig& item, int zone, int maxItemValue) {
+    float lowCutoff = 0.30f * maxItemValue;
+    float highCutoff = 0.75f * maxItemValue;
+
+    switch (zone) {
+        case 1:
+            return item.value < lowCutoff;
+        case 2:
+            return item.value >= lowCutoff && item.value < highCutoff;
+        case 3:
+            return item.value >= highCutoff;
+        default:
+            return true;
+    }
+}
+
 // Goal: enough item value to cover quota, but never spawn more than
-// the authored spawn points we actually have on the ma
+// the authored spawn points we actually have on the map
 size_t chooseSpawnCount(size_t totalSpawn, size_t roomCount, int quota,
                             float typicalItemValue, float quotaCoverageRatio) {
     int valueNeeded = (int)std::ceil((float)quota * quotaCoverageRatio);
@@ -439,6 +467,7 @@ void GameScene::spawnItemsFromMap() {
 
     int roomCount = _map->getNumRooms();
     float typicalItemValue = getTypicalItemValue(entries);
+    int maxItemValue = getMaxItemValue(entries);
     size_t spawnCount = chooseSpawnCount(
         spawnPoints.size(), roomCount, _quota,
         typicalItemValue, _runConfig.item.quotaCoverageRatio
@@ -462,14 +491,26 @@ void GameScene::spawnItemsFromMap() {
         spawnIndices.pop_back();
 
         Vec2 physPos = worldPt / PHYSICS_SCALE;
-        const ItemCatalogEntryConfig* item = chooseWeight(entries, _random);
+        int zone = _map->getItemSpawnZone(worldPt);
+
+        // build a smaller catalog for this spawn point so we keep the existing picker
+        // const ItemCatalogEntryConfig* chooseItemForZone(...) later?
+        std::vector<ItemCatalogEntryConfig> zoneEntries;
+        zoneEntries.reserve(entries.size());
+        for (const auto& entry : entries) {
+            if (isItemEligibleForZone(entry, zone, maxItemValue)) {
+                zoneEntries.push_back(entry);
+            }
+        }
+
+        const ItemCatalogEntryConfig* item = chooseWeight(zoneEntries, _random);
         int itemValue = item->value;
         std::string itemType = item->textureAsset.empty() ? item->id : item->textureAsset;
 
         auto params = _itemFact->serializeParams(physPos, itemValue, itemType);
         _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
     }
-    CULog("ItemFactory: spawned %zu items", spawnPoints.size());
+    CULog("ItemFactory: spawned %zu items", spawnCount);
 }
 
 void GameScene::updateCameraFollow() {
