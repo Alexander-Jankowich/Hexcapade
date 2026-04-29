@@ -1604,7 +1604,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (spell -> TYPE == SpellType::WATER){
             Vec2 pushDir = enemy->getPosition() - spell->getPosition();
             pushDir.normalize();
-            enemy->setWaterPush(pushDir, 120);
+            enemy->setWaterPush(pushDir, 60);
             return;
         }
         enemy->setHealth(enemy->getHealth() - spell->getDamage());

@@ -89,7 +89,7 @@
         "water": {
             "speed": 4,
             "damage": 0.0,
-            "range": 1.5
+            "range": 3.0
         },
         "combo_efreeze": {
             "speed": 3,
