@@ -406,7 +406,7 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-    auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize(), _world);
+    auto n = _map -> generate(_networkCtrl->getRound(), _mapSeed, _assets, _rooms, getSize(), _world);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
     n->setPriority(0.0f);
@@ -580,15 +580,11 @@ void GameScene::preUpdate(float dt)
         if (lastEnemySpawn > 8) {
             lastEnemySpawn = 0;
 
-            auto spawns = _map -> getEnemySpawnPoints();
-            std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
-            if (!spawns.empty()) {
-                std::uint64_t index = rand % spawns.size();
-                Vec2 pos = spawns[index];
-
-                EnemyType type = (EnemyType) (_random->getFloat() * 3);
+            auto res = _map->generateEnemySpawns(_playerFact->getPlayerPositions());
+            for (auto r : res) {
                 //CULog("enemy type: %d", type);
-                auto params = _enemyFact->serializeParams(type, pos / PHYSICS_SCALE);
+                // 
+                auto params = _enemyFact->serializeParams(r.second, r.first / PHYSICS_SCALE);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
                 // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host

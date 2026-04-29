@@ -170,6 +170,7 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             targ = getClosestPlayer(en->getPosition(),
                 getValidTargets(en->getPosition(), en->getRange(), playerFact));
             break;
+        case EnemyType::SLOWBAT:
         case EnemyType::BAT:
             //if closest player in attack_range shoot spell
             targ = getClosestPlayer(en->getPosition(),
@@ -186,8 +187,6 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
                 }else{
                     en -> setAttackTimer(en -> getAttackTimer() - 1);
                 }
-                
-                
             }
             break;
         case EnemyType::OCTO:

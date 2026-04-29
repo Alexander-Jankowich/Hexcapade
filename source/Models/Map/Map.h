@@ -10,6 +10,8 @@
 #include "../GameplayConfig.h"
 #include "Room.h"
 #include "LevelLoader.h"
+#include "../Enemies/EnemyObstacle.h"
+
 //#include "../../Controllers/NetworkController.h"
 
 #define MAP_HEIGHT 90
@@ -33,6 +35,19 @@ using namespace cugl::graphics;
 
 class Map {
 private:
+    struct LevelConfig {
+        int _mapSize;
+        std::vector<EnemyType> _enemyTypes;
+        std::vector<float> _zone1WeightsEn;
+        std::vector<float> _zone2WeightsEn;
+        std::vector<float> _zone3WeightsEn;
+        
+        float _zone1EnemyProb;
+        float _zone2EnemyProb;
+        float _zone3EnemyProb;
+        
+        // TODO: add item data
+    };
     struct MapDoor {
         Vec2 pos;
         Size size;
@@ -45,7 +60,7 @@ private:
     };
 
     //std::array<std::array<int, MAP_WIDTH>, MAP_HEIGHT> _mapGrid;
-    int _mapGrid[MAP_HEIGHT][MAP_WIDTH];
+    std::vector<std::vector<int>> _mapGrid;
     std::shared_ptr<AssetManager> _assets;
     
     cugl::Vec2 _origin;
@@ -56,8 +71,12 @@ private:
 
     std::vector<cugl::Vec2> _itemSpawnPoints;
     std::vector<cugl::Vec2> _enemySpawnPoints;
+    std::vector<cugl::Vec2> _z1enemySpawnPoints;
+    std::vector<cugl::Vec2> _z2enemySpawnPoints;
+    std::vector<cugl::Vec2> _z3enemySpawnPoints;
+
     cugl::Vec2 _playerSpawn;
-    MapGenerationConfig _config;
+    LevelConfig _config;
 
     cugl::Random _rng;
 
@@ -71,7 +90,13 @@ public:
      * @param rooms the list of all string keys used to access each room in the AssetManager
      * @return a pair, the world node and the lower walls node
      */
-    std::shared_ptr<cugl::scene2::SceneNode> generate(const MapGenerationConfig& config, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
+    std::shared_ptr<cugl::scene2::SceneNode> generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
+    void generateItemSpawns();
+    
+    /**
+     * called by GLGameScene to roll die for each zone and generate an enemy spawn if the zone die roll succeeds.
+     */
+    std::vector<std::pair<Vec2, EnemyType>> generateEnemySpawns(const std::vector<Vec2> playersPos);
     
     std::shared_ptr<cugl::scene2::SceneNode> getLowerWallNode() {return lw_node;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
@@ -109,6 +134,10 @@ private:
     void addSingleNode(std::shared_ptr<Texture> t, Vec2 pos, std::shared_ptr<cugl::scene2::SceneNode> world);
     
     void addWallObstacle(Poly2& poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
+    
+    void loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config);
+    
+    std::pair<Vec2, EnemyType> chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates);
 };
 
 #endif // __HEXCAPADE_MAP_H__
