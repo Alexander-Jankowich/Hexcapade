@@ -16,7 +16,8 @@ using namespace std;
 enum class EnemyType {
     GHOST = 0,
     BAT = 1,
-    OCTO = 2
+    OCTO = 2,
+    SLOWBAT = 3
 };
 
 /**
@@ -27,7 +28,9 @@ public:
     enum class EnemyState : int {
         IDLE = 0,
         CHASING = 1,
-        ATTACK_RESET = 2
+        ATTACKING = 2,
+        ATTACK_RESET = 3,
+        DEATH = 4
     };
 
 protected:
@@ -103,6 +106,7 @@ public:
     void updateAttackCounter();
     void setAttackCounter(int frames) { _attackCounter = frames; }
     bool canAttack() { return _attackCounter <= 0; }
+    bool isDead() { return _state == EnemyState::DEATH; }
 
     /**
      * Returns the current enemy health.
@@ -155,4 +159,4 @@ public:
     
 };
 
-#endif
+#endif // !__ENEMY_OBSTACLE_H__

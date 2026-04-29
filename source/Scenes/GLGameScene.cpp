@@ -406,7 +406,7 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-    auto n = _map -> generate(_runConfig.map, _mapSeed, _assets, _rooms, getSize(), _world);
+    auto n = _map -> generate(_networkCtrl->getRound(), _mapSeed, _assets, _rooms, getSize(), _world);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
     n->setPriority(0.0f);
@@ -580,15 +580,11 @@ void GameScene::preUpdate(float dt)
         if (lastEnemySpawn > 8) {
             lastEnemySpawn = 0;
 
-            auto spawns = _map -> getEnemySpawnPoints();
-            std::uint64_t rand = _random -> getClosedUint64(0, spawns.size());
-            if (!spawns.empty()) {
-                std::uint64_t index = rand % spawns.size();
-                Vec2 pos = spawns[index];
-
-                EnemyType type = (EnemyType) (_random->getFloat() * 3);
+            auto res = _map->generateEnemySpawns(_playerFact->getPlayerPositions());
+            for (auto r : res) {
                 //CULog("enemy type: %d", type);
-                auto params = _enemyFact->serializeParams(type, pos / PHYSICS_SCALE);
+                // 
+                auto params = _enemyFact->serializeParams(r.second, r.first / PHYSICS_SCALE);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
                 // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
@@ -1050,6 +1046,7 @@ void GameScene::render()
             if (name.empty()) continue;
 
             auto label = TextLayout::allocWithText(name, _font);
+
             label->layout();
 
             cugl::Vec2 worldPos = p->getPosition() * PHYSICS_SCALE;
@@ -1063,14 +1060,14 @@ void GameScene::render()
             float bgX = worldPos.x - bgW * 0.5f;
             float bgY = worldPos.y + nameOffsetY;
 
-            if (nameBgTex) {
-                _batch->setColor(Color4::WHITE);
-                _batch->draw(nameBgTex, Rect(bgX, bgY, bgW, bgH));
-            }
+//            if (nameBgTex) {
+//                _batch->setColor(Color4::WHITE);
+//                _batch->draw(nameBgTex, Rect(bgX, bgY, bgW, bgH));
+//            }
 
             Affine2 t;
             t.translate(worldPos.x - labelW * 0.5f, worldPos.y + nameOffsetY);
-            _batch->setColor(Color4(213, 233, 239, 255));
+            _batch->setColor(Color4::BLACK);
             _batch->drawText(label, t);
         }
     }
@@ -1593,8 +1590,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         //We need a death message
         //We need to set ATTACKRESET and decrement some sort of timer
         contact -> SetEnabled(true);
-        if(player -> getHealth() < 0){
-
+        if(player -> getHealth() <= 0 || enemy->isDead()){
             return;
         }
 

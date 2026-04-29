@@ -25,11 +25,14 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     case EnemyType::BAT:
         vals = _enemyConsts->get("bat");
         break;
+    case EnemyType::SLOWBAT:
+        vals = _enemyConsts->get("slow-bat");
+        break;
     case EnemyType::OCTO:
         vals = _enemyConsts->get("octoplush");
         break;
     default:
-        CULog("Error! Enemy type not found in JSON!!!");
+        CULog("Error! Enemy type not found in JSON!!! EnemyFactory 32, type = %d", type);
         break;
     }
 
@@ -93,31 +96,36 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 
 
 void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, const shared_ptr<Animator>& animator) {
-    obs->updateAttackCounter();
+    if (obs->getHealth() > 0) {
+        obs->updateAttackCounter();
 
-    // Update push and frozen
-    if (obs->getWaterPushTimer() > 0) {
-        obs->tickWaterPush();
-        Vec2 pushVel = obs->getWaterPushDir() * obs->getSpeed() * 2.5f;
-        obs->setVelocity(pushVel);
-    }
-    else if (obs->isFroze()) {
-        obs->setLinearVelocity(Vec2::ZERO);
-        int i = obs->getFrozenTimer() - 1;
-        obs->setFrozenTimer(i);
-        if (obs->getFrozenTimer() == 0) {
-            obs->setFrozen(false);
+        // Update push and frozen
+        if (obs->getWaterPushTimer() > 0) {
+            obs->tickWaterPush();
+            Vec2 pushVel = obs->getWaterPushDir() * obs->getSpeed() * 2.5f;
+            obs->setVelocity(pushVel);
+        }
+        else if (obs->isFroze()) {
+            obs->setLinearVelocity(Vec2::ZERO);
+            int i = obs->getFrozenTimer() - 1;
+            obs->setFrozenTimer(i);
+            if (obs->getFrozenTimer() == 0) {
+                obs->setFrozen(false);
+            }
+        }
+
+        // Update frozen status for node if changed
+        if (obs->isFroze() && !node->getFrozen()) {
+            node->setFrozen(true);
+            animator->pauseAnimation(node);
+        }
+        else if (!obs->isFroze() && node->getFrozen()) {
+            node->setFrozen(false);
+            animator->resumeAnimation(node);
         }
     }
-
-    // Update frozen status for node if changed
-    if (obs->isFroze() && !node->getFrozen()) {
-        node->setFrozen(true);
-        animator->pauseAnimation(node);
-    }
-    else if (!obs->isFroze() && node->getFrozen()) {
-        node->setFrozen(false);
-        animator->resumeAnimation(node);
+    else {
+        obs->setLinearVelocity(Vec2::ZERO);
     }
 
     // Update position
@@ -131,7 +139,7 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
     // Update state for animation
     node->setStatue(obs->isMud());
     node->updateState();
-    node->updateAnimationState(obs->getState(), obs->getHealth());
+    node->updateAnimationState(obs->getState());
 }
 
 
