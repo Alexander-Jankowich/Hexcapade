@@ -166,7 +166,7 @@ public:
         _buff = false;
     }
     
-    void updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b, bool s);
+    void updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b);
 
     void setVelocity(cugl::Vec2 value);
 
@@ -175,6 +175,11 @@ public:
     void releasedSpell() { _nextAnimation = AnimationType::RELEASE_CAST; }
 
     bool isFrozen() { return _frozen; }
+
+    bool isBuffed() { return _buff; }
+
+    void setShield(bool s) { _shield = s; }
+    bool hasShield() { return _shield; }
 
     bool skipToNext();
 };

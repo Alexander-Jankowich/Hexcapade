@@ -140,11 +140,22 @@
             "range": 5.0,
             "heal": false
         },
-        "shield" : {
+        "shield": {
             "speed": 5,
             "damage": 0,
             "range": 5.0,
-            "heal" : false
+            "heal": false
+        },
+        "shield-entity": {
+            "rows": 2,
+            "columns": 6,
+
+            "created": 0,
+            "existing": 4,
+            "end": 6,
+            "created_frames": 4,
+            "existing_frames": 1,
+            "end_frames": 6
         }
     },
     "enemies": {

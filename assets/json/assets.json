@@ -28,10 +28,13 @@
       "file": "textures/death_sheet.png"
     },
     "earth": {
-      "file": "textures/earth_sheet.png"
+        "file": "textures/earth_sheet.png"
+    },
+    "shield": {
+        "file": "textures/shield_sheet.png"
     },
     "shield_entity": {
-      "file": "textures/shield_sheet.png"
+      "file": "textures/shield-entity_sheet.png"
     },
     "button": {
       "file": "textures/button.png"

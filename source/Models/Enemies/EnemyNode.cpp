@@ -3,8 +3,6 @@
 using namespace cugl;
 using namespace std;
 
-#define FPS 10.0f
-
 /**
  * Creates a ship wiht the given position and data.
  *
@@ -92,7 +90,7 @@ pair<ActionFunction, float> EnemyNode::getNextAnimation() {
 
     switch (nextAnimation) {
     case AnimationType::DEAD:
-        return { [this](float, ActionState) {}, -1 };
+        return END_ANIMATION;
     case AnimationType::IDLE:
         frameSet = IDLE;
         numFrames = IDLE_FRAMES;

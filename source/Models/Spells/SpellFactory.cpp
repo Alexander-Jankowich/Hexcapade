@@ -89,7 +89,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::SHIELD:
         values = _spellConsts->get("shield");
-        image = _assets->get<graphics::Texture>("heal");
+        image = _assets->get<graphics::Texture>("shield");
         break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
@@ -102,7 +102,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     Vec2 vel = norm * values->getFloat("speed");
     auto spell = SpellObstacle::alloc(pos, vel, radius,
         std::max(1, buff ? 2 * (values->getInt("damage") + damageBonus) : values->getInt("damage") + damageBonus),
-        values->getFloat("range"),type ,c_uid);
+        values->getFloat("range"), type, c_uid);
     CULog("buff is %d", buff);
     //auto spell = SpellObstacle::alloc(pos, type);
 
