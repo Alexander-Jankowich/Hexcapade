@@ -199,23 +199,23 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
                     getValidTargets(en->getPosition(), en->getRange(), playerFact)));
             break;
         default:
-            CULog("Error! Enemy type not implemented!!! (Pathfinder 201)");
+            CULog("Error! Enemy type not implemented!!! (Pathfinder::updateEnemies)");
             break;
         }
 
         if (!targ.isZero()) { // Found a valid target
             en->setTarget(targ);
-            CULog("set target!");
+            //CULog("set target!");
         }
 
-        // if chasing
+        // if chasing, move towards target
         switch (en->getState()) {
         case EnemyObstacle::EnemyState::CHASING: {
             // Check if enemy has reached its target
             if (en->getTarget().distance(en->getPosition()) < 0.01) {
                 en->setState(EnemyObstacle::EnemyState::IDLE);
                 en->setLinearVelocity(Vec2::ZERO);
-                CULog("reached target!");
+                //CULog("reached target!");
                 continue;
             }
 

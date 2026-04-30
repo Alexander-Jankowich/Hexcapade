@@ -94,7 +94,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
     default:
-        CULog("Spell not implemented!!!! SpellFactory 93, type = %d", (int) type);
+        CULog("Spell not implemented!!!! SpellFactory::createObstacle, type = %d", (int) type);
     }
 
     float radius = image->getHeight() / PHYSICS_SCALE;
@@ -114,7 +114,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     CULog("going to emplace the spell");
     current.emplace(spell);
 
-    // Create Spell! Hard code values for now, change later
+    // Create spell node
     auto sprite = std::make_shared<SpellNode>(pos, vel, type, image);
 
     return std::make_pair(spell, sprite);
@@ -146,11 +146,6 @@ std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, 
  * Generate a pair of Obstacle and SceneNode using serialized parameters.
  */
 std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(const std::vector<std::byte>& params) {
-    /**
-     * TODO: Use _deserializer to deserialize byte vectors packed by
-     * {@link serializeParams()} and call the regular createObstacle() method
-     * with them.
-     */
     _deserializer.reset();
     _deserializer.receive(params);
     float x = _deserializer.readFloat();
@@ -163,6 +158,7 @@ std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode
     string c = _deserializer.readString();
     int damageBonus = _deserializer.readSint32();
     int buff = _deserializer.readBool();
+
     return createObstacle(pos, velocity, type, c, damageBonus, buff);
 }
 

@@ -34,10 +34,16 @@ private:
     */
     unordered_set<shared_ptr<PlayerObstacle>> getValidTargets(const Vec2 pos, float range, shared_ptr<PlayerFactory> playerFact);
 
+    /**
+    * Returns a set of visible players (no wall blocking line of sight)
+    */
     unordered_set<PlayerObstacle*> visiblePos; // Only used for getClosestPlayerRaycast!!
     unordered_set<PlayerObstacle*> getVisiblePlayers(shared_ptr<physics2::distrib::NetWorld> world, Vec2 enemPos,
         float range, unordered_set<shared_ptr<PlayerObstacle>> targs);
 
+    /**
+    * Code for finding a path from one point to another. Variables are used only for this function (and helper functions)
+    */
     Vec2 finalTarg;
     physics2::PolygonObstacle* wall;
     Vec2 findVelocity(shared_ptr<physics2::distrib::NetWorld> world, const Vec2 targ, const Vec2 pos, float radius);

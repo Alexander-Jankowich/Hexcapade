@@ -32,7 +32,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
         vals = _enemyConsts->get("octoplush");
         break;
     default:
-        CULog("Error! Enemy type not found in JSON!!! EnemyFactory 32, type = %d", type);
+        CULog("Error! Enemy type not found in JSON!!! EnemyFactory::createObstacle, type = %d", type);
         break;
     }
 
