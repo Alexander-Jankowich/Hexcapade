@@ -807,6 +807,7 @@ void GameScene::preUpdate(float dt)
             }
         }
     }
+
 #pragma mark Spellcasting, Combos, Blocking, and Casting logic
     // Spellcasting
     if (_player->blocksSpellcasting()) {
