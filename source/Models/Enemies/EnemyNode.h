@@ -74,7 +74,7 @@ public:
 
     void setVelocity(Vec2 value);
 
-    void updateAnimationState(EnemyObstacle::EnemyState s, int health);
+    void updateAnimationState(EnemyObstacle::EnemyState s);
 
     /**
     * Returns the next animation function and duration

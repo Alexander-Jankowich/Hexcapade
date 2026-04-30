@@ -53,7 +53,7 @@ unordered_set<PlayerObstacle*> Pathfinder::getVisiblePlayers(shared_ptr<physics2
                 return fraction;
             }
             if (auto p = dynamic_cast<physics2::PolygonObstacle*>(obs)) {
-                //CULog("hit wall");
+                CULog("hit wall");
                 return 0.0f;
             }
             return 1.0f;
@@ -78,8 +78,9 @@ Vec2 Pathfinder::findVelocity(shared_ptr<physics2::distrib::NetWorld> world, con
         performRaycastCheck(world, pos - direction * radius, finalTarg - direction * radius, radius)) {
         stop += 1;
         direction = Vec2(targ.y - pos.y, pos.x - targ.x).getNormalization();
-        CULog("in loop! from %s to %s", pos.toString().c_str(), targ.toString().c_str());
+        //CULog("in loop! from %s to %s", pos.toString().c_str(), targ.toString().c_str());
         if(stop > 100){
+            CULog("reach max number of loop iterations for pathfinding");
             break;
         }
     }
@@ -97,7 +98,7 @@ bool Pathfinder::performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> wor
             //CULog("see wall");
             return 0.0f;
         }
-        //CULog("hit something");
+        CULog("hit something other than wall");
         return 1.0f;
     };
 
@@ -115,7 +116,7 @@ bool Pathfinder::performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> wor
             //const auto point = wall->getPolygon().at(i);
 
             // Find distance from line
-            float len = fabs((targ.y - pos.y) * point.x - (targ.x - pos.x) * point.y + targ.y * pos.x - targ.x * pos.y) /
+            float len = fabs((targ.y - pos.y) * point.x - (targ.x - pos.x) * point.y + targ.x * pos.y - targ.y * pos.x) /
                     targ.distance(pos);
 
             // Decide which side the point is on and keep farthest point
@@ -159,7 +160,8 @@ bool Pathfinder::performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> wor
 void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact, shared_ptr<SpellFactory> spellFact,std::shared_ptr<NetworkController> networkCtrl,Uint32 spellFactId, shared_ptr<physics2::distrib::NetWorld> world) {
 
     for (auto en : enemyFact->current) {
-        if (en->isFroze() || en->getWaterPushTimer() > 0) {
+        if (en->isFroze() || en->getWaterPushTimer() > 0 || en->isDead()) {
+            CULog("skip pathfinding");
             continue;
         }
 
@@ -172,29 +174,32 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             break;
         case EnemyType::SLOWBAT:
         case EnemyType::BAT:
-            //if closest player in attack_range shoot spell
+            // if closest player in attack_range shoot spell
             targ = getClosestPlayer(en->getPosition(),
-                getVisiblePlayers(world, en->getPosition(), en->getRange(), playerFact->current));
-            if(targ.distance(en->getPosition()) <= en -> getAttackRange()){
+                getVisiblePlayers(world, en->getPosition(), en->getRange(),
+                    getValidTargets(en->getPosition(), en->getRange(), playerFact)));
+            if (targ.distance(en->getPosition()) <= en->getAttackRange()) {
                 Vec2 player_pos = targ;
                 targ = en->getPosition();
                 Vec2 angle = player_pos - targ;
-                if(en -> getAttackTimer() == 0){
-                    auto params = spellFact->serializeParams((en -> getPosition()), angle, SpellType::FIREBALL, "bat");
+                if (en->getAttackTimer() == 0) {
+                    auto params = spellFact->serializeParams((en->getPosition()), angle, SpellType::FIREBALL, "bat");
                     auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
                     networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                    en -> setAttackTimer(240);
-                }else{
-                    en -> setAttackTimer(en -> getAttackTimer() - 1);
+                    en->setAttackTimer(240);
+                }
+                else {
+                    en->setAttackTimer(en->getAttackTimer() - 1);
                 }
             }
             break;
         case EnemyType::OCTO:
             targ = getClosestPlayer(en->getPosition(),
-                getVisiblePlayers(world, en->getPosition(), en->getRange(), playerFact->current));
+                getVisiblePlayers(world, en->getPosition(), en->getRange(),
+                    getValidTargets(en->getPosition(), en->getRange(), playerFact)));
             break;
         default:
-            CULog("Error! Enemy type not implemented!!!");
+            CULog("Error! Enemy type not implemented!!! (Pathfinder::updateEnemies)");
             break;
         }
 
@@ -203,8 +208,9 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             //CULog("set target!");
         }
 
-        // if chasing
-        if (en->getState() == EnemyObstacle::EnemyState::CHASING) {
+        // if chasing, move towards target
+        switch (en->getState()) {
+        case EnemyObstacle::EnemyState::CHASING: {
             // Check if enemy has reached its target
             if (en->getTarget().distance(en->getPosition()) < 0.01) {
                 en->setState(EnemyObstacle::EnemyState::IDLE);
@@ -219,21 +225,29 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             //Vec2 desiredVel = en->getTarget() - en->getPosition();
             Vec2 desiredVel = findVelocity(world, en->getTarget(), en->getPosition(), en->getRadius());
             desiredVel.normalize();
-            if (en -> isMud()){
-                desiredVel *= en->getSpeed()/2;
-                int t = en -> getMudTimer() - 1;
-                en -> setMudTimer(t);
-                if (en -> getMudTimer() == 0){
-                    en -> setMud(false);
+            if (en->isMud()) {
+                desiredVel *= en->getSpeed() / 2;
+                int t = en->getMudTimer() - 1;
+                en->setMudTimer(t);
+                if (en->getMudTimer() == 0) {
+                    en->setMud(false);
                 }
             }
-            else{
+            else {
                 desiredVel *= en->getSpeed();
             }
 
             float recovery = 0.2f;
             Vec2 newVel = currentVel * (1 - recovery) + desiredVel * recovery;
             en->setVelocity(newVel);
+            break;
+        }
+        case EnemyObstacle::EnemyState::IDLE:
+            //case EnemyObstacle::EnemyState::
+            en->setVelocity(Vec2::ZERO);
+            break;
+        default:
+            break;
         }
     }
 }

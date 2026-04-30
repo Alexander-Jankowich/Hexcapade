@@ -12,7 +12,7 @@
 #ifndef __INPUT_DISPLAY_H__
 #define __INPUT_DISPLAY_H__
 #include <cugl/cugl.h>
-#include "../Controllers/GLInputController.h"
+#include "../Controllers/InputController.h"
 
 class InputDisplay {
 public:

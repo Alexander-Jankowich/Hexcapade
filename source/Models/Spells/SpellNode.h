@@ -25,7 +25,8 @@ enum class SpellType {
     EARTH = 7,
     COMBO_EFREEZE = 8,
     WATER = 9,
-    BUFF = 10
+    BUFF = 10,
+    SHIELD = 11
 };
 
 class SpellNode : public AnimatedSprite {

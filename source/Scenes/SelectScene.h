@@ -57,7 +57,7 @@ public:
     bool canInitMap() { return _networkCtrl && _networkCtrl->getRandSeed() != 0; }
     bool isHost() { return _networkCtrl && _networkCtrl->isHost(); }
     void resetStatus() { if (_networkCtrl) _networkCtrl->resetStatus(); }
-    void reset() { if (_networkCtrl) _networkCtrl->disconnect(); }
+    void reset() override { if (_networkCtrl) _networkCtrl->disconnect(); }
 
     std::shared_ptr<NetworkController> getNetwork() { return _networkCtrl; }
     CharacterType getSelectedCharacter() const { return _selectedCharacter; }

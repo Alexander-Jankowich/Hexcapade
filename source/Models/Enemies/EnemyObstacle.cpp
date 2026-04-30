@@ -24,7 +24,7 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared
     _range = consts->getFloat("range");
     _attackRange = consts -> getFloat("attack_range");
     _target = pos;
-    _radius = Vec2(s.height, s.width).length() / 2;
+    _radius = Vec2(s.height / (2 * PHYSICS_SCALE), s.width / (2 * PHYSICS_SCALE)).length() / 2;
 
     _state = EnemyState::IDLE;
     _frozen = false;
@@ -42,7 +42,13 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared
  * @param value The current enemy health.
  */
 void EnemyObstacle::setHealth(int value) {
-    _health = value >= 0 ? value : 0;
+    if (value <= 0) {
+        _health = 0;
+        _state = EnemyState::DEATH;
+    }
+    else {
+        _health = value;
+    }
 }
 
 /**
