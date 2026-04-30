@@ -49,7 +49,6 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 
     switch (type) {
     case SpellType::WATER:
-        CULog("this case");
         values = _spellConsts->get("water");
         image = _assets->get<graphics::Texture>("freeze");
         break;
@@ -90,6 +89,10 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     case SpellType::SHIELD:
         values = _spellConsts->get("shield");
         image = _assets->get<graphics::Texture>("shield");
+        break;
+    case SpellType::MUD_WATER:
+        values = _spellConsts->get("mud-water");
+        image = _assets->get<graphics::Texture>("freeze");
         break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");

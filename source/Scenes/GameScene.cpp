@@ -879,8 +879,11 @@ void GameScene::preUpdate(float dt)
                         _networkCtrl->pushOutEvent(
                                     SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
                         p -> resolveSpell();
+                    }else if((_player -> getSpell() == SpellType::EARTH && p -> getSpell() == SpellType::WATER) || (_player->getSpell()  == SpellType::WATER && p -> getSpell() == SpellType::EARTH)){
+                        t = SpellType::MUD_WATER;
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
                     }
-                    // Spell is combo-ed!
                     if (t != SpellType::NONE) {
                         _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
                         break;
@@ -904,6 +907,24 @@ void GameScene::preUpdate(float dt)
                 }
                 break;
             case SpellType::WATER: {
+                int numShots = 8;
+                float start = M_PI / 6.0f;
+                float end = -M_PI / 6.0f;
+                for (int i = 0; i < numShots; i++) {
+                    float alpha = (float)i / (numShots - 1);
+                    float theta = start + alpha * (end - start);
+
+                    Vec2 dir = angle.getNormalization().rotate(theta);
+
+                    auto params = _spellFact->serializeParams(
+                        (playerScreenPos / PHYSICS_SCALE),
+                        dir, t, _networkCtrl->getPID());
+                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                }
+                break;
+            }
+            case SpellType::MUD_WATER:{
                 int numShots = 8;
                 float start = M_PI / 6.0f;
                 float end = -M_PI / 6.0f;
@@ -1681,6 +1702,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
              or spell -> TYPE == SpellType::WATER)){
             if (enemy->getHealth()==0) enemy->markRemoved(true);
             return;
+        }else if(spell->TYPE == SpellType::MUD_WATER){
+            Vec2 pushDir = enemy->getPosition() - spell->getPosition();
+            pushDir.normalize();
+            enemy->setWaterPush(pushDir, 60);
+            enemy->setMud(true);
+            enemy->setMudTimer(600);
         }
         if (enemy->getHealth()==0) enemy->markRemoved(true);
         spell->setRemove();

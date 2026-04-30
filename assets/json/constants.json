@@ -146,6 +146,12 @@
             "range": 5.0,
             "heal": false
         },
+        "mud-water": {
+            "speed": 5,
+            "damage": 1,
+            "range": 3.0,
+            "heal" : false
+        },
         "shield-entity": {
             "rows": 2,
             "columns": 6,

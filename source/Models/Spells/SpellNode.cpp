@@ -35,8 +35,8 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, SpellType t, st
     if(t == SpellType::BUFF){
         setColor(Color4::RED);
     }
-    if(t == SpellType::SHIELD){
-        setColor(Color4::YELLOW);
+    if(t == SpellType::MUD_WATER){
+        setColor(Color4::PAPYRUS);
     }
     
     _velocity = vel;
