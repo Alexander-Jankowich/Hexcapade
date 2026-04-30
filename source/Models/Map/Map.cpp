@@ -19,6 +19,9 @@ _config() {
 
 void Map::reset() {
     _enemySpawnPoints.clear();
+    _z1enemySpawnPoints.clear();
+    _z2enemySpawnPoints.clear();
+    _z3enemySpawnPoints.clear();
     _itemSpawnPoints.clear();
     lw_node->removeAllChildren();
 }
@@ -37,6 +40,9 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
    
     
     _enemySpawnPoints.clear();
+    _z1enemySpawnPoints.clear();
+    _z2enemySpawnPoints.clear();
+    _z3enemySpawnPoints.clear();
     _itemSpawnPoints.clear();
     
     _sceneSize = sceneSize;
