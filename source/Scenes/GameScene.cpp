@@ -1689,47 +1689,68 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if(spell -> getCasterUID() == "bat"){
             return;
         }
-
         // If spell is in end animation, do not do any calculations
         if (spell->shouldRemove()) {
             return;
         }
-
-        if (spell -> TYPE == SpellType::WATER){
-            Vec2 pushDir = enemy->getPosition() - spell->getPosition();
-            pushDir.normalize();
-            enemy->setWaterPush(pushDir, 60);
-            return;
-        }
-        enemy->setHealth(enemy->getHealth() - spell->getDamage());
-        if (spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_EFREEZE){
-            enemy -> setFrozen(true);
-            if(spell->TYPE == SpellType::FREEZE){
-                enemy->setFrozenTimer(240);
-            }else if (spell->TYPE == SpellType::COMBO_FREEZE){
-                enemy->setFrozenTimer(600);
-            }else{
-                enemy->setFrozenTimer(-1);
+        switch (spell -> TYPE){
+            case SpellType::WATER:
+            {
+                Vec2 pushDir = enemy->getPosition() - spell->getPosition();
+                pushDir.normalize();
+                enemy->setWaterPush(pushDir, 60);
+                break;
             }
+            case SpellType::FREEZE:
+                enemy -> setFrozen(true);
+                enemy -> setFrozenTimer(240);
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                spell -> setRemove();
+                break;
+            case SpellType::COMBO_FREEZE:
+                enemy -> setFrozen(true);
+                enemy -> setFrozenTimer(600);
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                break;
+            case SpellType::COMBO_EFREEZE:
+                enemy -> setFrozen(true);
+                enemy -> setFrozenTimer(-1);
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                spell -> setRemove();
+                break;
+            case SpellType::EARTH:
+                enemy -> setMud(true);
+                enemy -> setMudTimer(300);
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                spell -> setRemove();
+                break;
+            case SpellType::MUD_WATER:
+            {
+                Vec2 pushDir = enemy->getPosition() - spell->getPosition();
+                pushDir.normalize();
+                enemy->setWaterPush(pushDir, 60);
+                enemy->setMud(true);
+                enemy->setMudTimer(600);
+                break;
+            }
+            case SpellType::FIREBALL:
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                spell -> setRemove();
+                break;
+            case SpellType::COMBO_FIREBALL:
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                break;
+            case SpellType::DEATH:
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                break;
+            default:
+                spell -> setRemove();
+            }
+        if (enemy -> getHealth() <= 0){
+            enemy -> markRemoved(true);
+        }
+        
             
-        }
-        else if(spell->TYPE == SpellType::EARTH){
-            enemy -> setMud(true);
-            enemy -> setMudTimer(300);
-        }
-        else if((spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
-             or spell -> TYPE == SpellType::WATER)){
-            if (enemy->getHealth()==0) enemy->markRemoved(true);
-            return;
-        }else if(spell->TYPE == SpellType::MUD_WATER){
-            Vec2 pushDir = enemy->getPosition() - spell->getPosition();
-            pushDir.normalize();
-            enemy->setWaterPush(pushDir, 60);
-            enemy->setMud(true);
-            enemy->setMudTimer(600);
-        }
-        if (enemy->getHealth()==0) enemy->markRemoved(true);
-        spell->setRemove();
     }
     else if (wall && player){
         contact->SetEnabled(true);
