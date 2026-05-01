@@ -54,6 +54,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::COMBO_FIREBALL:
         values = _spellConsts->get("combo_fireball");
+        image = _assets->get<graphics::Texture>("combo-fireball");
         break;
     case SpellType::FIREBALL:
         values = _spellConsts->get("fireball");
@@ -69,7 +70,6 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     case SpellType::STEAM:
         // Should never show tbh
         values = _spellConsts->get("steam");
-        image = _assets->get<graphics::Texture>("fireball");
         break;
     case SpellType::HEAL:
         values = _spellConsts->get("heal");
