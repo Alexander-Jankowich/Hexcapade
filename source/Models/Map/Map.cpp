@@ -7,6 +7,20 @@
 #include <cmath>
 #include <unordered_set>
 
+namespace {
+
+// keeps zone array lookups inside the three configured item bands
+int itemZoneIndex(int zone) {
+    if (zone < 1) {
+        return 0;
+    }
+    if (zone > 3) {
+        return 2;
+    }
+    return zone - 1;
+}
+
+}
 
 
 
@@ -642,8 +656,24 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
     _config._zone2EnemyProb = data->get("zone-probs")->asFloatArray()[1];
     _config._zone3EnemyProb = data->get("zone-probs")->asFloatArray()[2];
 
-    
-    // TODO: add parsing for item data
+    // currently mirrors whiteboard values, now loaded from level_config
+    std::shared_ptr<JsonValue> itemValueZones = data->get("item-value-zones");
+    if (itemValueZones && itemValueZones->size() >= 3) {
+        for (int zone = 0; zone < 3; zone++) {
+            std::shared_ptr<JsonValue> zoneData = itemValueZones->get(zone);
+            _config._itemValueZoneMins[zone] = zoneData->getFloat("min", _config._itemValueZoneMins[zone]);
+            _config._itemValueZoneMaxs[zone] = zoneData->getFloat("max", _config._itemValueZoneMaxs[zone]);
+        }
+    }
+
+    std::shared_ptr<JsonValue> itemCategoryProbs = data->get("item-category-probs");
+    if (itemCategoryProbs && itemCategoryProbs->size() >= 3) {
+        for (int zone = 0; zone < 3; zone++) {
+            std::shared_ptr<JsonValue> zoneData = itemCategoryProbs->get(zone);
+            _config._itemSpellbookZoneProbs[zone] = zoneData->getFloat("spellbook", _config._itemSpellbookZoneProbs[zone]);
+            _config._itemArtifactZoneProbs[zone] = zoneData->getFloat("artifact", _config._itemArtifactZoneProbs[zone]);
+        }
+    }
 }
 
 // finds the farthest item spawn point from player start
@@ -669,6 +699,26 @@ int Map::getItemSpawnZone(const Vec2& worldPoint) const {
         return 2;
     }
     return 3;
+}
+
+// gives gamescene the min value ratio for the chosen item zone
+float Map::getItemValueZoneMin(int zone) const {
+    return _config._itemValueZoneMins[itemZoneIndex(zone)];
+}
+
+// gives gamescene the max value ratio for the chosen item zone
+float Map::getItemValueZoneMax(int zone) const {
+    return _config._itemValueZoneMaxs[itemZoneIndex(zone)];
+}
+
+// gives gamescene the spellbook roll chance for this item zone
+float Map::getItemSpellbookZoneProb(int zone) const {
+    return _config._itemSpellbookZoneProbs[itemZoneIndex(zone)];
+}
+
+// gives gamescene the artifact roll chance for this item zone
+float Map::getItemArtifactZoneProb(int zone) const {
+    return _config._itemArtifactZoneProbs[itemZoneIndex(zone)];
 }
 
 std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns(const std::vector<Vec2> playersPos) {

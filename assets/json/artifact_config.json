@@ -5,48 +5,48 @@
       "_comment": "scrollartifact visual",
       "id": "artifact_scroll",
       "name": "Scroll",
-      "value": 200,
-      "weight": 1.0,
+      "value": 20,
+      "weight": 0.5,
       "texture_asset": "artifact_scroll"
     },
     {
       "_comment": "gem artifact red visual",
       "id": "artifact_gem_reduce",
       "name": "Gem_Reduce",
-      "value": 100,
-      "weight": 1.0,
+      "value": 5,
+      "weight": 0.6,
       "texture_asset": "artifact_reduce"
     },
     {
       "_comment": "gem artifact green visual",
       "id": "artifact_gem_boost",
       "name": "Gem_Boost",
-      "value": 60,
-      "weight": 1.0,
+      "value": 6,
+      "weight": 0.3,
       "texture_asset": "artifact_boost"
     },
     {
       "_comment": "gem artifact blue visual",
       "id": "artifact_heavy",
       "name": "Gem_Boost",
-      "value": 150,
-      "weight": 1.0,
+      "value": 5,
+      "weight": 0.5,
       "texture_asset": "artifact_heavy"
     },
     {
       "_comment": "gem artifact brown visual",
       "id": "artifact_protection",
       "name": "Gem_Boost",
-      "value": 120,
-      "weight": 1.0,
+      "value": 15,
+      "weight": 0.2,
       "texture_asset": "artifact_protection"
     },
     {
       "_comment": "gem artifact gold visual (real)",
       "id": "artifact_gold_real",
       "name": "Gem_Boost",
-      "value": 200,
-      "weight": 1.0,
+      "value": 20,
+      "weight": 0.4,
       "texture_asset": "artifact_gold"
     },
     {
@@ -54,15 +54,15 @@
       "id": "artifact_gold_fake",
       "name": "Gem_Boost",
       "value": 0,
-      "weight": 1.0,
+      "weight": 0.6,
       "texture_asset": "artifact_gold"
     },
     {
       "_comment": "gem artifact pink visual",
       "id": "artifact_bomb",
       "name": "Gem_Boost",
-      "value": 120,
-      "weight": 1.0,
+      "value": 12,
+      "weight": 0.5,
       "texture_asset": "artifact_bomb"
     }
   ],
@@ -71,48 +71,48 @@
       "_comment": "fire spellbook uses the brown book with flame icon",
       "id": "spellbook_fire",
       "name": "Fire Spellbook",
-      "value": 25,
-      "weight": 1.0,
+      "value": 5,
+      "weight": 0.5,
       "texture_asset": "spellbook_fire"
     },
     {
       "_comment": "freeze spellbook uses the blue book with snowflake icon",
       "id": "spellbook_freeze",
       "name": "Freeze Spellbook",
-      "value": 25,
-      "weight": 1.0,
+      "value": 7,
+      "weight": 0.3,
       "texture_asset": "spellbook_freeze"
     },
     {
       "_comment": "heal spellbook uses the red book with heart icon",
       "id": "spellbook_heal",
       "name": "Heal Spellbook",
-      "value": 25,
-      "weight": 1.0,
+      "value": 6,
+      "weight": 0.4,
       "texture_asset": "spellbook_heal"
     },
     {
       "_comment": "earth spellbook",
       "id": "spellbook_earth",
       "name": "Earth Spellbook",
-      "value": 25,
-      "weight": 1.0,
+      "value": 7,
+      "weight": 0.3,
       "texture_asset": "spellbook_earth"
     },
     {
       "_comment": "death spellbook",
       "id": "spellbook_death",
       "name": "Death Spellbook",
-      "value": 25,
-      "weight": 1.0,
+      "value": 20,
+      "weight": 0.2,
       "texture_asset": "spellbook_death"
     },
     {
       "_comment": "water spellbook",
       "id": "spellbook_water",
       "name": "Water Spellbook",
-      "value": 25,
-      "weight": 1.0,
+      "value": 5,
+      "weight": 0.5,
       "texture_asset": "spellbook_water"
     }
   ]

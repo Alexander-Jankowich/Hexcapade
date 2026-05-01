@@ -46,7 +46,12 @@ private:
         float _zone2EnemyProb;
         float _zone3EnemyProb;
         
-        // TODO: add item data
+        // item value bands are ratios of the max item value in the catalog
+        std::array<float, 3> _itemValueZoneMins = {0.0f, 0.30f, 0.75f};
+        std::array<float, 3> _itemValueZoneMaxs = {0.30f, 0.75f, 1.0f};
+        // item category rolls decide spellbook vs artifact after zone value filtering
+        std::array<float, 3> _itemSpellbookZoneProbs = {0.70f, 0.50f, 0.30f};
+        std::array<float, 3> _itemArtifactZoneProbs = {0.30f, 0.50f, 0.70f};
     };
     struct MapDoor {
         Vec2 pos;
@@ -104,6 +109,10 @@ public:
     const std::vector<Vec2>& getEnemySpawnPoints() const {return _enemySpawnPoints;}
     const std::vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
     int getItemSpawnZone(const Vec2& worldPoint) const;
+    float getItemValueZoneMin(int zone) const;
+    float getItemValueZoneMax(int zone) const;
+    float getItemSpellbookZoneProb(int zone) const;
+    float getItemArtifactZoneProb(int zone) const;
     const std::vector<std::shared_ptr<Room>> getRooms() const {return _rooms;}
     int getNumRooms() { return (int)_rooms.size(); }
 

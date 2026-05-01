@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <random>
+#include <array>
 #include <box2d/b2_draw.h>
 #include <box2d/b2_world.h>
 #include <box2d/b2_contact.h>
@@ -66,8 +67,7 @@ float getTypicalItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
     return totalValue / totalWeight;
 }
 
-// finds the highest value item in the current catalog so the zone cutoffs
-// used the board img percentages of max item value for now (should be in config?)
+// finds the highest value item so the board cutoffs scale with catalog changes
 int getMaxItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
     int maxValue = 0;
     for (const auto& item : entries) {
@@ -76,22 +76,46 @@ int getMaxItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
     return maxValue;
 }
 
-// checks whether one item belongs in what zone for the
-// zone we assigned to this spawn point using the cutoffs we came up 
-bool isItemEligibleForZone(const ItemCatalogEntryConfig& item, int zone, int maxItemValue) {
-    float lowCutoff = 0.30f * maxItemValue;
-    float highCutoff = 0.75f * maxItemValue;
+// checks whether an item fits the configured value band for this spawn point's zone
+bool isItemEligibleForZone(const ItemCatalogEntryConfig& item,
+                           int zone,
+                           int maxItemValue,
+                           float zoneMinRatio,
+                           float zoneMaxRatio) {
+    float lowCutoff = zoneMinRatio * maxItemValue;
+    float highCutoff = zoneMaxRatio * maxItemValue;
 
     switch (zone) {
         case 1:
-            return item.value < lowCutoff;
+            return item.value >= lowCutoff && item.value < highCutoff;
         case 2:
             return item.value >= lowCutoff && item.value < highCutoff;
         case 3:
-            return item.value >= highCutoff;
+            return item.value >= lowCutoff && item.value <= highCutoff;
         default:
             return true;
     }
+}
+
+bool isItemInCategory(const ItemCatalogEntryConfig& item, bool wantSpellbook) {
+    bool isSpellbook = item.id.rfind("spellbook_", 0) == 0;
+    bool isArtifact = item.id.rfind("artifact_", 0) == 0;
+    if (wantSpellbook) {
+        return isSpellbook;
+    }
+    return isArtifact;
+}
+
+// rolls the zone category probabilities from level_config before weighted pick
+bool chooseSpellbookForZone(float spellbookProb,
+                            float artifactProb,
+                            const std::shared_ptr<cugl::Random>& random) {
+    float totalProb = spellbookProb + artifactProb;
+    if (totalProb <= 0.0f) {
+        return false;
+    }
+    float roll = random->getClosedFloat(0.0f, totalProb);
+    return roll <= spellbookProb;
 }
 
 // Goal: enough item value to cover quota, but never spawn more than
@@ -464,6 +488,18 @@ void GameScene::spawnItemsFromMap() {
         typicalItemValue, _runConfig.item.quotaCoverageRatio
     );
 
+    // debug stuff
+    std::array<size_t, 3> zoneSpawnPoints = {0, 0, 0};
+    std::array<size_t, 3> zonePopulated = {0, 0, 0};
+    std::array<size_t, 3> zoneSpellbooks = {0, 0, 0};
+    std::array<size_t, 3> zoneArtifacts = {0, 0, 0};
+    for (const auto& spawnPoint : spawnPoints) {
+        int zone = _map->getItemSpawnZone(spawnPoint);
+        if (zone >= 1 && zone <= 3) {
+            zoneSpawnPoints[zone - 1]++;
+        }
+    }
+
     // Start with every spawn point, then randomly* remove from this
     // list as we choose which points to actually use for run
     std::vector<size_t> spawnIndices(spawnPoints.size());
@@ -484,22 +520,58 @@ void GameScene::spawnItemsFromMap() {
         Vec2 physPos = worldPt / PHYSICS_SCALE;
         int zone = _map->getItemSpawnZone(worldPt);
 
-        // build a smaller catalog for this spawn point so we keep the existing picker
-        // const ItemCatalogEntryConfig* chooseItemForZone(...) later?
+        // get the value ratios loaded from level_config for this spawn zone
+        float zoneMinRatio = _map->getItemValueZoneMin(zone);
+        float zoneMaxRatio = _map->getItemValueZoneMax(zone);
+        float spellbookProb = _map->getItemSpellbookZoneProb(zone);
+        float artifactProb = _map->getItemArtifactZoneProb(zone);
+
+        // filter items to the value band for this spawn point's zone
         std::vector<ItemCatalogEntryConfig> zoneEntries;
         zoneEntries.reserve(entries.size());
         for (const auto& entry : entries) {
-            if (isItemEligibleForZone(entry, zone, maxItemValue)) {
+            if (isItemEligibleForZone(entry, zone, maxItemValue, zoneMinRatio, zoneMaxRatio)) {
                 zoneEntries.push_back(entry);
             }
         }
 
-        const ItemCatalogEntryConfig* item = chooseWeight(zoneEntries, _random);
+        // roll spellbook vs artifact using the zone probabilities from level_config
+        bool wantSpellbook = chooseSpellbookForZone(spellbookProb, artifactProb, _random);
+
+        // then filter the zone band to the category we rolled
+        std::vector<ItemCatalogEntryConfig> categoryEntries;
+        categoryEntries.reserve(zoneEntries.size());
+        for (const auto& entry : zoneEntries) {
+            if (isItemInCategory(entry, wantSpellbook)) {
+                categoryEntries.push_back(entry);
+            }
+        }
+
+        const ItemCatalogEntryConfig* item = chooseWeight(categoryEntries, _random);
         int itemValue = item->value;
         std::string itemType = item->textureAsset.empty() ? item->id : item->textureAsset;
 
+        CULog("ItemFactory: zone=%d value=%d id=%s", zone, itemValue, item->id.c_str());
+
+        // debug looking at each spawned
+        if (zone >= 1 && zone <= 3) {
+            zonePopulated[zone - 1]++;
+            if (isItemInCategory(*item, true)) {
+                zoneSpellbooks[zone - 1]++;
+            } else if (isItemInCategory(*item, false)) {
+                zoneArtifacts[zone - 1]++;
+            }
+        }
+
         auto params = _itemFact->serializeParams(physPos, itemValue, itemType);
         _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
+    }
+    
+    // debugggg
+    for (int zone = 1; zone <= 3; zone++) {
+        CULog("ItemFactory: zone %d spawn points=%zu populated=%zu spellbooks=%zu artifacts=%zu",
+              zone, zoneSpawnPoints[zone - 1], zonePopulated[zone - 1],
+              zoneSpellbooks[zone - 1], zoneArtifacts[zone - 1]);
     }
     CULog("ItemFactory: spawned %zu items", spawnCount);
 }
