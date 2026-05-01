@@ -11,8 +11,6 @@
 using namespace std;
 using namespace cugl;
 
-#define FPS 10.0f
-
 int SpellNode::rows = 1;
 int SpellNode::cols = 1;
 int SpellNode::mainLoop = 0;
@@ -50,31 +48,15 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, SpellType t, st
 
 pair<ActionFunction, float> SpellNode::getNextAnimation() {
     if (_deleteAtEnd) {
-        return { [this](float, ActionState) {}, -1 };
+        return END_ANIMATION;
     }
 
     switch (_nextAnimation) {
     case AnimationType::ACTIVE:
-        return {
-            [this](float t, ActionState state) {
-                int offset = state == ActionState::FINISH ? mainLoopFrames - 1 :
-                    state == ActionState::BEGIN ? 0 :
-                    min((int)(t * mainLoopFrames), mainLoopFrames - 1);
-                setFrame(mainLoop + offset);
-            },
-            mainLoopFrames / FPS
-        };
+        return getAnimationPair(mainLoop, mainLoopFrames);
     case AnimationType::END:
         _deleteAtEnd = true;
-        return {
-            [this](float t, ActionState state) {
-                int offset = state == ActionState::FINISH ? endFrames - 1 :
-                    state == ActionState::BEGIN ? 0 : 
-                    min((int)(t * endFrames), endFrames - 1);
-                setFrame(end + offset);
-            },
-            endFrames / FPS
-        };
+        return getAnimationPair(end, endFrames);
     default:
         CULog("How did you get here? There are no other animation types. (SpellNode::getNextAnimation)");
         return END_ANIMATION;

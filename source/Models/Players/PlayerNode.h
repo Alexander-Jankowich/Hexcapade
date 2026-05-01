@@ -76,7 +76,7 @@ private:
     bool _shield = false;
     bool _hurt = false;
     
-    int getDirection() { return facingLeft * 2 + facingBack; }
+    int getDirection() override { return facingLeft * 2 + facingBack; }
 
 public:
 #pragma mark Constructors

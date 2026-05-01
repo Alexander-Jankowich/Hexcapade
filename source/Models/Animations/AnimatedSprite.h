@@ -17,21 +17,33 @@ using namespace std;
 
 class AnimatedSprite : public scene2::SpriteNode {
 protected:
-	void updateFrame(float t, ActionState state, int start, int numFrames) {
-		int offset = state == ActionState::FINISH ? numFrames - 1 :
-			state == ActionState::BEGIN ? 0 :
-			min((int)(t * numFrames), numFrames - 1);
-		setFrame(start + offset);
+	pair<ActionFunction, float> getAnimationPair(const int* start, const int numFrames) {
+		return {
+			[this, start, numFrames](float t, ActionState state) {
+				int offset = state == ActionState::FINISH ? numFrames - 1 :
+					state == ActionState::BEGIN ? 0 :
+					min((int)(t * numFrames), numFrames - 1);
+				setFrame(start[getDirection()] + offset);
+			},
+			numFrames / FPS
+		};
 	}
 
-	void updateFrame(float t, ActionState state, int* start, int direction, int numFrames) {
-		int offset = state == ActionState::FINISH ? numFrames - 1 :
-			state == ActionState::BEGIN ? 0 :
-			min((int)(t * numFrames), numFrames - 1);
-		setFrame(start[direction] + offset);
+	pair<ActionFunction, float> getAnimationPair(const int start, const int numFrames) {
+		return {
+			[this, start, numFrames](float t, ActionState state) {
+				int offset = state == ActionState::FINISH ? numFrames - 1 :
+					state == ActionState::BEGIN ? 0 :
+					min((int)(t * numFrames), numFrames - 1);
+				setFrame(start + offset);
+			},
+			numFrames / FPS
+		};
 	}
 
 	const pair<ActionFunction, float> END_ANIMATION = { [this](float, ActionState) {}, -1 };
+
+	virtual int getDirection() { return 0; };
 
 public:
 	virtual ~AnimatedSprite() = default;
