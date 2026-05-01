@@ -1576,63 +1576,68 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
         //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID()==player->getPID()) return;
-        if (spell->TYPE == SpellType::HEAL) {
-            if(player -> getHealth() < 0){
+        int nh = player->getHealth() + HEAL_AMT;
+        switch (spell->TYPE) {
+        case SpellType::HEAL:
+            if (player->getHealth() < 0) {
                 player->setHealth(1);
-                spell -> setRemove();
-                return;
+                spell->setRemove();
+                break;
             }
-            int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
-            CULog("player_health : %d", player->getHealth());
             spell->setRemove();
-            return;
-        }
-        if (spell->TYPE == SpellType::FREEZE || spell->TYPE == SpellType::COMBO_FREEZE) {
+            break;
+        case SpellType::FREEZE:
+            player->setFrozeTimer(90);
+            player->setFrozen(true);
+            spell->setRemove();
+            healthHelper(1, player);
+            break;
+        case SpellType::COMBO_FREEZE:
             player->setFrozeTimer(180);
             player->setFrozen(true);
-        }
-        if (spell->TYPE == SpellType::EARTH){
+            healthHelper(1, player);
+            spell->setRemove();
+            break;
+        case SpellType::COMBO_EFREEZE:
+            player->setFrozeTimer(360);
+            player->setFrozen(true);
+            spell->setRemove();
+            break;
+        case SpellType::EARTH:
             player->setMudTimer(240);
-            player -> setMud(true);
+            player->setMud(true);
+            spell->setRemove();
+            healthHelper(1, player);
+            break;
+        case SpellType::BUFF:
+            player->setBuffTimer(3600);
+            player->setBuff(true);
+            spell->setRemove();
+            break;
+        case SpellType::WATER:
+        case SpellType::MUD_WATER:
+            break;
+        case SpellType::SHIELD:
+            player->setShield(true);
+            player->setShieldCount(3);
+            spell->setRemove();
+            break;
+        case SpellType::FIREBALL:
+            healthHelper(2, player);
+            spell->setRemove();
+            break;
+        case SpellType::COMBO_FIREBALL:
+            healthHelper(4, player);
+            spell->setRemove();
+            break;
+            break;
+        case SpellType::DEATH:
+            healthHelper(500, player);
+            break;
+        default:
+            CULog("A None Type Spell Should Not be Colliding With Anything");
         }
-
-        if (spell->TYPE == SpellType::BUFF){
-            player -> setBuffTimer(3600);
-            player -> setBuff(true);
-            spell -> setRemove();
-            return;
-        }
-        if(spell -> TYPE == SpellType::WATER){
-            return;
-        }
-        if(spell -> TYPE == SpellType::SHIELD){
-            player -> setShield(true);
-            player -> setShieldCount(3);
-            spell -> setRemove();
-            return;
-        }
-        if(player -> hasShield()){
-            player -> setShieldCount(player -> getShieldCount() - 1);
-            if(player -> getShieldCount() == 0){
-                player -> setShield(false);
-            }
-            spell -> setRemove();
-            return;
-            
-        }
-        if(spell -> TYPE == SpellType::DEATH){
-            player -> setHealth(0);
-            return;
-        }
-        if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
-            player->consumeProtectionArtifact();
-            player->setHealth(2);
-            return;
-        }
-        player -> setHealth(player->getHealth() - 1);
-        spell->setRemove();
-        
     }
     else if (player && enemy) {
         //We need a death message
