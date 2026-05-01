@@ -66,6 +66,11 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         values = _spellConsts->get("freeze");
         image = _assets->get<graphics::Texture>("freeze");
         break;
+    case SpellType::STEAM:
+        // Should never show tbh
+        values = _spellConsts->get("steam");
+        image = _assets->get<graphics::Texture>("fireball");
+        break;
     case SpellType::HEAL:
         values = _spellConsts->get("heal");
         image = _assets->get<graphics::Texture>("heal");
@@ -183,7 +188,7 @@ std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {
 
 void SpellFactory::linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, shared_ptr<Animator> animations) {
     // Mark spells to be removed when out of range
-    if (obs->getTraveled() > obs->getRange()) {
+    if (obs->getTraveled() >= obs->getRange()) {
         obs->setRemove();
     }
 

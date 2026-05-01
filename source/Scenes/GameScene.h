@@ -27,6 +27,11 @@
 
 #include "InputDisplay.h"
 #define ROUND_TIMER 5400
+
+using namespace cugl;
+using namespace std;
+
+
 /**
  * This class is the primary gameplay constroller for the demo.
  *
@@ -34,56 +39,56 @@
  * really a mini-GameEngine in its own right.  As in 3152, we separate it out
  * so that we can have a separate mode for the loading screen.
  */
-class GameScene : public cugl::scene2::Scene2 {
+class GameScene : public scene2::Scene2 {
 protected:
     // CONTROLLERS are attached directly to the scene (no pointers)
-    std::shared_ptr<NetworkController> _networkCtrl;
+    shared_ptr<NetworkController> _networkCtrl;
     /** uuid to players most recent update*/
-    //std::unordered_map<std::string, ClientInput> _clientInputs;
+    //unordered_map<string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
     InputController _input;
-    std::shared_ptr<InputDisplay> _inputDisplay;
-    std::shared_ptr<cugl::Random> _random;
+    shared_ptr<InputDisplay> _inputDisplay;
+    shared_ptr<Random> _random;
     bool _addedLWalls;
     /** Reference to the physics root of the scene graph */
-    std::shared_ptr<cugl::scene2::OrderedNode> _worldnode;
+    shared_ptr<scene2::OrderedNode> _worldnode;
     
     /** Node for the currently open inventory card cente */
-    std::shared_ptr<cugl::scene2::SceneNode> _inventoryCardNode;
+    shared_ptr<scene2::SceneNode> _inventoryCardNode;
     /** Node for the currently open tutorial page */
-    std::shared_ptr<cugl::scene2::SceneNode> _tutorialNode;
+    shared_ptr<scene2::SceneNode> _tutorialNode;
 
     /** The Box2D world */
-    std::shared_ptr<cugl::physics2::distrib::NetWorld> _world;
+    shared_ptr<physics2::distrib::NetWorld> _world;
 
     /** Factories */
-    std::shared_ptr<SpellFactory> _spellFact;
+    shared_ptr<SpellFactory> _spellFact;
     Uint32 _spellFactId;
-    std::shared_ptr<PlayerFactory> _playerFact;
+    shared_ptr<PlayerFactory> _playerFact;
     Uint32 _playerFactId;
-    std::shared_ptr<EnemyFactory> _enemyFact;
+    shared_ptr<EnemyFactory> _enemyFact;
     Uint32 _enemyFactId;
-    std::shared_ptr<ItemFactory> _itemFact;
+    shared_ptr<ItemFactory> _itemFact;
     Uint32 _itemFactId;
 
-    std::shared_ptr<PlayerObstacle> _player;
+    shared_ptr<PlayerObstacle> _player;
 
     /** Action Timeline for animations */
-    std::shared_ptr<Animator> _animations;
+    shared_ptr<Animator> _animations;
     
-    std::shared_ptr<Map> _map;
+    shared_ptr<Map> _map;
     RoomController _roomController;
     RunBalanceConfig _runConfig;
-    cugl::Vec2 _cameraBottomLeft;
+    Vec2 _cameraBottomLeft;
     float _cameraZoom;
     unsigned int _mapSeed;
-    cugl::Size _mapSceneSize;
+    Size _mapSceneSize;
     float lastEnemySpawn;
 
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
     Pathfinder _pathfinder;
 
-    std::vector<std::pair<ItemObstacle*, std::shared_ptr<cugl::scene2::SceneNode>>> _itemNodes;
+    vector<pair<ItemObstacle*, shared_ptr<scene2::SceneNode>>> _itemNodes;
     /** GA: itemnet legacy scene-local inventory cache kept during the migration. */
     int _inventoryValue;
     /** The total value already deposited into the shared quota. */
@@ -97,27 +102,30 @@ protected:
     /**Timer for end of game**/
     float _timer = ROUND_TIMER;
 
-    std::shared_ptr<cugl::AssetManager> _assets;
+    shared_ptr<AssetManager> _assets;
     /** list of rooms */
-    std::shared_ptr<std::vector<std::string>> _rooms;
+    shared_ptr<vector<string>> _rooms;
     /** Font for rendering HUD text */
-    std::shared_ptr<cugl::graphics::Font> _font;
+    shared_ptr<graphics::Font> _font;
 
     /** The constants json */
-    std::shared_ptr<cugl::JsonValue> _constants;
+    shared_ptr<JsonValue> _constants;
     /** The gestures json */
-    std::shared_ptr<cugl::JsonValue> _gestures;
+    shared_ptr<JsonValue> _gestures;
+
+    /** A map of a pair of spells to their combination */
+    map<pair<SpellType, SpellType>, SpellType> _spellCombos;
 
     /** this tracks whether the player is currently inside the deposit zone */
     bool _canDeposit;
     /** this stores the prototype origin/deposit interaction position */
-    cugl::Vec2 _depositPosition;
+    Vec2 _depositPosition;
     /** this stores the prototype origin/deposit interaction radius */
     float _depositRadius;
     /** id of item player is on, if they are on an item */
     int _currOverlappedItem = -1;
     int _pendingInventoryTapIndex = -1;
-    cugl::Timestamp _lastInventoryTapTime;
+    Timestamp _lastInventoryTapTime;
     /** Which tutorial page is currently open, or 0 if closed */
     int _tutorialPage = 0;
 
@@ -130,19 +138,20 @@ public:
      * This constructor does not allocate any objects or start the game.
      * This allows us to use the object without a heap pointer.
      */
-    GameScene() : cugl::scene2::Scene2(),
-        _cameraBottomLeft(cugl::Vec2::ZERO),
+    GameScene() : scene2::Scene2(),
+        _cameraBottomLeft(Vec2::ZERO),
         _cameraZoom(1.5f),
         _mapSeed(0),
-        _mapSceneSize(cugl::Size::ZERO),
+        _mapSceneSize(Size::ZERO),
         _quota(100),
         _playerWon(false),
         _gameEnded(false),
         _inventoryValue(0),
         _depositedValue(0),
         _canDeposit(false),
-        _depositPosition(cugl::Vec2::ZERO),
-        _depositRadius(42.0f) {}
+        _depositPosition(Vec2::ZERO),
+        _depositRadius(42.0f),
+        lastEnemySpawn(0) {}
 
 
     /**
@@ -172,9 +181,9 @@ public:
      *
      * @return true if the controller is initialized properly, false otherwise.
      */
-    bool init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<std::vector<std::string>>& rooms);
+    bool init(const shared_ptr<AssetManager>& assets, const shared_ptr<vector<string>>& rooms);
     
-    std::shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
+    shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
     void release() {_networkCtrl = nullptr;}
 
     int getDepositedValue() const { return _depositedValue; }
@@ -182,7 +191,7 @@ public:
     bool hasWon() const { return _networkCtrl->gameState()==NetworkController::NCGameState::WON; }
 
     /** initializes the network and physics world */
-    void initNetwork(std::shared_ptr<NetworkController> n);
+    void initNetwork(shared_ptr<NetworkController> n);
     /** initialize map once network is populated with random seed for this round */
     void initMap();
     /**
@@ -287,10 +296,12 @@ public:
     
 private:
 
-    cugl::Rect getInventorySlotBounds(size_t slotIndex) const;
-    cugl::Rect getHelpButtonBounds() const;
+#pragma mark Inventory Code
+    // PLEASE MOVE THIS OUT OF MAIN.
+    Rect getInventorySlotBounds(size_t slotIndex) const;
+    Rect getHelpButtonBounds() const;
     // this maps the last hud tap to an inventory slot index for the upcoming item flow
-    int getInventorySlotIndexAt(const cugl::Vec2& tapPos) const;
+    int getInventorySlotIndexAt(const Vec2& tapPos) const;
     void showInventoryCard(size_t slotIndex);
     void hideInventoryCard();
     void showTutorialPage(int page);
@@ -298,56 +309,58 @@ private:
     /**
      * on recieving a pickup event from player, checks if it is valid.
      */
-    bool hostCheckItemPickupForPlayer(const std::string& pid);
+    bool hostCheckItemPickupForPlayer(const string& pid);
     // this removes the world node for an item after the item obstacle is deleted
-    void removeItemNode(const std::shared_ptr<ItemObstacle>& item);
+    void removeItemNode(const shared_ptr<ItemObstacle>& item);
     // host-only: this spawns physics-backed items at map spawn points
     void spawnItemsFromMap();
+
+#pragma mark Map things
     // this loads map/item quota tuning from json without changing the networking path
     void loadGameplayConfig();
     // this rebuilds the current map from host-owned run metadata
     void rebuildMapForRun();
+
+#pragma mark Camera/HUD
     // this returns the orthographic zoom
     float getActiveCameraZoom() const;
+
     // this keeps the world camera centered on the local player inside map bounds
     void updateCameraFollow();
-    // this resolves the local player move against generated room/hall walls
-    cugl::Vec2 resolvePlayerMapMove(const cugl::Vec2& startPos, const cugl::Vec2& velocity) const;
+
     // this returns the camera offset used to keep hud elements screen-anchored
-    cugl::Vec2 getHUDOffset() const;
+    Vec2 getHUDOffset() const;
 
     // this draws the prototype deposit zone so desktop/mobile tests can target it
     void drawDepositZone();
 
     void renderHUD();
 
-
+#pragma mark Physics functions
     /**
-     * This method links a scene node to the obstacle.
-     *
-     * This method adds a listener so that the sceneNode will move along with the obstacle.
-     */
-    void linkSceneToObs(const std::shared_ptr<cugl::physics2::Obstacle>& obj,
-        const std::shared_ptr<cugl::scene2::SceneNode>& node);
-
-    /**
-     * Adds the physics object to the physics world and loosely couples it to the scene graph
-     *
-     * There are two ways to link a physics object to a scene graph node on the
-     * screen.  One way is to make a subclass of a physics object.
-     * The other is to use callback functions to loosely couple
-     * the two.  This function is an example of the latter.
-     * the two.  This function is an example of the latter.
-     *
-     * param obj    The physics object to add
-     * param node   The scene graph node to attach it to
-     */
-    void addInitObstacle(const std::shared_ptr<cugl::physics2::Obstacle>& obj,
-        const std::shared_ptr<cugl::scene2::SceneNode>& node);
+    * This method links a scene node to the obstacle.
+    *
+    * This method adds a listener so that the sceneNode will move along with the obstacle.
+    */
+    void linkSceneToObs(const shared_ptr<physics2::Obstacle>& obj,
+        const shared_ptr<scene2::SceneNode>& node);
     
     void beginContact(b2Contact* contact);
 
     void beforeSolve(b2Contact* contact, const b2Manifold* oldManifold);
+
+#pragma mark Spell helper functions
+    /**
+    * Adds all spell combos to the map.
+    * Only adds one version of each combo. The getCombo function will check both ordering of the spells.
+    */
+    void initCombos();
+
+    /**
+    * Given the caster id and spell type, returns the combo spell type (SpellType::NONE
+    * if no combos available) and the player id of the player that was combo-ed with
+    */
+    pair<SpellType, string> getCombo();
 };
 
 #endif // !__GAME_SCENE_H__
