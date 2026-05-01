@@ -162,6 +162,17 @@
             "created_frames": 4,
             "existing_frames": 1,
             "end_frames": 6
+        },
+        "buff-entity": {
+            "rows": 2,
+            "columns": 6,
+
+            "created": 0,
+            "existing": 4,
+            "end": 8,
+            "created_frames": 4,
+            "existing_frames": 4,
+            "end_frames": 4
         }
     },
     "enemies": {
@@ -231,7 +242,7 @@
         "octoplush": {
             "health": 12,
             "speed": 2.0,
-            "range": 4.5,
+            "range": 8,
             "attack_range" : 0,
             "texture": "octoplush",
             "columns": 8,
@@ -252,7 +263,7 @@
         "mini-octoplush": {
             "health": 5,
             "speed": 2.0,
-            "range": 4.5,
+            "range": 8,
             "attack_range" : 0,
             "texture": "octoplush",
             "columns": 8,

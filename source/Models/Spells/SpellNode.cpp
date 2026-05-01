@@ -44,6 +44,9 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, SpellType t, st
 
     _deleteAtEnd = false;
     _nextAnimation = AnimationType::ACTIVE;
+
+    setFrame(mainLoop);
+    setPriority(1);
 }
 
 pair<ActionFunction, float> SpellNode::getNextAnimation() {

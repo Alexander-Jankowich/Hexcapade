@@ -20,7 +20,7 @@ void Animator::update(float dt) {
 	for (auto it = _active.begin(); it != _active.end(); ) {
 		string key = it->second;
 		shared_ptr<AnimatedSprite> node = it->first;
-        node -> setPriority(0.0f);
+
 		if (!_timeline->isActive(key)) {
 			// Action has ended, need to re-add
 			auto ani = node->getNextAnimation();
