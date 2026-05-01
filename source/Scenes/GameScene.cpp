@@ -1635,7 +1635,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
                 break;
             case SpellType::BUFF:
                 player -> setBuffTimer(3600);
-                player -> setMud(true);
+                player -> setBuff(true);
                 spell -> setRemove();
                 break;
             case SpellType::WATER:
