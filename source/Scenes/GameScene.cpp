@@ -631,7 +631,11 @@ void GameScene::preUpdate(float dt)
 
     if (_player->getHealth()==0) return; // if dead ignore updates
 
-    _player->updateTimers(dt);
+    //We need to update everyones timers locally cause why would we do this over network
+    for(auto p : _playerFact -> current){
+        p -> updateTimers(dt);
+    }
+ 
 
     // Player movement
     cugl::Vec2 input = _input.getMove();

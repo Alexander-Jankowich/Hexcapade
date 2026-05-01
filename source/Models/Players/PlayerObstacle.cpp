@@ -211,6 +211,7 @@ void PlayerObstacle::updateTimers(float dt) {
         _frozenTimer -= 1;
         if (_frozenTimer <= 0) {
             _frozenTimer = 0;
+            _frozen = false;
         }
         if (getBody()) {
             getBody()->SetLinearVelocity(b2Vec2(0, 0));
