@@ -4,12 +4,14 @@
 //
 //  Created by Serena Duncan on 3/17/26.
 //
+
 #include "PlayerFactory.h"
 using namespace std;
 using namespace cugl;
 
 
 #define PHYSICS_SCALE 50
+#define SHIELD_ID 1
 
 int PlayerFactory::rows = 1;
 int PlayerFactory::cols = 1;
@@ -41,11 +43,6 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
  * Helper method for converting normal parameters into byte vectors used for syncing.
  */
 shared_ptr<vector<byte>> PlayerFactory::serializeParams(Vec2 pos, string pid) {
-    /**
-     * TODO: Use _serializer to serialize pos and scale (remember to make a
-     * shared copy of the serializer reference, otherwise it will be lost if
-     * the serializer is reset).
-     */
     _serializer.reset();
     _serializer.writeFloat(pos.x);
     _serializer.writeFloat(pos.y);
@@ -57,11 +54,6 @@ shared_ptr<vector<byte>> PlayerFactory::serializeParams(Vec2 pos, string pid) {
  * Generate a pair of Obstacle and SceneNode using serialized parameters.
  */
 pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactory::createObstacle(const vector<byte>& params) {
-    /**
-     * TODO: Use _deserializer to deserialize byte vectors packed by
-     * {@link serializeParams()} and call the regular createObstacle() method
-     * with them.
-     */
     _deserializer.reset();
     _deserializer.receive(params);
     float x = _deserializer.readFloat();
@@ -79,7 +71,6 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
     if (obs->hasReleasedSpell()) {
         obs->setReleasedSpell(false);
         node->releasedSpell();
-        //animations->endAnimation(node);
     }
 
     // Update frozen status for node if changed
@@ -88,6 +79,27 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
     }
     else if (!obs->isFrozen() && node->isFrozen()) {
         animations->resumeAnimation(node);
+    }
+
+    // Check shield status, update the child node if needed
+    if (obs->hasShield() && !node->hasShield()) {
+        // Just got shielded
+        node->setShield(true);
+        auto shield = make_shared<SpellEntityNode>(_assets->get<graphics::Texture>("shield_entity"), _spellConsts->get("shield-entity"));
+        node->addChildWithTag(shield, SHIELD_ID);
+        shield->setPriority(3);
+
+        animations->addNode(shield);
+    }
+    else if (!obs->hasShield() && node->hasShield()) {
+        CULog("Lost shield");
+        node->setShield(false);
+        auto shield = dynamic_pointer_cast<SpellEntityNode>(node->getChildByTag(SHIELD_ID));
+        shield->end();
+        animations->addNextListener(shield, [node, shield](string key, float time, float actual) {
+            node->removeChild(shield);
+        });
+        animations->endAnimation(shield);
     }
        
     node->updateAnimationState(obs->getHealth(), obs->isHurt(), obs->isCasting(), obs->isFrozen(), obs->getMud(), obs->getBuff());

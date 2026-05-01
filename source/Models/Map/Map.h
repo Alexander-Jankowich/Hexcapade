@@ -14,8 +14,8 @@
 
 //#include "../../Controllers/NetworkController.h"
 
-#define MAP_HEIGHT 90
-#define MAP_WIDTH 90
+#define MAP_HEIGHT 120
+#define MAP_WIDTH 120
 #define TILE_SIZE 40
 #define PHYSICS_SCALE 50 //TODO: find a way to like. not redefine it lol
 
@@ -97,7 +97,7 @@ public:
     /**
      * called by GLGameScene to roll die for each zone and generate an enemy spawn if the zone die roll succeeds.
      */
-    std::vector<std::pair<Vec2, EnemyType>> generateEnemySpawns();
+    std::vector<std::pair<Vec2, EnemyType>> generateEnemySpawns(const std::vector<Vec2> playersPos);
     
     std::shared_ptr<cugl::scene2::SceneNode> getLowerWallNode() {return lw_node;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
@@ -139,6 +139,8 @@ private:
     
     void loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config);
     void updateItemZoneMaxDistance();
+    
+    std::pair<Vec2, EnemyType> chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates);
 };
 
 #endif // __HEXCAPADE_MAP_H__

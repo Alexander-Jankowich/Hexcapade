@@ -11,8 +11,6 @@ using namespace cugl;
 using namespace std;
 using namespace cugl::graphics;
 
-#define FPS 10.0f
-
 int PlayerNode::rows = 1;
 int PlayerNode::cols = 1;
 
@@ -75,7 +73,7 @@ void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool 
         CULog("coloring red");  
         setColor(Color4::RED);
     }
-    else {
+    else{
         setColor(Color4::WHITE);
     }
 
@@ -88,12 +86,13 @@ void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool 
     else if (casting) {
         _nextAnimation = AnimationType::CASTING;
     }
-    else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation != AnimationType::RELEASE_CAST) 
+    else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation == AnimationType::RELEASE_CAST)
             && _nextAnimation != AnimationType::DEAD) {
         _nextAnimation = _velocity.length() < idleThreshold ? AnimationType::IDLE : AnimationType::WALK;
-    }else{
-        _nextAnimation = AnimationType::IDLE;
     }
+    //else {
+    //    _nextAnimation = AnimationType::IDLE;
+    //}
 }
 
 pair<ActionFunction, float> PlayerNode::getNextAnimation() {
@@ -156,17 +155,14 @@ pair<ActionFunction, float> PlayerNode::getNextAnimation() {
         }
         break;
     default:
-        CULog("Animation for this state %d has not been implemented!", _nextAnimation);
+        CULog("Animation for this state %d has not been implemented! (PlayerNode::getNextAnimation)", _nextAnimation);
     }
 
     _curAnimation = _nextAnimation;
     //CULog("Loop player animation, %.2f", numFrames/FPS);
     return {
         [this, frameSet, numFrames](float t, ActionState state) {
-            int offset = state == ActionState::FINISH ? numFrames - 1 :
-                state == ActionState::BEGIN ? 0 :
-                min((int)(t * numFrames), numFrames - 1);
-            setFrame(frameSet[getDirection()] + offset);
+            updateFrame(t, state, frameSet, getDirection(), numFrames);
         },
         numFrames / FPS
     };

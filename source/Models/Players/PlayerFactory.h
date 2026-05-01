@@ -10,6 +10,11 @@
 
 #include <cugl/cugl.h>
 #include "PlayerNode.h"
+#include "PlayerObstacle.h"
+#include "../Animations.h"
+#include "../Spells/SpellEntityNode.h"
+
+#define PHYSICS_SCALE 50
 
 using namespace cugl;
 using namespace std;
@@ -26,11 +31,13 @@ using namespace cugl::physics2::distrib;
 class PlayerFactory : public ObstacleFactory {
 protected:
     /** Pointer to the AssetManager for texture access, etc. */
-    shared_ptr<cugl::AssetManager> _assets;
+    shared_ptr<AssetManager> _assets;
+    shared_ptr<JsonValue> _spellConsts;
+
     /** Serializer for supporting parameters */
-    cugl::netcode::NetcodeSerializer _serializer;
+    netcode::NetcodeSerializer _serializer;
     /** Deserializer for supporting parameters */
-    cugl::netcode::NetcodeDeserializer _deserializer;
+    netcode::NetcodeDeserializer _deserializer;
 
     static int rows;
     static int cols;
@@ -60,6 +67,8 @@ public:
         PlayerNode::setConsts(consts);
         rows = consts->getInt("rows");
         cols = consts->getInt("columns");
+
+        _spellConsts = _assets->get<JsonValue>("constants")->get("spells");
     }
 
     /**
@@ -87,6 +96,12 @@ public:
     
     void addCurrent(shared_ptr<PlayerObstacle> p){
         current.emplace(p);
+    }
+    
+    std::vector<Vec2> getPlayerPositions() {
+        std::vector<Vec2> res;
+        for (auto p : current) res.push_back(p->getPosition() / PHYSICS_SCALE);
+        return res;
     }
     
     

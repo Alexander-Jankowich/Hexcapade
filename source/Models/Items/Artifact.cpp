@@ -9,9 +9,9 @@
 ArtifactEffect Artifact::effectFromItemType(const std::string& itemType) {
     if (itemType == "artifact_scroll")
         return ArtifactEffect::SPELL_RESTRICTION;
-    if (itemType == "artifact_gem_boost")
+    if (itemType == "artifact_boost")
         return ArtifactEffect::SPELL_BOOST;
-    if (itemType == "artifact_gem_reduce")
+    if (itemType == "artifact_reduce")
         return ArtifactEffect::SPELL_REDUCE;
     if (itemType == "artifact_protection")
         return ArtifactEffect::PROTECTION;

@@ -3,8 +3,6 @@
 using namespace cugl;
 using namespace std;
 
-#define FPS 10.0f
-
 /**
  * Creates a ship wiht the given position and data.
  *
@@ -59,11 +57,7 @@ void EnemyNode::setVelocity(Vec2 value) {
     }
 }
 
-void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s, int health) {
-    if (health <= 0) {
-        nextAnimation = AnimationType::DEAD;
-        return;
-    }
+void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s) {
 
     //switch (s) {
     //case EnemyObstacle::EnemyState::IDLE:
@@ -76,7 +70,10 @@ void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s, int health) {
     //    nextAnimation = AnimationType::ATTACK;
     //    break;
     //}
-    if (s == EnemyObstacle::EnemyState::ATTACK_RESET) {
+    if (s == EnemyObstacle::EnemyState::DEATH) {
+        nextAnimation = AnimationType::DEAD;
+    }
+    else if (s == EnemyObstacle::EnemyState::ATTACK_RESET) {
         nextAnimation = AnimationType::ATTACK;
     }
     else if (_velocity.length() < 0.05) {
@@ -93,7 +90,7 @@ pair<ActionFunction, float> EnemyNode::getNextAnimation() {
 
     switch (nextAnimation) {
     case AnimationType::DEAD:
-        return { [this](float, ActionState) {}, -1 };
+        return END_ANIMATION;
     case AnimationType::IDLE:
         frameSet = IDLE;
         numFrames = IDLE_FRAMES;

@@ -73,6 +73,7 @@ private:
     bool _frozen = false;
     bool _mud = false;
     bool _buff = false;
+    bool _shield = false;
     
     int getDirection() { return facingLeft * 2 + facingBack; }
 
@@ -174,6 +175,11 @@ public:
     void releasedSpell() { _nextAnimation = AnimationType::RELEASE_CAST; }
 
     bool isFrozen() { return _frozen; }
+
+    bool isBuffed() { return _buff; }
+
+    void setShield(bool s) { _shield = s; }
+    bool hasShield() { return _shield; }
 
     bool skipToNext();
 };

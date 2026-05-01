@@ -50,6 +50,7 @@ void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
     attachEventType<SetSpellEvent>();
     attachEventType<RestartGameEvent>();
     attachEventType<StartGameEvent>();
+    attachEventType<PlayerNameEvent>();
     cugl::physics2::distrib::NetEventController::init(a);
     _rng = Random::alloc();
     _rng->init();
@@ -189,10 +190,10 @@ std::tuple<int,int> NetworkController::customEvents(){
                             break;
                         }
                     }
-                }
-                
-            }
-            
+                }   
+            }   
+        } else if (auto pne = std::dynamic_pointer_cast<PlayerNameEvent>(e)) {
+            _playerNames[pne->getPID()] = pne->getName();
         }
     }
     return std::tuple<int,int>(inventoryValue,depositedValue);

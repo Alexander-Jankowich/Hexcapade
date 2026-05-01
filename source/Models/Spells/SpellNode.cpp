@@ -35,6 +35,9 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, SpellType t, st
     if(t == SpellType::BUFF){
         setColor(Color4::RED);
     }
+    if(t == SpellType::SHIELD){
+        setColor(Color4::YELLOW);
+    }
     
     _velocity = vel;
     _position = pos;
@@ -71,7 +74,7 @@ pair<ActionFunction, float> SpellNode::getNextAnimation() {
             endFrames / FPS
         };
     default:
-        CULog("How did you get here? There are no other animation types.");
+        CULog("How did you get here? There are no other animation types. (SpellNode::getNextAnimation)");
         return { [this](float, ActionState) {}, -1 };
     }
 }

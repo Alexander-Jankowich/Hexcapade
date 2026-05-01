@@ -28,7 +28,9 @@ public:
     enum class EnemyState : int {
         IDLE = 0,
         CHASING = 1,
-        ATTACK_RESET = 2
+        ATTACKING = 2,
+        ATTACK_RESET = 3,
+        DEATH = 4
     };
 
 protected:
@@ -104,6 +106,7 @@ public:
     void updateAttackCounter();
     void setAttackCounter(int frames) { _attackCounter = frames; }
     bool canAttack() { return _attackCounter <= 0; }
+    bool isDead() { return _state == EnemyState::DEATH; }
 
     /**
      * Returns the current enemy health.
