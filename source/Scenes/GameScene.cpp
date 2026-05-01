@@ -1511,7 +1511,7 @@ void healthHelper(float damage, PlayerObstacle* player) {
         }
         return;
     }
-    if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
+    if (player->getHealth() - damage <= 0 && player->hasProtectionArtifact()) {
         player->consumeProtectionArtifact();
         player->setHealth(2);
         return;
