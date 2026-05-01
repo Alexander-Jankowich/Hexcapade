@@ -61,6 +61,7 @@ void PlayerNode::setVelocity(cugl::Vec2 value) {
 }
 
 void PlayerNode::updateAnimationState(int health, bool casting, bool m) {
+    CULog("player animation state is: %d", _curAnimation);
     _mud = m;
 
     // Just get direction
@@ -83,8 +84,7 @@ void PlayerNode::updateAnimationState(int health, bool casting, bool m) {
     else if (casting) {
         _nextAnimation = AnimationType::CASTING;
     }
-    else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation == AnimationType::RELEASE_CAST)
-            && _nextAnimation != AnimationType::DEAD) {
+    else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation == AnimationType::RELEASE_CAST)) {
         _nextAnimation = _velocity.length() < idleThreshold ? AnimationType::IDLE : AnimationType::WALK;
     }
 }
