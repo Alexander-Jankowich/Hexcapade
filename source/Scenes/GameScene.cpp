@@ -819,7 +819,7 @@ void GameScene::preUpdate(float dt)
         }
         _input.resolveSpell();
     }
-    else if (_input.getGesture() != SpellType::NONE) {
+    else if (_input.getGesture() != SpellType::NONE && _player -> getSpell() == SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
 #ifndef ENABLE_ALL_SPELLS
         if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
