@@ -904,7 +904,7 @@ void GameScene::preUpdate(float dt)
             }
 
             // Not a combo, use base spell
-            if (t == SpellType::NONE) {
+            if (t == SpellType::NONE && !negative_combo) {
                 t = _player->getSpell();
             }
 
