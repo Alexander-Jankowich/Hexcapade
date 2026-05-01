@@ -12,6 +12,7 @@ using namespace cugl;
 
 #define PHYSICS_SCALE 50
 #define SHIELD_ID 1
+#define BUFF_ID 2
 
 int PlayerFactory::rows = 1;
 int PlayerFactory::cols = 1;
@@ -75,9 +76,11 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
 
     // Update frozen status for node if changed
     if (obs->isFrozen() && !node->isFrozen()) {
+        node->setFrozen(true);
         animations->pauseAnimation(node);
     }
     else if (!obs->isFrozen() && node->isFrozen()) {
+        node->setFrozen(false);
         animations->resumeAnimation(node);
     }
 
@@ -92,7 +95,6 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
         animations->addNode(shield);
     }
     else if (!obs->hasShield() && node->hasShield()) {
-        CULog("Lost shield");
         node->setShield(false);
         auto shield = dynamic_pointer_cast<SpellEntityNode>(node->getChildByTag(SHIELD_ID));
         shield->end();
@@ -101,18 +103,41 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
         });
         animations->endAnimation(shield);
     }
+
+    // Check buff status, update child node if needed
+    if (obs->getBuff() && !node->isBuffed()) {
+        // Just got buffed
+        node->setBuff(true);
+        auto buff = make_shared<SpellEntityNode>(_assets->get<graphics::Texture>("buff_entity"), _spellConsts->get("buff-entity"));
+        node->addChildWithTag(buff, BUFF_ID);
+        buff->setPriority(0.5);
+
+        animations->addNode(buff);
+    }
+    else if (!obs->getBuff() && node->isBuffed()) {
+        node->setBuff(false);
+        auto buff = dynamic_pointer_cast<SpellEntityNode>(node->getChildByTag(BUFF_ID));
+        buff->end();
+        animations->addNextListener(buff, [node, buff](string key, float time, float actual) {
+            node->removeChild(buff);
+        });
+        animations->endAnimation(buff);
+    }
+
+    if (obs->isHurt() && !node->isHurt()) {
+        // Remove hurt state when animation finishes playing
+        node->setHurt(true);
+        animations->addNextListener(node, [obs, node](string key, float time, float actual) {
+            obs->setHurt(false);
+            node->setHurt(false);
+            CULog("not hurt now");
+        });
+    }
        
-    node->updateAnimationState(obs->getHealth(), obs->isHurt(), obs->isCasting(), obs->isFrozen(), obs->getMud(), obs->getBuff());
+    node->updateAnimationState(obs->getHealth(), obs->isCasting(), obs->getMud());
 
     if (obs->getHealth() <= 0) {
         animations->resumeAnimation(node);
-    }
-    if (obs->isHurt()) {
-        // Remove hurt state when animation finishes playing
-        animations->addNextListener(node, [obs](string key, float time, float actual) {
-            obs->setHurt(false);
-            CULog("not hurt now");
-        });
     }
 
     float leftover = Application::get()->getFixedRemainder() / 1000000.f;

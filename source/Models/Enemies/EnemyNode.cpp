@@ -33,6 +33,7 @@ EnemyNode::EnemyNode(shared_ptr<graphics::Texture>& tex, shared_ptr<JsonValue>& 
 
     nextAnimation = AnimationType::IDLE;
     setFrame(0);
+    setPriority(1);
 }
 
 void EnemyNode::updateState() {

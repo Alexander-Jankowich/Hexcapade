@@ -45,6 +45,9 @@ PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
 
     _curAnimation = AnimationType::IDLE;
     _nextAnimation = AnimationType::IDLE;
+
+    setFrame(idle[0]);
+    setPriority(1);
 }
 
 void PlayerNode::setVelocity(cugl::Vec2 value) {
@@ -57,10 +60,8 @@ void PlayerNode::setVelocity(cugl::Vec2 value) {
     }
 }
 
-void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b) {
-    _frozen = f;
+void PlayerNode::updateAnimationState(int health, bool casting, bool m) {
     _mud = m;
-    _buff = b;
 
     // Just get direction
     if (_frozen) {
@@ -69,10 +70,6 @@ void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool 
     else if (_mud){
         setColor(Color4::GRAY);
     }
-    else if (_buff){
-        CULog("coloring red");  
-        setColor(Color4::RED);
-    }
     else{
         setColor(Color4::WHITE);
     }
@@ -80,7 +77,7 @@ void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool 
     if (health <= 0) {
         _nextAnimation = AnimationType::DEAD;
     }
-    else if (hurt && _curAnimation != AnimationType::DAMAGED) {
+    else if (_hurt && _curAnimation != AnimationType::DAMAGED) {
         _nextAnimation = AnimationType::DAMAGED;
     }
     else if (casting) {
@@ -90,9 +87,6 @@ void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool 
             && _nextAnimation != AnimationType::DEAD) {
         _nextAnimation = _velocity.length() < idleThreshold ? AnimationType::IDLE : AnimationType::WALK;
     }
-    //else {
-    //    _nextAnimation = AnimationType::IDLE;
-    //}
 }
 
 pair<ActionFunction, float> PlayerNode::getNextAnimation() {

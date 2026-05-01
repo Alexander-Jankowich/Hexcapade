@@ -984,6 +984,8 @@ void GameScene::preUpdate(float dt)
         }
     }
     if (_input.pressedPickup()) {
+        // I just use this to test combo animations - Kaz
+        //_player->setBuff(!_player->getBuff());
         _input.resolvedPickup();
     }
 
