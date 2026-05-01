@@ -836,6 +836,7 @@ void GameScene::preUpdate(float dt)
     if (angle.isZero()) {
         angle = _player->getDirection();
     }
+    bool negative_combo = false;
     if (_input.shouldReleaseSpell() && !_player->blocksSpellcasting()) {
         //CULog("Release spell--------------------------------------------------------");
         
@@ -881,6 +882,17 @@ void GameScene::preUpdate(float dt)
                         p -> resolveSpell();
                     }else if((_player -> getSpell() == SpellType::EARTH && p -> getSpell() == SpellType::WATER) || (_player->getSpell()  == SpellType::WATER && p -> getSpell() == SpellType::EARTH)){
                         t = SpellType::MUD_WATER;
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    }
+                    else if((_player -> getSpell() == SpellType::FIREBALL && p -> getSpell() == SpellType::WATER) || (_player->getSpell()  == SpellType::WATER && p -> getSpell() == SpellType::FIREBALL)){
+                        t = SpellType::NONE;
+                        negative_combo = true;
+                        _networkCtrl->pushOutEvent(
+                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
+                    }
+                    else if((_player -> getSpell() == SpellType::FIREBALL && p -> getSpell() == SpellType::FREEZE) || (_player->getSpell()  == SpellType::FREEZE && p -> getSpell() == SpellType::FIREBALL)){
+                        t = SpellType::WATER;
                         _networkCtrl->pushOutEvent(
                                     SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
                     }
