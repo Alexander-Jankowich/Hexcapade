@@ -321,6 +321,7 @@ private:
 
     void renderHUD();
 
+
     /**
      * This method links a scene node to the obstacle.
      *
