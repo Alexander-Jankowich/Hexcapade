@@ -635,6 +635,12 @@ void GameScene::preUpdate(float dt)
 
     // Player movement
     cugl::Vec2 input = _input.getMove();
+    if (_input.showAim()) {
+        _player->setAimSlowTimer(_player->getAimSlowTimer() - dt);
+    }
+    else {
+        _player->setAimSlowTimer(2.0f);
+    }
     cugl::Vec2 velocity = input * _player->getSpeed();
 
     if (_player->isFrozen() || _player->isHurt()) {
@@ -905,6 +911,7 @@ void GameScene::preUpdate(float dt)
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
+                _player->consumeItem("spellbook_death");
                 break;
             case SpellType::WATER: {
                 int numShots = 8;
@@ -1566,6 +1573,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             if(player -> getHealth() < 0){
                 player->setHealth(1);
                 spell -> setRemove();
+                auto caster = _playerFact->getPlayerByPID(spell->getCasterUID());
+                if (caster) caster->consumeItem("spellbook_heal");
                 return;
             }
             int nh = player->getHealth() + HEAL_AMT;
@@ -1612,7 +1621,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             return;
         }
         if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
-            player->consumeProtectionArtifact();
+            player->consumeItem("artifact_protection");
             player->setHealth(2);
             return;
         }
@@ -1656,7 +1665,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             return;
         }
         if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
-            player->consumeProtectionArtifact();
+            player->consumeItem("artifact_protection");
             player->setHealth(2);
         }
         else {
