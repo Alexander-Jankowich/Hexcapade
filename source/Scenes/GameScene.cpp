@@ -203,6 +203,9 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
 
     lastEnemySpawn = 0;
 
+    // Initialize spell combo information
+    initCombos();
+
     _map = std::make_shared<Map>();
     _roomController.setRooms(_map->getRooms());
     _mapSeed = 0;
@@ -237,7 +240,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager> &assets, const st
 
     // Create other controllers
     _pathfinder = Pathfinder();
-    
 
 
     _world = physics2::distrib::NetWorld::alloc(Rect(0, 0, 200 , 200), Vec2::ZERO);
@@ -598,11 +600,9 @@ void GameScene::preUpdate(float dt)
                 _networkCtrl->getPhysController()->removeSharedObstacle(item);
             }
         }
-
-        // Remove spells that have gone out of range
-        
-        
     }
+
+    // Remove spells that have gone out of range
     auto spellRemove = _spellFact->update();
     for (auto spell : spellRemove) {
         spell -> markRemoved(true);
@@ -621,6 +621,10 @@ void GameScene::preUpdate(float dt)
     // Update animations
     _animations->update(dt);
 
+    if (_player->getHealth() == 0) return; // if dead ignore updates
+
+    _player->updateTimers(dt);
+
     if (_player->_bombExpired) {
         _player->_bombExpired = false;
         CULog("artifact_bomb expired for player %s", _player->getPID().c_str());
@@ -628,10 +632,6 @@ void GameScene::preUpdate(float dt)
         _networkCtrl->pushOutEvent(
             DepositEvent::allocDepositEvent(_player->getPID(), 0, true));
     }
-
-    if (_player->getHealth()==0) return; // if dead ignore updates
-
-    _player->updateTimers(dt);
 
     // Player movement
     cugl::Vec2 input = _input.getMove();
@@ -825,7 +825,7 @@ void GameScene::preUpdate(float dt)
         }
         _input.resolveSpell();
     }
-    else if (_input.getGesture() != SpellType::NONE) {
+    else if (_input.getGesture() != SpellType::NONE && _player -> getSpell() == SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
 #ifndef ENABLE_ALL_SPELLS
         if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
@@ -842,6 +842,7 @@ void GameScene::preUpdate(float dt)
     if (angle.isZero()) {
         angle = _player->getDirection();
     }
+
     if (_input.shouldReleaseSpell() && !_player->blocksSpellcasting()) {
         //CULog("Release spell--------------------------------------------------------");
         
@@ -852,56 +853,23 @@ void GameScene::preUpdate(float dt)
         }
         else {
             //Spell and Combo Logic
-            SpellType t = SpellType::NONE;
-            for (auto p : _playerFact->current) {
-                if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getSpell() != SpellType::NONE && p->getPID() != _player->getPID()) {
-                    // calc combo spell + send combo event
-                    if (_player->getSpell() == SpellType::FIREBALL && p->getSpell() == SpellType::FIREBALL) {
-                        t = SpellType::COMBO_FIREBALL;
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                        p->resolveSpell();
-                    
-                    }
-                    else if (_player->getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::FREEZE) {
-                        t = SpellType::COMBO_FREEZE;
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                        p->resolveSpell();
-                    
-                    }else if ((_player -> getSpell() == SpellType::FREEZE && p->getSpell() == SpellType::EARTH) || (_player -> getSpell() == SpellType::EARTH && p->getSpell() == SpellType::FREEZE) ){
-                        t = SpellType::COMBO_EFREEZE;
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                        p -> resolveSpell();
-                    
-                    }else if ((_player -> getSpell() == SpellType::FIREBALL && p -> getSpell() == SpellType::HEAL) || (_player->getSpell()  == SpellType::HEAL && p -> getSpell() == SpellType::FIREBALL)){
-                        t = SpellType::BUFF;
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                        p -> resolveSpell();
-                    }else if ((_player -> getSpell() == SpellType::EARTH && p -> getSpell() == SpellType::HEAL) || (_player->getSpell()  == SpellType::HEAL && p -> getSpell() == SpellType::EARTH)){
-                        t = SpellType::SHIELD;
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                        p -> resolveSpell();
-                    }else if((_player -> getSpell() == SpellType::EARTH && p -> getSpell() == SpellType::WATER) || (_player->getSpell()  == SpellType::WATER && p -> getSpell() == SpellType::EARTH)){
-                        t = SpellType::MUD_WATER;
-                        _networkCtrl->pushOutEvent(
-                                    SetSpellEvent::allocSetSpellEvent(p->getPID(), SpellType::NONE));
-                    }
-                    if (t != SpellType::NONE) {
-                        _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), p->getPID(), t));
-                        break;
-                    }
-                }
-            }
+            auto combo = getCombo();
+            SpellType t = combo.first;
 
             // Not a combo, use base spell
             if (t == SpellType::NONE) {
                 t = _player->getSpell();
             }
+            else {
+                // Send event stuff
+                _networkCtrl->pushOutEvent(SetSpellEvent::allocSetSpellEvent(combo.second, SpellType::NONE));
+                _playerFact -> getPlayerByPID(combo.second) -> resolveSpell();
 
+                // Not sure why this exists, check later
+                _networkCtrl->pushOutEvent(CastSpellEvent::allocCastSpellEvent(_player->getPID(), combo.second, t));
+                
+            }
+            
             //CULog("Casting spell type: %d", t);
             switch (t) {
             case SpellType::DEATH:
@@ -951,15 +919,14 @@ void GameScene::preUpdate(float dt)
             }
             default:
                 int damageBonus = _player->getDamageBonus();
-                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _networkCtrl->getPID(), damageBonus,
+                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _player->getPID(), damageBonus,
                                                           _player->getBuff());
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 break;
             }
 
-            // We must acquire an object if we create it if we fail to do so the network
-            // will consistently try to reset its position.
+
             _input.resolveSpell();
             _player->resolveSpell();
             _player->setReleasedSpell(true);
@@ -979,6 +946,8 @@ void GameScene::preUpdate(float dt)
         }
     }
     if (_input.pressedPickup()) {
+        // I just use this to test combo animations - Kaz
+        //_player->setBuff(!_player->getBuff());
         _input.resolvedPickup();
     }
 
@@ -1421,15 +1390,6 @@ void GameScene::setActive(bool value)
     }
 }
 
-void GameScene::addInitObstacle(const std::shared_ptr<physics2::Obstacle>& obj,
-    const std::shared_ptr<scene2::SceneNode>& node) {
-    _world->initObstacle(obj);
-    if (_networkCtrl->isHost()) {
-        _world->getOwnedObstacles().insert({ obj,0 });
-    }
-    linkSceneToObs(obj, node);
-}
-
 void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     const std::shared_ptr<scene2::SceneNode>& node) {
 
@@ -1487,6 +1447,60 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             });
         }
     }
+}
+
+
+/**
+ * Just a helper to handle some of our damage processing
+ */
+void healthHelper(float damage, PlayerObstacle* player) {
+    if(player -> hasShield()){
+        player -> setShieldCount(player -> getShieldCount() - 1);
+        if(player -> getShieldCount() == 0){
+            player -> setShield(false);
+        }
+        return;
+    }
+    if (player->getHealth() - damage <= 0 && player->hasProtectionArtifact()) {
+        player->consumeProtectionArtifact();
+        player->setHealth(2);
+        return;
+    }
+    player -> setHealth(player -> getHealth() - damage);
+}
+    
+void GameScene::initCombos() {
+    _spellCombos.insert({
+        {{SpellType::FIREBALL, SpellType::FIREBALL}, SpellType::COMBO_FIREBALL},
+        {{SpellType::FREEZE, SpellType::FREEZE}, SpellType::COMBO_FREEZE},
+        {{SpellType::FREEZE, SpellType::EARTH}, SpellType::COMBO_EFREEZE},
+        {{SpellType::FIREBALL, SpellType::HEAL}, SpellType::BUFF},
+        {{SpellType::EARTH, SpellType::HEAL}, SpellType::SHIELD},
+        {{SpellType::FIREBALL, SpellType::WATER}, SpellType::STEAM},
+        {{SpellType::FIREBALL, SpellType::FREEZE}, SpellType::WATER}
+    });
+}
+
+pair<SpellType, string> GameScene::getCombo() {
+    SpellType spell = _player->getSpell();
+    string cid = _player->getPID();
+
+    for (auto p : _playerFact->current) {
+        if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getPID() != cid) {
+            auto it = _spellCombos.find({ spell, p->getSpell() });
+            if (it != _spellCombos.end()) {
+                return { it->second, p->getPID()};
+            }
+
+            it = _spellCombos.find({ p->getSpell(), spell });
+            if (it != _spellCombos.end()) {
+                return { it->second, p->getPID() };
+            }
+        }
+    }
+
+    // No combo
+    return { SpellType::NONE, "" };
 }
 
 /**
@@ -1569,25 +1583,37 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
         //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID()==player->getPID()) return;
-        if (spell->TYPE == SpellType::HEAL) {
-            if(player -> getHealth() < 0){
+        int nh = player->getHealth() + HEAL_AMT;
+        switch (spell->TYPE) {
+        case SpellType::HEAL:
+            if (player->getHealth() < 0) {
                 player->setHealth(1);
                 spell -> setRemove();
                 auto caster = _playerFact->getPlayerByPID(spell->getCasterUID());
                 if (caster) caster->consumeItem("spellbook_heal");
-                return;
+                break;
             }
-            int nh = player->getHealth() + HEAL_AMT;
             player->setHealth(nh);
-            CULog("player_health : %d", player->getHealth());
             spell->setRemove();
-            return;
-        }
-        if (spell->TYPE == SpellType::FREEZE || spell->TYPE == SpellType::COMBO_FREEZE) {
+            break;
+        case SpellType::FREEZE:
+            player->setFrozeTimer(90);
+            player->setFrozen(true);
+            spell->setRemove();
+            healthHelper(1, player);
+            break;
+        case SpellType::COMBO_FREEZE:
             player->setFrozeTimer(180);
             player->setFrozen(true);
-        }
-        if (spell->TYPE == SpellType::EARTH){
+            healthHelper(1, player);
+            spell->setRemove();
+            break;
+        case SpellType::COMBO_EFREEZE:
+            player->setFrozeTimer(360);
+            player->setFrozen(true);
+            spell->setRemove();
+            break;
+        case SpellType::EARTH:
             player->setMudTimer(240);
             player -> setMud(true);
         }
@@ -1624,10 +1650,38 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player->consumeItem("artifact_protection");
             player->setHealth(2);
             return;
+            player->setMud(true);
+            spell->setRemove();
+            healthHelper(1, player);
+            break;
+        case SpellType::BUFF:
+            player->setBuffTimer(3600);
+            player->setBuff(true);
+            spell->setRemove();
+            break;
+        case SpellType::WATER:
+        case SpellType::MUD_WATER:
+            break;
+        case SpellType::SHIELD:
+            player->setShield(true);
+            player->setShieldCount(3);
+            spell->setRemove();
+            break;
+        case SpellType::FIREBALL:
+            healthHelper(2, player);
+            spell->setRemove();
+            break;
+        case SpellType::COMBO_FIREBALL:
+            healthHelper(4, player);
+            spell->setRemove();
+            break;
+            break;
+        case SpellType::DEATH:
+            healthHelper(500, player);
+            break;
+        default:
+            CULog("A None Type Spell Should Not be Colliding With Anything");
         }
-        player -> setHealth(player->getHealth() - 1);
-        spell->setRemove();
-        
     }
     else if (player && enemy) {
         //We need a death message
@@ -1679,47 +1733,68 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if(spell -> getCasterUID() == "bat"){
             return;
         }
-
         // If spell is in end animation, do not do any calculations
         if (spell->shouldRemove()) {
             return;
         }
-
-        if (spell -> TYPE == SpellType::WATER){
-            Vec2 pushDir = enemy->getPosition() - spell->getPosition();
-            pushDir.normalize();
-            enemy->setWaterPush(pushDir, 60);
-            return;
-        }
-        enemy->setHealth(enemy->getHealth() - spell->getDamage());
-        if (spell->TYPE == SpellType::FREEZE or spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_EFREEZE){
-            enemy -> setFrozen(true);
-            if(spell->TYPE == SpellType::FREEZE){
-                enemy->setFrozenTimer(240);
-            }else if (spell->TYPE == SpellType::COMBO_FREEZE){
-                enemy->setFrozenTimer(600);
-            }else{
-                enemy->setFrozenTimer(-1);
+        switch (spell -> TYPE){
+            case SpellType::WATER:
+            {
+                Vec2 pushDir = enemy->getPosition() - spell->getPosition();
+                pushDir.normalize();
+                enemy->setWaterPush(pushDir, 60);
+                break;
             }
+            case SpellType::FREEZE:
+                enemy -> setFrozen(true);
+                enemy -> setFrozenTimer(240);
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                spell -> setRemove();
+                break;
+            case SpellType::COMBO_FREEZE:
+                enemy -> setFrozen(true);
+                enemy -> setFrozenTimer(600);
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                break;
+            case SpellType::COMBO_EFREEZE:
+                enemy -> setFrozen(true);
+                enemy -> setFrozenTimer(-1);
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                spell -> setRemove();
+                break;
+            case SpellType::EARTH:
+                enemy -> setMud(true);
+                enemy -> setMudTimer(300);
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                spell -> setRemove();
+                break;
+            case SpellType::MUD_WATER:
+            {
+                Vec2 pushDir = enemy->getPosition() - spell->getPosition();
+                pushDir.normalize();
+                enemy->setWaterPush(pushDir, 60);
+                enemy->setMud(true);
+                enemy->setMudTimer(600);
+                break;
+            }
+            case SpellType::FIREBALL:
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                spell -> setRemove();
+                break;
+            case SpellType::COMBO_FIREBALL:
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                break;
+            case SpellType::DEATH:
+                enemy -> setHealth(enemy -> getHealth() - spell -> getDamage());
+                break;
+            default:
+                spell -> setRemove();
+            }
+        if (enemy -> getHealth() <= 0){
+            enemy -> markRemoved(true);
+        }
+        
             
-        }
-        else if(spell->TYPE == SpellType::EARTH){
-            enemy -> setMud(true);
-            enemy -> setMudTimer(300);
-        }
-        else if((spell->TYPE == SpellType::COMBO_FREEZE or spell->TYPE == SpellType::COMBO_FIREBALL or spell->TYPE == SpellType::DEATH
-             or spell -> TYPE == SpellType::WATER)){
-            if (enemy->getHealth()==0) enemy->markRemoved(true);
-            return;
-        }else if(spell->TYPE == SpellType::MUD_WATER){
-            Vec2 pushDir = enemy->getPosition() - spell->getPosition();
-            pushDir.normalize();
-            enemy->setWaterPush(pushDir, 60);
-            enemy->setMud(true);
-            enemy->setMudTimer(600);
-        }
-        if (enemy->getHealth()==0) enemy->markRemoved(true);
-        spell->setRemove();
     }
     else if (wall && player){
         contact->SetEnabled(true);

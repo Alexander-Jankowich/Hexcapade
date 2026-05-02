@@ -74,7 +74,6 @@ bool NetworkController::connectClient(string roomId) {
 
 // this needs to be refactored heavily, give network controller pointers
 // booleans pop up into network controller state, accessed by endScene
-// idk what deposit radius is
 std::tuple<int,int> NetworkController::customEvents(){
     // handle cast spell event
     int inventoryValue = 0;

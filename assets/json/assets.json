@@ -16,7 +16,10 @@
       "file": "textures/enemy_octoplush_sheet.png"
     },
     "fireball": {
-      "file": "textures/fireball_sheet.png"
+        "file": "textures/fireball_sheet.png"
+    },
+    "combo-fireball": {
+        "file": "textures/combo-fireball_sheet.png"
     },
     "freeze": {
       "file": "textures/freeze_sheet.png"
@@ -34,7 +37,10 @@
         "file": "textures/shield_sheet.png"
     },
     "shield_entity": {
-      "file": "textures/shield-entity_sheet.png"
+        "file": "textures/shield-entity_sheet.png"
+    },
+    "buff_entity": {
+        "file": "textures/buff-entity_sheet.png"
     },
     "button": {
       "file": "textures/button.png"

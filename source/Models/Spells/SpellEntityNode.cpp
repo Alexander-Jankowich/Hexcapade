@@ -32,28 +32,13 @@ pair<ActionFunction, float> SpellEntityNode::getNextAnimation() {
 
 	if (!finishedCreate) {
 		finishedCreate = true;
-		return {
-			[this](float t, ActionState state) {
-				updateFrame(t, state, CREATED, CREATED_FRAMES);
-			},
-			CREATED_FRAMES / FPS
-		};
+		return getAnimationPair(CREATED, CREATED_FRAMES);
 	}
 
 	if (shouldEnd) {
 		ended = true;
-		return {
-			[this](float t, ActionState state) {
-				updateFrame(t, state, END, END_FRAMES);
-			},
-			END_FRAMES / FPS
-		};
+		return getAnimationPair(END, END_FRAMES);
 	}
 
-	return {
-		[this](float t, ActionState state) {
-			updateFrame(t, state, EXISTING, EXISTING_FRAMES);
-		},
-		EXISTING_FRAMES / FPS
-	};
+	return getAnimationPair(EXISTING, EXISTING_FRAMES);
 }

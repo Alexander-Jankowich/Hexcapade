@@ -33,6 +33,7 @@ EnemyNode::EnemyNode(shared_ptr<graphics::Texture>& tex, shared_ptr<JsonValue>& 
 
     nextAnimation = AnimationType::IDLE;
     setFrame(0);
+    setPriority(1);
 }
 
 void EnemyNode::updateState() {
@@ -58,18 +59,6 @@ void EnemyNode::setVelocity(Vec2 value) {
 }
 
 void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s) {
-
-    //switch (s) {
-    //case EnemyObstacle::EnemyState::IDLE:
-    //    nextAnimation = AnimationType::IDLE;
-    //    break;
-    //case EnemyObstacle::EnemyState::CHASING:
-    //    nextAnimation = AnimationType::WALK;
-    //    break;
-    //case EnemyObstacle::EnemyState::ATTACK_RESET:
-    //    nextAnimation = AnimationType::ATTACK;
-    //    break;
-    //}
     if (s == EnemyObstacle::EnemyState::DEATH) {
         nextAnimation = AnimationType::DEAD;
     }
@@ -85,29 +74,13 @@ void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s) {
 }
 
 pair<ActionFunction, float> EnemyNode::getNextAnimation() {
-    const int* frameSet = {};
-    int numFrames = 0;
-
     switch (nextAnimation) {
     case AnimationType::DEAD:
         return END_ANIMATION;
     case AnimationType::IDLE:
-        frameSet = IDLE;
-        numFrames = IDLE_FRAMES;
-        break;
+        return getAnimationPair(IDLE, IDLE_FRAMES);
     case AnimationType::WALK:
     default:
-        frameSet = WALK;
-        numFrames = WALK_FRAMES;
+        return getAnimationPair(WALK, WALK_FRAMES);
     }
-
-    return {
-        [this, frameSet, numFrames](float t, ActionState state) {
-            int offset = state == ActionState::FINISH ? numFrames - 1 :
-                state == ActionState::BEGIN ? 0 :
-                min((int)(t * numFrames), numFrames - 1);
-            setFrame(frameSet[getDirection()] + offset);
-        },
-        numFrames / FPS
-    };
 }
