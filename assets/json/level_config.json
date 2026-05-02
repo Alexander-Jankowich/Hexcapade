@@ -25,14 +25,14 @@
         ],
         "zone-probs": [0.33, 0.4, 0.5],
         "item-value-zones": [
-            { "min": 0.0, "max": 0.30 },
-            { "min": 0.30, "max": 0.75 },
-            { "min": 0.75, "max": 1.0 }
+            [0.0, 0.30],
+            [0.30, 0.75],
+            [0.75, 1.0]
         ],
         "item-category-probs": [
-            { "spellbook": 0.70, "artifact": 0.30 },
-            { "spellbook": 0.50, "artifact": 0.50 },
-            { "spellbook": 0.30, "artifact": 0.70 }
+            [0.70, 0.30],
+            [0.50, 0.50],
+            [0.30, 0.70]
         ]
     },
     "medium": {
@@ -48,14 +48,14 @@
         ],
         "zone-probs": [0.33, 0.5, 0.5],
         "item-value-zones": [
-            { "min": 0.0, "max": 0.30 },
-            { "min": 0.30, "max": 0.75 },
-            { "min": 0.75, "max": 1.0 }
+            [0.0, 0.30],
+            [0.30, 0.75],
+            [0.75, 1.0]
         ],
         "item-category-probs": [
-            { "spellbook": 0.70, "artifact": 0.30 },
-            { "spellbook": 0.50, "artifact": 0.50 },
-            { "spellbook": 0.30, "artifact": 0.70 }
+            [0.70, 0.30],
+            [0.50, 0.50],
+            [0.30, 0.70]
         ]
     },
     "hard": {
@@ -71,14 +71,14 @@
         ],
         "zone-probs": [0.4, 0.5, 0.55],
         "item-value-zones": [
-            { "min": 0.0, "max": 0.30 },
-            { "min": 0.30, "max": 0.75 },
-            { "min": 0.75, "max": 1.0 }
+            [0.0, 0.30],
+            [0.30, 0.75],
+            [0.75, 1.0]
         ],
         "item-category-probs": [
-            { "spellbook": 0.70, "artifact": 0.30 },
-            { "spellbook": 0.50, "artifact": 0.50 },
-            { "spellbook": 0.30, "artifact": 0.70 }
+            [0.70, 0.30],
+            [0.50, 0.50],
+            [0.30, 0.70]
         ]
     }
 }

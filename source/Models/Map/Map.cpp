@@ -7,23 +7,6 @@
 #include <cmath>
 #include <unordered_set>
 
-namespace {
-
-// keeps zone array lookups inside the three configured item bands
-int itemZoneIndex(int zone) {
-    if (zone < 1) {
-        return 0;
-    }
-    if (zone > 3) {
-        return 2;
-    }
-    return zone - 1;
-}
-
-}
-
-
-
 Map::Map() :
 _origin(Vec2::ZERO),
 _playerSpawn(Vec2::ZERO),
@@ -37,7 +20,9 @@ void Map::reset() {
     _z2enemySpawnPoints.clear();
     _z3enemySpawnPoints.clear();
     _itemSpawnPoints.clear();
-    _itemZoneFarthestPointDistance = 0.0f;
+    _z1itemSpawnPoints.clear();
+    _z2itemSpawnPoints.clear();
+    _z3itemSpawnPoints.clear();
     lw_node->removeAllChildren();
 }
 
@@ -59,6 +44,9 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
     _z2enemySpawnPoints.clear();
     _z3enemySpawnPoints.clear();
     _itemSpawnPoints.clear();
+    _z1itemSpawnPoints.clear();
+    _z2itemSpawnPoints.clear();
+    _z3itemSpawnPoints.clear();
     
     _sceneSize = sceneSize;
     auto node = scene2::SceneNode::alloc();
@@ -433,7 +421,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
                                     std::get<2>(res).y + ip.y);
             // Just map grid units to world pixels.
             // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
-            _itemSpawnPoints.push_back(Vec2(ip_mg.x * TILE_SIZE, (_config._mapSize - ip_mg.y) * TILE_SIZE));
+            Vec2 itemSpawnPoint = Vec2(ip_mg.x * TILE_SIZE, (_config._mapSize - ip_mg.y) * TILE_SIZE);
+            _itemSpawnPoints.push_back(itemSpawnPoint);
         }
         // add enemy spawns
         for (auto ep : std::get<0>(res)->getEnemSpawnPoints()) {
@@ -456,7 +445,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
             
         }
     
-        updateItemZoneMaxDistance();
+        updateItemSpawnZones();
         return node;
     }
 
@@ -660,65 +649,87 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
     std::shared_ptr<JsonValue> itemValueZones = data->get("item-value-zones");
     if (itemValueZones && itemValueZones->size() >= 3) {
         for (int zone = 0; zone < 3; zone++) {
-            std::shared_ptr<JsonValue> zoneData = itemValueZones->get(zone);
-            _config._itemValueZoneMins[zone] = zoneData->getFloat("min", _config._itemValueZoneMins[zone]);
-            _config._itemValueZoneMaxs[zone] = zoneData->getFloat("max", _config._itemValueZoneMaxs[zone]);
+            std::vector<float> valueRange = itemValueZones->get(zone)->asFloatArray();
+            _config._itemValueZoneMins[zone] = valueRange[0];
+            _config._itemValueZoneMaxs[zone] = valueRange[1];
         }
     }
 
     std::shared_ptr<JsonValue> itemCategoryProbs = data->get("item-category-probs");
     if (itemCategoryProbs && itemCategoryProbs->size() >= 3) {
         for (int zone = 0; zone < 3; zone++) {
-            std::shared_ptr<JsonValue> zoneData = itemCategoryProbs->get(zone);
-            _config._itemSpellbookZoneProbs[zone] = zoneData->getFloat("spellbook", _config._itemSpellbookZoneProbs[zone]);
-            _config._itemArtifactZoneProbs[zone] = zoneData->getFloat("artifact", _config._itemArtifactZoneProbs[zone]);
+            std::vector<float> probs = itemCategoryProbs->get(zone)->asFloatArray();
+            _config._itemSpellbookZoneProbs[zone] = probs[0];
+            _config._itemArtifactZoneProbs[zone] = probs[1];
         }
     }
 }
 
-// finds the farthest item spawn point from player start
-void Map::updateItemZoneMaxDistance() {
-    _itemZoneFarthestPointDistance = 0.0f;
+void Map::updateItemSpawnZones() {
+    _z1itemSpawnPoints.clear();
+    _z2itemSpawnPoints.clear();
+    _z3itemSpawnPoints.clear();
+
+    float farthestPointDistance = 0.0f;
     for (const auto& spawnPoint : _itemSpawnPoints) {
         float distance = spawnPoint.distance(_playerSpawn);
-        if (distance > _itemZoneFarthestPointDistance) {
-            _itemZoneFarthestPointDistance = distance;
+        if (distance > farthestPointDistance) {
+            farthestPointDistance = distance;
+        }
+    }
+
+    for (const auto& spawnPoint : _itemSpawnPoints) {
+        // split item spawns into thirds based on the farthest item point this run
+        float distancePercentOfFarthestPoint =
+            spawnPoint.distance(_playerSpawn) / farthestPointDistance;
+        if (distancePercentOfFarthestPoint < (1.0f / 3.0f)) {
+            _z1itemSpawnPoints.push_back(spawnPoint);
+        } else if (distancePercentOfFarthestPoint < (2.0f / 3.0f)) {
+            _z2itemSpawnPoints.push_back(spawnPoint);
+        } else {
+            _z3itemSpawnPoints.push_back(spawnPoint);
         }
     }
 }
 
-// splits item spawn points into zones by comparing each point to
-// the farthest spawn point on this run
+// returns the config row for whichever item bucket owns this spawn point
 int Map::getItemSpawnZone(const Vec2& worldPoint) const {
-    float distancePercentOfFarthestPoint =
-        worldPoint.distance(_playerSpawn) / _itemZoneFarthestPointDistance;
-    if (distancePercentOfFarthestPoint < (1.0f / 3.0f)) {
-        return 1;
+    for (const auto& spawnPoint : _z1itemSpawnPoints) {
+        if (spawnPoint.distance(worldPoint) < 0.01f) {
+            return 0;
+        }
     }
-    if (distancePercentOfFarthestPoint < (2.0f / 3.0f)) {
-        return 2;
+    for (const auto& spawnPoint : _z2itemSpawnPoints) {
+        if (spawnPoint.distance(worldPoint) < 0.01f) {
+            return 1;
+        }
     }
-    return 3;
+    for (const auto& spawnPoint : _z3itemSpawnPoints) {
+        if (spawnPoint.distance(worldPoint) < 0.01f) {
+            return 2;
+        }
+    }
+    return 2;
 }
 
 // gives gamescene the min value ratio for the chosen item zone
 float Map::getItemValueZoneMin(int zone) const {
-    return _config._itemValueZoneMins[itemZoneIndex(zone)];
+    return _config._itemValueZoneMins[zone];
 }
 
 // gives gamescene the max value ratio for the chosen item zone
 float Map::getItemValueZoneMax(int zone) const {
-    return _config._itemValueZoneMaxs[itemZoneIndex(zone)];
+    return _config._itemValueZoneMaxs[zone];
 }
 
 // gives gamescene the spellbook roll chance for this item zone
 float Map::getItemSpellbookZoneProb(int zone) const {
-    return _config._itemSpellbookZoneProbs[itemZoneIndex(zone)];
+    return _config._itemSpellbookZoneProbs[zone];
 }
 
 // gives gamescene the artifact roll chance for this item zone
 float Map::getItemArtifactZoneProb(int zone) const {
-    return _config._itemArtifactZoneProbs[itemZoneIndex(zone)];
+    return _config._itemArtifactZoneProbs[zone];
 }
 
 std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns(const std::vector<Vec2> playersPos) {

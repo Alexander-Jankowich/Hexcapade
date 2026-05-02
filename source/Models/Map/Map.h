@@ -46,12 +46,11 @@ private:
         float _zone2EnemyProb;
         float _zone3EnemyProb;
         
-        // item value bands are ratios of the max item value in the catalog
-        std::array<float, 3> _itemValueZoneMins = {0.0f, 0.30f, 0.75f};
-        std::array<float, 3> _itemValueZoneMaxs = {0.30f, 0.75f, 1.0f};
-        // item category rolls decide spellbook vs artifact after zone value filtering
-        std::array<float, 3> _itemSpellbookZoneProbs = {0.70f, 0.50f, 0.30f};
-        std::array<float, 3> _itemArtifactZoneProbs = {0.30f, 0.50f, 0.70f};
+        // item zone values come from level_config
+        std::array<float, 3> _itemValueZoneMins;
+        std::array<float, 3> _itemValueZoneMaxs;
+        std::array<float, 3> _itemSpellbookZoneProbs;
+        std::array<float, 3> _itemArtifactZoneProbs;
     };
     struct MapDoor {
         Vec2 pos;
@@ -75,11 +74,13 @@ private:
     std::vector<std::shared_ptr<Room>> _rooms;
 
     std::vector<cugl::Vec2> _itemSpawnPoints;
+    std::vector<cugl::Vec2> _z1itemSpawnPoints;
+    std::vector<cugl::Vec2> _z2itemSpawnPoints;
+    std::vector<cugl::Vec2> _z3itemSpawnPoints;
     std::vector<cugl::Vec2> _enemySpawnPoints;
     std::vector<cugl::Vec2> _z1enemySpawnPoints;
     std::vector<cugl::Vec2> _z2enemySpawnPoints;
     std::vector<cugl::Vec2> _z3enemySpawnPoints;
-    float _itemZoneFarthestPointDistance = 0.0f;
 
     cugl::Vec2 _playerSpawn;
     LevelConfig _config;
@@ -147,7 +148,7 @@ private:
     void addWallObstacle(Poly2& poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
     
     void loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config);
-    void updateItemZoneMaxDistance();
+    void updateItemSpawnZones();
     
     std::pair<Vec2, EnemyType> chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates);
 };
