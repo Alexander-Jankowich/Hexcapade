@@ -107,6 +107,8 @@ protected:
     shared_ptr<vector<string>> _rooms;
     /** Font for rendering HUD text */
     shared_ptr<graphics::Font> _font;
+    shared_ptr<graphics::Font> _nameFont;
+
 
     /** The constants json */
     shared_ptr<JsonValue> _constants;
