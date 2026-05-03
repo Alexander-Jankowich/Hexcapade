@@ -104,6 +104,10 @@ public:
      * called by GLGameScene to roll die for each zone and generate an enemy spawn if the zone die roll succeeds.
      */
     std::vector<std::pair<Vec2, EnemyType>> generateEnemySpawns(const std::vector<Vec2> playersPos);
+    std::vector<std::pair<Vec2, ItemCatalogEntryConfig>> generateItemSpawnChoices(const std::vector<ItemCatalogEntryConfig>& entries,
+                                                                                  int quota,
+                                                                                  float itemValueRatio,
+                                                                                  const std::shared_ptr<cugl::Random>& random);
     
     std::shared_ptr<cugl::scene2::SceneNode> getLowerWallNode() {return lw_node;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
@@ -150,6 +154,22 @@ private:
     void loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config);
     void updateItemSpawnZones();
     
+    const ItemCatalogEntryConfig* chooseItemWeight(const std::vector<ItemCatalogEntryConfig>& weightedEntries,
+                                                   const std::shared_ptr<cugl::Random>& random);
+    float getTypicalItemValue(const std::vector<ItemCatalogEntryConfig>& catalogEntries);
+    int getMaxItemValue(const std::vector<ItemCatalogEntryConfig>& catalogEntries);
+    bool isItemEligibleForZone(const ItemCatalogEntryConfig& item, int maxItemValue, float zoneMinRatio, float zoneMaxRatio);
+    std::string chooseItemCategory(float spellbookChance,
+                                   float artifactChance,
+                                   const std::shared_ptr<cugl::Random>& random);
+    size_t chooseItemSpawnCount(size_t spawnPointCount, size_t roomCount, int quota, float typicalItemValue, float itemValueRatio);
+    ItemCatalogEntryConfig chooseItemForZone(const std::vector<ItemCatalogEntryConfig>& catalogEntries,
+                                             int maxItemValue,
+                                             float zoneMinRatio,
+                                             float zoneMaxRatio,
+                                             float spellbookChance,
+                                             float artifactChance,
+                                             const std::shared_ptr<cugl::Random>& random);
     std::pair<Vec2, EnemyType> chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates);
 };
 

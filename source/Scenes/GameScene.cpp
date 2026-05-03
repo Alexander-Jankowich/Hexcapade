@@ -15,7 +15,6 @@
 #include <box2d/b2_collision.h>
 
 #include "GameScene.h"
-#include "../Models/Items/ItemSpawning.h"
 
 
 // Lock the screen size to fixed height regardless of aspect ratio
@@ -382,59 +381,26 @@ void GameScene::rebuildMapForRun() {
 }
 
 void GameScene::spawnItemsFromMap() {
-    const std::vector<Vec2>& spawnPoints = _map->getItemSpawnPoints();
-    if (spawnPoints.empty()) {
-        CULog("ItemFactory: no item spawn points found on map");
+    auto itemSpawns = _map->generateItemSpawnChoices(
+        _runConfig.item.entries,
+        _quota,
+        _runConfig.item.quotaCoverageRatio,
+        _random
+    );
+    if (itemSpawns.empty()) {
         return;
     }
 
-    const std::vector<ItemCatalogEntryConfig>& entries = _runConfig.item.entries;
-
-    int roomCount = _map->getNumRooms();
-    float typicalItemValue = hexcapade::itemspawn::getTypicalItemValue(entries);
-    int maxItemValue = hexcapade::itemspawn::getMaxItemValue(entries);
-    size_t spawnCount = hexcapade::itemspawn::chooseSpawnCount(
-        spawnPoints.size(), roomCount, _quota,
-        typicalItemValue, _runConfig.item.quotaCoverageRatio
-    );
-
-    // Start with every spawn point, then randomly* remove from this
-    // list as we choose which points to actually use for run
-    std::vector<size_t> spawnIndices(spawnPoints.size());
-    for (size_t spawnIndex = 0; spawnIndex < spawnPoints.size(); ++spawnIndex) {
-        spawnIndices[spawnIndex] = spawnIndex;
-    }
-
-    for (size_t spawned = 0; spawned < spawnCount && !spawnIndices.empty(); ++spawned) {
-        size_t pickIndex = 0;
-        if (spawnIndices.size() > 1) {
-            pickIndex = (size_t)(_random->getUint32() % spawnIndices.size());
-        }
-
-        const Vec2& worldPt = spawnPoints[spawnIndices[pickIndex]];
-        spawnIndices[pickIndex] = spawnIndices.back();
-        spawnIndices.pop_back();
-
-        Vec2 physPos = worldPt / PHYSICS_SCALE;
-        int zone = _map->getItemSpawnZone(worldPt);
-
-        // get the value ratios loaded from level_config for this spawn zone
-        float zoneMinRatio = _map->getItemValueZoneMin(zone);
-        float zoneMaxRatio = _map->getItemValueZoneMax(zone);
-        float spellbookProb = _map->getItemSpellbookZoneProb(zone);
-        float artifactProb = _map->getItemArtifactZoneProb(zone);
-
-        ItemCatalogEntryConfig item = hexcapade::itemspawn::chooseItemForZone(
-            entries, maxItemValue, zoneMinRatio, zoneMaxRatio,
-            spellbookProb, artifactProb, _random
-        );
+    for (auto spawn : itemSpawns) {
+        Vec2 physPos = spawn.first / PHYSICS_SCALE;
+        ItemCatalogEntryConfig item = spawn.second;
         int itemValue = item.value;
         std::string itemType = item.textureAsset.empty() ? item.id : item.textureAsset;
 
         auto params = _itemFact->serializeParams(physPos, itemValue, itemType);
         _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
     }
-    CULog("ItemFactory: spawned %zu items", spawnCount);
+    CULog("ItemFactory: spawned %zu items", itemSpawns.size());
 }
 
 void GameScene::updateCameraFollow() {
