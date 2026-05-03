@@ -418,6 +418,7 @@ void GeometryApp::updateHostScene(float dt) {
         _hostScene.setActive(false);
         // Transfer connection ownership
         _selectScene.obtainNetwork(_hostScene.getNetwork());
+        _gameplay.initPhysics();
         _hostScene.release();
         _selectScene.setActive(true);
         _scene = State::SELECT;
@@ -432,7 +433,6 @@ void GeometryApp::updateSelectScene(float dt) {
     _selectScene.update(dt);
     switch (_selectScene.getStatus()) {
         case SelectScene::SSStatus::SELECT:
-            _gameplay.initPhysics();
             break;
         case SelectScene::SSStatus::HANDSHAKE:
             if (_selectScene.canInitMap()) {
@@ -483,6 +483,7 @@ void GeometryApp::updateClientScene(float dt) {
             _clientScene.setActive(false);
             // Transfer connection ownership
             _selectScene.obtainNetwork(_clientScene.getNetwork());
+            _gameplay.initPhysics();
             _clientScene.release();
             _selectScene.setActive(true);
             _scene = State::SELECT;
