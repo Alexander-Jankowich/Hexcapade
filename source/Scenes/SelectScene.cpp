@@ -46,17 +46,19 @@ bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
         else {
             _status = SSStatus::HANDSHAKE;
         }
+        _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
+        _networkCtrl->pushOutEvent(PlayerNameEvent::allocPlayerNameEvent(_networkCtrl->getPID(), _playerName));
         _startPressed = true;
         _nameField->releaseFocus();
         });
         
-        _nameField->addExitListener([this](const std::string& name, const std::string& value) {
-            if (!value.empty()) {
-                _networkCtrl->pushOutEvent(
-                    PlayerNameEvent::allocPlayerNameEvent(
-                        _networkCtrl->getPID(), _playerName));
-            }
-        });
+    _nameField->addTypeListener([this](const std::string&, const std::string& value) {
+        std::string clamped = value.size() > 12 ? value.substr(0, 12) : value; // max 12 characters for now
+        if (clamped != value && _nameField) {
+            _nameField->setText(clamped);
+        }
+        _playerName = clamped;
+    });
 
     _catBtn->addListener([this](const std::string& name, bool down) {
         if (down) onCharacterSelected(CharacterType::CAT);
