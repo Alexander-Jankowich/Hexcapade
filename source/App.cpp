@@ -400,7 +400,7 @@ void GeometryApp::updateHostScene(float dt) {
     }
     switch (_hostScene.getStatus()) {
     case NetworkController::Status::NETERROR:
-        
+        //TODO: Display some sort of network popup?
         _hostScene.setActive(false);
         _hostScene.reset();
         _hostScene.resetStatus();

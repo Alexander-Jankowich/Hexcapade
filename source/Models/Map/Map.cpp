@@ -624,6 +624,7 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
     }
     
     _config._mapSize = data->getInt("map-size") + data->getInt("map-size-incr") * incr;
+    _config.quota = data->getInt("quota") + data->getInt("quota-incr") * incr;
     
     for (auto e : data->get("enemies")->asStringArray()) {
         if (e == "octoplush") _config._enemyTypes.push_back(EnemyType::OCTO);
