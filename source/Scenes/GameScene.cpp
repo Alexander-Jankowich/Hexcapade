@@ -215,7 +215,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
 
     // Initialize inventory system
     _depositedValue = 0;
-    _quota = std::max(1, _runConfig.quota);
+    //_quota = std::max(1, _runConfig.quota);
     _playerWon = false;
     _gameEnded = false;
 
@@ -417,7 +417,7 @@ void GameScene::rebuildMapForRun() {
 
     _roomController.setRooms(_map->getRooms());
 
-    _quota = std::max(1, _runConfig.quota);
+    _quota = _map->getQuota();
     _depositPosition = _map->getPlayerSpawn();
 
     if (_networkCtrl->isHost()) {
