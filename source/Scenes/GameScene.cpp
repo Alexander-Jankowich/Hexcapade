@@ -15,6 +15,7 @@
 #include <box2d/b2_collision.h>
 
 #include "GameScene.h"
+#include "../Models/Items/ItemSpawning.h"
 
 
 // Lock the screen size to fixed height regardless of aspect ratio
@@ -35,75 +36,6 @@ using namespace std;
 using namespace cugl::graphics;
 
 namespace {
-
-const ItemCatalogEntryConfig* chooseWeight( const std::vector<ItemCatalogEntryConfig>& entries, const std::shared_ptr<cugl::Random>& random) {
-    
-    float totalWeight = 0.0f;
-    for (const auto& item : entries) {
-        totalWeight += item.weight;
-    }
-    
-    float roll = random->getClosedFloat(0.0f, totalWeight);
-    
-    for (const auto& item : entries) {
-        if ((roll -= item.weight) <= 0.0f) {
-            return &item;
-        }
-    }
-    
-    return &entries.back();
-}
-
-float getTypicalItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
-    // Estimating the average item value from the weighted itemd so spawn count can scale with quota
-    float totalWeight = 0.0f;
-    float totalValue = 0.0f;
-    for (const auto& item : entries) {
-        totalWeight += item.weight;
-        totalValue += item.weight * item.value;
-    }
-
-    return totalValue / totalWeight;
-}
-
-// finds the highest value item so the board cutoffs scale with catalog changes
-int getMaxItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
-    int maxValue = 0;
-    for (const auto& item : entries) {
-        maxValue = std::max(maxValue, item.value);
-    }
-    return maxValue;
-}
-
-// checks whether an item fits the configured value band for this spawn point's zone
-bool isItemEligibleForZone(const ItemCatalogEntryConfig& item,
-                           int maxItemValue,
-                           float zoneMinRatio,
-                           float zoneMaxRatio) {
-    float lowCutoff = zoneMinRatio * maxItemValue;
-    float highCutoff = zoneMaxRatio * maxItemValue;
-    bool includesMaxValue = zoneMaxRatio >= 1.0f;
-    return item.value >= lowCutoff &&
-        (includesMaxValue ? item.value <= highCutoff : item.value < highCutoff);
-}
-
-// rolls the zone category probabilities from level_config before weighted pick
-std::string chooseItemCategory(float spellbookProb,
-                               float artifactProb,
-                               const std::shared_ptr<cugl::Random>& random) {
-    float totalProb = spellbookProb + artifactProb;
-    float roll = random->getClosedFloat(0.0f, totalProb);
-    return roll <= spellbookProb ? "spellbook" : "artifact";
-}
-
-// Goal: enough item value to cover quota, but never spawn more than
-// the authored spawn points we actually have on the map
-size_t chooseSpawnCount(size_t totalSpawn, size_t roomCount, int quota,
-                            float typicalItemValue, float quotaCoverageRatio) {
-    int valueNeeded = (int)std::ceil((float)quota * quotaCoverageRatio);
-    size_t itemsNeeded = (size_t)std::ceil((float)valueNeeded / typicalItemValue);
-    return std::min(totalSpawn, std::max(roomCount, itemsNeeded));
-}
 
 std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entries,
                                const PlayerObstacle::CarriedItem& item) {
@@ -459,9 +391,9 @@ void GameScene::spawnItemsFromMap() {
     const std::vector<ItemCatalogEntryConfig>& entries = _runConfig.item.entries;
 
     int roomCount = _map->getNumRooms();
-    float typicalItemValue = getTypicalItemValue(entries);
-    int maxItemValue = getMaxItemValue(entries);
-    size_t spawnCount = chooseSpawnCount(
+    float typicalItemValue = hexcapade::itemspawn::getTypicalItemValue(entries);
+    int maxItemValue = hexcapade::itemspawn::getMaxItemValue(entries);
+    size_t spawnCount = hexcapade::itemspawn::chooseSpawnCount(
         spawnPoints.size(), roomCount, _quota,
         typicalItemValue, _runConfig.item.quotaCoverageRatio
     );
@@ -492,30 +424,12 @@ void GameScene::spawnItemsFromMap() {
         float spellbookProb = _map->getItemSpellbookZoneProb(zone);
         float artifactProb = _map->getItemArtifactZoneProb(zone);
 
-        // filter items to the value band for this spawn point's zone
-        std::vector<ItemCatalogEntryConfig> zoneEntries;
-        zoneEntries.reserve(entries.size());
-        for (const auto& entry : entries) {
-            if (isItemEligibleForZone(entry, maxItemValue, zoneMinRatio, zoneMaxRatio)) {
-                zoneEntries.push_back(entry);
-            }
-        }
-
-        // roll spellbook vs artifact using the zone probabilities from level_config
-        std::string itemCategory = chooseItemCategory(spellbookProb, artifactProb, _random);
-
-        // then filter the zone band to the category we rolled
-        std::vector<ItemCatalogEntryConfig> categoryEntries;
-        categoryEntries.reserve(zoneEntries.size());
-        for (const auto& entry : zoneEntries) {
-            if (entry.kind == itemCategory) {
-                categoryEntries.push_back(entry);
-            }
-        }
-
-        const ItemCatalogEntryConfig* item = chooseWeight(categoryEntries, _random);
-        int itemValue = item->value;
-        std::string itemType = item->textureAsset.empty() ? item->id : item->textureAsset;
+        ItemCatalogEntryConfig item = hexcapade::itemspawn::chooseItemForZone(
+            entries, maxItemValue, zoneMinRatio, zoneMaxRatio,
+            spellbookProb, artifactProb, _random
+        );
+        int itemValue = item.value;
+        std::string itemType = item.textureAsset.empty() ? item.id : item.textureAsset;
 
         auto params = _itemFact->serializeParams(physPos, itemValue, itemType);
         _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);

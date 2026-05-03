@@ -54,7 +54,7 @@
       "id": "artifact_gold_fake",
       "name": "Gem_Boost",
       "value": 0,
-      "weight": 0.6,
+      "weight": 0.4,
       "texture_asset": "artifact_gold"
     },
     {
@@ -104,7 +104,7 @@
       "id": "spellbook_death",
       "name": "Death Spellbook",
       "value": 20,
-      "weight": 0.2,
+      "weight": 0.1,
       "texture_asset": "spellbook_death"
     },
     {
