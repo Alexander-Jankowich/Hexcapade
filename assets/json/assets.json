@@ -189,6 +189,14 @@
     }
   },
   "fonts": {
+    "CoolveticaRegular16": {
+      "file": "fonts/CoolveticaRg.ttf",
+      "size": 16
+    },
+    "CoolveticaRegular38": {
+      "file": "fonts/CoolveticaRg.ttf",
+      "size": 38
+    },
     "OpenSans16": {
       "file": "fonts/OpenSans-Regular.ttf",
       "size": 16
@@ -1298,11 +1306,11 @@
                 ],
                 "position": [
                   19,
-                  19
+                  36
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": "NAME",
                 "foreground": "#000000ff",
                 "background": "#00000000",
@@ -1337,10 +1345,10 @@
                 ],
                 "position": [
                   188,
-                  19
+                  36
                 ],
                 "visible": true,
-                "font": "OpenSans38",
+                "font": "CoolveticaRegular38",
                 "text": "PLAYER",
                 "cursor": true,
                 "cursorwidth": 4,
@@ -1370,8 +1378,8 @@
             "x_anchor": "center",
             "y_anchor": "middle",
             "absolute": false,
-            "x_offset": -0.25,
-            "y_offset": -0.38
+            "x_offset": -0.24,
+            "y_offset": 0.4
           }
         },
         "char_buttons": {

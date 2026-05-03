@@ -226,6 +226,13 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
         _font = nullptr;
     }
 
+    try {
+        _nameFont = assets->get<Font>("CoolveticaRegular16");
+    }
+    catch (...) {
+        _nameFont = nullptr;
+    }
+
     // this resets pickup prompt state
     _canDeposit = false;
     _depositRadius = 42.0f;
@@ -1044,14 +1051,14 @@ void GameScene::render()
 
     drawDepositZone();
 
-    if (_font && _playerFact) {
+    if (_nameFont && _playerFact) {
         auto nameBgTex = _assets->get<graphics::Texture>("name_bg");
         for (const auto& p : _playerFact->current) {
             if (!p || p->isRemoved()) continue;
             const std::string& name = _networkCtrl->getPlayerName(p->getPID());
             if (name.empty()) continue;
 
-            auto label = TextLayout::allocWithText(name, _font);
+            auto label = TextLayout::allocWithText(name, _nameFont);
 
             label->layout();
 
