@@ -432,6 +432,8 @@ void GeometryApp::updateSelectScene(float dt) {
     _selectScene.update(dt);
     switch (_selectScene.getStatus()) {
         case SelectScene::SSStatus::SELECT:
+            _gameplay.initPhysics();
+            break;
         case SelectScene::SSStatus::HANDSHAKE:
             if (_selectScene.canInitMap()) {
                 _gameplay.initMap();

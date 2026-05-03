@@ -46,6 +46,7 @@ void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
     attachEventType<CastSpellEvent>();
     attachEventType<EndGameEvent>();
     attachEventType<DepositEvent>();
+    attachEventType<DeathEvent>();
     attachEventType<PickupEvent>();
     attachEventType<SetSpellEvent>();
     attachEventType<RestartGameEvent>();

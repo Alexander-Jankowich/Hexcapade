@@ -192,6 +192,8 @@ public:
 
     /** initializes the network and physics world */
     void initNetwork(shared_ptr<NetworkController> n);
+    /** Initialize networked physics before map built */
+    void initPhysics();
     /** initialize map once network is populated with random seed for this round */
     void initMap();
     /**

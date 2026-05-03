@@ -1316,16 +1316,7 @@ void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
     _networkCtrl = n;
 }
 
-void GameScene::initMap() {
-    if (_networkCtrl->getRandSeed() == 0) return; // no randSeed
-    if (_mapSeed == _networkCtrl->getRandSeed()) return; // already init
-
-    // Create the scene graph
-    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
-    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    _worldnode->setPosition(Vec2::ZERO);
-    addChild(_worldnode);
-
+void GameScene::initPhysics() {
     // initialize physics here, since this should be called post HANDSHAKE
     std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
         this->linkSceneToObs(obs, node);
@@ -1338,6 +1329,17 @@ void GameScene::initMap() {
     _itemFactId = _networkCtrl->getPhysController()->attachFactory(_itemFact);
     CULog("Enemy factory ID: %u", _enemyFactId);
     CULog("Item factory ID: %u", _itemFactId);
+}
+
+void GameScene::initMap() {
+    if (_networkCtrl->getRandSeed() == 0) return; // no randSeed
+    if (_mapSeed == _networkCtrl->getRandSeed()) return; // already init
+
+    // Create the scene graph
+    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(Vec2::ZERO);
+    addChild(_worldnode);
 
     _mapSeed = _networkCtrl->getRandSeed();
     CULog("set map seed to : %d", _mapSeed);
@@ -1364,12 +1366,6 @@ void GameScene::initMap() {
             _addedLWalls = true;
         }
     }
-
-    if (!_networkCtrl->isHost()) {
-        _networkCtrl->markReady();
-        CULog("client ready - init map");
-    }
-
 }
 
 void GameScene::setActive(bool value)

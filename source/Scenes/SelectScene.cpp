@@ -47,6 +47,15 @@ bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
             _status = SSStatus::HANDSHAKE;
         }
         _startPressed = true;
+        _nameField->releaseFocus();
+        });
+        
+        _nameField->addExitListener([this](const std::string& name, const std::string& value) {
+            if (!value.empty()) {
+                _networkCtrl->pushOutEvent(
+                    PlayerNameEvent::allocPlayerNameEvent(
+                        _networkCtrl->getPID(), _playerName));
+            }
         });
 
     _catBtn->addListener([this](const std::string& name, bool down) {
@@ -100,7 +109,7 @@ void SelectScene::update(float dt) {
         _status = SSStatus::HANDSHAKE;
     }
 
-    if (!_networkCtrl->isHost() && _startPressed && !_readySent && _networkCtrl->getRandSeed() != 0) {
+    if (!_networkCtrl->isHost() && _startPressed && !_readySent && _networkCtrl->getPhysEnabled()) {
         _networkCtrl->pushOutEvent(GameStateEvent::allocReady());
         _readySent = true;
     }
@@ -127,25 +136,25 @@ void SelectScene::setActive(bool value) {
         if (_nameField) {
             _nameField->setText("PLAYER");
             _nameField->activate();
-            _nameField->addTypeListener([this](const std::string&, const std::string& value) {
-                std::string clamped = value.size() > 12 ? value.substr(0, 12) : value; // max 12 characters for now
-                if (clamped != value && _nameField) {
-                    _nameField->setText(clamped);
-                }
-                _playerName = clamped;
-                if (_networkCtrl) {
-                    _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
-                    _networkCtrl->pushOutEvent(
-                        PlayerNameEvent::allocPlayerNameEvent(
-                            _networkCtrl->getPID(), _playerName));
-                }
-                });
-            if (_networkCtrl) {
-                _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
-                _networkCtrl->pushOutEvent(
-                    PlayerNameEvent::allocPlayerNameEvent(
-                        _networkCtrl->getPID(), _playerName));
-            }
+//            _nameField->addTypeListener([this](const std::string&, const std::string& value) {
+//                std::string clamped = value.size() > 12 ? value.substr(0, 12) : value; // max 12 characters for now
+//                if (clamped != value && _nameField) {
+//                    _nameField->setText(clamped);
+//                }
+//                _playerName = clamped;
+//                if (_networkCtrl) {
+//                    _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
+//                    _networkCtrl->pushOutEvent(
+//                        PlayerNameEvent::allocPlayerNameEvent(
+//                            _networkCtrl->getPID(), _playerName));
+//                }
+//                });
+//            if (_networkCtrl) {
+//                _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
+//                _networkCtrl->pushOutEvent(
+//                    PlayerNameEvent::allocPlayerNameEvent(
+//                        _networkCtrl->getPID(), _playerName));
+//            }
         }
 
         _catBtn->activate();
@@ -157,6 +166,7 @@ void SelectScene::setActive(bool value) {
             _networkCtrl->unreadyPlayers();
             _networkCtrl->rerollRandSeed();
             _networkCtrl->pushOutEvent(InitMapEvent::allocInitMapEvent(_networkCtrl->getRandSeed()));
+            _startgame->deactivate();
         }
 
         configureStartButton();
@@ -179,22 +189,23 @@ void SelectScene::setActive(bool value) {
 
 void SelectScene::configureStartButton() {
     if (_status == SSStatus::SELECT) {
-        if (_networkCtrl && !_networkCtrl->isHost() && _characterChosen) {
-            _startgame->activate();
-        }
-        else {
-            _startgame->deactivate();
-        }
+        auto text = _networkCtrl->isHost() ? "Waiting for Players" : "Ready";
+        updateText(_startgame, text);
+        if (!_networkCtrl->isHost() && _characterChosen) _startgame->activate();
     }
     else if (_status == SSStatus::HANDSHAKE) {
-        if (_networkCtrl && _networkCtrl->isHost() && _characterChosen) {
-            _startgame->activate();
-        }
-        else {
-            _startgame->deactivate();
-        }
+        auto text = _networkCtrl->isHost() ? "Start Game" : "Awaiting Host Start";
+        updateText(_startgame, text);
+        if (_networkCtrl->isHost() && _characterChosen) _startgame->activate();
     }
     else {
+        updateText(_startgame, "Starting Game");
         _startgame->deactivate();
     }
+}
+
+void SelectScene::updateText(const std::shared_ptr<scene2::Button>& button, const std::string text) {
+    auto label = std::dynamic_pointer_cast<scene2::Label>(button->getChildByName("Start"));
+    label->setText(text);
+
 }
