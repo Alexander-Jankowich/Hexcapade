@@ -5,189 +5,192 @@
     "gestures": "json/gestures.json",
     "level-config": "json/level_config.json"
   },
-  "textures": {
-    "ghost": {
-      "file": "textures/enemy_ghost_sheet.png"
+    "textures": {
+        "ghost": {
+            "file": "textures/enemy_ghost_sheet.png"
+        },
+        "bat": {
+            "file": "textures/enemy_bat_sheet.png"
+        },
+        "octoplush": {
+            "file": "textures/enemy_octoplush_sheet.png"
+        },
+        "fireball": {
+            "file": "textures/fireball_sheet.png"
+        },
+        "combo-fireball": {
+            "file": "textures/combo-fireball_sheet.png"
+        },
+        "freeze": {
+            "file": "textures/freeze_sheet.png"
+        },
+        "heal": {
+            "file": "textures/heal_sheet.png"
+        },
+        "death": {
+            "file": "textures/death_sheet.png"
+        },
+        "earth": {
+            "file": "textures/earth_sheet.png"
+        },
+        "shield": {
+            "file": "textures/shield_sheet.png"
+        },
+        "shield_entity": {
+            "file": "textures/shield-entity_sheet.png"
+        },
+        "buff_entity": {
+            "file": "textures/buff-entity_sheet.png"
+        },
+        "freeze_entity": {
+            "file": "textures/freeze-entity_sheet.png"
+        },
+        "button": {
+            "file": "textures/button.png"
+        },
+        "frame": {
+            "file": "textures/frame.png"
+        },
+        "item_box": {
+            "file": "textures/inventory_box.png"
+        },
+        "health_full": {
+            "file": "textures/health_full.png"
+        },
+        "health_half": {
+            "file": "textures/health_half.png"
+        },
+        "health_empty": {
+            "file": "textures/health_empty.png"
+        },
+        "health_bar": {
+            "file": "textures/health_bg.png"
+        },
+        "left": {
+            "file": "textures/left_arrow.png"
+        },
+        "player": {
+            "file": "textures/playerfox_sheet.png"
+        },
+        "artifact_reduce": {
+            "file": "textures/artifact_gem.png"
+        },
+        "artifact_boost": {
+            "file": "textures/gem_neon.png"
+        },
+        "artifact_heavy": {
+            "file": "textures/gem_blue.png"
+        },
+        "artifact_protection": {
+            "file": "textures/gem_brown.png"
+        },
+        "artifact_gold": {
+            "file": "textures/gem_gold.png"
+        },
+        "artifact_bomb": {
+            "file": "textures/gem_pink.png"
+        },
+        "artifact_scroll": {
+            "file": "textures/artifact_scroll.png"
+        },
+        "spellbook_fire": {
+            "file": "textures/spellbook_fire.png"
+        },
+        "spellbook_freeze": {
+            "file": "textures/spellbook_freeze.png"
+        },
+        "spellbook_heal": {
+            "file": "textures/spellbook_heal.png"
+        },
+        "spellbook_death": {
+            "file": "textures/spellbook_disintegrate.png"
+        },
+        "spellbook_earth": {
+            "file": "textures/spellbook_earth.png"
+        },
+        "spellbook_water": {
+            "file": "textures/spellbook_water.png"
+        },
+        "fire_card": {
+            "file": "textures/inventory_cards/fire_card.png"
+        },
+        "freeze_card": {
+            "file": "textures/inventory_cards/freeze_card.png"
+        },
+        "heal_card": {
+            "file": "textures/inventory_cards/heal_card.png"
+        },
+        "water_card": {
+            "file": "textures/inventory_cards/water_card.png"
+        },
+        "earth_card": {
+            "file": "textures/inventory_cards/earth_card.png"
+        },
+        "disintegrate_card": {
+            "file": "textures/inventory_cards/disintegrate_card.png"
+        },
+        "heavyTreasure_info": {
+            "file": "textures/inventory_cards/artifact_cards/heavyTreasure_info.png"
+        },
+        "zombieTotem_info": {
+            "file": "textures/inventory_cards/artifact_cards/zombieTotem_info.png"
+        },
+        "foolsGold_info": {
+            "file": "textures/inventory_cards/artifact_cards/foolsGold_info.png"
+        },
+        "mysticalBrooch_info": {
+            "file": "textures/inventory_cards/artifact_cards/mysticalBrooch_info.png"
+        },
+        "explodingPotion_info": {
+            "file": "textures/inventory_cards/artifact_cards/explodingPotion_info.png"
+        },
+        "antiMagic_info": {
+            "file": "textures/inventory_cards/artifact_cards/antiMagic_info.png"
+        },
+        "cursedScroll_info": {
+            "file": "textures/inventory_cards/artifact_cards/cursedScroll_info.png"
+        },
+        "hex-icon-bunny": {
+            "file": "textures/hex-icon-bunny.png"
+        },
+        "return_arrow": {
+            "file": "textures/return_arrow.png"
+        },
+        "joinBg": {
+            "file": "textures/joinBg.png"
+        },
+        "help_button": {
+            "file": "textures/tutorial_assets/help.png"
+        },
+        "tutorial_1": {
+            "file": "textures/tutorial_assets/tutorial_1.png"
+        },
+        "tutorial_2": {
+            "file": "textures/tutorial_assets/tutorial_2.png"
+        },
+        "charSelectBg": {
+            "file": "textures/charSelectBg.png"
+        },
+        "player_cat_button": {
+            "file": "textures/player_cat_button.png"
+        },
+        "player_duck_button": {
+            "file": "textures/player_duck_button.png"
+        },
+        "player_bunny_button": {
+            "file": "textures/player_bunny_button.png"
+        },
+        "player_fox_button": {
+            "file": "textures/player_fox_button.png"
+        },
+        "cat_pr": { "file": "textures/cat_pr.png" },
+        "fox_pr": { "file": "textures/fox_pr.png" },
+        "duck_pr": { "file": "textures/duck_pr.png" },
+        "bunny_pr": { "file": "textures/bunny_pr.png" },
+        "name_bg": {
+            "file": "textures/name_bg.png"
+        }
     },
-    "bat": {
-      "file": "textures/enemy_bat_sheet.png"
-    },
-    "octoplush": {
-      "file": "textures/enemy_octoplush_sheet.png"
-    },
-    "fireball": {
-        "file": "textures/fireball_sheet.png"
-    },
-    "combo-fireball": {
-        "file": "textures/combo-fireball_sheet.png"
-    },
-    "freeze": {
-      "file": "textures/freeze_sheet.png"
-    },
-    "heal": {
-      "file": "textures/heal_sheet.png"
-    },
-    "death": {
-      "file": "textures/death_sheet.png"
-    },
-    "earth": {
-        "file": "textures/earth_sheet.png"
-    },
-    "shield": {
-        "file": "textures/shield_sheet.png"
-    },
-    "shield_entity": {
-        "file": "textures/shield-entity_sheet.png"
-    },
-    "buff_entity": {
-        "file": "textures/buff-entity_sheet.png"
-    },
-    "button": {
-      "file": "textures/button.png"
-    },
-    "frame": {
-      "file": "textures/frame.png"
-    },
-    "item_box": {
-      "file": "textures/inventory_box.png"
-    },
-    "health_full": {
-      "file": "textures/health_full.png"
-    },
-    "health_half": {
-      "file": "textures/health_half.png"
-    },
-    "health_empty": {
-      "file": "textures/health_empty.png"
-    },
-    "health_bar": {
-      "file": "textures/health_bg.png"
-    },
-    "left": {
-      "file": "textures/left_arrow.png"
-    },
-    "player": {
-      "file": "textures/playerfox_sheet.png"
-    },
-    "artifact_reduce": {
-      "file": "textures/artifact_gem.png"
-    },
-    "artifact_boost": {
-      "file": "textures/gem_neon.png"
-    },
-    "artifact_heavy": {
-      "file": "textures/gem_blue.png"
-    },
-    "artifact_protection": {
-      "file": "textures/gem_brown.png"
-    },
-    "artifact_gold": {
-      "file": "textures/gem_gold.png"
-    },
-    "artifact_bomb": {
-      "file": "textures/gem_pink.png"
-    },
-    "artifact_scroll": {
-      "file": "textures/artifact_scroll.png"
-    },
-    "spellbook_fire": {
-      "file": "textures/spellbook_fire.png"
-    },
-    "spellbook_freeze": {
-      "file": "textures/spellbook_freeze.png"
-    },
-    "spellbook_heal": {
-      "file": "textures/spellbook_heal.png"
-    },
-    "spellbook_death": {
-      "file": "textures/spellbook_disintegrate.png"
-    },
-    "spellbook_earth": {
-      "file": "textures/spellbook_earth.png"
-    },
-    "spellbook_water": {
-      "file": "textures/spellbook_water.png"
-    },
-    "fire_card": {
-      "file": "textures/inventory_cards/fire_card.png"
-    },
-    "freeze_card": {
-      "file": "textures/inventory_cards/freeze_card.png"
-    },
-    "heal_card": {
-      "file": "textures/inventory_cards/heal_card.png"
-    },
-    "water_card": {
-      "file": "textures/inventory_cards/water_card.png"
-    },
-    "earth_card": {
-      "file": "textures/inventory_cards/earth_card.png"
-    },
-    "disintegrate_card": {
-      "file": "textures/inventory_cards/disintegrate_card.png"
-    },
-    "heavyTreasure_info": {
-      "file": "textures/inventory_cards/artifact_cards/heavyTreasure_info.png"
-    },
-    "zombieTotem_info": {
-      "file": "textures/inventory_cards/artifact_cards/zombieTotem_info.png"
-    },
-    "foolsGold_info": {
-      "file": "textures/inventory_cards/artifact_cards/foolsGold_info.png"
-    },
-    "mysticalBrooch_info": {
-      "file": "textures/inventory_cards/artifact_cards/mysticalBrooch_info.png"
-    },
-    "explodingPotion_info": {
-      "file": "textures/inventory_cards/artifact_cards/explodingPotion_info.png"
-    },
-    "antiMagic_info": {
-      "file": "textures/inventory_cards/artifact_cards/antiMagic_info.png"
-    },
-    "cursedScroll_info": {
-      "file": "textures/inventory_cards/artifact_cards/cursedScroll_info.png"
-    },
-    "hex-icon-bunny": {
-      "file": "textures/hex-icon-bunny.png"
-    },
-    "return_arrow": {
-      "file": "textures/return_arrow.png"
-    },
-    "joinBg": {
-      "file": "textures/joinBg.png"
-    },
-    "help_button": {
-      "file": "textures/tutorial_assets/help.png"
-    },
-    "tutorial_1": {
-      "file": "textures/tutorial_assets/tutorial_1.png"
-    },
-    "tutorial_2": {
-      "file": "textures/tutorial_assets/tutorial_2.png"
-    },
-    "charSelectBg": {
-      "file": "textures/charSelectBg.png"
-    },
-    "player_cat_button": {
-      "file": "textures/player_cat_button.png"
-    },
-    "player_duck_button": {
-      "file": "textures/player_duck_button.png"
-    },
-    "player_bunny_button": {
-      "file": "textures/player_bunny_button.png"
-    },
-    "player_fox_button": {
-      "file": "textures/player_fox_button.png"
-    },
-    "cat_pr": { "file": "textures/cat_pr.png" },
-    "fox_pr": { "file": "textures/fox_pr.png" },
-    "duck_pr": { "file": "textures/duck_pr.png" },
-    "bunny_pr": { "file": "textures/bunny_pr.png" },
-    "name_bg": {
-      "file": "textures/name_bg.png"
-    }
-  },
   "fonts": {
     "CoolveticaRegular16": {
       "file": "fonts/CoolveticaRg.ttf",
