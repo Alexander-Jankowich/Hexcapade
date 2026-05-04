@@ -5,7 +5,6 @@
     "default_pickup_radius": 14.0,
     "guaranteed_artifacts": 1,
     "guaranteed_spellbooks": 1,
-    "quota_coverage_ratio": 1.35,
-    "quota_coverage_max_extra_items": 40
+    "quota_coverage_ratio": 2
   }
 }

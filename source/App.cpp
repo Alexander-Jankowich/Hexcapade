@@ -477,13 +477,13 @@ void GeometryApp::updateClientScene(float dt) {
             break;
     case NetworkController::Status::READY :
             CULog("ready freddy");
+            _gameplay.initPhysics();
             break;
     case NetworkController::Status::INGAME:
             CULog("in select");
             _clientScene.setActive(false);
             // Transfer connection ownership
             _selectScene.obtainNetwork(_clientScene.getNetwork());
-            _gameplay.initPhysics();
             _clientScene.release();
             _selectScene.setActive(true);
             _scene = State::SELECT;

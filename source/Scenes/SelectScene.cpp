@@ -138,25 +138,6 @@ void SelectScene::setActive(bool value) {
         if (_nameField) {
             _nameField->setText("PLAYER");
             _nameField->activate();
-//            _nameField->addTypeListener([this](const std::string&, const std::string& value) {
-//                std::string clamped = value.size() > 12 ? value.substr(0, 12) : value; // max 12 characters for now
-//                if (clamped != value && _nameField) {
-//                    _nameField->setText(clamped);
-//                }
-//                _playerName = clamped;
-//                if (_networkCtrl) {
-//                    _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
-//                    _networkCtrl->pushOutEvent(
-//                        PlayerNameEvent::allocPlayerNameEvent(
-//                            _networkCtrl->getPID(), _playerName));
-//                }
-//                });
-//            if (_networkCtrl) {
-//                _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
-//                _networkCtrl->pushOutEvent(
-//                    PlayerNameEvent::allocPlayerNameEvent(
-//                        _networkCtrl->getPID(), _playerName));
-//            }
         }
 
         _catBtn->activate();
@@ -167,6 +148,7 @@ void SelectScene::setActive(bool value) {
         if (_networkCtrl && _networkCtrl->isHost()) {
             _networkCtrl->unreadyPlayers();
             _networkCtrl->rerollRandSeed();
+            CULog("send map init");
             _networkCtrl->pushOutEvent(InitMapEvent::allocInitMapEvent(_networkCtrl->getRandSeed()));
             _startgame->deactivate();
         }

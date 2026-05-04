@@ -48,7 +48,11 @@ private:
         float _zone2EnemyProb;
         float _zone3EnemyProb;
         
-        // TODO: add item data
+        // item zone values come from level_config
+        std::array<float, 3> _itemValueZoneMins;
+        std::array<float, 3> _itemValueZoneMaxs;
+        std::array<float, 3> _itemSpellbookZoneProbs;
+        std::array<float, 3> _itemArtifactZoneProbs;
     };
     struct MapDoor {
         Vec2 pos;
@@ -72,6 +76,9 @@ private:
     std::vector<std::shared_ptr<Room>> _rooms;
 
     std::vector<cugl::Vec2> _itemSpawnPoints;
+    std::vector<cugl::Vec2> _z1itemSpawnPoints;
+    std::vector<cugl::Vec2> _z2itemSpawnPoints;
+    std::vector<cugl::Vec2> _z3itemSpawnPoints;
     std::vector<cugl::Vec2> _enemySpawnPoints;
     std::vector<cugl::Vec2> _z1enemySpawnPoints;
     std::vector<cugl::Vec2> _z2enemySpawnPoints;
@@ -99,11 +106,20 @@ public:
      * called by GLGameScene to roll die for each zone and generate an enemy spawn if the zone die roll succeeds.
      */
     std::vector<std::pair<Vec2, EnemyType>> generateEnemySpawns(const std::vector<Vec2> playersPos);
+    std::vector<std::pair<Vec2, ItemCatalogEntryConfig>> generateItemSpawnChoices(const std::vector<ItemCatalogEntryConfig>& entries,
+                                                                                  int quota,
+                                                                                  float itemValueRatio,
+                                                                                  const std::shared_ptr<cugl::Random>& random);
     
     std::shared_ptr<cugl::scene2::SceneNode> getLowerWallNode() {return lw_node;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
     const std::vector<Vec2>& getEnemySpawnPoints() const {return _enemySpawnPoints;}
     const std::vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
+    int getItemSpawnZone(const Vec2& worldPoint) const;
+    float getItemValueZoneMin(int zone) const;
+    float getItemValueZoneMax(int zone) const;
+    float getItemSpellbookZoneProb(int zone) const;
+    float getItemArtifactZoneProb(int zone) const;
     const std::vector<std::shared_ptr<Room>> getRooms() const {return _rooms;}
     int getNumRooms() { return (int)_rooms.size(); }
     int getQuota() {return _config.quota;}
@@ -140,7 +156,24 @@ private:
     void addWallObstacle(Poly2& poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
     
     void loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config);
+    void updateItemSpawnZones();
     
+    const ItemCatalogEntryConfig* chooseItemWeight(const std::vector<ItemCatalogEntryConfig>& weightedEntries,
+                                                   const std::shared_ptr<cugl::Random>& random);
+    float getTypicalItemValue(const std::vector<ItemCatalogEntryConfig>& catalogEntries);
+    int getMaxItemValue(const std::vector<ItemCatalogEntryConfig>& catalogEntries);
+    bool isItemEligibleForZone(const ItemCatalogEntryConfig& item, int maxItemValue, float zoneMinRatio, float zoneMaxRatio);
+    std::string chooseItemCategory(float spellbookChance,
+                                   float artifactChance,
+                                   const std::shared_ptr<cugl::Random>& random);
+    size_t chooseItemSpawnCount(size_t spawnPointCount, size_t roomCount, int quota, float typicalItemValue, float itemValueRatio);
+    ItemCatalogEntryConfig chooseItemForZone(const std::vector<ItemCatalogEntryConfig>& catalogEntries,
+                                             int maxItemValue,
+                                             float zoneMinRatio,
+                                             float zoneMaxRatio,
+                                             float spellbookChance,
+                                             float artifactChance,
+                                             const std::shared_ptr<cugl::Random>& random);
     std::pair<Vec2, EnemyType> chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates);
 };
 
