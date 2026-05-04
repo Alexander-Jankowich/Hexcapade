@@ -34,18 +34,8 @@ EnemyNode::EnemyNode(shared_ptr<graphics::Texture>& tex, shared_ptr<JsonValue>& 
     nextAnimation = AnimationType::IDLE;
     setFrame(0);
     setPriority(1);
-}
 
-void EnemyNode::updateState() {
-    if(frozen){
-        setColor(Color4::BLUE);
-    }
-    else if(statue){
-        setColor(Color4::GRAY);
-    }
-    else{
-        setColor(Color4::WHITE);
-    }
+    _tint = Color4::WHITE;
 }
 
 void EnemyNode::setVelocity(Vec2 value) {
@@ -59,6 +49,13 @@ void EnemyNode::setVelocity(Vec2 value) {
 }
 
 void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s) {
+    //if (statue && !frozen) {
+    //    setColor(Color4::GRAY);
+    //}
+    //else if (!frozen) {
+    //    setColor(Color4::WHITE);
+    //}
+
     if (s == EnemyObstacle::EnemyState::DEATH) {
         nextAnimation = AnimationType::DEAD;
     }
@@ -83,4 +80,8 @@ pair<ActionFunction, float> EnemyNode::getNextAnimation() {
     default:
         return getAnimationPair(WALK, WALK_FRAMES);
     }
+}
+
+void EnemyNode::draw(const std::shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) {
+    AnimatedSprite::draw(batch, transform, _tint);
 }

@@ -94,7 +94,7 @@ public:
      */
     ~PlayerNode() {}
     
-#pragma mark Drawing
+#pragma mark Graphics
     void draw(const std::shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) override;
 
     void setTint(Color4 t) { _tint = t; }

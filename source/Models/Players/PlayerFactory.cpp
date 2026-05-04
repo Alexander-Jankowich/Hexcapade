@@ -93,6 +93,7 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
     else if (!obs->isFrozen() && node->isFrozen()) {
         node->setFrozen(false);
         animations->resumeAnimation(node);
+
         auto frozen = dynamic_pointer_cast<SpellEntityNode>(node->getChildByTag(FROZEN_ID));
         frozen->end();
         animations->addNextListener(frozen, [node, frozen](string key, float time, float actual) {
