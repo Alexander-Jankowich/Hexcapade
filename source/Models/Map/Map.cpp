@@ -629,6 +629,7 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
     }
     
     _config._mapSize = data->getInt("map-size") + data->getInt("map-size-incr") * incr;
+    _config.quota = data->getInt("quota") + data->getInt("quota-incr") * incr;
     
     for (auto e : data->get("enemies")->asStringArray()) {
         if (e == "octoplush") _config._enemyTypes.push_back(EnemyType::OCTO);
@@ -917,6 +918,7 @@ std::pair<Vec2, EnemyType> Map::chooseEnemySpawnPoint(const std::vector<Vec2> zo
         bool valid = true;
         for (auto pos : playersPos) {
             if (p.distance(pos) < 10 * TILE_SIZE) { // since points are in tile coords
+                //T
                 valid = false;
                 break;
             }

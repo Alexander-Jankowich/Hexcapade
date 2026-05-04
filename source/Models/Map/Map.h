@@ -37,6 +37,8 @@ class Map {
 private:
     struct LevelConfig {
         int _mapSize;
+        int quota;
+        
         std::vector<EnemyType> _enemyTypes;
         std::vector<float> _zone1WeightsEn;
         std::vector<float> _zone2WeightsEn;
@@ -120,7 +122,9 @@ public:
     float getItemArtifactZoneProb(int zone) const;
     const std::vector<std::shared_ptr<Room>> getRooms() const {return _rooms;}
     int getNumRooms() { return (int)_rooms.size(); }
-
+    int getQuota() {return _config.quota;}
+    
+    std::shared_ptr<cugl::scene2::SceneNode> generateStaticMap(std::shared_ptr<AssetManager> assets);
 
 private:
     /** Helper function to add all sceneNodes for a room (given tiled data) in the right place.

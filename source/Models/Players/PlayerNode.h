@@ -74,8 +74,9 @@ private:
     bool _mud = false;
     bool _buff = false;
     bool _shield = false;
+    bool _hurt = false;
     
-    int getDirection() { return facingLeft * 2 + facingBack; }
+    int getDirection() override { return facingLeft * 2 + facingBack; }
 
 public:
 #pragma mark Constructors
@@ -166,7 +167,7 @@ public:
         _buff = false;
     }
     
-    void updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b);
+    void updateAnimationState(int health, bool casting, bool m);
 
     void setVelocity(cugl::Vec2 value);
 
@@ -174,8 +175,13 @@ public:
 
     void releasedSpell() { _nextAnimation = AnimationType::RELEASE_CAST; }
 
+    void setFrozen(bool f) { _frozen = f; }
     bool isFrozen() { return _frozen; }
 
+    void setHurt(bool h) { _hurt = h; }
+    bool isHurt() { return _hurt; }
+
+    void setBuff(bool b) { _buff = b; }
     bool isBuffed() { return _buff; }
 
     void setShield(bool s) { _shield = s; }

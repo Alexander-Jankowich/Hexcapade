@@ -53,7 +53,7 @@ private:
     const int IDLE[4];
     const int IDLE_FRAMES;
 
-    int getDirection() { return facingLeft * 2 + facingBack; }
+    int getDirection() override { return facingLeft * 2 + facingBack; }
 
 public:
 #pragma mark Constructors

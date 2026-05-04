@@ -137,14 +137,22 @@
         "buff": {
             "speed": 5,
             "damage": 0,
-            "range": 5.0,
-            "heal": false
+            "range": 5.0
         },
         "shield": {
             "speed": 5,
             "damage": 0,
-            "range": 5.0,
-            "heal": false
+            "range": 5.0
+        },
+        "mud-water": {
+            "speed": 5,
+            "damage": 1,
+            "range": 3.0
+        },
+        "steam": {
+            "speed": 0,
+            "damage": 0,
+            "range": 0
         },
         "shield-entity": {
             "rows": 2,
@@ -156,6 +164,17 @@
             "created_frames": 4,
             "existing_frames": 1,
             "end_frames": 6
+        },
+        "buff-entity": {
+            "rows": 2,
+            "columns": 6,
+
+            "created": 0,
+            "existing": 4,
+            "end": 8,
+            "created_frames": 4,
+            "existing_frames": 4,
+            "end_frames": 4
         }
     },
     "enemies": {
@@ -225,7 +244,7 @@
         "octoplush": {
             "health": 12,
             "speed": 2.0,
-            "range": 4.5,
+            "range": 8,
             "attack_range" : 0,
             "texture": "octoplush",
             "columns": 8,
@@ -246,7 +265,7 @@
         "mini-octoplush": {
             "health": 5,
             "speed": 2.0,
-            "range": 4.5,
+            "range": 8,
             "attack_range" : 0,
             "texture": "octoplush",
             "columns": 8,

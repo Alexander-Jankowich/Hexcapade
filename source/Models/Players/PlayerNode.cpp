@@ -45,6 +45,9 @@ PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
 
     _curAnimation = AnimationType::IDLE;
     _nextAnimation = AnimationType::IDLE;
+
+    setFrame(idle[0]);
+    setPriority(1);
 }
 
 void PlayerNode::setVelocity(cugl::Vec2 value) {
@@ -57,10 +60,9 @@ void PlayerNode::setVelocity(cugl::Vec2 value) {
     }
 }
 
-void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool f, bool m, bool b) {
-    _frozen = f;
+void PlayerNode::updateAnimationState(int health, bool casting, bool m) {
+    CULog("player animation state is: %d", _curAnimation);
     _mud = m;
-    _buff = b;
 
     // Just get direction
     if (_frozen) {
@@ -69,10 +71,6 @@ void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool 
     else if (_mud){
         setColor(Color4::GRAY);
     }
-    else if (_buff){
-        CULog("coloring red");  
-        setColor(Color4::RED);
-    }
     else{
         setColor(Color4::WHITE);
     }
@@ -80,92 +78,56 @@ void PlayerNode::updateAnimationState(int health, bool hurt, bool casting, bool 
     if (health <= 0) {
         _nextAnimation = AnimationType::DEAD;
     }
-    else if (hurt && _curAnimation != AnimationType::DAMAGED) {
+    else if (_hurt && _curAnimation != AnimationType::DAMAGED) {
         _nextAnimation = AnimationType::DAMAGED;
     }
     else if (casting) {
         _nextAnimation = AnimationType::CASTING;
     }
-    else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation == AnimationType::RELEASE_CAST)
-            && _nextAnimation != AnimationType::DEAD) {
+    else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation == AnimationType::RELEASE_CAST)) {
         _nextAnimation = _velocity.length() < idleThreshold ? AnimationType::IDLE : AnimationType::WALK;
     }
-    //else {
-    //    _nextAnimation = AnimationType::IDLE;
-    //}
 }
 
 pair<ActionFunction, float> PlayerNode::getNextAnimation() {
-    int* frameSet = {};
-    int numFrames = 0;
+    auto cur = _curAnimation;
+    _curAnimation = _nextAnimation;
+
     switch (_nextAnimation) {
     case AnimationType::IDLE:
-        if (_curAnimation == AnimationType::CASTING) {
-            frameSet = endCast;  
-            numFrames = endCastFrames;
+        if (cur == AnimationType::CASTING) {
+            return getAnimationPair(endCast, endCastFrames);
         }
-        else {
-            frameSet = idle;
-            numFrames = idleFrames;
-        }
-        break;
+        return getAnimationPair(idle, idleFrames);
     case AnimationType::WALK:
-        if (_curAnimation == AnimationType::CASTING) {
-            frameSet = endCast;
-            numFrames = endCastFrames;
+        if (cur == AnimationType::CASTING) {
+            return getAnimationPair(endCast, endCastFrames);
         }
-        else {
-            frameSet = walk;
-            numFrames = walkFrames;
-        }
-        break;
+        return getAnimationPair(walk, walkFrames);
     case AnimationType::CASTING:
-        if (_curAnimation != AnimationType::CASTING) {
-            frameSet = startCast;
-            numFrames = startCastFrames;
+        if (cur != AnimationType::CASTING) {
+            return getAnimationPair(startCast, startCastFrames);
         }
-        else {
-            frameSet = casting;
-            numFrames = castingFrames;
-        }
-        break;
+        return getAnimationPair(casting, castingFrames);
     case AnimationType::RELEASE_CAST:
-        frameSet = releaseCast;
-        numFrames = releaseCastFrames;
-        break;
+        return getAnimationPair(releaseCast, releaseCastFrames);
     case AnimationType::DAMAGED:
-        frameSet = damage;
-        numFrames = damageFrames;
-        break;
+        return getAnimationPair(damage, damageFrames);
     case AnimationType::DEAD:
-        if (_curAnimation == AnimationType::CASTING) {
-            frameSet = endCast;
-            numFrames = endCastFrames;
-
+        if (cur == AnimationType::CASTING) {
             // This is to kinda cheese it and have it do the dying animation too
             _nextAnimation = AnimationType::IDLE;
+
+            return getAnimationPair(endCast, endCastFrames);
         }
-        else if (_curAnimation != AnimationType::DEAD) {
-            frameSet = dying;
-            numFrames = dyingFrames;
+        if (cur != AnimationType::DEAD) {
+            return getAnimationPair(dying, dyingFrames);
         }
-        else {
-            frameSet = dead;
-            numFrames = deadFrames;
-        }
-        break;
+        return getAnimationPair(dead, deadFrames);
     default:
         CULog("Animation for this state %d has not been implemented! (PlayerNode::getNextAnimation)", _nextAnimation);
+        return END_ANIMATION;
     }
-
-    _curAnimation = _nextAnimation;
-    //CULog("Loop player animation, %.2f", numFrames/FPS);
-    return {
-        [this, frameSet, numFrames](float t, ActionState state) {
-            updateFrame(t, state, frameSet, getDirection(), numFrames);
-        },
-        numFrames / FPS
-    };
 }
 
 bool PlayerNode::skipToNext() {

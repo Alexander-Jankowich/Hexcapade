@@ -181,10 +181,9 @@ bool PlayerObstacle::hasProtectionArtifact() const {
     return false;
 }
 
-void PlayerObstacle::consumeProtectionArtifact() {
+void PlayerObstacle::consumeItem(const std::string& itemType) {
     for (auto it = _inventory.begin(); it != _inventory.end(); ++it) {
-        if (it->kind == ItemKind::ARTIFACT &&
-            it->effect == ArtifactEffect::PROTECTION) {
+        if (it->itemType == itemType) {
             _inventory.erase(it);
             return;
         }
@@ -211,6 +210,7 @@ void PlayerObstacle::updateTimers(float dt) {
         _frozenTimer -= 1;
         if (_frozenTimer <= 0) {
             _frozenTimer = 0;
+            _frozen = false;
         }
         if (getBody()) {
             getBody()->SetLinearVelocity(b2Vec2(0, 0));

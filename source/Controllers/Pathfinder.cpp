@@ -182,16 +182,14 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
                 Vec2 player_pos = targ;
                 targ = en->getPosition();
                 Vec2 angle = player_pos - targ;
-                if (en->getAttackTimer() == 0) {
+                if (en->getAttackTimer() <= 0) {
                     auto params = spellFact->serializeParams((en->getPosition()), angle, SpellType::FIREBALL, "bat");
                     auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
                     networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                     en->setAttackTimer(240);
                 }
-                else {
-                    en->setAttackTimer(en->getAttackTimer() - 1);
-                }
             }
+                en -> setAttackTimer(en -> getAttackTimer() - 1);
             break;
         case EnemyType::OCTO:
             targ = getClosestPlayer(en->getPosition(),

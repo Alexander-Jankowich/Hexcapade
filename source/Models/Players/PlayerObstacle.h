@@ -96,7 +96,14 @@ public:
     void setHurt(bool h) { _hurt = h; }
 
     void setSpeed(float s) { _speed = s; }
-    float getSpeed() { return hasHeavyArtifact() ? _speed * 0.5f : _speed; }
+    float getSpeed() {
+        float base = hasHeavyArtifact() ? _speed * 0.7f : _speed;
+        return (_aimSlowTimer <= 0.0f) ? base * 0.5f : base;
+    }
+
+    float _aimSlowTimer = 2.0f;
+    void setAimSlowTimer(float t) { _aimSlowTimer = t; }
+    float getAimSlowTimer() const { return _aimSlowTimer; }
 
     void setMud(bool m) {_mud = m;}
     bool getMud() {return _mud;}
@@ -154,7 +161,7 @@ public:
     bool blocksSpellcasting()    const;
     int  getDamageBonus()        const;
     bool hasProtectionArtifact() const;
-    void consumeProtectionArtifact();
+    void consumeItem(const std::string& itemType);
     bool hasHeavyArtifact()      const;
     void updateTimers(float dt);
     bool isNonDroppable(size_t index) const;

@@ -5,8 +5,8 @@
 //  Created by Alex Jankowich on 4/21/26.
 //
 //
-#ifndef __NP_PICKUP_EVENT_H__
-#define __NP_PICKUP_EVENT_H__
+#ifndef __DEATH_EVENT_H__
+#define __DEATH_EVENT_H__
 
 #include <cugl/cugl.h>
 using namespace cugl;
@@ -30,4 +30,4 @@ public:
 
 };
 
-#endif // !__NP_PICKUP_EVENT_H__
+#endif // !__DEATH_EVENT_H__

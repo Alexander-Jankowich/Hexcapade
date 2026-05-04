@@ -400,7 +400,7 @@ void GeometryApp::updateHostScene(float dt) {
     }
     switch (_hostScene.getStatus()) {
     case NetworkController::Status::NETERROR:
-        
+        //TODO: Display some sort of network popup?
         _hostScene.setActive(false);
         _hostScene.reset();
         _hostScene.resetStatus();
@@ -418,6 +418,7 @@ void GeometryApp::updateHostScene(float dt) {
         _hostScene.setActive(false);
         // Transfer connection ownership
         _selectScene.obtainNetwork(_hostScene.getNetwork());
+        _gameplay.initPhysics();
         _hostScene.release();
         _selectScene.setActive(true);
         _scene = State::SELECT;
@@ -432,6 +433,7 @@ void GeometryApp::updateSelectScene(float dt) {
     _selectScene.update(dt);
     switch (_selectScene.getStatus()) {
         case SelectScene::SSStatus::SELECT:
+            break;
         case SelectScene::SSStatus::HANDSHAKE:
             if (_selectScene.canInitMap()) {
                 _gameplay.initMap();
@@ -481,6 +483,7 @@ void GeometryApp::updateClientScene(float dt) {
             _clientScene.setActive(false);
             // Transfer connection ownership
             _selectScene.obtainNetwork(_clientScene.getNetwork());
+            _gameplay.initPhysics();
             _clientScene.release();
             _selectScene.setActive(true);
             _scene = State::SELECT;

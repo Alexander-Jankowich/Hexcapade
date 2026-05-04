@@ -49,12 +49,12 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 
     switch (type) {
     case SpellType::WATER:
-        CULog("this case");
         values = _spellConsts->get("water");
         image = _assets->get<graphics::Texture>("freeze");
         break;
     case SpellType::COMBO_FIREBALL:
         values = _spellConsts->get("combo_fireball");
+        image = _assets->get<graphics::Texture>("combo-fireball");
         break;
     case SpellType::FIREBALL:
         values = _spellConsts->get("fireball");
@@ -66,6 +66,10 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     case SpellType::FREEZE:
         values = _spellConsts->get("freeze");
         image = _assets->get<graphics::Texture>("freeze");
+        break;
+    case SpellType::STEAM:
+        // Should never show tbh
+        values = _spellConsts->get("steam");
         break;
     case SpellType::HEAL:
         values = _spellConsts->get("heal");
@@ -90,6 +94,10 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     case SpellType::SHIELD:
         values = _spellConsts->get("shield");
         image = _assets->get<graphics::Texture>("shield");
+        break;
+    case SpellType::MUD_WATER:
+        values = _spellConsts->get("mud-water");
+        image = _assets->get<graphics::Texture>("freeze");
         break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
@@ -180,7 +188,7 @@ std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {
 
 void SpellFactory::linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, shared_ptr<Animator> animations) {
     // Mark spells to be removed when out of range
-    if (obs->getTraveled() > obs->getRange()) {
+    if (obs->getTraveled() >= obs->getRange()) {
         obs->setRemove();
     }
 
