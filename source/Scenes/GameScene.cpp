@@ -1264,6 +1264,7 @@ void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
 
 void GameScene::initPhysics() {
     // initialize physics here, since this should be called post HANDSHAKE
+    if (_networkCtrl->getPhysEnabled()) return;
     std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
         this->linkSceneToObs(obs, node);
         };
