@@ -52,7 +52,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
     auto node = scene2::SceneNode::alloc();
     lw_node = scene2::SceneNode::alloc();
     std::vector<MapDoor> doors;
-    _rng.initWithSeed(seed);
+    _rng.reset(seed);
     
     
     // initialize level config

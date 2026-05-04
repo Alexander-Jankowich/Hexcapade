@@ -61,7 +61,7 @@ void PlayerNode::setVelocity(cugl::Vec2 value) {
 }
 
 void PlayerNode::updateAnimationState(int health, bool casting, bool m) {
-    CULog("player animation state is: %d", _curAnimation);
+    // CULog("player animation state is: %d", _curAnimation);
     _mud = m;
 
     // Just get direction
