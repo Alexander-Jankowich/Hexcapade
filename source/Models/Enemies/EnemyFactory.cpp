@@ -11,6 +11,7 @@ using namespace std;
 using namespace cugl;
 
 #define PHYSICS_SCALE 50
+#define FROZEN_ID 3
 
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
@@ -118,10 +119,31 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         if (obs->isFroze() && !node->getFrozen()) {
             node->setFrozen(true);
             animator->pauseAnimation(node);
+
+            auto frozen = make_shared<SpellEntityNode>(_assets->get<graphics::Texture>("freeze_entity"), _spellConsts->get("freeze-entity"));
+            node->addChildWithTag(frozen, FROZEN_ID);
+            frozen->setPriority(3);
+
+            animator->addNode(frozen);
+
+            animator->addNextListener(frozen, 90 / FPS, [node, frozen](string key, float time, float actual) {
+                node->setTint(Color4(0, 106, 209, 255));
+            });
         }
         else if (!obs->isFroze() && node->getFrozen()) {
             node->setFrozen(false);
             animator->resumeAnimation(node);
+
+            auto frozen = dynamic_pointer_cast<SpellEntityNode>(node->getChildByTag(FROZEN_ID));
+            frozen->end();
+            animator->addNextListener(frozen, [node, frozen](string key, float time, float actual) {
+                node->removeChild(frozen);
+            });
+
+            animator->addNextListener(frozen, 90 / FPS, [node, frozen](string key, float time, float actual) {
+                node->setTint(Color4::WHITE);
+            });
+            animator->endAnimation(frozen);
         }
     }
     else {
@@ -138,7 +160,6 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
 
     // Update state for animation
     node->setStatue(obs->isMud());
-    node->updateState();
     node->updateAnimationState(obs->getState());
 }
 

@@ -75,6 +75,8 @@ private:
     bool _buff = false;
     bool _shield = false;
     bool _hurt = false;
+
+    Color4 _tint;
     
     int getDirection() override { return facingLeft * 2 + facingBack; }
 
@@ -92,6 +94,11 @@ public:
      */
     ~PlayerNode() {}
     
+#pragma mark Graphics
+    void draw(const std::shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) override;
+
+    void setTint(Color4 t) { _tint = t; }
+
 #pragma mark Properties
     static void setConsts(std::shared_ptr<JsonValue> consts) {
         //CULog("set consts-------------");

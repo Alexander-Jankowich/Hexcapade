@@ -175,6 +175,17 @@
             "created_frames": 4,
             "existing_frames": 4,
             "end_frames": 4
+        },
+        "freeze-entity": {
+            "rows": 2,
+            "columns": 4,
+
+            "created": 0,
+            "existing": 4,
+            "end": 5,
+            "created_frames": 4,
+            "existing_frames": 1,
+            "end_frames": 3
         }
     },
     "enemies": {

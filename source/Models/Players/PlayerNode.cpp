@@ -46,6 +46,8 @@ PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
     _curAnimation = AnimationType::IDLE;
     _nextAnimation = AnimationType::IDLE;
 
+    _tint = Color4::WHITE;
+
     setFrame(idle[0]);
     setPriority(1);
 }
@@ -61,19 +63,14 @@ void PlayerNode::setVelocity(cugl::Vec2 value) {
 }
 
 void PlayerNode::updateAnimationState(int health, bool casting, bool m) {
-    // CULog("player animation state is: %d", _curAnimation);
     _mud = m;
 
-    // Just get direction
-    if (_frozen) {
-        setColor(Color4::BLUE);
-    }
-    else if (_mud){
-        setColor(Color4::GRAY);
-    }
-    else{
-        setColor(Color4::WHITE);
-    }
+    //if (_mud && !_frozen) {
+    //    setTint(Color4::GRAY);
+    //}
+    //else if (!_frozen) {
+    //    setTint(Color4::WHITE);
+    //}
 
     if (health <= 0) {
         _nextAnimation = AnimationType::DEAD;
@@ -135,4 +132,8 @@ bool PlayerNode::skipToNext() {
         (_curAnimation == AnimationType::CASTING && _nextAnimation != AnimationType::CASTING) ||
         (_nextAnimation == AnimationType::DEAD && _curAnimation != AnimationType::DEAD) ||
         (_nextAnimation == AnimationType::DAMAGED && _curAnimation != AnimationType::DAMAGED);
+}
+
+void PlayerNode::draw(const std::shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) {
+    AnimatedSprite::draw(batch, transform, _tint);
 }

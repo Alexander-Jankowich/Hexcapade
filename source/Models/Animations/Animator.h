@@ -21,10 +21,10 @@ private:
 	unsigned long int _nextKey;
 
 	// Allows us to find the animation with the node
-	map<shared_ptr<AnimatedSprite>, string> _active;
+	unordered_map<shared_ptr<AnimatedSprite>, string> _active;
 
 	// A set of listners to be added on the next animation
-	map<shared_ptr<AnimatedSprite>, ActionListener> _listeners;
+	multimap<shared_ptr<AnimatedSprite>, pair<ActionListener, float>> _listeners;
 
 	shared_ptr<ActionTimeline> _timeline;
 
@@ -73,6 +73,12 @@ public:
 	* Adds the provided listener on the next animation for this node.
 	*/
 	void addNextListener(const shared_ptr<AnimatedSprite> node, ActionListener listener);
+
+	/**
+	* Adds the provided listener on the next animation for this node, which will trigger at the given
+	* time.
+	*/
+	void addNextListener(const shared_ptr<AnimatedSprite> node, float time, ActionListener listener);
 };
 
 #endif // !__ANIMATOR_H__

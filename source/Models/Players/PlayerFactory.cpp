@@ -13,6 +13,7 @@ using namespace cugl;
 #define PHYSICS_SCALE 50
 #define SHIELD_ID 1
 #define BUFF_ID 2
+#define FROZEN_ID 3
 
 int PlayerFactory::rows = 1;
 int PlayerFactory::cols = 1;
@@ -78,10 +79,31 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
     if (obs->isFrozen() && !node->isFrozen()) {
         node->setFrozen(true);
         animations->pauseAnimation(node);
+
+        auto frozen = make_shared<SpellEntityNode>(_assets->get<graphics::Texture>("freeze_entity"), _spellConsts->get("freeze-entity"));
+        node->addChildWithTag(frozen, FROZEN_ID);
+        frozen->setPriority(3);
+
+        animations->addNode(frozen);
+
+        animations->addNextListener(frozen, 90/FPS, [node, frozen](string key, float time, float actual) {
+            node->setTint(Color4(0, 106, 209, 255));
+        });
     }
     else if (!obs->isFrozen() && node->isFrozen()) {
         node->setFrozen(false);
         animations->resumeAnimation(node);
+
+        auto frozen = dynamic_pointer_cast<SpellEntityNode>(node->getChildByTag(FROZEN_ID));
+        frozen->end();
+        animations->addNextListener(frozen, [node, frozen](string key, float time, float actual) {
+            node->removeChild(frozen);
+        });
+
+        animations->addNextListener(frozen, 90 / FPS, [node, frozen](string key, float time, float actual) {
+            node->setTint(Color4::WHITE);
+        });
+        animations->endAnimation(frozen);
     }
 
     // Check shield status, update the child node if needed

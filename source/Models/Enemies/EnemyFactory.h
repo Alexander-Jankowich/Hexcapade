@@ -11,6 +11,7 @@
 #include <cugl/cugl.h>
 #include "EnemyObstacle.h"
 #include "EnemyNode.h"
+#include "../Spells/SpellEntityNode.h"
 #include "../Animations.h"
 
 #define ATTACK_DELAY 1.3f
@@ -37,6 +38,7 @@ protected:
     LWDeserializer _deserializer;
 
     std::shared_ptr<cugl::JsonValue> _enemyConsts;
+    std::shared_ptr<cugl::JsonValue> _spellConsts;
 
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
@@ -66,6 +68,7 @@ public:
     void init(shared_ptr<AssetManager>& assets) {
         _assets = assets;
         _enemyConsts = _assets->get<JsonValue>("constants")->get("enemies");
+        _spellConsts = _assets->get<JsonValue>("constants")->get("spells");
     }
 
     /**

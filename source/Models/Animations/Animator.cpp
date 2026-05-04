@@ -31,12 +31,19 @@ void Animator::update(float dt) {
 			}
 			else {
 				_timeline->add(key, ani.first, ani.second);
-				auto it = _listeners.find(node);
-				if (it != _listeners.end()) {
-					CULog("added listener");
-					_timeline->addCompletionListener(key, it->second);
-					_listeners.erase(it);
+
+				// Find all listeners to be added for this node
+				auto range = _listeners.equal_range(node);
+				for (auto it = range.first; it != range.second; ++it) {
+					//CULog("added listener");
+					if (it->second.second < 0) {
+						_timeline->addCompletionListener(key, it->second.first);
+					}
+					else {
+						_timeline->addListener(key, it->second.second, it->second.first);
+					}
 				}
+				_listeners.erase(node);
 			}
 		}
 
@@ -82,5 +89,10 @@ void Animator::endAnimation(const shared_ptr<AnimatedSprite> node) {
 }
 
 void Animator::addNextListener(const shared_ptr<AnimatedSprite> node, ActionListener listener) {
-	_listeners.emplace(node, listener);
+	addNextListener(node, -1, listener);
+}
+
+void Animator::addNextListener(const shared_ptr<AnimatedSprite> node, float time, ActionListener listener) {
+	_listeners.insert({ node, make_pair(listener, time) });
+	//CULog("to add listeners");
 }

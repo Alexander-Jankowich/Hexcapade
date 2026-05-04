@@ -55,6 +55,8 @@ private:
 
     int getDirection() override { return facingLeft * 2 + facingBack; }
 
+    Color4 _tint;
+
 public:
 #pragma mark Constructors
     /**
@@ -87,9 +89,10 @@ public:
     void setStatue(bool s) { statue = s; }
     bool getStatue() { return statue; }
     
-    void updateState();
-    
 #pragma mark Graphics
+    void draw(const std::shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) override;
+
+    void setTint(Color4 t) { _tint = t; }
 };
 
 #endif // !__GP_ENEMY_H__
