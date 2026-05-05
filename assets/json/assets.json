@@ -203,6 +203,14 @@
       "file": "fonts/CoolveticaRg.ttf",
       "size": 38
     },
+    "CoolveticaRegular48": {
+      "file": "fonts/CoolveticaRg.ttf",
+      "size": 48
+    },
+    "CoolveticaRegular60": {
+      "file": "fonts/CoolveticaRg.ttf",
+      "size": 60
+    },
     "OpenSans16": {
       "file": "fonts/OpenSans-Regular.ttf",
       "size": 16
@@ -490,7 +498,7 @@
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": "Host",
                 "foreground": "#000000ff",
                 "background": "#00000000",
@@ -727,8 +735,8 @@
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
-                "text": "join",
+                "font": "CoolveticaRegular38",
+                "text": "Join",
                 "foreground": "#000000ff",
                 "background": "#00000000",
                 "padding": [
@@ -738,7 +746,7 @@
                   0
                 ],
                 "valign": "top",
-                "halign": "left"
+                "halign": "center"
               },
               "children": {},
               "layout": {
@@ -756,6 +764,243 @@
             "absolute": false,
             "x_offset": 0,
             "y_offset": -0.03
+          }
+        },
+        "train": {
+          "type": "Button",
+          "format": {
+            "type": "Anchored"
+          },
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "size": [
+              120,
+              86
+            ],
+            "angle": 0,
+            "position": [
+              579,
+              172
+            ],
+            "visible": true,
+            "upnode": "Rectangle"
+          },
+          "children": {
+            "Rectangle": {
+              "type": "Node",
+              "format": {
+                "type": "Anchored"
+              },
+              "data": {
+                "anchor": [
+                  0.5,
+                  0.5
+                ],
+                "angle": 0,
+                "size": [
+                  152,
+                  83
+                ],
+                "position": [
+                  0,
+                  1
+                ],
+                "visible": true
+              },
+              "children": {
+                "fill": {
+                  "type": "Solid",
+                  "data": {
+                    "polygon": [
+                      152,
+                      53,
+                      150.53,
+                      62.27,
+                      146.27,
+                      70.63,
+                      139.63,
+                      77.27,
+                      131.27,
+                      81.53,
+                      122,
+                      83,
+                      30,
+                      83,
+                      20.73,
+                      81.53,
+                      12.37,
+                      77.27,
+                      5.73,
+                      70.63,
+                      1.47,
+                      62.27,
+                      0,
+                      53,
+                      0,
+                      30,
+                      1.47,
+                      20.73,
+                      5.73,
+                      12.37,
+                      12.37,
+                      5.73,
+                      20.73,
+                      1.47,
+                      30,
+                      0,
+                      122,
+                      0,
+                      131.27,
+                      1.47,
+                      139.63,
+                      5.73,
+                      146.27,
+                      12.37,
+                      150.53,
+                      20.73,
+                      152,
+                      30
+                    ],
+                    "color": "#8da8e9ff",
+                    "anchor": [
+                      0.5,
+                      0.5
+                    ],
+                    "position": [
+                      0,
+                      0
+                    ],
+                    "visible": true
+                  },
+                  "layout": {
+                    "x_anchor": "center",
+                    "y_anchor": "middle"
+                  }
+                },
+                "stroke": {
+                  "type": "Path",
+                  "data": {
+                    "color": "#5b61b2ff",
+                    "path": {
+                      "vertices": [
+                        147.5,
+                        53,
+                        145.56,
+                        62.76,
+                        140.03,
+                        71.03,
+                        131.76,
+                        76.56,
+                        122,
+                        78.5,
+                        25.5,
+                        78.5,
+                        15.74,
+                        76.56,
+                        7.47,
+                        71.03,
+                        1.94,
+                        62.76,
+                        0,
+                        53,
+                        0,
+                        25.5,
+                        1.94,
+                        15.74,
+                        7.47,
+                        7.47,
+                        15.74,
+                        1.94,
+                        25.5,
+                        0,
+                        122,
+                        0,
+                        131.76,
+                        1.94,
+                        140.03,
+                        7.47,
+                        145.56,
+                        15.74,
+                        147.5,
+                        25.5
+                      ],
+                      "closed": true
+                    },
+                    "stroke": 5,
+                    "joint": "square",
+                    "anchor": [
+                      0.5,
+                      0.5
+                    ],
+                    "position": [
+                      0,
+                      0
+                    ],
+                    "visible": true
+                  },
+                  "layout": {
+                    "x_anchor": "center",
+                    "y_anchor": "middle"
+                  }
+                }
+              },
+              "layout": {
+                "x_anchor": "center",
+                "y_anchor": "middle",
+                "absolute": false,
+                "x_offset": 0.13,
+                "y_offset": -0.01
+              }
+            },
+            "Start": {
+              "type": "Label",
+              "data": {
+                "anchor": [
+                  0.5,
+                  0.5
+                ],
+                "size": [
+                  100,
+                  51
+                ],
+                "position": [
+                  26,
+                  18
+                ],
+                "angle": 0,
+                "visible": true,
+                "font": "CoolveticaRegular38",
+                "text": "Train",
+                "foreground": "#000000ff",
+                "background": "#00000000",
+                "padding": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "valign": "top",
+                "halign": "center"
+              },
+              "children": {},
+              "layout": {
+                "x_anchor": "center",
+                "y_anchor": "middle",
+                "absolute": false,
+                "x_offset": 0.13,
+                "y_offset": 0.01
+              }
+            }
+          },
+          "layout": {
+            "x_anchor": "center",
+            "y_anchor": "middle",
+            "absolute": false,
+            "x_offset": 0,
+            "y_offset": -0.19
           }
         }
       }
@@ -2003,7 +2248,7 @@
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": "Code",
                 "foreground": "#000000ff",
                 "background": "#00000000",
@@ -2033,7 +2278,7 @@
                   1
                 ],
                 "size": [
-                  147,
+                  235,
                   63
                 ],
                 "position": [
@@ -2042,7 +2287,7 @@
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": " ",
                 "foreground": "#d5e9efff",
                 "background": "#00000000",
@@ -2052,8 +2297,8 @@
                   0,
                   0
                 ],
-                "valign": "top",
-                "halign": "left"
+                "valign": "middle",
+                "halign": "center"
               },
               "children": {},
               "layout": {
@@ -2343,7 +2588,7 @@
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": "Party",
                 "foreground": "#000000ff",
                 "background": "#00000000",
@@ -2382,7 +2627,7 @@
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": "1",
                 "foreground": "#d5e9efff",
                 "background": "#00000000",
@@ -2424,7 +2669,7 @@
               0.5
             ],
             "size": [
-              120,
+              421,
               86
             ],
             "angle": 0,
@@ -2448,12 +2693,12 @@
                 ],
                 "angle": 0,
                 "size": [
-                  152,
+                  264,
                   83
                 ],
                 "position": [
-                  0,
-                  1
+                  -71,
+                  4
                 ],
                 "visible": true
               },
@@ -2462,17 +2707,17 @@
                   "type": "Solid",
                   "data": {
                     "polygon": [
-                      152,
+                      264,
                       53,
-                      150.53,
+                      262.53,
                       62.27,
-                      146.27,
+                      258.27,
                       70.63,
-                      139.63,
+                      251.63,
                       77.27,
-                      131.27,
+                      243.27,
                       81.53,
-                      122,
+                      234,
                       83,
                       30,
                       83,
@@ -2498,17 +2743,17 @@
                       1.47,
                       30,
                       0,
-                      122,
+                      234,
                       0,
-                      131.27,
+                      243.27,
                       1.47,
-                      139.63,
+                      251.63,
                       5.73,
-                      146.27,
+                      258.27,
                       12.37,
-                      150.53,
+                      262.53,
                       20.73,
-                      152,
+                      264,
                       30
                     ],
                     "color": "#8da8e9ff",
@@ -2533,15 +2778,15 @@
                     "color": "#5b61b2ff",
                     "path": {
                       "vertices": [
-                        147.5,
+                        259.5,
                         53,
-                        145.56,
+                        257.56,
                         62.76,
-                        140.03,
+                        252.03,
                         71.03,
-                        131.76,
+                        243.76,
                         76.56,
-                        122,
+                        234,
                         78.5,
                         25.5,
                         78.5,
@@ -2563,15 +2808,15 @@
                         1.94,
                         25.5,
                         0,
-                        122,
+                        234,
                         0,
-                        131.76,
+                        243.76,
                         1.94,
-                        140.03,
+                        252.03,
                         7.47,
-                        145.56,
+                        257.56,
                         15.74,
-                        147.5,
+                        259.5,
                         25.5
                       ],
                       "closed": true
@@ -2598,8 +2843,8 @@
                 "x_anchor": "center",
                 "y_anchor": "middle",
                 "absolute": false,
-                "x_offset": 0.13,
-                "y_offset": -0.01
+                "x_offset": 0.01,
+                "y_offset": 0.03
               }
             },
             "Start": {
@@ -2610,16 +2855,16 @@
                   0.5
                 ],
                 "size": [
-                  108,
-                  51
+                  87,
+                  46
                 ],
                 "position": [
-                  22,
-                  17
+                  17,
+                  22
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": "Start",
                 "foreground": "#000000ff",
                 "background": "#00000000",
@@ -2630,15 +2875,15 @@
                   0
                 ],
                 "valign": "top",
-                "halign": "left"
+                "halign": "center"
               },
               "children": {},
               "layout": {
                 "x_anchor": "center",
                 "y_anchor": "middle",
                 "absolute": false,
-                "x_offset": 0.13,
-                "y_offset": -0.01
+                "x_offset": 0,
+                "y_offset": 0.02
               }
             }
           },
@@ -3045,6 +3290,107 @@
                 "y_offset": 0
               }
             },
+            "Rectangle_stroke": {
+              "type": "Path",
+              "data": {
+                "color": "#5b61b2ff",
+                "path": {
+                  "vertices": [
+                    514.5,
+                    583,
+                    512.68,
+                    601.44,
+                    507.31,
+                    619.16,
+                    498.57,
+                    635.5,
+                    486.82,
+                    649.82,
+                    472.5,
+                    661.57,
+                    456.16,
+                    670.31,
+                    438.44,
+                    675.68,
+                    420,
+                    677.5,
+                    94.5,
+                    677.5,
+                    76.06,
+                    675.68,
+                    58.34,
+                    670.31,
+                    42,
+                    661.57,
+                    27.68,
+                    649.82,
+                    15.93,
+                    635.5,
+                    7.19,
+                    619.16,
+                    1.82,
+                    601.44,
+                    0,
+                    583,
+                    0,
+                    94.5,
+                    1.82,
+                    76.06,
+                    7.19,
+                    58.34,
+                    15.93,
+                    42,
+                    27.68,
+                    27.68,
+                    42,
+                    15.93,
+                    58.34,
+                    7.19,
+                    76.06,
+                    1.82,
+                    94.5,
+                    0,
+                    420,
+                    0,
+                    438.44,
+                    1.82,
+                    456.16,
+                    7.19,
+                    472.5,
+                    15.93,
+                    486.82,
+                    27.68,
+                    498.57,
+                    42,
+                    507.31,
+                    58.34,
+                    512.68,
+                    76.06,
+                    514.5,
+                    94.5
+                  ],
+                  "closed": true
+                },
+                "stroke": 5,
+                "joint": "square",
+                "anchor": [
+                  0.5,
+                  0.5
+                ],
+                "position": [
+                  -33,
+                  -26
+                ],
+                "visible": true
+              },
+              "layout": {
+                "x_anchor": "center",
+                "y_anchor": "middle",
+                "absolute": false,
+                "x_offset": 0,
+                "y_offset": 0
+              }
+            },
             "0": {
               "type": "Button",
               "format": {
@@ -3112,7 +3458,7 @@
                     ],
                     "angle": 0,
                     "visible": true,
-                    "font": "cinzelBold38",
+                    "font": "CoolveticaRegular48",
                     "text": "0",
                     "foreground": "#000000ff",
                     "background": "#00000000",
@@ -3210,7 +3556,7 @@
                     ],
                     "angle": 0,
                     "visible": true,
-                    "font": "cinzelBold38",
+                    "font": "CoolveticaRegular48",
                     "text": "1",
                     "foreground": "#000000ff",
                     "background": "#00000000",
@@ -3308,7 +3654,7 @@
                     ],
                     "angle": 0,
                     "visible": true,
-                    "font": "cinzelBold38",
+                    "font": "CoolveticaRegular48",
                     "text": "2",
                     "foreground": "#000000ff",
                     "background": "#00000000",
@@ -3406,7 +3752,7 @@
                     ],
                     "angle": 0,
                     "visible": true,
-                    "font": "cinzelBold38",
+                    "font": "CoolveticaRegular48",
                     "text": "3",
                     "foreground": "#000000ff",
                     "background": "#00000000",
@@ -3504,7 +3850,7 @@
                     ],
                     "angle": 0,
                     "visible": true,
-                    "font": "cinzelBold38",
+                    "font": "CoolveticaRegular48",
                     "text": "4",
                     "foreground": "#000000ff",
                     "background": "#00000000",
@@ -3602,7 +3948,7 @@
                     ],
                     "angle": 0,
                     "visible": true,
-                    "font": "cinzelBold38",
+                    "font": "CoolveticaRegular48",
                     "text": "5",
                     "foreground": "#000000ff",
                     "background": "#00000000",
@@ -3700,7 +4046,7 @@
                     ],
                     "angle": 0,
                     "visible": true,
-                    "font": "cinzelBold38",
+                    "font": "CoolveticaRegular48",
                     "text": "6",
                     "foreground": "#000000ff",
                     "background": "#00000000",
@@ -3798,7 +4144,7 @@
                     ],
                     "angle": 0,
                     "visible": true,
-                    "font": "cinzelBold38",
+                    "font": "CoolveticaRegular48",
                     "text": "7",
                     "foreground": "#000000ff",
                     "background": "#00000000",
@@ -3896,7 +4242,7 @@
                     ],
                     "angle": 0,
                     "visible": true,
-                    "font": "cinzelBold38",
+                    "font": "CoolveticaRegular48",
                     "text": "8",
                     "foreground": "#000000ff",
                     "background": "#00000000",
@@ -3994,7 +4340,7 @@
                     ],
                     "angle": 0,
                     "visible": true,
-                    "font": "cinzelBold38",
+                    "font": "CoolveticaRegular48",
                     "text": "9",
                     "foreground": "#000000ff",
                     "background": "#00000000",
@@ -4023,6 +4369,104 @@
                 "absolute": false,
                 "x_offset": -0.02,
                 "y_offset": 0.28
+              }
+            },
+            "del": {
+              "type": "Button",
+              "format": {
+                "type": "Anchored"
+              },
+              "data": {
+                "anchor": [
+                  0.5,
+                  0
+                ],
+                "size": [
+                  128,
+                  128
+                ],
+                "angle": 0,
+                "position": [
+                  9,
+                  16
+                ],
+                "visible": true,
+                "upnode": "hex-icon-bunny"
+              },
+              "children": {
+                "hex-icon-bunny": {
+                  "type": "Image",
+                  "data": {
+                    "texture": "hex-icon-bunny",
+                    "anchor": [
+                      0,
+                      1
+                    ],
+                    "size": [
+                      128,
+                      128
+                    ],
+                    "angle": 0,
+                    "position": [
+                      0,
+                      0
+                    ],
+                    "visible": true
+                  },
+                  "layout": {
+                    "x_anchor": "left",
+                    "y_anchor": "top",
+                    "absolute": false,
+                    "x_offset": 0,
+                    "y_offset": 0
+                  }
+                },
+                "label": {
+                  "type": "Label",
+                  "data": {
+                    "anchor": [
+                      0.5,
+                      0.5
+                    ],
+                    "size": [
+                      60,
+                      72
+                    ],
+                    "position": [
+                      34,
+                      17
+                    ],
+                    "angle": 0,
+                    "visible": true,
+                    "font": "CoolveticaRegular60",
+                    "text": "←",
+                    "foreground": "#000000ff",
+                    "background": "#00000000",
+                    "padding": [
+                      0,
+                      0,
+                      0,
+                      0
+                    ],
+                    "valign": "top",
+                    "halign": "left"
+                  },
+                  "children": {},
+                  "layout": {
+                    "x_anchor": "center",
+                    "y_anchor": "middle",
+                    "absolute": false,
+                    "x_offset": 0,
+                    "y_offset": -0.09
+                  }
+                }
+              },
+              "layout": {
+                "x_anchor": "center",
+                "y_anchor": "bottom",
+                "absolute": false,
+                "x_offset": -0.34,
+                "y_offset": 0.03
               }
             }
           },
@@ -4304,7 +4748,7 @@
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": "Code",
                 "foreground": "#000000ff",
                 "background": "#00000000",
@@ -4334,7 +4778,7 @@
                   1
                 ],
                 "size": [
-                  147,
+                  235,
                   63
                 ],
                 "position": [
@@ -4343,7 +4787,7 @@
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": " ",
                 "foreground": "#d5e9efff",
                 "background": "#00000000",
@@ -4353,8 +4797,8 @@
                   0,
                   0
                 ],
-                "valign": "top",
-                "halign": "left"
+                "valign": "middle",
+                "halign": "center"
               },
               "children": {},
               "layout": {
@@ -4644,7 +5088,7 @@
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": "Party",
                 "foreground": "#000000ff",
                 "background": "#00000000",
@@ -4683,7 +5127,7 @@
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": "1",
                 "foreground": "#d5e9efff",
                 "background": "#00000000",
@@ -4725,7 +5169,7 @@
               0.5
             ],
             "size": [
-              120,
+              421,
               86
             ],
             "angle": 0,
@@ -4749,11 +5193,11 @@
                 ],
                 "angle": 0,
                 "size": [
-                  152,
+                  388,
                   83
                 ],
                 "position": [
-                  0,
+                  17,
                   1
                 ],
                 "visible": true
@@ -4763,17 +5207,17 @@
                   "type": "Solid",
                   "data": {
                     "polygon": [
-                      152,
+                      388,
                       53,
-                      150.53,
+                      386.53,
                       62.27,
-                      146.27,
+                      382.27,
                       70.63,
-                      139.63,
+                      375.63,
                       77.27,
-                      131.27,
+                      367.27,
                       81.53,
-                      122,
+                      358,
                       83,
                       30,
                       83,
@@ -4799,17 +5243,17 @@
                       1.47,
                       30,
                       0,
-                      122,
+                      358,
                       0,
-                      131.27,
+                      367.27,
                       1.47,
-                      139.63,
+                      375.63,
                       5.73,
-                      146.27,
+                      382.27,
                       12.37,
-                      150.53,
+                      386.53,
                       20.73,
-                      152,
+                      388,
                       30
                     ],
                     "color": "#8da8e9ff",
@@ -4834,15 +5278,15 @@
                     "color": "#5b61b2ff",
                     "path": {
                       "vertices": [
-                        147.5,
+                        383.5,
                         53,
-                        145.56,
+                        381.56,
                         62.76,
-                        140.03,
+                        376.03,
                         71.03,
-                        131.76,
+                        367.76,
                         76.56,
-                        122,
+                        358,
                         78.5,
                         25.5,
                         78.5,
@@ -4864,15 +5308,15 @@
                         1.94,
                         25.5,
                         0,
-                        122,
+                        358,
                         0,
-                        131.76,
+                        367.76,
                         1.94,
-                        140.03,
+                        376.03,
                         7.47,
-                        145.56,
+                        381.56,
                         15.74,
-                        147.5,
+                        383.5,
                         25.5
                       ],
                       "closed": true
@@ -4899,7 +5343,7 @@
                 "x_anchor": "center",
                 "y_anchor": "middle",
                 "absolute": false,
-                "x_offset": 0.13,
+                "x_offset": 0,
                 "y_offset": -0.01
               }
             },
@@ -4911,16 +5355,16 @@
                   0.5
                 ],
                 "size": [
-                  84,
-                  51
+                  65,
+                  46
                 ],
                 "position": [
-                  33,
-                  17
+                  178,
+                  20
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "cinzelRegular38",
+                "font": "CoolveticaRegular38",
                 "text": "Join",
                 "foreground": "#000000ff",
                 "background": "#00000000",
@@ -4931,15 +5375,15 @@
                   0
                 ],
                 "valign": "top",
-                "halign": "left"
+                "halign": "center"
               },
               "children": {},
               "layout": {
                 "x_anchor": "center",
                 "y_anchor": "middle",
                 "absolute": false,
-                "x_offset": 0.13,
-                "y_offset": -0.01
+                "x_offset": 0,
+                "y_offset": 0
               }
             }
           },
