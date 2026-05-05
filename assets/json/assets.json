@@ -489,12 +489,12 @@
                   0.5
                 ],
                 "size": [
-                  100,
-                  51
+                  152,
+                  83
                 ],
                 "position": [
-                  22,
-                  17
+                  0,
+                  1
                 ],
                 "angle": 0,
                 "visible": true,
@@ -508,15 +508,15 @@
                   0,
                   0
                 ],
-                "valign": "top",
-                "halign": "left"
+                "valign": "middle",
+                "halign": "center"
               },
               "children": {},
               "layout": {
                 "x_anchor": "center",
                 "y_anchor": "middle",
                 "absolute": false,
-                "x_offset": 0.1,
+                "x_offset": 0.13,
                 "y_offset": -0.01
               }
             }
@@ -726,12 +726,12 @@
                   0.5
                 ],
                 "size": [
-                  83,
-                  51
+                  152,
+                  83
                 ],
                 "position": [
-                  34,
-                  18
+                  0,
+                  1
                 ],
                 "angle": 0,
                 "visible": true,
@@ -745,7 +745,7 @@
                   0,
                   0
                 ],
-                "valign": "top",
+                "valign": "middle",
                 "halign": "center"
               },
               "children": {},
@@ -754,7 +754,7 @@
                 "y_anchor": "middle",
                 "absolute": false,
                 "x_offset": 0.13,
-                "y_offset": 0.01
+                "y_offset": -0.01
               }
             }
           },
@@ -963,12 +963,12 @@
                   0.5
                 ],
                 "size": [
-                  100,
-                  51
+                  152,
+                  83
                 ],
                 "position": [
-                  26,
-                  18
+                  0,
+                  1
                 ],
                 "angle": 0,
                 "visible": true,
@@ -982,7 +982,7 @@
                   0,
                   0
                 ],
-                "valign": "top",
+                "valign": "middle",
                 "halign": "center"
               },
               "children": {},
@@ -991,7 +991,7 @@
                 "y_anchor": "middle",
                 "absolute": false,
                 "x_offset": 0.13,
-                "y_offset": 0.01
+                "y_offset": -0.01
               }
             }
           },
@@ -2279,10 +2279,10 @@
                 ],
                 "size": [
                   235,
-                  63
+                  76
                 ],
                 "position": [
-                  255,
+                  237,
                   19
                 ],
                 "angle": 0,
@@ -2305,8 +2305,8 @@
                 "x_anchor": "left",
                 "y_anchor": "top",
                 "absolute": false,
-                "x_offset": 0.41,
-                "y_offset": -0.25
+                "x_offset": 0.38,
+                "y_offset": -0.13
               }
             }
           },
@@ -2669,7 +2669,7 @@
               0.5
             ],
             "size": [
-              421,
+              120,
               86
             ],
             "angle": 0,
@@ -2855,7 +2855,7 @@
                   0.5
                 ],
                 "size": [
-                  87,
+                  240,
                   46
                 ],
                 "position": [
@@ -4429,12 +4429,12 @@
                       0.5
                     ],
                     "size": [
-                      60,
-                      72
+                      80,
+                      80
                     ],
                     "position": [
-                      34,
-                      17
+                      24,
+                      10
                     ],
                     "angle": 0,
                     "visible": true,
@@ -4448,8 +4448,8 @@
                       0,
                       0
                     ],
-                    "valign": "top",
-                    "halign": "left"
+                    "valign": "middle",
+                    "halign": "center"
                   },
                   "children": {},
                   "layout": {
@@ -4457,7 +4457,7 @@
                     "y_anchor": "middle",
                     "absolute": false,
                     "x_offset": 0,
-                    "y_offset": -0.09
+                    "y_offset": -0.06
                   }
                 }
               },
@@ -4779,10 +4779,10 @@
                 ],
                 "size": [
                   235,
-                  63
+                  76
                 ],
                 "position": [
-                  255,
+                  237,
                   19
                 ],
                 "angle": 0,
@@ -4805,8 +4805,8 @@
                 "x_anchor": "left",
                 "y_anchor": "top",
                 "absolute": false,
-                "x_offset": 0.41,
-                "y_offset": -0.25
+                "x_offset": 0.38,
+                "y_offset": -0.13
               }
             }
           },
@@ -5355,7 +5355,7 @@
                   0.5
                 ],
                 "size": [
-                  65,
+                  360,
                   46
                 ],
                 "position": [
