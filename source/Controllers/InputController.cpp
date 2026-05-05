@@ -822,7 +822,7 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     recognizer -> addGesture("Water", WATER_GESTURE);
     
 
-    recognizer->set_accuracy(0.84f);
+    recognizer->set_accuracy(0.80f);
 
     // Update the gesturemap with more spells later on
     _gesturemap = {
