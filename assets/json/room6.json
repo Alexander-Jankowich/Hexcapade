@@ -1,0 +1,343 @@
+{ "compressionlevel":-1,
+ "height":9,
+ "infinite":false,
+ "layers":[
+        {
+         "id":3,
+         "layers":[
+                {
+                 "data":[0, 67, 67, 67, 67, 67, 0,
+                    0, 67, 67, 67, 67, 67, 0,
+                    0, 67, 67, 67, 67, 67, 0,
+                    0, 67, 67, 67, 67, 67, 0,
+                    0, 67, 67, 67, 67, 67, 0,
+                    0, 67, 67, 67, 67, 67, 0,
+                    0, 67, 67, 67, 67, 67, 0,
+                    0, 67, 67, 67, 67, 67, 0,
+                    0, 67, 67, 67, 67, 67, 0],
+                 "height":9,
+                 "id":2,
+                 "name":"floor",
+                 "opacity":1,
+                 "type":"tilelayer",
+                 "visible":true,
+                 "width":7,
+                 "x":0,
+                 "y":0
+                },
+                {
+                 "data":[87, 0, 0, 0, 0, 0, 88,
+                    100, 0, 0, 0, 0, 0, 101,
+                    113, 0, 0, 0, 0, 0, 114,
+                    87, 0, 0, 0, 0, 0, 88,
+                    87, 0, 49, 0, 0, 0, 101,
+                    100, 0, 49, 0, 0, 0, 114,
+                    113, 0, 0, 0, 0, 0, 88,
+                    100, 0, 0, 0, 0, 0, 101,
+                    113, 0, 0, 0, 0, 0, 114],
+                 "height":9,
+                 "id":1,
+                 "name":"wall",
+                 "opacity":1,
+                 "type":"tilelayer",
+                 "visible":true,
+                 "width":7,
+                 "x":0,
+                 "y":0
+                },
+                {
+                 "data":[0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0],
+                 "height":9,
+                 "id":11,
+                 "name":"vis_fix_don't_worry",
+                 "opacity":1,
+                 "type":"tilelayer",
+                 "visible":true,
+                 "width":7,
+                 "x":0,
+                 "y":0
+                },
+                {
+                 "data":[0, 0, 0, 0, 0, 0, 0,
+                    0, 1, 2, 3, 3, 4, 0,
+                    0, 14, 15, 16, 16, 17, 0,
+                    0, 27, 28, 29, 29, 30, 0,
+                    0, 40, 41, 42, 42, 43, 0,
+                    0, 27, 28, 29, 29, 30, 0,
+                    0, 40, 41, 42, 42, 43, 0,
+                    0, 53, 54, 55, 55, 56, 0,
+                    0, 0, 0, 0, 0, 0, 0],
+                 "height":9,
+                 "id":4,
+                 "name":"deco",
+                 "opacity":1,
+                 "type":"tilelayer",
+                 "visible":true,
+                 "width":7,
+                 "x":0,
+                 "y":0
+                },
+                {
+                 "data":[49, 49, 49, 49, 49, 49, 49,
+                    49, 49, 49, 49, 49, 49, 49,
+                    49, 49, 49, 49, 49, 49, 49,
+                    49, 49, 49, 49, 49, 49, 49,
+                    49, 49, 49, 49, 49, 49, 49,
+                    49, 49, 49, 49, 49, 49, 49,
+                    49, 49, 49, 49, 49, 49, 49,
+                    49, 49, 49, 49, 49, 49, 49,
+                    49, 49, 49, 49, 49, 49, 49],
+                 "height":9,
+                 "id":13,
+                 "name":"mask",
+                 "opacity":1,
+                 "type":"tilelayer",
+                 "visible":true,
+                 "width":7,
+                 "x":0,
+                 "y":0
+                },
+                {
+                 "data":[0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0],
+                 "height":9,
+                 "id":14,
+                 "name":"walls_lower",
+                 "opacity":1,
+                 "type":"tilelayer",
+                 "visible":true,
+                 "width":7,
+                 "x":0,
+                 "y":0
+                }],
+         "name":"art",
+         "opacity":1,
+         "type":"group",
+         "visible":true,
+         "x":0,
+         "y":0
+        },
+        {
+         "id":5,
+         "layers":[
+                {
+                 "draworder":"topdown",
+                 "id":6,
+                 "name":"item_spawn",
+                 "objects":[
+                        {
+                         "height":0,
+                         "id":1,
+                         "name":"item_spawn",
+                         "point":true,
+                         "rotation":0,
+                         "type":"",
+                         "visible":true,
+                         "width":0,
+                         "x":184,
+                         "y":115.333333333333
+                        }],
+                 "opacity":1,
+                 "type":"objectgroup",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                },
+                {
+                 "draworder":"topdown",
+                 "id":7,
+                 "name":"enemy_spawn",
+                 "objects":[
+                        {
+                         "height":0,
+                         "id":4,
+                         "name":"enemy_spawn",
+                         "point":true,
+                         "rotation":0,
+                         "type":"",
+                         "visible":true,
+                         "width":0,
+                         "x":139.75,
+                         "y":276.25
+                        }],
+                 "opacity":1,
+                 "type":"objectgroup",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                },
+                {
+                 "draworder":"topdown",
+                 "id":8,
+                 "name":"player_spawn",
+                 "objects":[
+                        {
+                         "height":0,
+                         "id":9,
+                         "name":"player_spawn",
+                         "point":true,
+                         "rotation":0,
+                         "type":"",
+                         "visible":true,
+                         "width":0,
+                         "x":142,
+                         "y":187
+                        }],
+                 "opacity":1,
+                 "type":"objectgroup",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                },
+                {
+                 "draworder":"topdown",
+                 "id":12,
+                 "name":"connect",
+                 "objects":[
+                        {
+                         "height":40,
+                         "id":10,
+                         "name":"",
+                         "properties":[
+                                {
+                                 "name":"direction",
+                                 "type":"int",
+                                 "value":0
+                                }],
+                         "rotation":0,
+                         "type":"",
+                         "visible":true,
+                         "width":200,
+                         "x":40,
+                         "y":0
+                        },
+                        {
+                         "height":40,
+                         "id":11,
+                         "name":"",
+                         "properties":[
+                                {
+                                 "name":"direction",
+                                 "type":"int",
+                                 "value":2
+                                }],
+                         "rotation":0,
+                         "type":"",
+                         "visible":true,
+                         "width":200,
+                         "x":40,
+                         "y":320
+                        }],
+                 "opacity":1,
+                 "type":"objectgroup",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                },
+                {
+                 "draworder":"topdown",
+                 "id":9,
+                 "name":"bounds",
+                 "objects":[
+                        {
+                         "height":0,
+                         "id":13,
+                         "name":"",
+                         "polygon":[
+                                {
+                                 "x":240.007575757576,
+                                 "y":-99.9886363636364
+                                },
+                                {
+                                 "x":255.736127910508,
+                                 "y":-99.9530889739789
+                                },
+                                {
+                                 "x":255.263975694444,
+                                 "y":260.024143266908
+                                },
+                                {
+                                 "x":240.004648042929,
+                                 "y":259.995422979798
+                                }],
+                         "rotation":0,
+                         "type":"",
+                         "visible":true,
+                         "width":0,
+                         "x":-0.00390625,
+                         "y":100
+                        },
+                        {
+                         "height":0,
+                         "id":16,
+                         "name":"",
+                         "polygon":[
+                                {
+                                 "x":19.4312614459816,
+                                 "y":-32.5286255846509
+                                },
+                                {
+                                 "x":17.4686743659421,
+                                 "y":-392.482980163044
+                                },
+                                {
+                                 "x":40.001570391414,
+                                 "y":-392.499996401515
+                                },
+                                {
+                                 "x":40.1411705368902,
+                                 "y":-32.6681646629336
+                                }],
+                         "rotation":0,
+                         "type":"",
+                         "visible":true,
+                         "width":0,
+                         "x":0,
+                         "y":392.5
+                        }],
+                 "opacity":1,
+                 "type":"objectgroup",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                }],
+         "name":"objects",
+         "opacity":1,
+         "type":"group",
+         "visible":true,
+         "x":0,
+         "y":0
+        }],
+ "nextlayerid":15,
+ "nextobjectid":17,
+ "orientation":"orthogonal",
+ "renderorder":"right-down",
+ "tiledversion":"1.11.2",
+ "tileheight":40,
+ "tilesets":[
+     {
+      "firstgid":1,
+      "source":"tiles/tileset_V5.png",
+      "image-height": 520,
+      "image-width":480
+     }],
+ "tilewidth":40,
+ "type":"map",
+ "version":"1.10",
+ "width":7
+}

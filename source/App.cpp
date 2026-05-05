@@ -96,12 +96,18 @@ void GeometryApp::onStartup() {
     _assets->loadAsync<LevelLoader>("room2","json/room2.json",nullptr);
     _assets->loadAsync<LevelLoader>("room3","json/room3.json",nullptr);
     _assets->loadAsync<LevelLoader>("room4","json/room4.json",nullptr);
+    _assets->loadAsync<LevelLoader>("room5","json/room5.json",nullptr);
+    _assets->loadAsync<LevelLoader>("room6","json/room6.json",nullptr);
+    _assets->loadAsync<LevelLoader>("room7","json/room7.json",nullptr);
 
 
     _rooms->push_back("room1");
     _rooms->push_back("room2");
     _rooms->push_back("room3");
     _rooms->push_back("room4");
+    _rooms->push_back("room5");
+    _rooms->push_back("room6");
+    _rooms->push_back("room7");
 
 
     _loading.start();
