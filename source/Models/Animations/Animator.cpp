@@ -4,11 +4,13 @@ Animator::Animator() {
 	_timeline = ActionTimeline::alloc();
 	_nextKey = 0;
 	_active.clear();
+	_ended.clear();
 	_listeners.clear();
 }
 
 void Animator::reset() {
 	_active.clear();
+	_ended.clear();
 	_listeners.clear();
 	_timeline.reset();
 	_nextKey = 0;
@@ -17,38 +19,40 @@ void Animator::reset() {
 void Animator::update(float dt) {
 	_timeline->update(dt);
 
-	for (auto it = _active.begin(); it != _active.end(); ) {
-		string key = it->second;
-		shared_ptr<AnimatedSprite> node = it->first;
+	for (const auto& pair : _ended) {
+		string key = pair.second;
+		shared_ptr<AnimatedSprite> node = pair.first;
 
-		if (!_timeline->isActive(key)) {
-			// Action has ended, need to re-add
-			auto ani = node->getNextAnimation();
-			if (ani.second < 0) {
-				// No next animation, remove from active list
-				it = _active.erase(it);
-				continue;
-			}
-			else {
-				_timeline->add(key, ani.first, ani.second);
-
-				// Find all listeners to be added for this node
-				auto range = _listeners.equal_range(node);
-				for (auto it = range.first; it != range.second; ++it) {
-					//CULog("added listener");
-					if (it->second.second < 0) {
-						_timeline->addCompletionListener(key, it->second.first);
-					}
-					else {
-						_timeline->addListener(key, it->second.second, it->second.first);
-					}
-				}
-				_listeners.erase(node);
-			}
+		// Action has ended, need to re-add
+		auto ani = node->getNextAnimation();
+		if (ani.second < 0) {
+			// No next animation, remove from active list
+			_active.erase(node);
 		}
+		else {
+			_timeline->add(key, ani.first, ani.second);
 
-		it++;
+			// Add listener to add node to ended list when animation ends
+			_timeline->addCompletionListener(key, [this, node](string key, float time, float actual) {
+				endedAnimation(node, key);
+			});
+
+			// Find all listeners to be added for this node
+			auto range = _listeners.equal_range(node);
+			for (auto it = range.first; it != range.second; ++it) {
+				//CULog("added listener");
+				if (it->second.second < 0) {
+					_timeline->addCompletionListener(key, it->second.first);
+				}
+				else {
+					_timeline->addListener(key, it->second.second, it->second.first);
+				}
+			}
+			_listeners.erase(node);
+		}
 	}
+
+	_ended.clear();
 }
 
 void Animator::addNode(const shared_ptr<AnimatedSprite> node) {
@@ -59,6 +63,7 @@ void Animator::addNode(const shared_ptr<AnimatedSprite> node) {
 	}
 
 	_active.emplace(node, to_string(_nextKey));
+	endedAnimation(node, to_string(_nextKey));
 	_nextKey++;
 }
 
@@ -84,6 +89,7 @@ void Animator::endAnimation(const shared_ptr<AnimatedSprite> node) {
 		// Node is in active
 		if (!_timeline->isPaused(it->second)) {
 			_timeline->remove(it->second);
+			endedAnimation(it->first, it->second);
 		}
 	}
 }

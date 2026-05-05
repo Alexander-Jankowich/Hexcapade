@@ -22,6 +22,8 @@ private:
     std::shared_ptr<cugl::scene2::Button> _startgame;
     /** The back button for the menu scene */
     std::shared_ptr<cugl::scene2::Button> _backout;
+    /** The backspace button for the room code */
+    std::shared_ptr<cugl::scene2::Button> _deletebutton;
     /** The on-screen keypad buttons */
     std::array<std::shared_ptr<cugl::scene2::Button>, 10> _keypad;
     /** The game id label (for updating) */
