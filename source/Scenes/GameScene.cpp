@@ -36,45 +36,6 @@ using namespace cugl::graphics;
 
 namespace {
 
-    const ItemCatalogEntryConfig* chooseWeight(const std::vector<ItemCatalogEntryConfig>& entries, const std::shared_ptr<cugl::Random>& random) {
-
-        float totalWeight = 0.0f;
-        for (const auto& item : entries) {
-            totalWeight += item.weight;
-        }
-
-        float roll = random->getClosedFloat(0.0f, totalWeight);
-
-        for (const auto& item : entries) {
-            if ((roll -= item.weight) <= 0.0f) {
-                return &item;
-            }
-        }
-
-        return &entries.back();
-    }
-
-    float getTypicalItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
-        // Estimating the average item value from the weighted itemd so spawn count can scale with quota
-        float totalWeight = 0.0f;
-        float totalValue = 0.0f;
-        for (const auto& item : entries) {
-            totalWeight += item.weight;
-            totalValue += item.weight * item.value;
-        }
-
-        return totalValue / totalWeight;
-    }
-
-    // Goal: enough item value to cover quota, but never spawn more than
-    // the authored spawn points we actually have on the ma
-    size_t chooseSpawnCount(size_t totalSpawn, size_t roomCount, int quota,
-        float typicalItemValue, float quotaCoverageRatio) {
-        int valueNeeded = (int)std::ceil((float)quota * quotaCoverageRatio);
-        size_t itemsNeeded = (size_t)std::ceil((float)valueNeeded / typicalItemValue);
-        return std::min(totalSpawn, std::max(roomCount, itemsNeeded));
-    }
-
     std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entries,
         const PlayerObstacle::CarriedItem& item) {
         for (const auto& itemEntry : entries) {
@@ -305,7 +266,6 @@ void GameScene::reset()
     _gameEnded = false;
     _playerWon = false;
     _depositedValue = 0;
-    _quota = std::max(1, _runConfig.quota);
     // Match startup behavior on replay: reset clears active enemies and restarts
     // the host spawn timer instead of forcing one immediate spawn.
     lastEnemySpawn = 0;
@@ -431,47 +391,26 @@ void GameScene::rebuildMapForRun() {
 }
 
 void GameScene::spawnItemsFromMap() {
-    const std::vector<Vec2>& spawnPoints = _map->getItemSpawnPoints();
-    if (spawnPoints.empty()) {
-        CULog("ItemFactory: no item spawn points found on map");
+    auto itemSpawns = _map->generateItemSpawnChoices(
+        _runConfig.item.entries,
+        _quota,
+        _runConfig.item.quotaCoverageRatio,
+        _random
+    );
+    if (itemSpawns.empty()) {
         return;
     }
 
-    const std::vector<ItemCatalogEntryConfig>& entries = _runConfig.item.entries;
-
-    int roomCount = _map->getNumRooms();
-    float typicalItemValue = getTypicalItemValue(entries);
-    size_t spawnCount = chooseSpawnCount(
-        spawnPoints.size(), roomCount, _quota,
-        typicalItemValue, _runConfig.item.quotaCoverageRatio
-    );
-
-    // Start with every spawn point, then randomly* remove from this
-    // list as we choose which points to actually use for run
-    std::vector<size_t> spawnIndices(spawnPoints.size());
-    for (size_t spawnIndex = 0; spawnIndex < spawnPoints.size(); ++spawnIndex) {
-        spawnIndices[spawnIndex] = spawnIndex;
-    }
-
-    for (size_t spawned = 0; spawned < spawnCount && !spawnIndices.empty(); ++spawned) {
-        size_t pickIndex = 0;
-        if (spawnIndices.size() > 1) {
-            pickIndex = (size_t)(_random->getUint32() % spawnIndices.size());
-        }
-
-        const Vec2& worldPt = spawnPoints[spawnIndices[pickIndex]];
-        spawnIndices[pickIndex] = spawnIndices.back();
-        spawnIndices.pop_back();
-
-        Vec2 physPos = worldPt / PHYSICS_SCALE;
-        const ItemCatalogEntryConfig* item = chooseWeight(entries, _random);
-        int itemValue = item->value;
-        std::string itemType = item->textureAsset.empty() ? item->id : item->textureAsset;
+    for (auto spawn : itemSpawns) {
+        Vec2 physPos = spawn.first / PHYSICS_SCALE;
+        ItemCatalogEntryConfig item = spawn.second;
+        int itemValue = item.value;
+        std::string itemType = item.textureAsset.empty() ? item.id : item.textureAsset;
 
         auto params = _itemFact->serializeParams(physPos, itemValue, itemType);
         _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
     }
-    CULog("ItemFactory: spawned %zu items", spawnPoints.size());
+    CULog("ItemFactory: spawned %zu items", itemSpawns.size());
 }
 
 void GameScene::updateCameraFollow() {
@@ -1326,6 +1265,7 @@ void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
 
 void GameScene::initPhysics() {
     // initialize physics here, since this should be called post HANDSHAKE
+    if (_networkCtrl->getPhysEnabled()) return;
     std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
         this->linkSceneToObs(obs, node);
         };
