@@ -79,22 +79,22 @@
             "file": "textures/artifact_gem.png"
         },
         "artifact_boost": {
-            "file": "textures/gem_neon.png"
+            "file": "textures/mystical_brooch.png"
         },
         "artifact_heavy": {
             "file": "textures/gem_blue.png"
         },
         "artifact_protection": {
-            "file": "textures/gem_brown.png"
+            "file": "textures/zombie_totem.png"
         },
         "artifact_gold": {
-            "file": "textures/gem_gold.png"
+            "file": "textures/fools_gold.png"
         },
         "artifact_bomb": {
-            "file": "textures/gem_pink.png"
+            "file": "textures/exploding_potion.png"
         },
         "artifact_scroll": {
-            "file": "textures/artifact_scroll.png"
+            "file": "textures/forbidden_chains.png"
         },
         "spellbook_fire": {
             "file": "textures/spellbook_fire.png"
