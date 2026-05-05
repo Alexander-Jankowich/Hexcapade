@@ -24,6 +24,9 @@
         "freeze": {
             "file": "textures/freeze_sheet.png"
         },
+        "combo-freeze": {
+            "file": "textures/combo-freeze_sheet.png"
+        },
         "heal": {
             "file": "textures/heal_sheet.png"
         },

@@ -22,11 +22,16 @@ private:
 
 	// Allows us to find the animation with the node
 	unordered_map<shared_ptr<AnimatedSprite>, string> _active;
+	unordered_map<shared_ptr<AnimatedSprite>, string> _ended;
 
 	// A set of listners to be added on the next animation
 	multimap<shared_ptr<AnimatedSprite>, pair<ActionListener, float>> _listeners;
 
 	shared_ptr<ActionTimeline> _timeline;
+
+	void endedAnimation(shared_ptr<AnimatedSprite> node, string key) {
+		_ended.emplace(node, key);
+	}
 
 public:
 	Animator();

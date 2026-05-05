@@ -61,7 +61,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::COMBO_FREEZE:
         values = _spellConsts->get("combo_freeze");
-        image = _assets->get<graphics::Texture>("freeze");
+        image = _assets->get<graphics::Texture>("combo-freeze");
         break;
     case SpellType::FREEZE:
         values = _spellConsts->get("freeze");
