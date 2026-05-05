@@ -53,12 +53,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
     lw_node = scene2::SceneNode::alloc();
     std::vector<MapDoor> doors;
     _rng.reset(seed);
-    
-    
-    // initialize level config
-    
 
-    
     //get minimum room width/height
     int minRoomW = INT_MAX;
     int minRoomH = INT_MAX;
@@ -302,7 +297,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
                     _mapGrid[yPos-1][x] = 1;
                     
                     // add 5 floor tiles
-                    for (int y=yPos; y < yPos +5; y++){
+                    for (int y=yPos; y < yPos +6; y++){
                         addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, _config._mapSize - y), node);
                         _mapGrid[y][x] = 1;
                     }
@@ -370,7 +365,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
                     _mapGrid[yPos-2][x] = 1;
                     _mapGrid[yPos-1][x] = 1;
                     // add 7 floor tiles (vis fix stuff)
-                    for (int y=yPos; y < yPos + 5; y++){
+                    for (int y=yPos; y < yPos + 6; y++){
                         addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, _config._mapSize - y), node);
                         _mapGrid[y][x] = 1;
                     }
