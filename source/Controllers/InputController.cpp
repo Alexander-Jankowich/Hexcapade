@@ -984,6 +984,37 @@ void InputController::update(float dt) {
     }
 }
 
+void InputController::clearInput() {
+    _move = Vec2::ZERO;
+    _joystick = false;
+    _joycenter = Vec2::ZERO;
+    _joystickpos = Vec2::ZERO;
+
+    clearTouchInstance(_ltouch);
+    clearTouchInstance(_rtouch);
+    clearTouchInstance(_itouch);
+    clearTouchInstance(_mtouch);
+    _mouseDownZone = Zone::UNDEFINED;
+
+    currentStroke.clear();
+    secondStroke.clear();
+    thirdStroke.clear();
+    _curStrokes = 0;
+    _timeSinceLastStroke = 0;
+    _gestureRecognized = false;
+
+    _isAiming = false;
+    _releaseSpell = false;
+    _lastGesture = SpellType::NONE;
+    _spellAngle = Vec2::ZERO;
+    _timeSinceCast = 0;
+
+    _pickupPressed = false;
+    _depositPressed = false;
+    _inventoryReleased = false;
+    _inventoryHotkeyIndex = -1;
+}
+
 /**
  * Reads the input for this player and converts the result into game logic.
  *

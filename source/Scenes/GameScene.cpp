@@ -571,7 +571,11 @@ void GameScene::preUpdate(float dt)
     // Update animations
     _animations->update(dt);
 
-    if (_player->getHealth() == 0) return; // if dead ignore updates
+    if (_player->getHealth() == 0) {
+        _input.clearInput();
+        return;
+    } // if dead ignore updates
+
 
     _player->updateTimers(dt);
 

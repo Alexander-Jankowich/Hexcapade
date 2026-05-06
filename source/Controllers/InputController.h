@@ -257,6 +257,8 @@ public:
      */
     void readInput();
 
+    void clearInput();
+
 #pragma mark Joystick Attributes
 
     /**
