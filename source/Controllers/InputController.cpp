@@ -809,21 +809,6 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
                             std::function<cugl::Vec2(const cugl::Vec2&)> screenToWorld) {
     _screenToWorld = screenToWorld;
     recognizer = cugl::PGestureRecognizer::alloc();
-    recognizer -> addGesture("Death", DEATH_GESTURE);
-    recognizer -> addGesture("Death", DEATH_GESTURE_1);
-    recognizer -> addGesture("Earth", X_GESTURE);
-    recognizer -> addGesture("Earth", X_GESTURE_1);
-    recognizer -> addGesture("Fire", ARROW_GESTURE);
-    recognizer -> addGesture("Fire", ARROW_GESTURE_1);
-    recognizer -> addGesture("Freeze", FREEZE_GESTURE);
-    recognizer -> addGesture("Freeze", FREEZE_GESTURE_1);
-    recognizer -> addGesture("Heal", HEAL_GESTURE);
-    recognizer -> addGesture("Heal", HEAL_GESTURE_2);
-    recognizer -> addGesture("Water", WATER_GESTURE);
-    
-
-    recognizer->set_accuracy(0.84f);
-
     // Update the gesturemap with more spells later on
     _gesturemap = {
     {"Fire", SpellType::FIREBALL},
