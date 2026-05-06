@@ -7,6 +7,7 @@
 #ifndef __INPUT_CONTROLLER_H__
 #define __INPUT_CONTROLLER_H__
 #include "../Models/Spells/SpellFactory.h"
+#include "../Models/Players/PlayerObstacle.h"
 
 /**
  * Device-independent input manager.
@@ -126,6 +127,9 @@ public:
     int getNumStrokes() { return _curStrokes; }
 
     float getTimeSinceLastStroke() { return _timeSinceLastStroke; }
+
+    void syncGesturesToInventory(const std::vector<PlayerObstacle::CarriedItem>& inventory);
+
 
     /**
     * Returns the user input for movement
@@ -353,6 +357,16 @@ protected:
     std::vector<cugl::Vec2> secondStroke;
     /**A  vector of points represent eh second to last stroke**/
     std::vector<cugl::Vec2> thirdStroke;
+
+    std::unordered_map<std::string, std::vector<std::vector<std::vector<cugl::Vec2>>>> _allGestureData;
+    /** The set of gesture names currently registered in the recognizer */
+    std::unordered_set<std::string> _activeGestureNames;
+
+    /** Maps SpellType to its gesture name, inverse of _gesturemap */
+    std::unordered_map<SpellType, std::string> _spellToGestureName;
+
+    /** The spellbook item types present in inventory at the last sync */
+    std::unordered_set<std::string> _lastSpellbookSet;
     
     std::function<cugl::Vec2(const cugl::Vec2&)> _screenToWorld;
 
@@ -548,6 +562,9 @@ private:
      * @param focus     Whether this device has focus (UNUSED)
      */
     void motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus);
+
+    void _addGestureByName(const std::string& name);
+    bool _spellbookEnablesSpell(const std::string& itemType, SpellType spell);
 
     /** The zone the mouse drag started in */
     Zone _mouseDownZone = Zone::UNDEFINED;

@@ -494,6 +494,8 @@ void GameScene::preUpdate(float dt)
     //it is a little weird to do this every frame but this allows host to acquire themselves
     _networkCtrl->getPhysController()->acquireObs(_player, 0);
 
+    _input.syncGesturesToInventory(_player->getInventory());
+
     if (_gameEnded) {
         return;
     }

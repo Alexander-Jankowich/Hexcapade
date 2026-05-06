@@ -809,30 +809,28 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
                             std::function<cugl::Vec2(const cugl::Vec2&)> screenToWorld) {
     _screenToWorld = screenToWorld;
     recognizer = cugl::PGestureRecognizer::alloc();
-    recognizer -> addGesture("Death", DEATH_GESTURE);
-    recognizer -> addGesture("Death", DEATH_GESTURE_1);
-    recognizer -> addGesture("Earth", X_GESTURE);
-    recognizer -> addGesture("Earth", X_GESTURE_1);
-    recognizer -> addGesture("Fire", ARROW_GESTURE);
-    recognizer -> addGesture("Fire", ARROW_GESTURE_1);
-    recognizer -> addGesture("Freeze", FREEZE_GESTURE);
-    recognizer -> addGesture("Freeze", FREEZE_GESTURE_1);
-    recognizer -> addGesture("Heal", HEAL_GESTURE);
-    recognizer -> addGesture("Heal", HEAL_GESTURE_2);
-    recognizer -> addGesture("Water", WATER_GESTURE);
-    
-
-    recognizer->set_accuracy(0.84f);
-
     // Update the gesturemap with more spells later on
     _gesturemap = {
-        {"Fire", SpellType::FIREBALL},
-        {"Freeze", SpellType::FREEZE},
-        {"Heal", SpellType::HEAL },
-        {"Death", SpellType::DEATH},
-        {"Earth", SpellType::EARTH},
-        {"Water", SpellType::WATER}
+    {"Fire", SpellType::FIREBALL},
+    {"Freeze", SpellType::FREEZE},
+    {"Heal", SpellType::HEAL },
+    {"Death", SpellType::DEATH},
+    {"Earth", SpellType::EARTH},
+    {"Water", SpellType::WATER}
     };
+
+    _allGestureData["Death"] = { DEATH_GESTURE, DEATH_GESTURE_1 };
+    _allGestureData["Earth"] = { X_GESTURE, X_GESTURE_1 };
+    _allGestureData["Fire"] = { ARROW_GESTURE, ARROW_GESTURE_1 };
+    _allGestureData["Freeze"] = { FREEZE_GESTURE, FREEZE_GESTURE_1 };
+    _allGestureData["Heal"] = { HEAL_GESTURE, HEAL_GESTURE_2 };
+    _allGestureData["Water"] = { WATER_GESTURE };
+
+    for (auto& [gestureName, spellType] : _gesturemap) {
+        _spellToGestureName[spellType] = gestureName;
+    }
+
+    recognizer->set_accuracy(0.84f);
 
     _joyradius = values->get("joystick")->getInt("radius");
     _deadzone = values->get("joystick")->getInt("dead_zone");
@@ -888,6 +886,67 @@ void InputController::dispose() {
     _active = false;
 }
 
+void InputController::_addGestureByName(const std::string& name) {
+    if (_activeGestureNames.count(name)) return;
+    auto it = _allGestureData.find(name);
+    if (it == _allGestureData.end()) return;
+    for (auto& sample : it->second) {
+        recognizer->addGesture(name, sample);
+    }
+    _activeGestureNames.insert(name);
+}
+
+bool InputController::_spellbookEnablesSpell(const std::string& itemType, SpellType spell) {
+    switch (spell) {
+    case SpellType::FIREBALL:
+        return itemType == "spellbook_fire";
+    case SpellType::FREEZE:
+        return itemType == "spellbook_freeze";
+    case SpellType::HEAL:
+        return itemType == "spellbook_heal";
+    case SpellType::EARTH:
+        return itemType == "spellbook_earth";
+    case SpellType::DEATH:
+        return itemType == "spellbook_death";
+    case SpellType::WATER:
+        return itemType == "spellbook_water";
+    default:
+        return false;
+    }
+}
+
+void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::CarriedItem>& inventory) {
+    std::unordered_set<std::string> currentSpellbookSet;
+    for (const auto& item : inventory) {
+        if (item.kind == PlayerObstacle::ItemKind::SPELLBOOK) {
+            currentSpellbookSet.insert(item.itemType);
+        }
+    }
+
+    if (currentSpellbookSet == _lastSpellbookSet) return;
+    _lastSpellbookSet = currentSpellbookSet;
+
+    std::unordered_set<std::string> desired;
+    for (const auto& itemType : currentSpellbookSet) {
+        for (auto& [spellType, gestureName] : _spellToGestureName) {
+            if (_spellbookEnablesSpell(itemType, spellType)) {
+                desired.insert(gestureName);
+            }
+        }
+    }
+    for (auto it = _activeGestureNames.begin(); it != _activeGestureNames.end(); ) {
+        if (!desired.count(*it)) {
+            recognizer->removeGesture(*it);
+            it = _activeGestureNames.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+    for (const auto& name : desired) {
+        _addGestureByName(name);
+    }
+}
 
 /**
  * Updates the input controller for the latest frame.
