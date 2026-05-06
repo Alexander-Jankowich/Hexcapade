@@ -1214,7 +1214,7 @@ cugl::Rect GameScene::getInventorySlotBounds(size_t slotIndex) const {
     float totalW = kSlotCount * boxSize + (kSlotCount - 1) * boxGap; // full inventory bar width
 
     // Center the row in the right half of the screen
-    float startX = (screenSize.width * 0.5f) - (totalW * 0.5f);
+    float startX = (screenSize.width * 0.7f) - (totalW * 0.5f);
     float topY = screenSize.height - margin - boxSize;
 
     return Rect((startX + slotIndex * (boxSize + boxGap)) / zoom, topY / zoom, boxSize / zoom, boxSize / zoom);
