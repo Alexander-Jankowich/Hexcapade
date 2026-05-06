@@ -65,11 +65,6 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
  * Helper method for converting normal parameters into byte vectors used for syncing.
  */
 shared_ptr<vector<byte>> EnemyFactory::serializeParams(EnemyType type, Vec2 pos) {
-    /**
-     * TODO: Use _serializer to serialize pos and scale (remember to make a
-     * shared copy of the serializer reference, otherwise it will be lost if
-     * the serializer is reset).
-     */
     _serializer.reset();
     _serializer.writeUint16((uint16) type);
     _serializer.writeFloat(pos.x);
@@ -81,11 +76,6 @@ shared_ptr<vector<byte>> EnemyFactory::serializeParams(EnemyType type, Vec2 pos)
  * Generate a pair of Obstacle and SceneNode using serialized parameters.
  */
 pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory::createObstacle(const vector<byte>& params) {
-    /**
-     * TODO: Use _deserializer to deserialize byte vectors packed by
-     * {@link serializeParams()} and call the regular createObstacle() method
-     * with them.
-     */
     _deserializer.reset();
     _deserializer.receive(params);
     EnemyType type = (EnemyType) _deserializer.readUint16();
@@ -97,7 +87,11 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 
 
 void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, const shared_ptr<Animator>& animator) {
-    if (obs->getHealth() > 0) {
+    if (obs->isDead()) {
+        obs->setLinearVelocity(Vec2::ZERO);
+    }
+    else {
+        // If not dead, update attributes
         obs->updateAttackCounter();
 
         // Update push and frozen
@@ -114,40 +108,58 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
                 obs->setFrozen(false);
             }
         }
-
-        // Update frozen status for node if changed
-        if (obs->isFroze() && !node->getFrozen()) {
-            node->setFrozen(true);
-            animator->pauseAnimation(node);
-
-            auto frozen = make_shared<SpellEntityNode>(_assets->get<graphics::Texture>("freeze_entity"), _spellConsts->get("freeze-entity"));
-            node->addChildWithTag(frozen, FROZEN_ID);
-            frozen->setPriority(3);
-
-            animator->addNode(frozen);
-
-            animator->addNextListener(frozen, 90 / FPS, [node, frozen](string key, float time, float actual) {
-                node->setTint(Color4(0, 106, 209, 255));
-            });
-        }
-        else if (!obs->isFroze() && node->getFrozen()) {
-            node->setFrozen(false);
-            animator->resumeAnimation(node);
-
-            auto frozen = dynamic_pointer_cast<SpellEntityNode>(node->getChildByTag(FROZEN_ID));
-            frozen->end();
-            animator->addNextListener(frozen, [node, frozen](string key, float time, float actual) {
-                node->removeChild(frozen);
-            });
-
-            animator->addNextListener(frozen, 90 / FPS, [node, frozen](string key, float time, float actual) {
-                node->setTint(Color4::WHITE);
-            });
-            animator->endAnimation(frozen);
-        }
     }
-    else {
+
+    // Update frozen status for node if changed
+    if (obs->isFroze() && !node->getFrozen()) {
+        node->setFrozen(true);
+        animator->pauseAnimation(node);
+
+        auto frozen = make_shared<SpellEntityNode>(_assets->get<graphics::Texture>("freeze_entity"), _spellConsts->get("freeze-entity"));
+        node->addChildWithTag(frozen, FROZEN_ID);
+        frozen->setPriority(3);
+
+        animator->addNode(frozen);
+
+        animator->addNextListener(frozen, 90 / FPS, [node, frozen](string key, float time, float actual) {
+            node->setTint(Color4(0, 106, 209, 255));
+        });
+    }
+    else if (!obs->isFroze() && node->getFrozen()) {
+        node->setFrozen(false);
+        animator->resumeAnimation(node);
+
+        auto frozen = dynamic_pointer_cast<SpellEntityNode>(node->getChildByTag(FROZEN_ID));
+        frozen->end();
+        animator->addNextListener(frozen, [node, frozen](string key, float time, float actual) {
+            node->removeChild(frozen);
+        });
+
+        animator->addNextListener(frozen, 90 / FPS, [node, frozen](string key, float time, float actual) {
+            node->setTint(Color4::WHITE);
+        });
+        animator->endAnimation(frozen);
+    }
+
+    if (obs->isHurt() && !node->isHurt()) {
+        // Remove hurt state when animation finishes playing
         obs->setLinearVelocity(Vec2::ZERO);
+        CULog("do hurt animation");
+        node->setHurt(true);
+        animator->addNextListener(node, [obs, node](string key, float time, float actual) {
+            obs->setHurt(false);
+            node->setHurt(false);
+            CULog("not hurt now");
+        });
+        animator->endAnimation(node);
+    }
+
+    if (obs->isDead() && !node->isDead()) {
+        obs->setLinearVelocity(Vec2::ZERO);
+        animator->addNextListener(node, [obs](string key, float time, float actual) {
+            obs->markRemoved(true);
+        });
+        animator->endAnimation(node);
     }
 
     // Update position

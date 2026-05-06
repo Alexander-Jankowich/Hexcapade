@@ -30,7 +30,8 @@ public:
         CHASING = 1,
         ATTACKING = 2,
         ATTACK_RESET = 3,
-        DEATH = 4
+        HURT = 4,
+        DEATH = 5
     };
 
 protected:
@@ -86,6 +87,8 @@ public:
         return f;
     }
 
+#pragma mark Properties
+
     /**
     * Sets the acceleration of the enemy to reach the intended velocity
     * This method makes it so that the enemy will still collide with walls and players
@@ -117,8 +120,6 @@ public:
      */
     int getHealth() const { return _health; }
 
-    bool isFroze() { return _frozen; }
-
     /**
      * Sets the current enemy health.
      *
@@ -131,21 +132,18 @@ public:
     float getRange() { return _range; }
 
     void setTarget(const Vec2 targ) { _target = targ; _state = EnemyState::CHASING; }
-
     Vec2 getTarget() { return _target; }
 
     void setFrozenTimer(int i) { _frozenTimer = i; }
-
     int getFrozenTimer() { return _frozenTimer; }
 
+    bool isFroze() { return _frozen; }
     void setFrozen(bool b) { _frozen = b; }
 
     void setMud(bool m) { _mud = m; }
-
     bool isMud() { return _mud; }
 
     int getMudTimer() { return _mudTimer; }
-
     void setMudTimer(float t) { _mudTimer = t; }
 
     void setWaterPush(Vec2 dir, int frames) { _waterPushDir = dir; _waterPushTimer = frames; }
@@ -156,7 +154,9 @@ public:
     float getAttackRange() const { return _attackRange; }
     int getAttackTimer() const { return _attackTimer;}
     void setAttackTimer(int a) { _attackTimer = a; }
-    
+
+    void setHurt(bool h) { _state = h ? EnemyState::HURT : EnemyState::IDLE; }
+    bool isHurt() { return _state == EnemyState::HURT; }
 };
 
 #endif // !__ENEMY_OBSTACLE_H__

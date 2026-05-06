@@ -152,7 +152,7 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
         animations->addNextListener(node, [obs, node](string key, float time, float actual) {
             obs->setHurt(false);
             node->setHurt(false);
-            CULog("not hurt now");
+            //CULog("not hurt now");
         });
     }
        

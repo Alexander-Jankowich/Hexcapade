@@ -42,6 +42,15 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared
  * @param value The current enemy health.
  */
 void EnemyObstacle::setHealth(int value) {
+    if (value < _health && !isDead()) {
+        if (isHurt()) {
+            // Cannot be hit if already hit very recently
+            return;
+        }
+        CULog("got hurt");
+        setHurt(true);
+    }
+
     if (value <= 0) {
         _health = 0;
         _state = EnemyState::DEATH;
@@ -61,7 +70,9 @@ void EnemyObstacle::updateAttackCounter() {
     }
     else {
         _attackCounter = 0;
-        _state = EnemyState::IDLE;
+        if (!isHurt() && !isDead()) {
+            _state = EnemyState::IDLE;
+        }
     }
 }
 

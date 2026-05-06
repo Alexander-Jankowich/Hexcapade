@@ -53,7 +53,7 @@ unordered_set<PlayerObstacle*> Pathfinder::getVisiblePlayers(shared_ptr<physics2
                 return fraction;
             }
             if (auto p = dynamic_cast<physics2::PolygonObstacle*>(obs)) {
-                CULog("hit wall");
+                //CULog("hit wall");
                 return 0.0f;
             }
             return 1.0f;
@@ -98,7 +98,7 @@ bool Pathfinder::performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> wor
             //CULog("see wall");
             return 0.0f;
         }
-        CULog("hit something other than wall");
+        //CULog("hit something other than wall");
         return 1.0f;
     };
 
@@ -160,7 +160,7 @@ bool Pathfinder::performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> wor
 void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact, shared_ptr<SpellFactory> spellFact,std::shared_ptr<NetworkController> networkCtrl,Uint32 spellFactId, shared_ptr<physics2::distrib::NetWorld> world) {
 
     for (auto en : enemyFact->current) {
-        if (en->isFroze() || en->getWaterPushTimer() > 0 || en->isDead()) {
+        if (en->isFroze() || en->getWaterPushTimer() > 0 || en->isDead() || en->isHurt()) {
             CULog("skip pathfinding");
             continue;
         }

@@ -27,6 +27,7 @@ private:
         IDLE,
         WALK,
         ATTACK,
+        DAMAGED,
         DEAD
     };
 
@@ -42,16 +43,25 @@ private:
     bool facingBack;
     bool facingLeft;
 
-    bool frozen;
-    bool statue;
+    bool _frozen;
+    bool _statue;
+    bool _hurt;
+    bool _dead;
 
-    AnimationType nextAnimation;
+    AnimationType _nextAnimation;
+    AnimationType _curAnimation;
 
     const int WALK[4];
     const int WALK_FRAMES;
 
     const int IDLE[4];
     const int IDLE_FRAMES;
+
+    const int DAMAGE[4];
+    const int DAMAGE_FRAMES;
+
+    const int DEATH[4];
+    const int DEATH_FRAMES;
 
     int getDirection() override { return facingLeft * 2 + facingBack; }
 
@@ -83,11 +93,16 @@ public:
     */
     pair<ActionFunction, float> getNextAnimation() override;
 
-    void setFrozen(bool f) { frozen = f; }
-    bool getFrozen() { return frozen; }
+    void setFrozen(bool f) { _frozen = f; }
+    bool getFrozen() { return _frozen; }
 
-    void setStatue(bool s) { statue = s; }
-    bool getStatue() { return statue; }
+    void setStatue(bool s) { _statue = s; }
+    bool getStatue() { return _statue; }
+
+    void setHurt(bool h) { _hurt = h; }
+    bool isHurt() { return _hurt; }
+
+    bool isDead() { return _dead; }
     
 #pragma mark Graphics
     void draw(const std::shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) override;

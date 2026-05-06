@@ -1722,11 +1722,6 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         default:
             spell->setRemove();
         }
-        if (enemy->getHealth() <= 0) {
-            enemy->markRemoved(true);
-        }
-
-
     }
     else if (wall && player) {
         contact->SetEnabled(true);
