@@ -15,6 +15,9 @@
         "octoplush": {
             "file": "textures/enemy_octoplush_sheet.png"
         },
+        "octoplush_attack": {
+            "file": "textures/enemy_octoplush_attack_sheet.png"
+        },
         "fireball": {
             "file": "textures/fireball_sheet.png"
         },

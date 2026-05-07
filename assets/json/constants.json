@@ -200,8 +200,8 @@
 
             "walk-right_forward": 0,
             "walk-left_forward": 8,
-            "walk-right_backward": 16,
-            "walk-left_backward": 24,
+            "walk-right_backward": 24,
+            "walk-left_backward": 16,
             "walk_frames": 8,
 
             "idle-right_forward": 0,
@@ -209,6 +209,12 @@
             "idle-right_backward": 24,
             "idle-left_backward": 16,
             "idle_frames": 8,
+
+            "attack-right_forward": 32,
+            "attack-left_forward": 40,
+            "attack-right_backward": 48,
+            "attack-left_backward": 56,
+            "attack_frames": 8,
 
             "damage-right_forward": 80,
             "damage-left_forward": 88,
@@ -243,6 +249,12 @@
             "idle-left_backward": 16,
             "idle_frames": 8,
 
+            "attack-right_forward": 32,
+            "attack-left_forward": 40,
+            "attack-right_backward": 56,
+            "attack-left_backward": 48,
+            "attack_frames": 8,
+
             "damage-right_forward": 80,
             "damage-left_forward": 88,
             "damage-right_backward": 80,
@@ -275,6 +287,12 @@
             "idle-right_backward": 24,
             "idle-left_backward": 16,
             "idle_frames": 8,
+
+            "attack-right_forward": 32,
+            "attack-left_forward": 40,
+            "attack-right_backward": 56,
+            "attack-left_backward": 48,
+            "attack_frames": 8,
 
             "damage-right_forward": 80,
             "damage-left_forward": 88,
@@ -309,6 +327,16 @@
             "idle-left_backward": 16,
             "idle_frames": 8,
 
+            "attack-right_forward": 0,
+            "attack-left_forward": 0,
+            "attack-right_backward": 0,
+            "attack-left_backward": 0,
+            "attack_frames": 6,
+            "attack_rows": 2,
+            "attack_columns": 8,
+            "attack_offset_x": 88.5,
+            "attack_offset_y": 127.5,
+
             "damage-right_forward": 48,
             "damage-left_forward": 56,
             "damage-right_backward": 48,
@@ -341,6 +369,16 @@
             "idle-right_backward": 24,
             "idle-left_backward": 16,
             "idle_frames": 8,
+
+            "attack-right_forward": 0,
+            "attack-left_forward": 0,
+            "attack-right_backward": 0,
+            "attack-left_backward": 0,
+            "attack_frames": 6,
+            "attack_rows": 2,
+            "attack_columns": 8,
+            "attack_offset_x": 88.5,
+            "attack_offset_y": 127.5,
 
             "damage-right_forward": 48,
             "damage-left_forward": 56,

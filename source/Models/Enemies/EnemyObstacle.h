@@ -29,9 +29,8 @@ public:
         IDLE = 0,
         CHASING = 1,
         ATTACKING = 2,
-        ATTACK_RESET = 3,
-        HURT = 4,
-        DEATH = 5
+        HURT = 3,
+        DEATH = 4
     };
 
 protected:
@@ -55,6 +54,10 @@ protected:
 
     // Time since the last attack
     int _attackCounter;
+
+    // Attack function
+    ActionListener _attackFunc;
+    float _attackFuncTime;
 
     // Whether the enemy is frozen
     bool _frozen;
@@ -104,11 +107,22 @@ public:
      */
     const float getSpeed() const { return _speed; }
     void setSpeed(float s) { _speed = s; }
+
     EnemyState getState() { return _state; }
     void setState(EnemyState s) { _state = s; }
+
+    void startAttack() { _state = EnemyState::ATTACKING; }
+    bool isAttacking() { return _state == EnemyState::ATTACKING; }
+
+    void setAttackFunc(float t, ActionListener listener) { _attackFuncTime = t; _attackFunc = listener; }
+    ActionListener getAttack() { return _attackFunc; }
+    float getAttackTiming() { return _attackFuncTime; }
+
     void updateAttackCounter();
-    void setAttackCounter(int frames) { _attackCounter = frames; }
+    void setAttackTimer(int frames) { _attackCounter = frames; }
     bool canAttack() { return _attackCounter <= 0; }
+    int getAttackTimer() const { return _attackTimer; }
+
     bool isDead() { return _state == EnemyState::DEATH; }
 
     /**
@@ -131,7 +145,7 @@ public:
 
     float getRange() { return _range; }
 
-    void setTarget(const Vec2 targ) { _target = targ; _state = EnemyState::CHASING; }
+    void setTarget(const Vec2 targ) { _target = targ; }
     Vec2 getTarget() { return _target; }
 
     void setFrozenTimer(int i) { _frozenTimer = i; }
@@ -152,8 +166,6 @@ public:
     void tickWaterPush() { if (_waterPushTimer > 0) _waterPushTimer--; }
     
     float getAttackRange() const { return _attackRange; }
-    int getAttackTimer() const { return _attackTimer;}
-    void setAttackTimer(int a) { _attackTimer = a; }
 
     void setHurt(bool h) { _state = h ? EnemyState::HURT : EnemyState::IDLE; }
     bool isHurt() { return _state == EnemyState::HURT; }

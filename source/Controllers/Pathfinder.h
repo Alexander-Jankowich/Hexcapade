@@ -29,6 +29,9 @@ private:
     Vec2 getClosestPlayer(Vec2 enemPos, unordered_set<shared_ptr<PlayerObstacle>> targs);
     Vec2 getClosestPlayer(Vec2 enemPos, unordered_set<PlayerObstacle*> targs);
 
+    shared_ptr<PlayerObstacle> getClosest(Vec2 enemPos, unordered_set<shared_ptr<PlayerObstacle>> targs);
+    PlayerObstacle* getClosest(Vec2 enemPos, unordered_set<PlayerObstacle*> targs);
+
     /**
     * Returns a set of all players who are not dead and are within range of the enemy
     */
@@ -57,7 +60,9 @@ public:
     /**
     * Updates enemy targets, movement, and state based on the players
     */
-    void updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact, shared_ptr<SpellFactory> spellFact, std::shared_ptr<NetworkController> networkCtrl,Uint32 spellFactId, shared_ptr<physics2::distrib::NetWorld> world);
+    void updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact,
+        shared_ptr<SpellFactory> spellFact, std::shared_ptr<NetworkController> networkCtrl,
+        Uint32 spellFactId, shared_ptr<physics2::distrib::NetWorld> world);
 };
 
 #endif // __PATHFINDER_H__

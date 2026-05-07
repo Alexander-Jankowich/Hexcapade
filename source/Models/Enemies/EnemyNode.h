@@ -22,7 +22,7 @@ using namespace std;
  * Model class representing an enemy.
  */
 class EnemyNode : public AnimatedSprite {
-private:
+protected:
     enum class AnimationType {
         IDLE,
         WALK,
@@ -56,6 +56,9 @@ private:
 
     const int IDLE[4];
     const int IDLE_FRAMES;
+
+    const int ATTACK[4];
+    const int ATTACK_FRAMES;
 
     const int DAMAGE[4];
     const int DAMAGE_FRAMES;
@@ -103,6 +106,8 @@ public:
     bool isHurt() { return _hurt; }
 
     bool isDead() { return _dead; }
+
+    bool isAttacking() { return _nextAnimation == AnimationType::ATTACK; }
     
 #pragma mark Graphics
     void draw(const std::shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) override;

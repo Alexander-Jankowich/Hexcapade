@@ -1635,8 +1635,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
         if (!enemy->canAttack()) return;
-        enemy->setState(EnemyObstacle::EnemyState::ATTACK_RESET);
-        enemy->setAttackCounter(90);
+
+        enemy->setAttackTimer(90);
         if (player->hasShield()) {
             player->setShieldCount(player->getShieldCount() - 1);
             if (player->getShieldCount() == 0) {

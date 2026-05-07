@@ -15,30 +15,46 @@ unordered_set<shared_ptr<PlayerObstacle>> Pathfinder::getValidTargets(const Vec2
 }
 
 
-Vec2 Pathfinder::getClosestPlayer(Vec2 enemPos, unordered_set<shared_ptr<PlayerObstacle>> targs) {
+shared_ptr<PlayerObstacle> Pathfinder::getClosest(Vec2 enemPos, unordered_set<shared_ptr<PlayerObstacle>> targs) {
     float minDist = FLT_MAX;
-    Vec2 minPos = Vec2(0, 0); // default
+    shared_ptr<PlayerObstacle> out = nullptr;
     for (auto t : targs) {
         float d = enemPos.distance(t->getPosition());
         if (d < minDist) {
             minDist = d;
-            minPos = t->getPosition();
+            out = t;
         }
     }
-    return minPos;
+    return out;
+}
+
+PlayerObstacle* Pathfinder::getClosest(Vec2 enemPos, unordered_set<PlayerObstacle*> targs) {
+    float minDist = FLT_MAX;
+    PlayerObstacle* out = nullptr;
+    for (auto t : targs) {
+        float d = enemPos.distance(t->getPosition());
+        if (d < minDist) {
+            minDist = d;
+            out = t;
+        }
+    }
+    return out;
+}
+
+Vec2 Pathfinder::getClosestPlayer(Vec2 enemPos, unordered_set<shared_ptr<PlayerObstacle>> targs) {
+    auto temp = getClosest(enemPos, targs);
+    if (temp) {
+        return temp->getPosition();
+    }
+    return Vec2::ZERO;
 }
 
 Vec2 Pathfinder::getClosestPlayer(Vec2 enemPos, unordered_set<PlayerObstacle*> targs) {
-    float minDist = FLT_MAX;
-    Vec2 minPos = Vec2(0, 0); // default
-    for (auto t : targs) {
-        float d = enemPos.distance(t->getPosition());
-        if (d < minDist) {
-            minDist = d;
-            minPos = t->getPosition();
-        }
+    auto temp = getClosest(enemPos, targs);
+    if (temp) {
+        return temp->getPosition();
     }
-    return minPos;
+    return Vec2::ZERO;
 }
 
 unordered_set<PlayerObstacle*> Pathfinder::getVisiblePlayers(shared_ptr<physics2::distrib::NetWorld> world,
@@ -109,12 +125,8 @@ bool Pathfinder::performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> wor
         float leftFar = 0, rightFar = 0;
         Vec2 leftPoint, rightPoint;
 
-        //auto exterior = wall->getPolygon().exterior();
-
         // Loop through all points
         for (const auto& point : wall->getPolygon().getVertices()) {
-            //const auto point = wall->getPolygon().at(i);
-
             // Find distance from line
             float len = fabs((targ.y - pos.y) * point.x - (targ.x - pos.x) * point.y + targ.x * pos.y - targ.y * pos.x) /
                     targ.distance(pos);
@@ -157,11 +169,13 @@ bool Pathfinder::performRaycastCheck(shared_ptr<physics2::distrib::NetWorld> wor
 }
 
 
-void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact, shared_ptr<SpellFactory> spellFact,std::shared_ptr<NetworkController> networkCtrl,Uint32 spellFactId, shared_ptr<physics2::distrib::NetWorld> world) {
+void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<PlayerFactory> playerFact,
+        shared_ptr<SpellFactory> spellFact, std::shared_ptr<NetworkController> networkCtrl, Uint32 spellFactId,
+        shared_ptr<physics2::distrib::NetWorld> world) {
 
     for (auto en : enemyFact->current) {
-        if (en->isFroze() || en->getWaterPushTimer() > 0 || en->isDead() || en->isHurt()) {
-            CULog("skip pathfinding");
+        if (en->isFroze() || en->getWaterPushTimer() > 0 || en->isDead() || en->isHurt() || en->isAttacking()) {
+            //CULog("skip pathfinding");
             continue;
         }
 
@@ -174,22 +188,39 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             break;
         case EnemyType::SLOWBAT:
         case EnemyType::BAT:
+        {
             // if closest player in attack_range shoot spell
-            targ = getClosestPlayer(en->getPosition(),
+            auto player = getClosest(en->getPosition(),
                 getVisiblePlayers(world, en->getPosition(), en->getRange(),
                     getValidTargets(en->getPosition(), en->getRange(), playerFact)));
-            if (targ.distance(en->getPosition()) <= en->getAttackRange()) {
-                Vec2 player_pos = targ;
+            if (!player)
+                break;
+
+            targ = player->getPosition();
+            if (targ.distance(en->getPosition()) <= en->getAttackRange() && en->canAttack()) {
                 targ = en->getPosition();
-                Vec2 angle = player_pos - targ;
-                if (en->getAttackTimer() <= 0) {
-                    auto params = spellFact->serializeParams((en->getPosition()), angle, SpellType::FIREBALL, "bat");
-                    auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
-                    networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                    en->setAttackTimer(240);
-                }
+                //if (en->canAttack()) {
+                //    auto params = spellFact->serializeParams((en->getPosition()), angle, SpellType::FIREBALL, "bat");
+                //    auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
+                //    networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                //    en->setAttackTimer(120);
+                //}
+                en->setLinearVelocity(Vec2::ZERO);
+                en->startAttack();
+                //CULog("start attack!");
+                en->setAttackFunc(-1, [en, player, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
+                    if (player->getHealth() > 0 && en->isAttacking()) {
+                        //CULog("launch attack!");
+                        Vec2 angle = player->getPosition() - en->getPosition();
+                        auto params = spellFact->serializeParams((en->getPosition()), angle, SpellType::FIREBALL, "bat");
+                        auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
+                        networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                        en->setAttackTimer(120);
+                    }
+                });
             }
-                en -> setAttackTimer(en -> getAttackTimer() - 1);
+        }
+            //en -> setAttackTimer(en->getAttackTimer() - 1);
             break;
         case EnemyType::OCTO:
             targ = getClosestPlayer(en->getPosition(),
@@ -203,6 +234,10 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
 
         if (!targ.isZero()) { // Found a valid target
             en->setTarget(targ);
+            if (!en->isAttacking()) {
+                en->setState(EnemyObstacle::EnemyState::CHASING);
+                //CULog("chase");
+            }
             //CULog("set target!");
         }
 

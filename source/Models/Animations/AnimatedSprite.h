@@ -41,6 +41,18 @@ protected:
 		};
 	}
 
+	static pair<ActionFunction, float> getAnimationPair(shared_ptr<SpriteNode> node, const int start, const int numFrames) {
+		return {
+			[node, start, numFrames](float t, ActionState state) {
+				int offset = state == ActionState::FINISH ? numFrames - 1 :
+					state == ActionState::BEGIN ? 0 :
+					min((int)(t * numFrames), numFrames - 1);
+				node->setFrame(start + offset);
+			},
+			numFrames / FPS
+		};
+	}
+
 	const pair<ActionFunction, float> END_ANIMATION = { [this](float, ActionState) {}, -1 };
 
 	virtual int getDirection() { return 0; };

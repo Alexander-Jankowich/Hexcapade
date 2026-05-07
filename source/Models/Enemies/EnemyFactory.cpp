@@ -6,6 +6,7 @@
 //
 
 #include "EnemyFactory.h"
+#include "OctoplushNode.h"
 
 using namespace std;
 using namespace cugl;
@@ -55,7 +56,8 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     current.emplace(en);
 
     // Create enemy
-    auto sprite = make_shared<EnemyNode>(img, vals);
+    auto sprite = (type == EnemyType::OCTO) ? make_shared<OctoplushNode>(img, vals, _assets->get<graphics::Texture>(vals->getString("texture")+"_attack"))
+        : make_shared<EnemyNode>(img, vals);
     sprite -> setScale(0.5);
 
     return std::make_pair(en, sprite);
@@ -139,17 +141,20 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
             node->setTint(Color4::WHITE);
         });
         animator->endAnimation(frozen);
+        
+        obs->setHurt(false);
+        node->setHurt(false);
     }
 
     if (obs->isHurt() && !node->isHurt()) {
         // Remove hurt state when animation finishes playing
         obs->setLinearVelocity(Vec2::ZERO);
-        CULog("do hurt animation");
+        //CULog("do hurt animation");
         node->setHurt(true);
         animator->addNextListener(node, [obs, node](string key, float time, float actual) {
             obs->setHurt(false);
             node->setHurt(false);
-            CULog("not hurt now");
+            //CULog("not hurt now");
         });
         animator->endAnimation(node);
     }
@@ -158,6 +163,16 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         obs->setLinearVelocity(Vec2::ZERO);
         animator->addNextListener(node, [obs](string key, float time, float actual) {
             obs->markRemoved(true);
+        });
+        animator->endAnimation(node);
+    }
+
+    if (obs->isAttacking() && !node->isAttacking()) {
+        //CULog("do attack thing");
+        obs->setLinearVelocity(Vec2::ZERO);
+        animator->addNextListener(node, obs->getAttackTiming(), obs->getAttack());
+        animator->addNextListener(node, [obs](string key, float time, float actual) {
+            obs->setState(EnemyObstacle::EnemyState::IDLE);
         });
         animator->endAnimation(node);
     }

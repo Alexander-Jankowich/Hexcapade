@@ -23,6 +23,11 @@ EnemyNode::EnemyNode(shared_ptr<graphics::Texture>& tex, shared_ptr<JsonValue>& 
             consts->getInt("idle-left_forward"),
             consts->getInt("idle-left_backward") },
         IDLE_FRAMES(consts->getInt("idle_frames")),
+        ATTACK{ consts->getInt("attack-right_forward"),
+            consts->getInt("attack-right_backward"),
+            consts->getInt("attack-left_forward"),
+            consts->getInt("attack-left_backward") },
+        ATTACK_FRAMES(consts->getInt("attack_frames")),
         DAMAGE{ consts->getInt("damage-right_forward"),
             consts->getInt("damage-right_backward"),
             consts->getInt("damage-left_forward"),
@@ -76,7 +81,7 @@ void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s) {
     else if (s == EnemyObstacle::EnemyState::HURT && _curAnimation != AnimationType::DAMAGED) {
         _nextAnimation = AnimationType::DAMAGED;
     }
-    else if (s == EnemyObstacle::EnemyState::ATTACK_RESET) {
+    else if (s == EnemyObstacle::EnemyState::ATTACKING) {
         _nextAnimation = AnimationType::ATTACK;
     }
     else if (_velocity.length() < 0.2) {
@@ -99,10 +104,13 @@ pair<ActionFunction, float> EnemyNode::getNextAnimation() {
         _dead = true;
         return getAnimationPair(DEATH, DEATH_FRAMES);
     case AnimationType::DAMAGED:
-        CULog("play hurt animation");
+        //CULog("play hurt animation");
         return getAnimationPair(DAMAGE, DAMAGE_FRAMES);
     case AnimationType::IDLE:
         return getAnimationPair(IDLE, IDLE_FRAMES);
+    case AnimationType::ATTACK:
+        CULog("play attack animation");
+        return getAnimationPair(ATTACK, ATTACK_FRAMES);
     case AnimationType::WALK:
     default:
         return getAnimationPair(WALK, WALK_FRAMES);

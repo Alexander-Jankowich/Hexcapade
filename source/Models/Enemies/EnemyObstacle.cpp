@@ -70,9 +70,9 @@ void EnemyObstacle::updateAttackCounter() {
     }
     else {
         _attackCounter = 0;
-        if (!isHurt() && !isDead()) {
-            _state = EnemyState::IDLE;
-        }
+        //if (!isHurt() && !isDead()) {
+        //    _state = EnemyState::IDLE;
+        //}
     }
 }
 
