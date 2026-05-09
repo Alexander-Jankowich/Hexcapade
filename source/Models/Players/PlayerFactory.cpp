@@ -181,3 +181,11 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
 PlayerFactory::PlayerFactory() {
     current.clear();
 }
+
+bool PlayerFactory::allPlayersDead() {
+    int numDead = 0;
+    for (auto p : current) {
+        numDead += p->getHealth()==0;
+    }
+    return numDead==current.size();
+}

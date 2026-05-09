@@ -208,8 +208,8 @@ void NetworkController::processEndEvent(const std::shared_ptr<EndGameEvent> &e)
 
 void NetworkController::processRestartEvent(const std::shared_ptr<RestartGameEvent> &e)
 {
+    _round += _gameState == NCGameState::WON; // 1 if won, 0 else
     _gameState=NCGameState::UNSTARTED;
-    _round++;
 }
 
 

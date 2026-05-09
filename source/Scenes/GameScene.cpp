@@ -505,10 +505,18 @@ void GameScene::preUpdate(float dt)
     }
     if (_timer == 0) {
         bool won = _quota <= _depositedValue;
-        _playerWon = won;
+//        _playerWon = won;
         _networkCtrl->pushOutEvent(EndGameEvent::allocEndGameEvent(won));
         return;
     }
+    // all dead check
+    if (_networkCtrl->isHost() && _playerFact->allPlayersDead()) {
+//        _gameEnded = true;
+//        _playerWon = false;
+        _networkCtrl->pushOutEvent(EndGameEvent::allocEndGameEvent(false));
+        return;
+    }
+    
 
     _input.update(dt);
 
