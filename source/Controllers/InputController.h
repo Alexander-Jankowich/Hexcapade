@@ -104,11 +104,23 @@ public:
     SpellType getGesture() {
         return _lastGesture;
     }
+    
+    /**
+    * Returns the last (less accurate) gesture the user has done.
+    *
+    * Should call {@link #resolvedGesture} once the gesture has been
+    * resolved to clear the gesture.
+    *
+    * @return Last gesture user has done
+    */
+    SpellType getGestureLess() {
+        return _lastGestureLess;
+    }
 
     /**
     * Call this function after resolving a gesture
     */
-    void resolvedGesture() { _lastGesture = SpellType::NONE; }
+    void resolvedGesture() { _lastGesture = SpellType::NONE; _lastGestureLess = SpellType::NONE; }
 
     /**
     * Returns a vector containing the current stroke
@@ -123,6 +135,12 @@ public:
     * @return true if the gesture was recognized, false in all other cases
     */
     bool wasGestureRecognized() { return _gestureRecognized; }
+    
+    /**
+    * Returns whether the most recent gesture was recognized using less accurate recognizer (for display purposes)
+    * @return true if the gesture was recognized, false in all other cases
+    */
+    bool wasLessAccurate() { return _lessAccurateRecognized; }
 
     int getNumStrokes() { return _curStrokes; }
 
@@ -287,11 +305,11 @@ public:
 
 #pragma mark Spell/aim attributes
 
-    void clearSpell() { _lastGesture = SpellType::NONE; }
+    void clearSpell() { _lastGesture = SpellType::NONE; _lastGestureLess = SpellType::NONE; }
 
     bool shouldReleaseSpell() { return _releaseSpell; }
 
-    void resolveSpell() { _releaseSpell = false; _lastGesture = SpellType::NONE; _isAiming = false; }
+    void resolveSpell() { _releaseSpell = false; _lastGesture = SpellType::NONE;_lastGestureLess = SpellType::NONE; _isAiming = false; }
 
     bool showAim() { return _isAiming; }
 
@@ -317,6 +335,9 @@ protected:
 
     /** The last gesture done */
     SpellType _lastGesture;
+    
+    /**The last (less accurate) gesture done**/
+    SpellType _lastGestureLess;
 
 	/** The key for the mouse listeners */
 	Uint32 _mouseKey;
@@ -363,6 +384,8 @@ protected:
     std::unordered_map<std::string, std::vector<std::vector<std::vector<cugl::Vec2>>>> _allGestureData;
     /** The set of gesture names currently registered in the recognizer */
     std::unordered_set<std::string> _activeGestureNames;
+    /** The set of gesture names currently registered in the recognizer */
+    std::unordered_set<std::string> _activeGestureNamesLess;
 
     /** Maps SpellType to its gesture name, inverse of _gesturemap */
     std::unordered_map<SpellType, std::string> _spellToGestureName;
@@ -374,6 +397,9 @@ protected:
 
     /**The gesture recognizer*/
     std::shared_ptr<cugl::PGestureRecognizer> recognizer;
+    
+    /**The (less accurate) gesture recognizer**/
+    std::shared_ptr<cugl::PGestureRecognizer> recognizerLess;
 
     /** Mapping of gesture strings to the correct Gesture */
     std::unordered_map<std::string, SpellType> _gesturemap;
@@ -385,6 +411,8 @@ protected:
     int _curStrokes;
 
     bool _gestureRecognized;
+    
+    bool _lessAccurateRecognized;
     
 #pragma mark Spell aim variables
 
@@ -565,7 +593,7 @@ private:
      */
     void motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus);
 
-    void _addGestureByName(const std::string& name);
+    void _addGestureByName(const std::string& name, std::shared_ptr<PGestureRecognizer> recognizer, std::unordered_set<std::string>& activeSet);
     bool _spellbookEnablesSpell(const std::string& itemType, SpellType spell);
 
     /** The zone the mouse drag started in */

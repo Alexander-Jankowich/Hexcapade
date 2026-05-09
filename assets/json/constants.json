@@ -70,9 +70,10 @@
         },
         "gesture_trail": {
             "width": 30,
-            "color": [ 199, 140, 6, 150 ],
+            "color": [ 128, 0, 128, 150 ],
             "correct-color": [ 76, 187, 23, 150 ],
-            "incorrect-color": [240, 29, 0, 150]
+            "incorrect-color": [240, 29, 0, 150],
+            "less-accurate-color" : [ 199, 140, 6, 150 ]
         },
         "aim": {
             "color": [ 199, 140, 6, 255 ]

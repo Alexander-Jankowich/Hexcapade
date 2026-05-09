@@ -28,7 +28,7 @@
 #define ITEM_PICKUP_RADIUS 2f
 
 // Uncomment for testing, allows players to use all spells regardless of what books they have in their inventory
-//#define ENABLE_ALL_SPELLS
+#define ENABLE_ALL_SPELLS
 
 using namespace cugl;
 using namespace std;
@@ -787,6 +787,17 @@ void GameScene::preUpdate(float dt)
     }
     else if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
+#ifndef ENABLE_ALL_SPELLS
+        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
+#endif
+            _player->setSpell(newSpell);
+            _networkCtrl->pushOutEvent(
+                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
+#ifndef ENABLE_ALL_SPELLS
+        }
+#endif
+    }else if (_input.getGestureLess() != SpellType::NONE && _player -> getSpell() == SpellType::NONE){
+        SpellType newSpell = _input.getGestureLess();
 #ifndef ENABLE_ALL_SPELLS
         if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
 #endif
