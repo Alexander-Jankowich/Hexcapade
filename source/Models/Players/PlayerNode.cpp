@@ -36,6 +36,20 @@ int PlayerNode::deadFrames = 0;
 
 float PlayerNode::idleThreshold = 0.0;
 
+std::shared_ptr<cugl::graphics::Texture> PlayerNode::spellIconTex;
+int PlayerNode::spellIconRows = 1;
+int PlayerNode::spellIconCols = 1;
+
+float PlayerNode::spellIconOffset = 0;
+
+int PlayerNode::noneFrame = 0;
+int PlayerNode::fireballFrame = 0;
+int PlayerNode::freezeFrame = 0;
+int PlayerNode::healFrame = 0;
+int PlayerNode::earthFrame = 0;
+int PlayerNode::waterFrame = 0;
+int PlayerNode::deathFrame = 0;
+
 PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
     initWithSheet(tex, rows, cols);
 
@@ -47,6 +61,14 @@ PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
     _nextAnimation = AnimationType::IDLE;
 
     _tint = Color4::WHITE;
+
+    _spellIcon = SpriteNode::allocWithSheet(spellIconTex, spellIconRows, spellIconCols);
+    _spellIcon->setFrame(noneFrame);
+    _spellIcon->setPriority(4);
+    CULog("%.2f", spellIconOffset);
+    _spellIcon->setPositionY(spellIconOffset);
+
+    addChild(_spellIcon);
 
     setFrame(idle[0]);
     setPriority(1);
@@ -62,7 +84,7 @@ void PlayerNode::setVelocity(cugl::Vec2 value) {
     }
 }
 
-void PlayerNode::updateAnimationState(int health, bool casting, bool m) {
+void PlayerNode::updateAnimationState(int health, SpellType curSpell, bool m) {
     _mud = m;
 
     //if (_mud && !_frozen) {
@@ -72,13 +94,38 @@ void PlayerNode::updateAnimationState(int health, bool casting, bool m) {
     //    setTint(Color4::WHITE);
     //}
 
+    // Update spell icon
+    switch (curSpell) {
+    case SpellType::FIREBALL:
+        _spellIcon->setFrame(fireballFrame);
+        break;
+    case SpellType::FREEZE:
+        _spellIcon->setFrame(freezeFrame);
+        break;
+    case SpellType::HEAL:
+        _spellIcon->setFrame(healFrame);
+        break;
+    case SpellType::WATER:
+        _spellIcon->setFrame(waterFrame);
+        break;
+    case SpellType::EARTH:
+        _spellIcon->setFrame(earthFrame);
+        break;
+    case SpellType::DEATH:
+        _spellIcon->setFrame(deathFrame);
+        break;
+    default:
+        _spellIcon->setFrame(noneFrame);
+        break;
+    }
+
     if (health <= 0) {
         _nextAnimation = AnimationType::DEAD;
     }
     else if (_hurt && _curAnimation != AnimationType::DAMAGED) {
         _nextAnimation = AnimationType::DAMAGED;
     }
-    else if (casting) {
+    else if (curSpell != SpellType::NONE) {
         _nextAnimation = AnimationType::CASTING;
     }
     else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation == AnimationType::RELEASE_CAST)) {

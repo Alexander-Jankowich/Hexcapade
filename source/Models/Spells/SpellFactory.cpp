@@ -12,7 +12,7 @@
 using namespace std;
 using namespace cugl;
 
-SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range ,SpellType type, std::string c) : TYPE(type) {    
+SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range ,SpellType type, std::string c, bool weak) : TYPE(type) {    
     init(pos, radius / 3);
 
     
@@ -33,6 +33,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius,
     
     _caster = c;
     _atEnd = false;
+    _weak = weak;
 
     setLinearVelocity(vel);
 }
@@ -40,7 +41,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius,
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 angle, SpellType type, std::string c_uid, int damageBonus, bool buff) {
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory::createObstacle(Vec2 pos, Vec2 angle, SpellType type, std::string c_uid, int damageBonus, bool buff, bool weak) {
     auto image = _assets->get<graphics::Texture>("fireball"); // default?
     
     // Create the SpellObstacle
@@ -108,10 +109,20 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     float radius = image->getHeight() / PHYSICS_SCALE;
 
     Vec2 vel = norm * values->getFloat("speed");
-    auto spell = SpellObstacle::alloc(pos, vel, radius,
-        std::max(1, buff ? 2 * (values->getInt("damage") + damageBonus) : values->getInt("damage") + damageBonus),
-        values->getFloat("range"), type, c_uid);
-    CULog("buff is %d", buff);
+    //I am doing it this way because frankly I really do not want to deal with the bugs that will arise if I do two terniary expressions
+    //There is also the potential of making weak = 2 or 1 depending on if the spell should be weak but then were really breaking conventions
+    std::shared_ptr<SpellObstacle> spell;
+    if(!weak){
+        spell = SpellObstacle::alloc(pos, vel, radius,
+            std::max(1, buff ? 2 * (values->getInt("damage") + damageBonus): values->getInt("damage") + damageBonus),
+            values->getFloat("range"), type, c_uid, weak);
+    }else{
+        spell = SpellObstacle::alloc(pos, vel, radius,
+            std::max(1, buff ? (2 * (values->getInt("damage") + damageBonus)) / 2: (values->getInt("damage") + damageBonus) / 2),
+            values->getFloat("range"), type, c_uid, weak);
+    }
+    
+    CULog("weak is %d", weak);
     //auto spell = SpellObstacle::alloc(pos, type);
 
     spell->setAngleSnap(0); // Snap to the nearest degree
@@ -131,7 +142,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 /**
  * Helper method for converting normal parameters into byte vectors used for syncing.
  */
-std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, Vec2 angle, SpellType type, string c, int damageBonus, bool buff) {
+std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, Vec2 angle, SpellType type, string c, int damageBonus, bool buff, bool weak) {
     /**
      * TODO: Use _serializer to serialize pos and scale (remember to make a
      * shared copy of the serializer reference, otherwise it will be lost if
@@ -146,6 +157,7 @@ std::shared_ptr<std::vector<std::byte>> SpellFactory::serializeParams(Vec2 pos, 
     _serializer.writeString(c);
     _serializer.writeSint32(damageBonus);
     _serializer.writeBool(buff);
+    _serializer.writeBool(weak);
    
     return std::make_shared<std::vector<std::byte>>(_serializer.serialize());
 }
@@ -165,9 +177,10 @@ std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode
     SpellType type = (SpellType) _deserializer.readUint32();
     string c = _deserializer.readString();
     int damageBonus = _deserializer.readSint32();
-    int buff = _deserializer.readBool();
+    bool buff = _deserializer.readBool();
+    bool weak = _deserializer.readBool();
 
-    return createObstacle(pos, velocity, type, c, damageBonus, buff);
+    return createObstacle(pos, velocity, type, c, damageBonus, buff, weak);
 }
 
 std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {

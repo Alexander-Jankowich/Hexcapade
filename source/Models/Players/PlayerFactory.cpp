@@ -160,7 +160,7 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
         });
     }
        
-    node->updateAnimationState(obs->getHealth(), obs->isCasting(), obs->getMud());
+    node->updateAnimationState(obs->getHealth(), obs->getSpell(), obs->getMud());
 
     if (obs->getHealth() <= 0) {
         animations->resumeAnimation(node);

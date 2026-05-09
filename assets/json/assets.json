@@ -75,6 +75,9 @@
     "left": {
       "file": "textures/left_arrow.png"
     },
+    "spell_icons": {
+      "file": "textures/spell_icons.png"
+    },
     "player_fox": {
       "file": "textures/playerfox_sheet.png"
     },

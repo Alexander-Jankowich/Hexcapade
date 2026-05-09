@@ -51,6 +51,7 @@ InputDisplay::InputDisplay(InputController* input, std::shared_ptr<JsonValue> va
 	_gestureColor = colorFromVec(values->get("gesture_trail")->get("color")->asIntArray());
 	_gestureColorCorrect = colorFromVec(values->get("gesture_trail")->get("correct-color")->asIntArray());
 	_gestureColorWrong = colorFromVec(values->get("gesture_trail")->get("incorrect-color")->asIntArray());
+    _gestureColorLess =colorFromVec(values->get("gesture_trail")->get("less-accurate-color")->asIntArray());
 }
 
 void InputDisplay::update(Vec2 playerPos) {
@@ -71,7 +72,8 @@ void InputDisplay::update(Vec2 playerPos) {
 	_numStrokes = _input->getNumStrokes();
 	_gestureTime = _input->getTimeSinceLastStroke();
 	_gestureCorrect = _input->wasGestureRecognized();
-	if (!_gestureCorrect && _numStrokes < 3) {
+    _gestureLessCorrect = _input->wasLessAccurate();
+	if (!_gestureCorrect && !_gestureLessCorrect && _numStrokes < 3) {
 		_gesture = _input->getCurStroke();
 		_gesture.set(_input->getCurStroke());
 		extruder.set(_gesture);
@@ -120,8 +122,21 @@ void InputDisplay::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batc
 				batch->fill(_thirdDisplay, _uiOffset);
 			}
 		}
-	}
-	else if (_numStrokes > 2) {
+    }else if(_gestureLessCorrect){
+        if (_gestureTime < 0.5) {
+            batch->setColor(_gestureColorLess);
+            if (_gestureDisplay.size() > 3) {
+                batch->fill(_gestureDisplay, _uiOffset);
+            }
+            if (_secondDisplay.size() > 3) {
+                batch->fill(_secondDisplay, _uiOffset);
+            }
+            if (_thirdDisplay.size() > 3) {
+                batch->fill(_thirdDisplay, _uiOffset);
+            }
+        }
+    }
+    else if (_numStrokes > 2) {
 		if (_gestureTime < 0.25) {
 			batch->setColor(_gestureColorWrong);
 			batch->fill(_gestureDisplay, _uiOffset);

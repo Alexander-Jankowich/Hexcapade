@@ -26,7 +26,7 @@
 #include "../Models/Animations.h"
 
 #include "InputDisplay.h"
-#define ROUND_TIMER 5400
+#define ROUND_TIMER 10800
 
 using namespace cugl;
 using namespace std;
@@ -72,6 +72,9 @@ protected:
     Uint32 _itemFactId;
 
     shared_ptr<PlayerObstacle> _player;
+    
+    //Just if we have a weak spell, I am doing it this way
+    bool _weakSpell = false;
 
     /** Action Timeline for animations */
     shared_ptr<Animator> _animations;
