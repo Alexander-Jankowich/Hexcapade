@@ -6,7 +6,7 @@ PlayerObstacle::ItemKind PlayerObstacle::CarriedItem::kindFromType(const std::st
 }
 
 PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
-    init(pos, (s * 0.4) / PHYSICS_SCALE);
+    init(pos, (s * 0.12) / PHYSICS_SCALE);
     setBodyType(b2_dynamicBody);
     setDensity(1.0f);
     //setLinearDamping(15.0f);

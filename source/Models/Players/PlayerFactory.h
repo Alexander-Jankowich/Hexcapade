@@ -48,7 +48,8 @@ public:
     unordered_set<shared_ptr<PlayerObstacle>> current;
     
     void reset() {current.clear();}
-    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, string pid);
+    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, string pid, string textureKey);
+    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(const vector<byte>& params) override;
     /**
      * Allocates a new instance of the factory using the given AssetManager.
      */
@@ -74,12 +75,11 @@ public:
     /**
      * Helper method for converting normal parameters into byte vectors used for syncing.
      */
-    shared_ptr<vector<byte>> serializeParams(Vec2 pos, string pid);
+    shared_ptr<vector<byte>> serializeParams(Vec2 pos, string pid, string textureKey = "player_fox");
 
     /**
      * Generate a pair of Obstacle and SceneNode using serialized parameters.
      */
-    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(const vector<byte>& params) override;
 
     /**
     * The linking function for player obstacles -> player nodes

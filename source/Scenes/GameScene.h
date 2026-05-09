@@ -198,6 +198,7 @@ public:
     void initPhysics();
     /** initialize map once network is populated with random seed for this round */
     void initMap();
+    void spawnPlayers();
     /**
      * Returns true if the player is host.
      *

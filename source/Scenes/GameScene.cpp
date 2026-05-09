@@ -1301,24 +1301,27 @@ void GameScene::initMap() {
     if (_mapSeed != 0) {
         rebuildMapForRun();
     }
-    if (_networkCtrl->isHost()) {
-        auto players = _networkCtrl->getPlayers();
-        for (auto& p : players) {
-            CULog("i am making a player with the following id %s", p.c_str());
-            auto params = _playerFact->serializeParams(
-                _map->getPlayerSpawn() / PHYSICS_SCALE,
-                p
-            );
-            _networkCtrl->getPhysController()
-                ->addSharedObstacle(_playerFactId, params);
-        }
+}
 
-        if (!_addedLWalls) {
-            CULog("adding lower walls in initmap");
-            _map->getLowerWallNode()->setPriority(1.0f);
-            _worldnode->addChild(_map->getLowerWallNode());
-            _addedLWalls = true;
-        }
+void GameScene::spawnPlayers() {
+    if (!_networkCtrl->isHost()) return;
+    auto players = _networkCtrl->getPlayers();
+    for (auto& p : players) {
+        CULog("i am making a player with the following id %s", p.c_str());
+        auto params = _playerFact->serializeParams(
+            _map->getPlayerSpawn() / PHYSICS_SCALE,
+            p,
+            _networkCtrl->getPlayerCharacter(p)
+        );
+        _networkCtrl->getPhysController()
+            ->addSharedObstacle(_playerFactId, params);
+    }
+
+    if (!_addedLWalls) {
+        CULog("adding lower walls in initmap");
+        _map->getLowerWallNode()->setPriority(1.0f);
+        _worldnode->addChild(_map->getLowerWallNode());
+        _addedLWalls = true;
     }
 }
 

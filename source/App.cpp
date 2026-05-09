@@ -447,6 +447,7 @@ void GeometryApp::updateSelectScene(float dt) {
             break;
         case SelectScene::SSStatus::START:
             CULog("in start");
+            _gameplay.spawnPlayers();
             _selectScene.setActive(false);
             _selectScene.release();
             _gameplay.setActive(true); // alr has connection from host/client scene

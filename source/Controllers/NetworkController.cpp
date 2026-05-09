@@ -194,6 +194,7 @@ std::tuple<int,int> NetworkController::customEvents(){
             }   
         } else if (auto pne = std::dynamic_pointer_cast<PlayerNameEvent>(e)) {
             _playerNames[pne->getPID()] = pne->getName();
+            _playerCharacters[pne->getPID()] = pne->getCharacter();
         }
     }
     return std::tuple<int,int>(inventoryValue,depositedValue);

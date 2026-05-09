@@ -47,7 +47,23 @@ bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
             _status = SSStatus::HANDSHAKE;
         }
         _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
-        _networkCtrl->pushOutEvent(PlayerNameEvent::allocPlayerNameEvent(_networkCtrl->getPID(), _playerName));
+        std::string charStr;
+        switch (_selectedCharacter) {
+            case CharacterType::CAT:   
+                charStr = "player_cat";  
+                break;
+            case CharacterType::DUCK:  
+                charStr = "player_duck";  
+                break;
+            case CharacterType::BUNNY: 
+                charStr = "player_bunny"; 
+                break;
+            default:                   
+                charStr = "player_fox";   
+                break;
+        }
+        _networkCtrl->setPlayerCharacter(_networkCtrl->getPID(), charStr);
+        _networkCtrl->pushOutEvent(PlayerNameEvent::allocPlayerNameEvent(_networkCtrl->getPID(), _playerName, charStr));
         _startPressed = true;
         _nameField->releaseFocus();
         });
@@ -90,6 +106,25 @@ void SelectScene::onCharacterSelected(CharacterType c) {
     _selectedCharacter = c;
     _characterChosen = true;
 
+    std::string charStr;
+    switch (_selectedCharacter) {
+    case CharacterType::CAT:
+        charStr = "player_cat";
+        break;
+    case CharacterType::DUCK:
+        charStr = "player_duck";
+        break;
+    case CharacterType::BUNNY:
+        charStr = "player_bunny";
+        break;
+    default:
+        charStr = "player_fox";
+        break;
+    }
+    if (_networkCtrl) {
+        _networkCtrl->setPlayerCharacter(_networkCtrl->getPID(), charStr);
+    }
+
     auto tex = _assets->get<graphics::Texture>(portraitKey(c));
     if (tex) {
         _portrait->setTexture(tex);
@@ -128,6 +163,9 @@ void SelectScene::setActive(bool value) {
     if (value) {
         _selectedCharacter = CharacterType::FOX;
         _characterChosen = false;
+        if (_networkCtrl) {
+            _networkCtrl->setPlayerCharacter(_networkCtrl->getPID(), "player_fox");
+        }
         _startPressed = false;
         _readySent = false;
         _status = SSStatus::SELECT;

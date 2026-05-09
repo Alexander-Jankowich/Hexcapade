@@ -14,10 +14,11 @@ std::shared_ptr<NetEvent> PlayerNameEvent::newEvent() {
 }
 
 std::shared_ptr<NetEvent> PlayerNameEvent::allocPlayerNameEvent(
-    const std::string& pid, const std::string& name) {
+    const std::string& pid, const std::string& name, const std::string& character) {
     auto event = std::make_shared<PlayerNameEvent>();
     event->_pid = pid;
     event->_name = name;
+    event->_character = character;
     return event;
 }
 
@@ -25,6 +26,7 @@ std::vector<std::byte> PlayerNameEvent::serialize() {
     _serializer.reset();
     _serializer.writeString(_pid);
     _serializer.writeString(_name);
+    _serializer.writeString(_character);
     return _serializer.serialize();
 }
 
@@ -33,4 +35,5 @@ void PlayerNameEvent::deserialize(const std::vector<std::byte>& data) {
     _deserializer.receive(data);
     _pid = _deserializer.readString();
     _name = _deserializer.readString();
+    _character = _deserializer.readString();
 }

@@ -22,15 +22,16 @@ protected:
 private:
     std::string _pid;
     std::string _name;
+    std::string _character;
 
 public:
     std::shared_ptr<NetEvent> newEvent() override;
 
-    static std::shared_ptr<NetEvent> allocPlayerNameEvent(
-        const std::string& pid, const std::string& name);
+    static std::shared_ptr<NetEvent> allocPlayerNameEvent(const std::string& pid, const std::string& name, const std::string& character = "fox");
 
     const std::string& getPID()  const { return _pid; }
     const std::string& getName() const { return _name; }
+    const std::string& getCharacter() const { return _character; }
 
     std::vector<std::byte> serialize() override;
     void deserialize(const std::vector<std::byte>& data) override;
