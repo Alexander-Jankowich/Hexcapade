@@ -8,7 +8,8 @@
 #ifndef __PLAYER_OBSTACLE_H__
 #define __PLAYER_OBSTACLE_H__
 
-#include "../Spells/SpellFactory.h"
+#include <cugl/cugl.h>
+#include "../Spells/SpellType.h"
 #include "../Items/Artifact.h"
 
 using namespace cugl;

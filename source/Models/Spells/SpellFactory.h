@@ -10,6 +10,7 @@
 
 #include <cugl/cugl.h>
 #include "SpellNode.h"
+#include "SpellType.h"
 
 #define HEAL_AMT 2;
 

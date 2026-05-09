@@ -6,7 +6,8 @@
 // Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
 #ifndef __INPUT_CONTROLLER_H__
 #define __INPUT_CONTROLLER_H__
-#include "../Models/Spells/SpellFactory.h"
+
+#include "../Models/Spells/SpellType.h"
 #include "../Models/Players/PlayerObstacle.h"
 
 /**

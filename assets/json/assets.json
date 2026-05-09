@@ -78,6 +78,9 @@
         "player": {
             "file": "textures/playerfox_sheet.png"
         },
+        "spell_icons": {
+            "file": "textures/spell_icons.png"
+        },
         "artifact_reduce": {
             "file": "textures/artifact_gem.png"
         },

@@ -58,7 +58,21 @@
         "dying_frames": 8,
         "death_frames": 1,
 
-        "idle_threshold": 0.5
+        "idle_threshold": 0.5,
+
+        "spell_icons": {
+            "offset": 70,
+            "rows": 2,
+            "columns": 4,
+
+            "none": 3,
+            "fireball": 0,
+            "freeze": 1,
+            "heal": 2,
+            "earth": 4,
+            "water": 5,
+            "death": 6
+        }
     },
     "input": {
         "aim_time": 1,

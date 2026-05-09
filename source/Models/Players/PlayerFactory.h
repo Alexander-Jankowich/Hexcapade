@@ -64,7 +64,7 @@ public:
     void init(shared_ptr<AssetManager>& assets) {
         _assets = assets;
         auto consts = _assets->get<JsonValue>("constants")->get("player");
-        PlayerNode::setConsts(consts);
+        PlayerNode::setConsts(_assets, consts);
         rows = consts->getInt("rows");
         cols = consts->getInt("columns");
 
