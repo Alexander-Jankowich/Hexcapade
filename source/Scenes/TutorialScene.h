@@ -175,8 +175,7 @@ public:
     shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
     void release() {_networkCtrl = nullptr;}
 
-    /** initializes the network and physics world */
-    void initNetwork(shared_ptr<NetworkController> n);
+
     /** Initialize networked physics before map built */
     void initPhysics();
     /** idk? */

@@ -142,7 +142,6 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
     // Initialize spell combo information
     initCombos();
 
-    _map = std::make_shared<StaticMap>();
 
     // Initialize inventory system
     _depositedValue = 0;
@@ -186,8 +185,22 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
         beforeSolve(contact, oldManifold);
         };
     _world->update(1);
-
-    _networkCtrl = nullptr;
+    
+    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(Vec2::ZERO);
+    addChild(_worldnode);
+    
+    // init map and network
+    _map = std::make_shared<StaticMap>();
+    _networkCtrl = std::make_shared<NetworkController>();
+    
+    auto n = _map->generateStaticMap(_assets, _world);
+    n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    n->setPosition(Vec2::ZERO);
+    n->setPriority(0.0f);
+    _worldnode->addChild(n);
+    
     setActive(false);
     return true;
 }
@@ -1018,11 +1031,6 @@ int TutorialScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {
     return -1;
 }
 
-void TutorialScene::initNetwork(std::shared_ptr<NetworkController> n) {
-    if (_networkCtrl != nullptr) return;
-    _networkCtrl = n;
-}
-
 void TutorialScene::initPhysics() {
     // initialize physics here, since this should be called post HANDSHAKE
     if (_networkCtrl->getPhysEnabled()) return;
@@ -1037,37 +1045,22 @@ void TutorialScene::initPhysics() {
     _itemFactId = _networkCtrl->getPhysController()->attachFactory(_itemFact);
     CULog("Enemy factory ID: %u", _enemyFactId);
     CULog("Item factory ID: %u", _itemFactId);
-}
+    auto players = _networkCtrl->getPlayers();
+    for (auto& p : players) {
+        CULog("i am making a player with the following id %s", p.c_str());
+        auto params = _playerFact->serializeParams(
+            _map->getData()->getPlayerSpawn() / PHYSICS_SCALE,
+            p
+        );
+        _networkCtrl->getPhysController()
+            ->addSharedObstacle(_playerFactId, params);
+    }
 
-void TutorialScene::initMap() {
-    // Create the scene graph
-    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
-    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    _worldnode->setPosition(Vec2::ZERO);
-    addChild(_worldnode);
-
-
-    auto n = _map->generateStaticMap(_assets, _world);
-    _worldnode->addChild(n);
-    
-    if (_networkCtrl->isHost()) {
-        auto players = _networkCtrl->getPlayers();
-        for (auto& p : players) {
-            CULog("i am making a player with the following id %s", p.c_str());
-            auto params = _playerFact->serializeParams(
-                _map->getData()->getPlayerSpawn() / PHYSICS_SCALE,
-                p
-            );
-            _networkCtrl->getPhysController()
-                ->addSharedObstacle(_playerFactId, params);
-        }
-
-        if (!_addedLWalls) {
-            CULog("adding lower walls in initmap");
-            _map->getLowerWallNode()->setPriority(1.0f);
-            _worldnode->addChild(_map->getLowerWallNode());
-            _addedLWalls = true;
-        }
+    if (!_addedLWalls) {
+        CULog("adding lower walls in initmap");
+        _map->getLowerWallNode()->setPriority(1.0f);
+        _worldnode->addChild(_map->getLowerWallNode());
+        _addedLWalls = true;
     }
 }
 
@@ -1078,6 +1071,7 @@ void TutorialScene::setActive(bool value)
         Scene2::setActive(value);
         if (value)
         {
+            initPhysics();
             _input.activate();
             CULog("I am trying to get a player using this id %s", _networkCtrl->getPID().c_str());
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());

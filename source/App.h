@@ -12,6 +12,7 @@
 #include "Scenes/HostScene.h"
 #include "Scenes/SelectScene.h"
 #include "Scenes/ClientScene.h"
+#include "Scenes/TutorialScene.h"
 #include "Controllers/NetworkController.h"
 #include "Models/Map/LevelLoader.h"
 #include "Models/Map/StaticLevelLoader.h"
@@ -22,7 +23,7 @@
 class GeometryApp : public cugl::Application {
 public:
     /** Top-level application states */
-    enum class State { LOAD, MENU, HOST, CLIENT, SELECT, GAME, END };
+    enum class State { LOAD, MENU, TUTORIAL, HOST, CLIENT, SELECT, GAME, END };
 
 protected:
     /** The global sprite batch for drawing (only want one of these) */
@@ -43,6 +44,7 @@ protected:
     HostScene   _hostScene;
     ClientScene _clientScene;
     SelectScene _selectScene;
+    TutorialScene _tutorialScene;
     GameScene   _gameplay;
     EndScene    _endScene;
 
@@ -71,6 +73,7 @@ private:
     void updateClientScene(float dt);
     void updateGameScene(float dt);
     void updateEndScene(float dt);
+    void updateTutorialScene(float dt);
 
 };
 
