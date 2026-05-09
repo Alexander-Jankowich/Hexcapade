@@ -26,7 +26,7 @@
 #include "../Models/Animations.h"
 
 #include "InputDisplay.h"
-#define ROUND_TIMER 5400
+#define ROUND_TIMER 10800
 
 using namespace cugl;
 using namespace std;
