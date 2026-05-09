@@ -832,8 +832,8 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
         _spellToGestureName[spellType] = gestureName;
     }
 
-    recognizer -> set_accuracy(0.85f);
-    recognizerLess -> set_accuracy(0.75f);
+    recognizer -> set_accuracy(0.83f);
+    recognizerLess -> set_accuracy(0.74f);
 
     _joyradius = values->get("joystick")->getInt("radius");
     _deadzone = values->get("joystick")->getInt("dead_zone");

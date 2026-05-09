@@ -72,6 +72,9 @@ protected:
     Uint32 _itemFactId;
 
     shared_ptr<PlayerObstacle> _player;
+    
+    //Just if we have a weak spell, I am doing it this way
+    bool _weakSpell = false;
 
     /** Action Timeline for animations */
     shared_ptr<Animator> _animations;

@@ -28,7 +28,7 @@
 #define ITEM_PICKUP_RADIUS 2f
 
 // Uncomment for testing, allows players to use all spells regardless of what books they have in their inventory
-#define ENABLE_ALL_SPELLS
+//#define ENABLE_ALL_SPELLS
 
 using namespace cugl;
 using namespace std;
@@ -775,7 +775,8 @@ void GameScene::preUpdate(float dt)
     }
 
 #pragma mark Spellcasting, Combos, Blocking, and Casting logic
-    // Spellcasting
+   // Spellcasting
+   //This is really terrible... I know we said no casual comments but I apologize - Alex
     if (_player->blocksSpellcasting()) {
         // restriction artifact needs to supress all spells (even the ones casted alr)
         if (_player->getSpell() != SpellType::NONE) {
@@ -787,6 +788,7 @@ void GameScene::preUpdate(float dt)
     }
     else if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
+        _weakSpell = false;
 #ifndef ENABLE_ALL_SPELLS
         if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
 #endif
@@ -802,6 +804,7 @@ void GameScene::preUpdate(float dt)
         if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
 #endif
             _player->setSpell(newSpell);
+            _weakSpell = true;
             _networkCtrl->pushOutEvent(
                 SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
 #ifndef ENABLE_ALL_SPELLS
@@ -864,7 +867,7 @@ void GameScene::preUpdate(float dt)
 
                     auto params = _spellFact->serializeParams(
                         (playerScreenPos / PHYSICS_SCALE),
-                        dir, t, _networkCtrl->getPID());
+                        dir, t, _networkCtrl->getPID(), _player -> getBuff(), _weakSpell);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
@@ -882,7 +885,7 @@ void GameScene::preUpdate(float dt)
 
                     auto params = _spellFact->serializeParams(
                         (playerScreenPos / PHYSICS_SCALE),
-                        dir, t, _networkCtrl->getPID());
+                        dir, t, _networkCtrl->getPID(),_player -> getBuff(), _weakSpell);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
@@ -891,7 +894,7 @@ void GameScene::preUpdate(float dt)
             default:
                 int damageBonus = _player->getDamageBonus();
                 auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _player->getPID(), damageBonus,
-                    _player->getBuff());
+                    _player->getBuff(), _weakSpell);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 break;
@@ -1685,12 +1688,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         {
             Vec2 pushDir = enemy->getPosition() - spell->getPosition();
             pushDir.normalize();
-            enemy->setWaterPush(pushDir, 60);
+            enemy->setWaterPush(pushDir, spell -> getWeak() ? 30 : 60);
             break;
         }
         case SpellType::FREEZE:
             enemy->setFrozen(true);
-            enemy->setFrozenTimer(240);
+            enemy->setFrozenTimer(spell -> getWeak() ? 120 : 240);
             enemy->setHealth(enemy->getHealth() - spell->getDamage());
             spell->setRemove();
             break;
@@ -1707,7 +1710,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             break;
         case SpellType::EARTH:
             enemy->setMud(true);
-            enemy->setMudTimer(300);
+            enemy->setMudTimer(spell -> getWeak() ? 150 : 300);
             enemy->setHealth(enemy->getHealth() - spell->getDamage());
             spell->setRemove();
             break;
