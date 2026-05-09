@@ -171,6 +171,9 @@
     "return_arrow": {
       "file": "textures/return_arrow.png"
     },
+    "back_arrow": {
+      "file": "textures/back_arrow.png"
+    },
     "joinBg": {
       "file": "textures/joinBg.png"
     },
@@ -4433,43 +4436,31 @@
                     "y_offset": 0
                   }
                 },
-                "label": {
-                  "type": "Label",
+                "back_arrow": {
+                  "type": "Image",
                   "data": {
+                    "texture": "back_arrow",
                     "anchor": [
-                      0.5,
-                      0.5
+                      0,
+                      1
                     ],
                     "size": [
-                      80,
-                      80
+                      60,
+                      29
                     ],
                     "position": [
-                      24,
-                      10
+                      34,
+                      35
                     ],
                     "angle": 0,
-                    "visible": true,
-                    "font": "CoolveticaRegular60",
-                    "text": "←",
-                    "foreground": "#000000ff",
-                    "background": "#00000000",
-                    "padding": [
-                      0,
-                      0,
-                      0,
-                      0
-                    ],
-                    "valign": "middle",
-                    "halign": "center"
+                    "visible": true
                   },
-                  "children": {},
                   "layout": {
-                    "x_anchor": "center",
-                    "y_anchor": "middle",
+                    "x_anchor": "left",
+                    "y_anchor": "top",
                     "absolute": false,
-                    "x_offset": 0,
-                    "y_offset": -0.06
+                    "x_offset": 0.27,
+                    "y_offset": -0.5
                   }
                 }
               },
