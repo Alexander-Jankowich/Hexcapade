@@ -14,6 +14,7 @@
 #include "Scenes/ClientScene.h"
 #include "Controllers/NetworkController.h"
 #include "Models/Map/LevelLoader.h"
+#include "Models/Map/StaticLevelLoader.h"
 
 /**
  * This class represents the application root for Hexcapade.

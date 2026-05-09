@@ -33,21 +33,6 @@ public:
     }
 };
 
-class SpawnPoint {
-public:
-    enum SpawnType : int {
-        PLAYER=0,
-        ENEMY=1,
-        ITEM=2
-    };
-    SpawnType _type;
-    Vec2 _spawnPoint;
-    SpawnPoint(SpawnType t, float x, float y){
-        _type = t;
-        _spawnPoint = Vec2(x, y);
-    }
-};
-
 class LevelLoader : public Asset {
     
 protected:

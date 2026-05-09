@@ -912,8 +912,7 @@ std::pair<Vec2, EnemyType> Map::chooseEnemySpawnPoint(const std::vector<Vec2> zo
     for (auto p : zonePoints) {
         bool valid = true;
         for (auto pos : playersPos) {
-            if (p.distance(pos) < 10 * TILE_SIZE) { // since points are in tile coords
-                //T
+            if (p.distance(pos) < 15 * TILE_SIZE) { // since points are in tile coords
                 valid = false;
                 break;
             }

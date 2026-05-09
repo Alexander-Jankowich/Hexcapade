@@ -99,6 +99,7 @@ void GeometryApp::onStartup() {
     _assets->loadAsync<LevelLoader>("room5","json/room5.json",nullptr);
     _assets->loadAsync<LevelLoader>("room6","json/room6.json",nullptr);
     _assets->loadAsync<LevelLoader>("room7","json/room7.json",nullptr);
+    _assets->loadAsync<StaticLevelLoader>("tutorial", "json/tutorial.json", nullptr);
 
 
     _rooms->push_back("room1");
