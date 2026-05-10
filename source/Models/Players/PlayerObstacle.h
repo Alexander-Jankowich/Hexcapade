@@ -86,6 +86,7 @@ public:
         return f;
     }
     bool _bombExpired = false;
+    int  _bombExpiredIndex = -1;
 
 #pragma mark PO_Getters_and_Setters
     int getHealth() {return _health;}

@@ -231,7 +231,7 @@ void PlayerObstacle::updateTimers(float dt) {
         if (item.bombTimer < 0) continue;
         item.bombTimer -= 1;
         if (item.bombTimer <= 0) {
-            _inventory.erase(_inventory.begin() + i);
+            _bombExpiredIndex = (int)i;
             _bombExpired = true;
             setHealth(_health - 2);
             break;
