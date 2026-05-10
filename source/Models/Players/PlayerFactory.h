@@ -104,6 +104,7 @@ public:
         return res;
     }
     
+    bool allPlayersDead();
     
 
     //void reset() {

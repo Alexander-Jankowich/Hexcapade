@@ -738,10 +738,10 @@ std::vector<std::vector<Vec2>> WATER_GESTURE_2 = {
 
 
 
-// The screen is divided into four zones: Left and Right
+// The screen is divided into three zones: Left, Right, Top
 //
 //   |---------------|
-//   |       |       |
+//   |______ T ______|
 //   | L     |     R |
 //   |       |       |
 //   |---------------|
@@ -809,8 +809,12 @@ _lessAccurateRecognized(false)
 bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
                             std::function<cugl::Vec2(const cugl::Vec2&)> screenToWorld) {
     _screenToWorld = screenToWorld;
-    recognizer = cugl::PGestureRecognizer::alloc();
-    recognizerLess = cugl::PGestureRecognizer::alloc();
+    recognizer_1 = cugl::PGestureRecognizer::alloc();
+    recognizer_2 = cugl::PGestureRecognizer::alloc();
+    recognizer_3 = cugl::PGestureRecognizer::alloc();
+    recognizerLess_1 = cugl::PGestureRecognizer::alloc();
+    recognizerLess_2 = cugl::PGestureRecognizer::alloc();
+    recognizerLess_3 = cugl::PGestureRecognizer::alloc();
     // Update the gesturemap with more spells later on
     _gesturemap = {
     {"Fire", SpellType::FIREBALL},
@@ -827,13 +831,26 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     _allGestureData["Freeze"] = { FREEZE_GESTURE, FREEZE_GESTURE_1 };
     _allGestureData["Heal"] = { HEAL_GESTURE, HEAL_GESTURE_2 };
     _allGestureData["Water"] = { WATER_GESTURE };
+    //This is mapping the number of strokes to gesture names
+    _strokeMap["Death"] = 3;
+    _strokeMap["Earth"] = 1;
+    _strokeMap["Fire"] = 2;
+    _strokeMap["Heal"] = 3;
+    _strokeMap["Water"] = 2;
+    _strokeMap["Freeze"] = 1;
 
     for (auto& [gestureName, spellType] : _gesturemap) {
         _spellToGestureName[spellType] = gestureName;
     }
 
-    recognizer -> set_accuracy(0.83f);
-    recognizerLess -> set_accuracy(0.74f);
+    
+    //I am so sorry
+    recognizer_1 -> set_accuracy(0.83f);
+    recognizer_2 -> set_accuracy(0.83f);
+    recognizer_3 -> set_accuracy(0.83f);
+    recognizerLess_1 -> set_accuracy(0.77f);
+    recognizerLess_2 -> set_accuracy(0.77f);
+    recognizerLess_3 -> set_accuracy(0.77f);
 
     _joyradius = values->get("joystick")->getInt("radius");
     _deadzone = values->get("joystick")->getInt("dead_zone");
@@ -887,6 +904,41 @@ void InputController::dispose() {
     touch->removeEndListener(LISTENER_KEY);
 #endif
     _active = false;
+}
+
+void InputController::reset() {
+    _currPos = Vec2::ZERO;
+    _prevPos = Vec2::ZERO;
+    _currDown = false;
+    _prevDown = false;
+    clearTouchInstance(_ltouch);
+    clearTouchInstance(_rtouch);
+    clearTouchInstance(_itouch);
+    clearTouchInstance(_mtouch);
+
+    _lastGesture = SpellType::NONE;
+    _lastGestureLess = SpellType::NONE;
+    _gestureRecognized = false;
+    _lessAccurateRecognized = false;
+    currentStroke.clear();
+    secondStroke.clear();
+    thirdStroke.clear();
+    _curStrokes = 0;
+    _timeSinceLastStroke = 0;
+
+    _isAiming = false;
+    _releaseSpell = false;
+    _timeSinceCast = 0;
+
+    _touchDown = false;
+    _cardDismissTap = false;
+
+    _pickupPressed = false;
+    _depositPressed = false;
+    _inventoryReleased = false;
+
+    _move = Vec2::ZERO;
+    _joystick = false;
 }
 
 void InputController::_addGestureByName(
@@ -943,17 +995,35 @@ void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::
     }
     for (auto it = _activeGestureNames.begin(); it != _activeGestureNames.end(); ) {
         if (!desired.count(*it)) {
-            recognizer->removeGesture(*it);
+            switch(_strokeMap[*it]){
+                case(1):
+                    _addGestureByName(*it, recognizer_1, _activeGestureNames);
+                    _addGestureByName(*it, recognizerLess_1, _activeGestureNames);
+                case(2):
+                    _addGestureByName(*it, recognizer_2, _activeGestureNames);
+                    _addGestureByName(*it, recognizerLess_2, _activeGestureNames);
+                case(3):
+                    _addGestureByName(*it, recognizer_3, _activeGestureNames);
+                    _addGestureByName(*it, recognizerLess_3, _activeGestureNames);
+            }
             _activeGestureNamesLess.erase(*it);
-            recognizerLess->removeGesture(*it);
             it = _activeGestureNames.erase(it);
         } else {
             ++it;
         }
     }
     for (const auto& name : desired) {
-        _addGestureByName(name, recognizer, _activeGestureNames);
-        _addGestureByName(name, recognizerLess, _activeGestureNamesLess);
+        switch(_strokeMap[name]){
+            case(1):
+                _addGestureByName(name, recognizer_1, _activeGestureNames);
+                _addGestureByName(name, recognizerLess_1, _activeGestureNamesLess);
+            case(2):
+                _addGestureByName(name, recognizer_2, _activeGestureNames);
+                _addGestureByName(name, recognizerLess_2, _activeGestureNamesLess);
+            case(3):
+                _addGestureByName(name, recognizer_3, _activeGestureNames);
+                _addGestureByName(name, recognizerLess_3, _activeGestureNamesLess);
+        }
     }
 }
 
@@ -1299,17 +1369,18 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
     if (currentStroke.size() > 5) {
         try {
             // Check all the strokes currently on the screen!
+            // Only match with same number of strokes!
             if (_curStrokes == 1) {
-                _lastGesture = _gesturemap[recognizer->match({ currentStroke })];
-                _lastGestureLess = _gesturemap[recognizerLess->match({ currentStroke })];
+                _lastGesture = _gesturemap[recognizer_1 -> match({ currentStroke })];
+                _lastGestureLess = _gesturemap[recognizerLess_1 -> match({ currentStroke })];
             }
             else if (_curStrokes == 2) {
-                _lastGesture = _gesturemap[recognizer->match({ currentStroke, secondStroke })];
-                _lastGestureLess = _gesturemap[recognizerLess->match({ currentStroke, secondStroke })];
+                _lastGesture = _gesturemap[recognizer_2 -> match({ currentStroke, secondStroke })];
+                _lastGestureLess = _gesturemap[recognizerLess_2 -> match({ currentStroke, secondStroke })];
             }
             else if (_curStrokes == 3) {
-                _lastGesture = _gesturemap[recognizer->match({ currentStroke, secondStroke, thirdStroke })];
-                _lastGestureLess = _gesturemap[recognizerLess->match({ currentStroke, secondStroke, thirdStroke })];
+                _lastGesture = _gesturemap[recognizer_3 -> match({ currentStroke, secondStroke, thirdStroke })];
+                _lastGestureLess = _gesturemap[recognizerLess_3 -> match({ currentStroke, secondStroke, thirdStroke })];
             }
             else {
                 CULog("Error! Number of strokes recorded is more than 3???");

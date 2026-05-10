@@ -246,6 +246,8 @@ void GameScene::dispose()
 void GameScene::reset()
 {
     CULog("game scene reset called");
+    hideInventoryCard();
+    hideTutorial();
     loadGameplayConfig();
     _mapSeed = 0;
     _map->reset();
@@ -255,6 +257,8 @@ void GameScene::reset()
     removeAllChildren();
     _worldnode = nullptr;
 
+    _input.reset();
+    _inputDisplay->reset();
 
     _player = nullptr;
     _enemyFact->reset();
@@ -282,8 +286,6 @@ void GameScene::reset()
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
     _timer = ROUND_TIMER;
-    hideInventoryCard();
-    hideTutorial();
     Scene::reset();
 }
 
@@ -505,10 +507,18 @@ void GameScene::preUpdate(float dt)
     }
     if (_timer == 0) {
         bool won = _quota <= _depositedValue;
-        _playerWon = won;
+//        _playerWon = won;
         _networkCtrl->pushOutEvent(EndGameEvent::allocEndGameEvent(won));
         return;
     }
+    // all dead check
+    if (_networkCtrl->isHost() && _playerFact->allPlayersDead()) {
+//        _gameEnded = true;
+//        _playerWon = false;
+        _networkCtrl->pushOutEvent(EndGameEvent::allocEndGameEvent(false));
+        return;
+    }
+    
 
     _input.update(dt);
 

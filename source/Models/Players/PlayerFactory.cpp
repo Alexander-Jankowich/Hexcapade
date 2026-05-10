@@ -38,7 +38,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
 
     // Create player
     auto sprite = std::make_shared<PlayerNode>(image);
-    sprite -> setScale(0.15);
+    sprite -> setScale(0.5);
 
     return std::make_pair(pl, sprite);
 }
@@ -180,4 +180,12 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
 
 PlayerFactory::PlayerFactory() {
     current.clear();
+}
+
+bool PlayerFactory::allPlayersDead() {
+    int numDead = 0;
+    for (auto p : current) {
+        numDead += p->getHealth()==0;
+    }
+    return numDead==current.size();
 }
