@@ -35,7 +35,7 @@ public:
 
 protected:
     // Current of hp the enemy has
-    int _health;
+    float _health;
 
     // Max speed of the enemy
     float _speed;
