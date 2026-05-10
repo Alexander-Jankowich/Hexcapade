@@ -31,13 +31,13 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     scene->setContentSize(dimen);
     scene->doLayout(); // Repositions the HUD
     
-    _startgame = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("client.join"));
-    _backout = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("client.return"));
-    _deletebutton = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("client.keypad.del"));
-    _gameid = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("client.code.numpad_code"));
-    _player = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("client.players.party_size"));
+    _startgame = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("client.client_left_panel.buttons.join"));
+    _backout = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("client.client_left_panel.buttons.return"));
+    _deletebutton = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("client.client_keypad_panel.keypad.del"));
+    _gameid = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("client.client_left_panel.buttons.code.numpad_code"));
+    _player = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("client.client_left_panel.buttons.players.party_size"));
     for (int ii = 0; ii < 10; ii++) {
-        std::string key = "client.keypad." + std::to_string(ii);
+        std::string key = "client.client_keypad_panel.keypad." + std::to_string(ii);
         _keypad[ii] = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>(key));
     }
     

@@ -246,6 +246,8 @@ void GameScene::dispose()
 void GameScene::reset()
 {
     CULog("game scene reset called");
+    hideInventoryCard();
+    hideTutorial();
     loadGameplayConfig();
     _mapSeed = 0;
     _map->reset();
@@ -255,6 +257,8 @@ void GameScene::reset()
     removeAllChildren();
     _worldnode = nullptr;
 
+    _input.reset();
+    _inputDisplay->reset();
 
     _player = nullptr;
     _enemyFact->reset();
@@ -282,8 +286,6 @@ void GameScene::reset()
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
     _timer = ROUND_TIMER;
-    hideInventoryCard();
-    hideTutorial();
     Scene::reset();
 }
 

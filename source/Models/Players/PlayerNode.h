@@ -85,7 +85,6 @@ private:
 
     static float spellIconOffset;
 
-    static int noneFrame;
     static int fireballFrame;
     static int freezeFrame;
     static int healFrame;
@@ -187,7 +186,6 @@ public:
 
         PlayerNode::spellIconOffset = spellIconConsts->getInt("offset");
 
-        PlayerNode::noneFrame = spellIconConsts->getInt("none");
         PlayerNode::fireballFrame = spellIconConsts->getInt("fireball");
         PlayerNode::freezeFrame = spellIconConsts->getInt("freeze");
         PlayerNode::healFrame = spellIconConsts->getInt("heal");
