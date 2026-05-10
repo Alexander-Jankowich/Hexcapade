@@ -5,9 +5,15 @@
 // Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
 #ifndef __GAME_SCENE_H__
 #define __GAME_SCENE_H__
+#include <cugl/core/math/polygon/CUPathFactory.h> // Bug that this is not in <cugl/cugl.h>
+#include <cmath>
+#include <iostream>
+#include <sstream>
+#include <box2d/b2_draw.h>
+#include <box2d/b2_world.h>
+#include <box2d/b2_contact.h>
+#include <box2d/b2_collision.h>
 #include <cugl/cugl.h>
-#include <vector>
-#include <cstddef>
 #include <iomanip>
 #include "../Controllers/InputController.h"
 #include "../Controllers/NetworkController.h"
@@ -27,6 +33,16 @@
 
 #include "InputDisplay.h"
 #define ROUND_TIMER 10800
+// Lock the screen size to fixed height regardless of aspect ratio
+#define SCENE_HEIGHT 720
+
+/** The ratio between the physics world and the screen. (40 px = 1 meter, 1 tile is 1m x 1m or 40px x 40px) */
+#define PHYSICS_SCALE 50
+
+#define COMBO_RADIUS 20
+
+#define ITEM_PICKUP_RADIUS 2f
+
 
 using namespace cugl;
 using namespace std;

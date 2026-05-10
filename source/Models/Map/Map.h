@@ -12,7 +12,6 @@
 #include "LevelLoader.h"
 #include "../Enemies/EnemyObstacle.h"
 
-//#include "../../Controllers/NetworkController.h"
 
 #define MAP_HEIGHT 120
 #define MAP_WIDTH 120
@@ -124,8 +123,6 @@ public:
     int getNumRooms() { return (int)_rooms.size(); }
     int getQuota() {return _config.quota;}
     
-    std::shared_ptr<cugl::scene2::SceneNode> generateStaticMap(std::shared_ptr<AssetManager> assets);
-
 private:
     /** Helper function to add all sceneNodes for a room (given tiled data) in the right place.
      * Side effect:  fills in the mapGrid with 1s for each space this room covers

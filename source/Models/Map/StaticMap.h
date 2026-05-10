@@ -5,20 +5,14 @@
 //  Created by Serena Duncan on 5/8/26.
 //
 
-#ifndef __HEXCAPADE_SMAP_H__
-#define __HEXCAPADE_SMAP_H__
+#ifndef __STATICMAP_H__
+#define __STATICMAP_H__
+
+
+#include <cugl/cugl.h>
+#include "StaticLevelLoader.h"
 
 #define TUT_QUOTA 50
-
-#include <array>
-#include <cugl/cugl.h>
-
-//#include "../GameplayConfig.h"
-//#include "Room.h"
-#include "StaticLevelLoader.h"
-//#include "../Enemies/EnemyObstacle.h"
-
-
 #define TILE_SIZE 40
 #define PHYSICS_SCALE 50 //TODO: find a way to like. not redefine it lol
 
@@ -37,7 +31,7 @@ private:
 public:
     StaticMap();
     ~StaticMap();
-        
+    
     std::shared_ptr<cugl::scene2::SceneNode> getLowerWallNode() {return lw_node;}
     std::shared_ptr<StaticLevelLoader> getData() {return _data;}
     int getQuota() {return TUT_QUOTA;}
@@ -67,4 +61,4 @@ private:
     void addWallObstacle(Poly2& poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
 };
 
-#endif // !__HEXCAPADE_SMAP_H__
+#endif // !__STATICMAP_H__

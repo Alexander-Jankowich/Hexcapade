@@ -69,7 +69,7 @@ bool StaticLevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
     auto wl_layer = json->get("layers")->get(0)->get("layers")->get(1);
     auto vf_layer = json->get("layers")->get(0)->get("layers")->get(2);
     auto dc_layer = json->get("layers")->get(0)->get("layers")->get(3);
-    auto bwl_layer = json->get("layers")->get(0)->get("layers")->get(5);
+    auto bwl_layer = json->get("layers")->get(0)->get("layers")->get(4);
 
     auto fl_tiledData = fl_layer->get("data")->asIntArray();
     auto wl_tiledData = wl_layer->get("data")->asIntArray();
@@ -95,6 +95,7 @@ bool StaticLevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
 //        _itemSpawnPoints.push_back(sp);
 //    }
     
+    // Spawn points are in physics coordinates
 
     for (auto enem_spawn : json->get("layers")->get(1)->get("layers")->get(1)->get("objects")->children()){
         auto sp = Vec2(enem_spawn->getFloat("x") / _tileWidth, enem_spawn->getFloat("y") / _tileHeight);

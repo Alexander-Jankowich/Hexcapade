@@ -13,7 +13,7 @@ using namespace cugl;
 using namespace std;
 using namespace cugl::graphics;
 
-namespace {
+
 
 //    std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entries,
 //        const PlayerObstacle::CarriedItem& item) {
@@ -27,7 +27,7 @@ namespace {
     // Naming standard - Use this.
 
     // Artifacts need renaming - galiba
-    std::string getInventoryCardTextureKey(const std::string& itemType) {
+std::string TutorialScene::getICTextureKey(const std::string& itemType) {
         if (itemType == "artifact_heavy" || itemType == "gem_blue") {
             return "heavyTreasure_info";
         }
@@ -74,7 +74,6 @@ namespace {
 
         return cardBase + "_card";
     }
-}
 
 #pragma mark -
 #pragma mark Level Layout
@@ -194,6 +193,7 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
     // init map and network
     _map = std::make_shared<StaticMap>();
     _networkCtrl = std::make_shared<NetworkController>();
+    _networkCtrl->init(_assets);
     
     auto n = _map->generateStaticMap(_assets, _world);
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
@@ -242,7 +242,7 @@ void TutorialScene::removeItemNode(const std::shared_ptr<ItemObstacle>& item) {
 void TutorialScene::showInventoryCard(size_t slotIndex) {
     hideInventoryCard();
 
-    std::string textureKey = getInventoryCardTextureKey(_player->getInventory()[slotIndex].itemType);
+    std::string textureKey = getICTextureKey(_player->getInventory()[slotIndex].itemType);
     auto cardTex = _assets->get<graphics::Texture>(textureKey);
     CULog("inventory slot %zu card %s opened", slotIndex, textureKey.c_str());
 
@@ -328,20 +328,8 @@ Vec2 TutorialScene::getHUDOffset() const {
 void TutorialScene::preUpdate(float dt)
 {
 #pragma mark Input Updates and Player Initialiation
-    if (!_player) {
-        // Try to find our player now that replication may have run
-        _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
-        //Have we set our player yet / received signal
-        if (!_player) return;
-        _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
-            _player, _input, _depositPosition, _depositRadius);
-    }
-    if (_player && !_addedLWalls) {
-        CULog("adding lower walls");
-        _map->getLowerWallNode()->setPriority(1.0f);
-        _worldnode->addChild(_map->getLowerWallNode());
-        _addedLWalls = true;
-    }
+    // @ alex i cleared the rest of the checks since we are always host
+    
     //We have to acquire ourselves before we attempt to move
     //it is a little weird to do this every frame but this allows host to acquire themselves
     _networkCtrl->getPhysController()->acquireObs(_player, 0);
@@ -379,33 +367,10 @@ void TutorialScene::preUpdate(float dt)
         _networkCtrl->getPhysController()->removeSharedObstacle(spell);
         //CULog("Remove spell: %d", spell->isRemoved());
     }
-    //for (auto en : _enemyFact -> current){
-    //    // If attack is on cooldown, wait
-    //    if (en->getState() == EnemyObstacle::EnemyState::ATTACK_RESET) {
-    //        CULog("here state");
-    //        continue;
-    //    }
-    //}
 
 
     // Update animations
     _animations->update(dt);
-
-    if (_player->getHealth() == 0) {
-        _input.clearInput();
-        return;
-    } // if dead ignore updates
-
-
-    _player->updateTimers(dt);
-
-    if (_player->_bombExpired) {
-        _player->_bombExpired = false;
-        CULog("artifact_bomb expired for player %s", _player->getPID().c_str());
-        _inventoryValue = _player->getInventoryVal();
-        _networkCtrl->pushOutEvent(
-            DepositEvent::allocDepositEvent(_player->getPID(), 0, true));
-    }
 
     // Player movement
     cugl::Vec2 input = _input.getMove();
@@ -458,12 +423,6 @@ void TutorialScene::preUpdate(float dt)
                 tutorialSize.height);
             float pageMidX = tutorialBounds.origin.x + tutorialBounds.size.width * 0.5f;
 
-            _input.resolvedInventoryRelease();
-            _input.resolvedCardDismissTap();
-            return;
-        }
-        else if (getHelpButtonBounds().contains(tapPos)) {
-            // help button clicked open tutorial page 1
             _input.resolvedInventoryRelease();
             _input.resolvedCardDismissTap();
             return;
@@ -886,10 +845,6 @@ void TutorialScene::renderHUD()
 
     Color4 boxColor(30, 30, 30, 255);
 
-    float timerX = screenSize.width / 2 - barW * 0.5f;
-    float timerY = margin;
-    drawBox(hudX(timerX), hudY(timerY), hudSize(barW), hudSize(barH), boxColor);
-
     if (_font)
     {
         _batch->setColor(Color4::WHITE);
@@ -930,16 +885,6 @@ void TutorialScene::renderHUD()
                     }
                 }
             }
-        }
-
-        auto helpTex = _assets->get<graphics::Texture>("help_button");
-        if (helpTex) {
-            Rect helpBounds = getHelpButtonBounds();
-            _batch->setColor(Color4::WHITE);
-            _batch->draw(helpTex, Rect(helpBounds.origin.x + hudOffset.x,
-                helpBounds.origin.y + hudOffset.y,
-                helpBounds.size.width,
-                helpBounds.size.height));
         }
 
         auto texContainer = _assets->get<graphics::Texture>("health_bar");
@@ -1032,7 +977,7 @@ int TutorialScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {
 }
 
 void TutorialScene::initPhysics() {
-    // initialize physics here, since this should be called post HANDSHAKE
+    // initializes physics and adds walls
     if (_networkCtrl->getPhysEnabled()) return;
     std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
         this->linkSceneToObs(obs, node);
@@ -1056,12 +1001,9 @@ void TutorialScene::initPhysics() {
             ->addSharedObstacle(_playerFactId, params);
     }
 
-    if (!_addedLWalls) {
-        CULog("adding lower walls in initmap");
-        _map->getLowerWallNode()->setPriority(1.0f);
-        _worldnode->addChild(_map->getLowerWallNode());
-        _addedLWalls = true;
-    }
+    _map->getLowerWallNode()->setPriority(1.0f);
+    _worldnode->addChild(_map->getLowerWallNode());
+    _addedLWalls = true;
 }
 
 void TutorialScene::setActive(bool value)
@@ -1071,6 +1013,8 @@ void TutorialScene::setActive(bool value)
         Scene2::setActive(value);
         if (value)
         {
+            _networkCtrl->connectHost();
+            _networkCtrl->startGame();
             initPhysics();
             _input.activate();
             CULog("I am trying to get a player using this id %s", _networkCtrl->getPID().c_str());
@@ -1079,7 +1023,7 @@ void TutorialScene::setActive(bool value)
             _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
                 _player, _input, _depositPosition, _depositRadius);
 
-            CULog("GameScene setActive: hasNetwork=%d isHost=%d",
+            CULog("tut setActive: hasNetwork=%d isHost=%d",
                 _networkCtrl->hasNetwork(), _networkCtrl->isHost());
         }
         else
@@ -1153,7 +1097,7 @@ void TutorialScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& ob
 /**
  * Just a helper to handle some of our damage processing
  */
-void healthHelper(float damage, PlayerObstacle* player) {
+static void healthHelper(float damage, PlayerObstacle* player) {
     if (player->hasShield()) {
         player->setShieldCount(player->getShieldCount() - 1);
         if (player->getShieldCount() == 0) {
@@ -1186,7 +1130,7 @@ pair<SpellType, string> TutorialScene::getCombo() {
     string cid = _player->getPID();
 
     for (auto p : _playerFact->current) {
-        if (_player->getPosition().distance(p->getPosition()) < COMBO_RADIUS && p->getPID() != cid) {
+        if (_player->getPosition().distance(p->getPosition()) < COMBO_RAD && p->getPID() != cid) {
             auto it = _spellCombos.find({ spell, p->getSpell() });
             if (it != _spellCombos.end()) {
                 return { it->second, p->getPID() };

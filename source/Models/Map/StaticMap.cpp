@@ -7,7 +7,13 @@
 
 #include "StaticMap.h"
 
+StaticMap::StaticMap() : _origin(Vec2::ZERO), _sceneSize(Size::ZERO), lw_node(nullptr) {
+}
+StaticMap::~StaticMap() {
+}
+
 std::shared_ptr<cugl::scene2::SceneNode> StaticMap::generateStaticMap(std::shared_ptr<AssetManager> assets, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
+    _assets = assets;
     auto node = scene2::SceneNode::alloc();
     lw_node = scene2::SceneNode::alloc();
     _data = _assets->get<StaticLevelLoader>("tutorial");
@@ -36,7 +42,7 @@ void StaticMap::addRoomObstacles(std::shared_ptr<StaticLevelLoader> tiledRmData,
     }
 }
     
-    void StaticMap::addRoomSceneNodes(std::shared_ptr<StaticLevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world, std::shared_ptr<cugl::scene2::SceneNode> lwalls) {
+void StaticMap::addRoomSceneNodes(std::shared_ptr<StaticLevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::scene2::SceneNode> world, std::shared_ptr<cugl::scene2::SceneNode> lwalls) {
         // iterate over tiled nodes and add to scene
         const auto& floorLayer = tiledRmData->getFloorLayer();
         const auto& wallLayer  = tiledRmData->getWallLayer();

@@ -804,10 +804,12 @@
  "tiledversion":"1.11.2",
  "tileheight":40,
  "tilesets":[
-        {
-         "firstgid":1,
-         "source":"tileset_V5.tsx"
-        }],
+     {
+      "firstgid":1,
+      "source":"tiles/tileset_V5.png",
+      "image-height": 520,
+      "image-width":480
+     }],
  "tilewidth":40,
  "type":"map",
  "version":"1.10",

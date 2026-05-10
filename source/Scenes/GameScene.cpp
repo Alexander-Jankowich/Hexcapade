@@ -3,29 +3,11 @@
 // This is the primary class file for running the game.  It contains all core gameplay loop logic as well as
 // calls to the network controller for processing networked events. 
 // Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
-#include <cugl/cugl.h>
-#include <cugl/core/math/polygon/CUPathFactory.h> // Bug that this is not in <cugl/cugl.h>
-#include <cmath>
-#include <iostream>
-#include <sstream>
-#include <random>
-#include <box2d/b2_draw.h>
-#include <box2d/b2_world.h>
-#include <box2d/b2_contact.h>
-#include <box2d/b2_collision.h>
+
 
 #include "GameScene.h"
 
 
-// Lock the screen size to fixed height regardless of aspect ratio
-#define SCENE_HEIGHT 720
-
-/** The ratio between the physics world and the screen. (40 px = 1 meter, 1 tile is 1m x 1m or 40px x 40px) */
-#define PHYSICS_SCALE 50
-
-#define COMBO_RADIUS 20
-
-#define ITEM_PICKUP_RADIUS 2f
 
 // Uncomment for testing, allows players to use all spells regardless of what books they have in their inventory
 //#define ENABLE_ALL_SPELLS
@@ -34,9 +16,9 @@ using namespace cugl;
 using namespace std;
 using namespace cugl::graphics;
 
-namespace {
 
-    std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entries,
+
+static std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entries,
         const PlayerObstacle::CarriedItem& item) {
         for (const auto& itemEntry : entries) {
             if (itemEntry.textureAsset == item.itemType || itemEntry.id == item.itemType) {
@@ -44,11 +26,11 @@ namespace {
             }
         }
         return item.itemType;
-    }
+}
     // Naming standard - Use this.
 
     // Artifacts need renaming - galiba
-    std::string getInventoryCardTextureKey(const std::string& itemType) {
+static std::string getInventoryCardTextureKey(const std::string& itemType) {
         if (itemType == "artifact_heavy" || itemType == "gem_blue") {
             return "heavyTreasure_info";
         }
@@ -94,7 +76,6 @@ namespace {
         }
 
         return cardBase + "_card";
-    }
 }
 
 #pragma mark -
@@ -1411,7 +1392,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
 /**
  * Just a helper to handle some of our damage processing
  */
-void healthHelper(float damage, PlayerObstacle* player) {
+static void healthHelper(float damage, PlayerObstacle* player) {
     if (player->hasShield()) {
         player->setShieldCount(player->getShieldCount() - 1);
         if (player->getShieldCount() == 0) {

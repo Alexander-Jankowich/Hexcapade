@@ -83,6 +83,8 @@ void GeometryApp::onStartup() {
     _assets->attach<WidgetValue>(WidgetLoader::alloc()->getHook());
     _assets->attach<scene2::SceneNode>(Scene2Loader::alloc()->getHook());
     _assets->attach<LevelLoader>(GenericLoader<LevelLoader>::alloc("level", 4)->getHook());
+    _assets->attach<StaticLevelLoader>(GenericLoader<StaticLevelLoader>::alloc("tutorial", 5)->getHook());
+
     _assets->loadDirectory("json/loading.json");
     setFixedStep(_fixstep / 2);
 
@@ -137,6 +139,7 @@ void GeometryApp::onShutdown() {
     _gameplay.dispose();
     _endScene.dispose();
     _selectScene.dispose();
+    _tutorialScene.dispose();
     _assets = nullptr;
     _batch = nullptr;
     // Shutdown input
@@ -223,6 +226,7 @@ void GeometryApp::preUpdate(float dt) {
     case State::CLIENT: updateClientScene(dt);  return;
     case State::SELECT: updateSelectScene(dt); return;
     case State::END: updateEndScene(dt); return;
+    case State::TUTORIAL: updateTutorialScene(dt); return;
     default: break;
     }
 
@@ -268,8 +272,15 @@ void GeometryApp::preUpdate(float dt) {
  * @param step    The fixed timestep in microseconds
  */
 void GeometryApp::fixedUpdate(Uint64 step) {
-    if (_scene != State::GAME) return;
-    _gameplay.fixedUpdate(step);
+    if (_scene == State::GAME) {
+        _gameplay.fixedUpdate(step);
+        return;
+    }
+    if (_scene==State::TUTORIAL) {
+        _tutorialScene.fixedUpdate(step);
+        return;
+    }
+    
 }
 
 /**
@@ -334,6 +345,9 @@ void GeometryApp::draw() {
     case State::END:
         _endScene.render();
         break;
+    case State::TUTORIAL:
+        _tutorialScene.render();
+        break;
     }
 }
 
@@ -367,6 +381,9 @@ void GeometryApp::updateLoadingScene(float dt) {
 
     _endScene.init(_assets);
     _endScene.setSpriteBatch(_batch);
+    
+    _tutorialScene.init(_assets);
+    _tutorialScene.setSpriteBatch(_batch);
 
     _loaded = true;
     setDeterministic(true);
@@ -386,9 +403,14 @@ void GeometryApp::updateMenuScene(float dt) {
         break;
     case MenuScene::Choice::JOIN:
         //_mainmenu.resetChoice();
-            _mainmenu.setActive(false);
-            _clientScene.setActive(true);
+        _mainmenu.setActive(false);
+        _clientScene.setActive(true);
         _scene = State::CLIENT;
+        break;
+    case MenuScene::Choice::TUTORIAL:
+        _mainmenu.setActive(false);
+        _tutorialScene.setActive(true);
+        _scene=State::TUTORIAL;
         break;
     case MenuScene::Choice::NONE:
         break;
@@ -518,4 +540,10 @@ void GeometryApp::updateEndScene(float dt) {
             
     }
     return;
+}
+
+void GeometryApp::updateTutorialScene(float dt) {
+    _tutorialScene.preUpdate(dt);
+    
+    // check for if it was exited and switch state back to correct thing
 }

@@ -7,6 +7,7 @@
 // Authors: Serena Duncan, Alexander Jankowich
 #ifndef __TUT_SCENE_H__
 #define __TUT_SCENE_H__
+
 #include <cugl/cugl.h>
 #include <cugl/core/math/polygon/CUPathFactory.h> // Bug that this is not in <cugl/cugl.h>
 
@@ -34,8 +35,7 @@
 
 /** The ratio between the physics world and the screen */
 #define PHYSICS_SCALE 50
-#define COMBO_RADIUS 25
-#define ITEM_PICKUP_RADIUS 2f
+#define COMBO_RAD 20
 
 using namespace cugl;
 using namespace std;
@@ -175,11 +175,6 @@ public:
     shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
     void release() {_networkCtrl = nullptr;}
 
-
-    /** Initialize networked physics before map built */
-    void initPhysics();
-    /** idk? */
-    void initMap();
 
     /**
      * Returns true if the player is host.
@@ -325,17 +320,27 @@ private:
     void beforeSolve(b2Contact* contact, const b2Manifold* oldManifold);
 
 #pragma mark Spell helper functions
-    /**
-    * Adds all spell combos to the map.
-    * Only adds one version of each combo. The getCombo function will check both ordering of the spells.
-    */
-    void initCombos();
+
 
     /**
     * Given the caster id and spell type, returns the combo spell type (SpellType::NONE
     * if no combos available) and the player id of the player that was combo-ed with
     */
     pair<SpellType, string> getCombo();
+    
+private:
+    /** Initialize networked physics before map built, called by setActive */
+    void initPhysics();
+    
+    /**
+    * Adds all spell combos to the map.
+    * Only adds one version of each combo. The getCombo function will check both ordering of the spells.
+    * called in init()
+    */
+    void initCombos();
+    
+    std::string getICTextureKey(const std::string& itemType);
+
 };
 
 #endif // !__TUT_SCENE_H__

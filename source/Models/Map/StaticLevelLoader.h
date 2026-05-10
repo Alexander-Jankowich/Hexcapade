@@ -9,8 +9,6 @@
 #define __TD_STATIC_LEVEL_MODEL_H__
 #include <array>
 #include <cugl/cugl.h>
-#include "../Enemies/EnemyObstacle.h"
-#include "../Spells/SpellNode.h"
 
 using namespace std;
 using namespace cugl;
@@ -28,20 +26,20 @@ public:
     };
     struct EnemySpawn {
         Vec2 location;
-        EnemyType enem;
+        int enem;
         
         EnemySpawn(Vec2 l, int i) {
             location = l;
-            enem = (EnemyType) i;
+            enem =  i;
         }
     };
     struct BotSpawn {
         Vec2 location;
-        SpellType spell;
+        int spell; // these get cast in tutorialscene when creating object
         
         BotSpawn(Vec2 l, int i) {
             location = l;
-            spell = (SpellType) i;
+            spell = i;
         }
     };
     

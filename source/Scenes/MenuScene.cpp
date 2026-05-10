@@ -28,7 +28,7 @@ bool MenuScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _choice = Choice::NONE;
     _hostbutton = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("menu.host"));
     _joinbutton = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("menu.join"));
-    _tutorialbutton = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("menu.help"));
+    _tutorialbutton = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("menu.tutorial"));
 
     // Program the buttons
     _hostbutton->addListener([this](const std::string& name, bool down) {
@@ -83,6 +83,7 @@ void MenuScene::setActive(bool value) {
         } else {
             _hostbutton->deactivate();
             _joinbutton->deactivate();
+            _tutorialbutton->deactivate();
             // If any were pressed, reset them
             _hostbutton->setDown(false);
             _joinbutton->setDown(false);

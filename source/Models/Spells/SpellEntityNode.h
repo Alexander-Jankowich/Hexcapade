@@ -41,4 +41,4 @@ public:
     void end() { shouldEnd = true; }
 };
 
-#endif
+#endif // !__SPELL_ENTITY_NODE_H__
