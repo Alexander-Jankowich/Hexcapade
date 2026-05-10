@@ -94,13 +94,13 @@
       "file": "textures/playerduck_sheet.png"
     },
     "artifact_reduce": {
-      "file": "textures/artifact_gem.png"
+      "file": "textures/skull_incense.png"
     },
     "artifact_boost": {
       "file": "textures/mystical_brooch.png"
     },
     "artifact_heavy": {
-      "file": "textures/gem_blue.png"
+      "file": "textures/heavy_treasure.png"
     },
     "artifact_protection": {
       "file": "textures/zombie_totem.png"

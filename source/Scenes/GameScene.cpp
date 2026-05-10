@@ -591,10 +591,14 @@ void GameScene::preUpdate(float dt)
 
     if (_player->_bombExpired) {
         _player->_bombExpired = false;
-        CULog("artifact_bomb expired for player %s", _player->getPID().c_str());
+        int bombIdx = _player->_bombExpiredIndex;
+        _player->_bombExpiredIndex = -1;
+        if (_networkCtrl->isHost()) {
+            _player->depositItem((size_t)bombIdx);
+        }
         _inventoryValue = _player->getInventoryVal();
         _networkCtrl->pushOutEvent(
-            DepositEvent::allocDepositEvent(_player->getPID(), 0, true));
+            DepositEvent::allocDepositEvent(_player->getPID(), 0, true, bombIdx));
     }
 
     // Player movement
@@ -1138,6 +1142,16 @@ void GameScene::renderHUD()
                 // Draw the frame
                 _batch->setColor(Color4::WHITE);
                 _batch->draw(boxTex, Rect(boxX, boxY, boxSize, boxSize));
+
+                if (i < carriedItems.size()) {
+                    const auto& carried = carriedItems[i];
+                    if (carried.effect == ArtifactEffect::BOMB && carried.bombTimer >= 0 && carried.bombTimer <= 300) {
+                        float t = 1.0f - ((float)carried.bombTimer / 300.0f);
+                        float padding = boxSize * 0.1f;
+                        _batch->setTexture(nullptr);
+                        drawBox(boxX + padding, boxY + padding, boxSize * 0.8f, boxSize * 0.8f, Color4(255, 0, 0, (Uint8)(90 * t)));
+                    }
+                }
 
                 // Draw item texture centered inside the frame
                 if (i < carriedItems.size()) {
