@@ -39,6 +39,9 @@ public:
 
 	void dispose();
 
+	/** Resets the state of the display */
+	void reset();
+
 private:
 	/** The input controller */
 	InputController* _input;

@@ -255,6 +255,8 @@ void GameScene::reset()
     removeAllChildren();
     _worldnode = nullptr;
 
+    _input.reset();
+    _inputDisplay.reset();
 
     _player = nullptr;
     _enemyFact->reset();

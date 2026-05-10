@@ -889,6 +889,31 @@ void InputController::dispose() {
     _active = false;
 }
 
+void InputController::reset() {
+    _currPos = Vec2::ZERO;
+    _prevPos = Vec2::ZERO;
+    _currDown = false;
+    _prevDown = false;
+
+    _lastGesture = SpellType::NONE;
+    _lastGestureLess = SpellType::NONE;
+    _gestureRecognized = false;
+    _lessAccurateRecognized = false;
+
+    _isAiming = false;
+    _releaseSpell = false;
+
+    _touchDown = false;
+    _cardDismissTap = false;
+
+    _pickupPressed = false;
+    _depositPressed = false;
+    _inventoryReleased = false;
+
+    _move = Vec2::ZERO;
+    _joystick = false;
+}
+
 void InputController::_addGestureByName(
     const std::string& name,
     std::shared_ptr<PGestureRecognizer> rec,

@@ -122,7 +122,8 @@ void InputDisplay::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batc
 				batch->fill(_thirdDisplay, _uiOffset);
 			}
 		}
-    }else if(_gestureLessCorrect){
+    }
+	else if(_gestureLessCorrect){
         if (_gestureTime < 0.5) {
             batch->setColor(_gestureColorLess);
             if (_gestureDisplay.size() > 3) {
@@ -167,4 +168,16 @@ void InputDisplay::draw(const std::shared_ptr<cugl::graphics::SpriteBatch>& batc
 
 void InputDisplay::dispose() {
 	_input = nullptr;
+}
+
+void InputDisplay::reset() {
+	_showAim = false;
+	_numStrokes = 0;
+	_showJoystick = false;
+
+	_gestureCorrect = false;
+	_gestureLessCorrect = false;
+	_gestureDisplay.clear();
+	_secondDisplay.clear();
+	_thirdDisplay.clear();
 }
