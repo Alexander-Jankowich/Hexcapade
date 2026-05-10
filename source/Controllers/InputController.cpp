@@ -894,14 +894,24 @@ void InputController::reset() {
     _prevPos = Vec2::ZERO;
     _currDown = false;
     _prevDown = false;
+    clearTouchInstance(_ltouch);
+    clearTouchInstance(_rtouch);
+    clearTouchInstance(_itouch);
+    clearTouchInstance(_mtouch);
 
     _lastGesture = SpellType::NONE;
     _lastGestureLess = SpellType::NONE;
     _gestureRecognized = false;
     _lessAccurateRecognized = false;
+    currentStroke.clear();
+    secondStroke.clear();
+    thirdStroke.clear();
+    _curStrokes = 0;
+    _timeSinceLastStroke = 0;
 
     _isAiming = false;
     _releaseSpell = false;
+    _timeSinceCast = 0;
 
     _touchDown = false;
     _cardDismissTap = false;
