@@ -831,6 +831,7 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     _allGestureData["Freeze"] = { FREEZE_GESTURE, FREEZE_GESTURE_1 };
     _allGestureData["Heal"] = { HEAL_GESTURE, HEAL_GESTURE_2 };
     _allGestureData["Water"] = { WATER_GESTURE };
+    //This is mapping the number of strokes to gesture names
     _strokeMap["Death"] = 3;
     _strokeMap["Earth"] = 1;
     _strokeMap["Fire"] = 2;
@@ -842,6 +843,8 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
         _spellToGestureName[spellType] = gestureName;
     }
 
+    
+    //I am so sorry
     recognizer_1 -> set_accuracy(0.83f);
     recognizer_2 -> set_accuracy(0.83f);
     recognizer_3 -> set_accuracy(0.83f);
@@ -1366,6 +1369,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
     if (currentStroke.size() > 5) {
         try {
             // Check all the strokes currently on the screen!
+            // Only match with same number of strokes!
             if (_curStrokes == 1) {
                 _lastGesture = _gesturemap[recognizer_1 -> match({ currentStroke })];
                 _lastGestureLess = _gesturemap[recognizerLess_1 -> match({ currentStroke })];
