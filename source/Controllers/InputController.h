@@ -385,6 +385,10 @@ protected:
     std::vector<cugl::Vec2> thirdStroke;
 
     std::unordered_map<std::string, std::vector<std::vector<std::vector<cugl::Vec2>>>> _allGestureData;
+    
+    /**A mapping of strokes to gesture names*/
+    std::unordered_map<std::string, std::int8_t> _strokeMap;
+    
     /** The set of gesture names currently registered in the recognizer */
     std::unordered_set<std::string> _activeGestureNames;
     /** The set of gesture names currently registered in the recognizer */
@@ -399,10 +403,18 @@ protected:
     std::function<cugl::Vec2(const cugl::Vec2&)> _screenToWorld;
 
     /**The gesture recognizer*/
-    std::shared_ptr<cugl::PGestureRecognizer> recognizer;
+    std::shared_ptr<cugl::PGestureRecognizer> recognizer_1;
+    /**The gesture recognizer two stroke*/
+    std::shared_ptr<cugl::PGestureRecognizer> recognizer_2;
+    /**The gesture recognizer three stroke*/
+    std::shared_ptr<cugl::PGestureRecognizer> recognizer_3;
     
     /**The (less accurate) gesture recognizer**/
-    std::shared_ptr<cugl::PGestureRecognizer> recognizerLess;
+    std::shared_ptr<cugl::PGestureRecognizer> recognizerLess_1;
+    /**The (less accurate) gesture recognizer stroke 2**/
+    std::shared_ptr<cugl::PGestureRecognizer> recognizerLess_2;
+    /**The (less accurate) gesture recognizer stroke 3**/
+    std::shared_ptr<cugl::PGestureRecognizer> recognizerLess_3;
 
     /** Mapping of gesture strings to the correct Gesture */
     std::unordered_map<std::string, SpellType> _gesturemap;

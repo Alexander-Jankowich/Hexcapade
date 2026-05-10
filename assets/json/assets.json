@@ -37,13 +37,19 @@
       "file": "textures/death_sheet.png"
     },
     "earth": {
-      "file": "textures/earth_sheet.png"
+        "file": "textures/earth_sheet.png"
+    },
+    "water": {
+        "file": "textures/water_sheet.png"
     },
     "shield": {
       "file": "textures/shield_sheet.png"
     },
     "shield_entity": {
-      "file": "textures/shield-entity_sheet.png"
+        "file": "textures/shield-entity_sheet.png"
+    },
+    "buff": {
+        "file": "textures/buff_sheet.png"
     },
     "buff_entity": {
       "file": "textures/buff-entity_sheet.png"
@@ -88,13 +94,13 @@
       "file": "textures/playerduck_sheet.png"
     },
     "artifact_reduce": {
-      "file": "textures/artifact_gem.png"
+      "file": "textures/skull_incense.png"
     },
     "artifact_boost": {
       "file": "textures/mystical_brooch.png"
     },
     "artifact_heavy": {
-      "file": "textures/gem_blue.png"
+      "file": "textures/heavy_treasure.png"
     },
     "artifact_protection": {
       "file": "textures/zombie_totem.png"

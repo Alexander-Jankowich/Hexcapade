@@ -591,10 +591,14 @@ void GameScene::preUpdate(float dt)
 
     if (_player->_bombExpired) {
         _player->_bombExpired = false;
-        CULog("artifact_bomb expired for player %s", _player->getPID().c_str());
+        int bombIdx = _player->_bombExpiredIndex;
+        _player->_bombExpiredIndex = -1;
+        if (_networkCtrl->isHost()) {
+            _player->depositItem((size_t)bombIdx);
+        }
         _inventoryValue = _player->getInventoryVal();
         _networkCtrl->pushOutEvent(
-            DepositEvent::allocDepositEvent(_player->getPID(), 0, true));
+            DepositEvent::allocDepositEvent(_player->getPID(), 0, true, bombIdx));
     }
 
     // Player movement
