@@ -23,9 +23,6 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, SpellType t, st
     if(t == SpellType::COMBO_EFREEZE){
         setColor(Color4::GRAY);
     }
-    if(t == SpellType::BUFF){
-        setColor(Color4::RED);
-    }
     if(t == SpellType::MUD_WATER){
         setColor(Color4::PAPYRUS);
     }

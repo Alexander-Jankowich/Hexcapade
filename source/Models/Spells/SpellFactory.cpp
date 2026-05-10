@@ -90,7 +90,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::BUFF:
         values = _spellConsts->get("buff");
-        image = _assets->get<graphics::Texture>("heal");
+        image = _assets->get<graphics::Texture>("buff");
         break;
     case SpellType::SHIELD:
         values = _spellConsts->get("shield");
