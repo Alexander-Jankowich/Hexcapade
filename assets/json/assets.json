@@ -37,7 +37,10 @@
       "file": "textures/death_sheet.png"
     },
     "earth": {
-      "file": "textures/earth_sheet.png"
+        "file": "textures/earth_sheet.png"
+    },
+    "water": {
+        "file": "textures/water_sheet.png"
     },
     "shield": {
       "file": "textures/shield_sheet.png"

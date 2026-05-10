@@ -20,12 +20,6 @@ int SpellNode::endFrames = 1;
 
 SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, SpellType t, std::shared_ptr<cugl::graphics::Texture> tex) {
     initWithSheet(tex, rows, cols);
-    if(t != SpellType::WATER){
-        setScale(0.5);
-    }
-    if(t == SpellType::WATER){
-        setColor(Color4::BLUE);
-    }
     if(t == SpellType::COMBO_EFREEZE){
         setColor(Color4::GRAY);
     }

@@ -51,7 +51,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     switch (type) {
     case SpellType::WATER:
         values = _spellConsts->get("water");
-        image = _assets->get<graphics::Texture>("freeze");
+        image = _assets->get<graphics::Texture>("water");
         break;
     case SpellType::COMBO_FIREBALL:
         values = _spellConsts->get("combo_fireball");
