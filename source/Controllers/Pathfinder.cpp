@@ -1,3 +1,11 @@
+/**
+* 
+* Pathfinder.cpp
+* 
+* Created by Kaz Tam
+* 
+*/
+
 #include "Pathfinder.h"
 
 #define FROZEN_FRAMES 60

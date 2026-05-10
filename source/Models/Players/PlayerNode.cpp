@@ -63,12 +63,13 @@ PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
     _tint = Color4::WHITE;
 
     _spellIcon = SpriteNode::allocWithSheet(spellIconTex, spellIconRows, spellIconCols);
+    addChild(_spellIcon);
     _spellIcon->setFrame(noneFrame);
     _spellIcon->setPriority(4);
+    CULog("initial: %.2f", _spellIcon->getPosition().y);
     CULog("%.2f", spellIconOffset);
-    _spellIcon->setPositionY(spellIconOffset);
+    _spellIcon->setPositionY(spellIconOffset + _spellIcon->getPositionY());
 
-    addChild(_spellIcon);
 
     setFrame(idle[0]);
     setPriority(1);
