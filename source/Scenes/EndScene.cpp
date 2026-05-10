@@ -12,48 +12,47 @@ bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     if (!Scene2::initWithHint(Size(0, SCENE_HEIGHT))) return false;
 
     _assets = assets;
-    _font = assets->get<Font>("OpenSans");
     _state = State::NONE;
     _replayPressed = false;
 
-    // Centre the replay button on screen
-    Size s = getSize();
-    float bw = 300.0f, bh = 60.0f;
-    _buttonRect = Rect(s.width / 2 - bw / 2, s.height / 2 - 80, bw, bh);
-#ifdef CU_TOUCH_SCREEN
-    Touchscreen* touch = Input::get<Touchscreen>();
-    if (touch) {
-        touch->addEndListener(LISTENER_KEY, [this](const TouchEvent& event, bool focus) {
-            this->touchEndCB(event, focus);
-            });
-    }
-#else
-    Mouse* mouse = Input::get<Mouse>();
-    if (mouse) {
-        mouse->addReleaseListener(LISTENER_KEY, [this](const MouseEvent& event, Uint8 clicks, bool focus) {
-            this->mouseReleaseCB(event, clicks, focus);
-            });
-    }
-#endif
+    Size dimen = getSize();
+    std::shared_ptr<scene2::SceneNode> scene = _assets->get<scene2::SceneNode>("end");
+    scene->setContentSize(dimen);
+    scene->doLayout();
+
+    _replayButton = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("end.next_round"));
+    _exitButton = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("end.quit"));
+    _resultLabel = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("end.result.result_text"));
+
+    _replayButton->addListener([this](const std::string& name, bool down) {
+        if (down && _networkCtrl->isHost()) {
+            _replayPressed = true;
+            CULog("host sending restart");
+            _networkCtrl->pushOutEvent(RestartGameEvent::allocRestartGameEvent(0));
+            _networkCtrl->updateNet();
+        }
+    });
+
+    addChild(scene);
     setActive(false);
     return true;
 }
 
 void EndScene::dispose() {
-#ifdef CU_TOUCH_SCREEN
-    Touchscreen* touch = Input::get<Touchscreen>();
-    if (touch) touch->removeEndListener(LISTENER_KEY);
-#else
-    Mouse* mouse = Input::get<Mouse>();
-    if (mouse) mouse->removeReleaseListener(LISTENER_KEY);
-#endif
+    if (_active) {
+        removeAllChildren();
+        _active = false;
+    }
     _assets = nullptr;
-    _font = nullptr;
     _networkCtrl = nullptr;
+    _replayButton = nullptr;
+    _exitButton = nullptr;
+    _resultLabel = nullptr;
 }
 
 void EndScene::show(bool won) {
     _state = won ? State::WIN : State::LOSE;
+    _resultLabel->setText(won ? "Success" : "Failure");
 }
 
 void EndScene::update(float dt) {
@@ -61,86 +60,9 @@ void EndScene::update(float dt) {
     _networkCtrl->customEvents();
 }
 
-#ifdef CU_TOUCH_SCREEN
-void EndScene::touchEndCB(const TouchEvent& event, bool focus) {
-    if (_state == State::NONE) return;
-
-    // Mirror the /3 scaling used in InputController::touch2Screen
-    Vec2 pos;
-    pos.x = event.position.x / 2.0f + 100;
-    pos.y = event.position.y / 3.0f + 60;
-
-    if (_buttonRect.contains(pos)) {
-        _replayPressed = true;
-        CULog("host sending restart");
-        _networkCtrl->pushOutEvent(RestartGameEvent::allocRestartGameEvent(0));
-    }
-}
-#else
-void EndScene::mouseReleaseCB(const MouseEvent& event, Uint8 clicks, bool focus) {
-    if (_state == State::NONE) return;
-
-    // Only care about the left button being released
-    if (!event.buttons.hasLeft()) return;
-
-    // Mouse position is in screen coords; scene y runs bottom-up
-    Vec2 pos = event.position;
-    pos.y = getSize().height - pos.y;
-
-    if (_buttonRect.contains(pos)) {
-        _replayPressed = true;
-        CULog("host sending restart");
-        _networkCtrl->pushOutEvent(RestartGameEvent::allocRestartGameEvent(0));
-        _networkCtrl->updateNet(); // send event
-    }
-}
-#endif
-
 void EndScene::render() {
     if (_state == State::NONE) return;
-
-    _batch->setPerspective(getCamera()->getCombined());
-    _batch->begin();
-
-    Size s = getSize();
-
-    // Dimmed full-screen overlay
-    _batch->setColor(Color4(0, 0, 0, 180));
-    _batch->fill(Rect(0, 0, s.width, s.height));
-
-    // Coloured panel
-    bool won = (_state == State::WIN);
-    Color4 panelColor = won ? Color4(30, 160, 30, 230) : Color4(180, 30, 30, 230);
-    float pw = 480.0f, ph = 240.0f;
-    Rect panel(s.width / 2 - pw / 2, s.height / 2 - ph / 2, pw, ph);
-    _batch->setColor(panelColor);
-    _batch->fill(panel);
-
-    // Replay button background
-    _batch->setColor(Color4(60, 60, 60, 255));
-    _batch->fill(_buttonRect);
-
-    if (_font) {
-        std::string msg = won ? "QUOTA MET!  YOU WIN!" : "YOU LOST!";
-        auto label = TextLayout::allocWithText(msg, _font);
-        label->layout();
-        Affine2 msgTrans;
-        msgTrans.translate(s.width / 2 - label->getBounds().size.width / 2,
-            s.height / 2 + 40);
-        _batch->setColor(Color4::WHITE);
-        _batch->drawText(label, msgTrans);
-        std::string again_msg = _networkCtrl->isHost() ? "Play Again" : "Waiting for Host...";
-        auto btnLabel = TextLayout::allocWithText(again_msg, _font);
-        btnLabel->layout();
-        Affine2 btnTrans;
-        btnTrans.translate(
-            _buttonRect.getMidX() - btnLabel->getBounds().size.width / 2,
-            _buttonRect.getMidY() - btnLabel->getBounds().size.height / 2);
-        _batch->setColor(Color4::WHITE);
-        _batch->drawText(btnLabel, btnTrans);
-    }
-
-    _batch->end();
+    Scene2::render();
 }
 
 void EndScene::setActive(bool active) {
@@ -148,9 +70,18 @@ void EndScene::setActive(bool active) {
         Scene2::setActive(active);
         if (active) {
             _replayPressed = false;
+            _replayButton->activate();
+            _exitButton->deactivate();
+            if (!_networkCtrl->isHost()) {
+                _replayButton->deactivate();
+            }
         } else {
             _state = State::NONE;
             _replayPressed = false;
+            _replayButton->deactivate();
+            _exitButton->deactivate();
+            _replayButton->setDown(false);
+            _exitButton->setDown(false);
         }
     }
 }

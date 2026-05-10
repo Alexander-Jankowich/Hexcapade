@@ -207,6 +207,9 @@
     "bunny_pr": { "file": "textures/bunny_pr.png" },
     "name_bg": {
       "file": "textures/name_bg.png"
+    },
+    "endgameBg": {
+      "file": "textures/endgameBg.png"
     }
   },
   "fonts": {
@@ -6506,6 +6509,919 @@
                         }
         }
     }
-}
+},
+    "end": {
+      "type": "Node",
+      "format": {
+        "type": "Anchored"
+      },
+      "data": {
+        "anchor": [
+          0,
+          0
+        ],
+        "size": [
+          1278,
+          720
+        ],
+        "angle": 0,
+        "position": [
+          0,
+          0
+        ],
+        "visible": true
+      },
+      "children": {
+        "endgameBg": {
+          "type": "Image",
+          "data": {
+            "texture": "endgameBg",
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "size": [
+              1278,
+              720
+            ],
+            "angle": 0,
+            "position": [
+              0,
+              0
+            ],
+            "visible": true
+          },
+          "layout": {
+            "x_anchor": "fill",
+            "y_anchor": "fill",
+            "absolute": false,
+            "x_offset": 0,
+            "y_offset": 0
+          }
+        },
+        "player_stats": {
+          "type": "Node",
+          "format": {
+            "type": "Anchored"
+          },
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "size": [
+              934,
+              330
+            ],
+            "angle": 0,
+            "position": [
+              0,
+              0
+            ],
+            "visible": true
+          },
+          "children": {
+            "player_1": {
+              "type": "Node",
+              "format": {
+                "type": "Anchored"
+              },
+              "data": {
+                "anchor": [
+                  0,
+                  1
+                ],
+                "size": [
+                  463,
+                  165
+                ],
+                "angle": 0,
+                "position": [
+                  0,
+                  165
+                ],
+                "visible": true
+              },
+              "children": {},
+              "layout": {
+                "x_anchor": "left",
+                "y_anchor": "top",
+                "absolute": false,
+                "x_offset": 0,
+                "y_offset": 0
+              }
+            },
+            "player_2": {
+              "type": "Node",
+              "format": {
+                "type": "Anchored"
+              },
+              "data": {
+                "anchor": [
+                  0,
+                  1
+                ],
+                "size": [
+                  463,
+                  165
+                ],
+                "angle": 0,
+                "position": [
+                  0,
+                  0
+                ],
+                "visible": true
+              },
+              "children": {},
+              "layout": {
+                "x_anchor": "left",
+                "y_anchor": "top",
+                "absolute": false,
+                "x_offset": 0,
+                "y_offset": -0.5
+              }
+            },
+            "player_3": {
+              "type": "Node",
+              "format": {
+                "type": "Anchored"
+              },
+              "data": {
+                "anchor": [
+                  0,
+                  1
+                ],
+                "size": [
+                  463,
+                  165
+                ],
+                "angle": 0,
+                "position": [
+                  471,
+                  165
+                ],
+                "visible": true
+              },
+              "children": {},
+              "layout": {
+                "x_anchor": "left",
+                "y_anchor": "top",
+                "absolute": false,
+                "x_offset": 0.5,
+                "y_offset": 0
+              }
+            },
+            "player_4": {
+              "type": "Node",
+              "format": {
+                "type": "Anchored"
+              },
+              "data": {
+                "anchor": [
+                  0,
+                  1
+                ],
+                "size": [
+                  463,
+                  165
+                ],
+                "angle": 0,
+                "position": [
+                  471,
+                  0
+                ],
+                "visible": true
+              },
+              "children": {},
+              "layout": {
+                "x_anchor": "left",
+                "y_anchor": "top",
+                "absolute": false,
+                "x_offset": 0.5,
+                "y_offset": -0.5
+              }
+            }
+          },
+          "layout": {
+            "x_anchor": "center",
+            "y_anchor": "middle",
+            "absolute": false,
+            "x_offset": 0.01,
+            "y_offset": 0.04
+          }
+        },
+        "result": {
+          "type": "Node",
+          "format": {
+            "type": "Anchored"
+          },
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "size": [
+              264,
+              85
+            ],
+            "angle": 0,
+            "position": [
+              0,
+              0
+            ],
+            "visible": true
+          },
+          "children": {
+            "Rectangle": {
+              "type": "Node",
+              "format": {
+                "type": "Anchored"
+              },
+              "data": {
+                "anchor": [
+                  0.5,
+                  0.5
+                ],
+                "angle": 0,
+                "size": [
+                  264,
+                  85
+                ],
+                "position": [
+                  0,
+                  0
+                ],
+                "visible": true
+              },
+              "children": {
+                "fill": {
+                  "type": "Solid",
+                  "data": {
+                    "polygon": [
+                      264,
+                      55,
+                      262.53,
+                      64.27,
+                      258.27,
+                      72.63,
+                      251.63,
+                      79.27,
+                      243.27,
+                      83.53,
+                      234,
+                      85,
+                      30,
+                      85,
+                      20.73,
+                      83.53,
+                      12.37,
+                      79.27,
+                      5.73,
+                      72.63,
+                      1.47,
+                      64.27,
+                      0,
+                      55,
+                      0,
+                      30,
+                      1.47,
+                      20.73,
+                      5.73,
+                      12.37,
+                      12.37,
+                      5.73,
+                      20.73,
+                      1.47,
+                      30,
+                      0,
+                      234,
+                      0,
+                      243.27,
+                      1.47,
+                      251.63,
+                      5.73,
+                      258.27,
+                      12.37,
+                      262.53,
+                      20.73,
+                      264,
+                      30
+                    ],
+                    "color": "#8da8e9ff",
+                    "anchor": [
+                      0.5,
+                      0.5
+                    ],
+                    "position": [
+                      0,
+                      0
+                    ],
+                    "visible": true
+                  },
+                  "layout": {
+                    "x_anchor": "center",
+                    "y_anchor": "middle"
+                  }
+                },
+                "stroke": {
+                  "type": "Path",
+                  "data": {
+                    "color": "#5b61b2ff",
+                    "path": {
+                      "vertices": [
+                        259.5,
+                        55,
+                        257.56,
+                        64.76,
+                        252.03,
+                        73.03,
+                        243.76,
+                        78.56,
+                        234,
+                        80.5,
+                        25.5,
+                        80.5,
+                        15.74,
+                        78.56,
+                        7.47,
+                        73.03,
+                        1.94,
+                        64.76,
+                        0,
+                        55,
+                        0,
+                        25.5,
+                        1.94,
+                        15.74,
+                        7.47,
+                        7.47,
+                        15.74,
+                        1.94,
+                        25.5,
+                        0,
+                        234,
+                        0,
+                        243.76,
+                        1.94,
+                        252.03,
+                        7.47,
+                        257.56,
+                        15.74,
+                        259.5,
+                        25.5
+                      ],
+                      "closed": true
+                    },
+                    "stroke": 5,
+                    "joint": "square",
+                    "anchor": [
+                      0.5,
+                      0.5
+                    ],
+                    "position": [
+                      0,
+                      0
+                    ],
+                    "visible": true
+                  },
+                  "layout": {
+                    "x_anchor": "center",
+                    "y_anchor": "middle"
+                  }
+                }
+              },
+              "layout": {
+                "x_anchor": "center",
+                "y_anchor": "middle",
+                "absolute": false,
+                "x_offset": 0,
+                "y_offset": 0
+              }
+            },
+            "result_text": {
+              "type": "Label",
+              "data": {
+                "anchor": [
+                  0.5,
+                  0.5
+                ],
+                "size": [
+                  264,
+                  85
+                ],
+                "position": [
+                  0,
+                  0
+                ],
+                "angle": 0,
+                "visible": true,
+                "font": "CoolveticaRegular38",
+                "text": "Success",
+                "foreground": "#000000ff",
+                "background": "#00000000",
+                "padding": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "valign": "middle",
+                "halign": "center"
+              },
+              "children": {},
+              "layout": {
+                "x_anchor": "center",
+                "y_anchor": "middle",
+                "absolute": false,
+                "x_offset": 0,
+                "y_offset": 0
+              }
+            }
+          },
+          "layout": {
+            "x_anchor": "center",
+            "y_anchor": "middle",
+            "absolute": false,
+            "x_offset": 0,
+            "y_offset": 0.36
+          }
+        },
+        "next_round": {
+          "type": "Button",
+          "format": {
+            "type": "Anchored"
+          },
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "size": [
+              264,
+              85
+            ],
+            "angle": 0,
+            "position": [
+              0,
+              0
+            ],
+            "visible": true,
+            "upnode": "Rectangle"
+          },
+          "children": {
+            "Rectangle": {
+              "type": "Node",
+              "format": {
+                "type": "Anchored"
+              },
+              "data": {
+                "anchor": [
+                  0.5,
+                  0.5
+                ],
+                "angle": 0,
+                "size": [
+                  264,
+                  85
+                ],
+                "position": [
+                  0,
+                  0
+                ],
+                "visible": true
+              },
+              "children": {
+                "fill": {
+                  "type": "Solid",
+                  "data": {
+                    "polygon": [
+                      264,
+                      55,
+                      262.53,
+                      64.27,
+                      258.27,
+                      72.63,
+                      251.63,
+                      79.27,
+                      243.27,
+                      83.53,
+                      234,
+                      85,
+                      30,
+                      85,
+                      20.73,
+                      83.53,
+                      12.37,
+                      79.27,
+                      5.73,
+                      72.63,
+                      1.47,
+                      64.27,
+                      0,
+                      55,
+                      0,
+                      30,
+                      1.47,
+                      20.73,
+                      5.73,
+                      12.37,
+                      12.37,
+                      5.73,
+                      20.73,
+                      1.47,
+                      30,
+                      0,
+                      234,
+                      0,
+                      243.27,
+                      1.47,
+                      251.63,
+                      5.73,
+                      258.27,
+                      12.37,
+                      262.53,
+                      20.73,
+                      264,
+                      30
+                    ],
+                    "color": "#8da8e9ff",
+                    "anchor": [
+                      0.5,
+                      0.5
+                    ],
+                    "position": [
+                      0,
+                      0
+                    ],
+                    "visible": true
+                  },
+                  "layout": {
+                    "x_anchor": "center",
+                    "y_anchor": "middle"
+                  }
+                },
+                "stroke": {
+                  "type": "Path",
+                  "data": {
+                    "color": "#5b61b2ff",
+                    "path": {
+                      "vertices": [
+                        259.5,
+                        55,
+                        257.56,
+                        64.76,
+                        252.03,
+                        73.03,
+                        243.76,
+                        78.56,
+                        234,
+                        80.5,
+                        25.5,
+                        80.5,
+                        15.74,
+                        78.56,
+                        7.47,
+                        73.03,
+                        1.94,
+                        64.76,
+                        0,
+                        55,
+                        0,
+                        25.5,
+                        1.94,
+                        15.74,
+                        7.47,
+                        7.47,
+                        15.74,
+                        1.94,
+                        25.5,
+                        0,
+                        234,
+                        0,
+                        243.76,
+                        1.94,
+                        252.03,
+                        7.47,
+                        257.56,
+                        15.74,
+                        259.5,
+                        25.5
+                      ],
+                      "closed": true
+                    },
+                    "stroke": 5,
+                    "joint": "square",
+                    "anchor": [
+                      0.5,
+                      0.5
+                    ],
+                    "position": [
+                      0,
+                      0
+                    ],
+                    "visible": true
+                  },
+                  "layout": {
+                    "x_anchor": "center",
+                    "y_anchor": "middle"
+                  }
+                }
+              },
+              "layout": {
+                "x_anchor": "center",
+                "y_anchor": "middle",
+                "absolute": false,
+                "x_offset": 0,
+                "y_offset": 0
+              }
+            },
+            "action_text": {
+              "type": "Label",
+              "data": {
+                "anchor": [
+                  0.5,
+                  0.5
+                ],
+                "size": [
+                  264,
+                  85
+                ],
+                "position": [
+                  0,
+                  0
+                ],
+                "angle": 0,
+                "visible": true,
+                "font": "CoolveticaRegular38",
+                "text": "Continue",
+                "foreground": "#000000ff",
+                "background": "#00000000",
+                "padding": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "valign": "middle",
+                "halign": "center"
+              },
+              "children": {},
+              "layout": {
+                "x_anchor": "center",
+                "y_anchor": "middle",
+                "absolute": false,
+                "x_offset": 0,
+                "y_offset": 0
+              }
+            }
+          },
+          "layout": {
+            "x_anchor": "center",
+            "y_anchor": "middle",
+            "absolute": false,
+            "x_offset": 0,
+            "y_offset": -0.27
+          }
+        },
+        "quit": {
+          "type": "Button",
+          "format": {
+            "type": "Anchored"
+          },
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "size": [
+              152,
+              86
+            ],
+            "angle": 0,
+            "position": [
+              0,
+              0
+            ],
+            "visible": true,
+            "upnode": "Rectangle"
+          },
+          "children": {
+            "Rectangle": {
+              "type": "Node",
+              "format": {
+                "type": "Anchored"
+              },
+              "data": {
+                "anchor": [
+                  0.5,
+                  0.5
+                ],
+                "angle": 0,
+                "size": [
+                  152,
+                  86
+                ],
+                "position": [
+                  0,
+                  0
+                ],
+                "visible": true
+              },
+              "children": {
+                "fill": {
+                  "type": "Solid",
+                  "data": {
+                    "polygon": [
+                      152,
+                      56,
+                      150.53,
+                      65.27,
+                      146.27,
+                      73.63,
+                      139.63,
+                      80.27,
+                      131.27,
+                      84.53,
+                      122,
+                      86,
+                      30,
+                      86,
+                      20.73,
+                      84.53,
+                      12.37,
+                      80.27,
+                      5.73,
+                      73.63,
+                      1.47,
+                      65.27,
+                      0,
+                      56,
+                      0,
+                      30,
+                      1.47,
+                      20.73,
+                      5.73,
+                      12.37,
+                      12.37,
+                      5.73,
+                      20.73,
+                      1.47,
+                      30,
+                      0,
+                      122,
+                      0,
+                      131.27,
+                      1.47,
+                      139.63,
+                      5.73,
+                      146.27,
+                      12.37,
+                      150.53,
+                      20.73,
+                      152,
+                      30
+                    ],
+                    "color": "#8da8e9ff",
+                    "anchor": [
+                      0.5,
+                      0.5
+                    ],
+                    "position": [
+                      0,
+                      0
+                    ],
+                    "visible": true
+                  },
+                  "layout": {
+                    "x_anchor": "center",
+                    "y_anchor": "middle"
+                  }
+                },
+                "stroke": {
+                  "type": "Path",
+                  "data": {
+                    "color": "#5b61b2ff",
+                    "path": {
+                      "vertices": [
+                        147.5,
+                        56,
+                        145.56,
+                        65.76,
+                        140.03,
+                        74.03,
+                        131.76,
+                        79.56,
+                        122,
+                        81.5,
+                        25.5,
+                        81.5,
+                        15.74,
+                        79.56,
+                        7.47,
+                        74.03,
+                        1.94,
+                        65.76,
+                        0,
+                        56,
+                        0,
+                        25.5,
+                        1.94,
+                        15.74,
+                        7.47,
+                        7.47,
+                        15.74,
+                        1.94,
+                        25.5,
+                        0,
+                        122,
+                        0,
+                        131.76,
+                        1.94,
+                        140.03,
+                        7.47,
+                        145.56,
+                        15.74,
+                        147.5,
+                        25.5
+                      ],
+                      "closed": true
+                    },
+                    "stroke": 5,
+                    "joint": "square",
+                    "anchor": [
+                      0.5,
+                      0.5
+                    ],
+                    "position": [
+                      0,
+                      0
+                    ],
+                    "visible": true
+                  },
+                  "layout": {
+                    "x_anchor": "center",
+                    "y_anchor": "middle"
+                  }
+                }
+              },
+              "layout": {
+                "x_anchor": "center",
+                "y_anchor": "middle",
+                "absolute": false,
+                "x_offset": 0,
+                "y_offset": 0
+              }
+            },
+            "quit": {
+              "type": "Label",
+              "data": {
+                "anchor": [
+                  0.5,
+                  0.5
+                ],
+                "size": [
+                  152,
+                  86
+                ],
+                "position": [
+                  0,
+                  0
+                ],
+                "angle": 0,
+                "visible": true,
+                "font": "CoolveticaRegular38",
+                "text": "Exit",
+                "foreground": "#000000ff",
+                "background": "#00000000",
+                "padding": [
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                "valign": "middle",
+                "halign": "center"
+              },
+              "children": {},
+              "layout": {
+                "x_anchor": "center",
+                "y_anchor": "middle",
+                "absolute": false,
+                "x_offset": 0,
+                "y_offset": 0
+              }
+            }
+          },
+          "layout": {
+            "x_anchor": "center",
+            "y_anchor": "middle",
+            "absolute": false,
+            "x_offset": 0,
+            "y_offset": -0.43
+          }
+        }
+      }
+    }
+
   }
 }
