@@ -593,6 +593,9 @@ void GameScene::preUpdate(float dt)
         _player->_bombExpired = false;
         int bombIdx = _player->_bombExpiredIndex;
         _player->_bombExpiredIndex = -1;
+        if (_networkCtrl->isHost()) {
+            _player->depositItem((size_t)bombIdx);
+        }
         _inventoryValue = _player->getInventoryVal();
         _networkCtrl->pushOutEvent(
             DepositEvent::allocDepositEvent(_player->getPID(), 0, true, bombIdx));
