@@ -216,7 +216,7 @@ void SelectScene::configureStartButton() {
         if (!_networkCtrl->isHost() && _characterChosen) _startgame->activate();
     }
     else if (_status == SSStatus::HANDSHAKE) {
-        auto text = _networkCtrl->isHost() ? "Start Game" : "Awaiting Host Start";
+        auto text = _networkCtrl->isHost() ? "Start" : "Awaiting Host Start";
         updateText(_startgame, text);
         if (_networkCtrl->isHost() && _characterChosen) _startgame->activate();
     }
