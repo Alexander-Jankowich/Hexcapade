@@ -77,6 +77,8 @@ public:
      */
     void update(float dt);
 
+    void reset();
+
 #pragma mark Attributes
     /**
      * Returns true if this control is active.
