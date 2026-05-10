@@ -1143,6 +1143,16 @@ void GameScene::renderHUD()
                 _batch->setColor(Color4::WHITE);
                 _batch->draw(boxTex, Rect(boxX, boxY, boxSize, boxSize));
 
+                if (i < carriedItems.size()) {
+                    const auto& carried = carriedItems[i];
+                    if (carried.effect == ArtifactEffect::BOMB && carried.bombTimer >= 0 && carried.bombTimer <= 300) {
+                        float t = 1.0f - ((float)carried.bombTimer / 300.0f);
+                        float padding = boxSize * 0.1f;
+                        _batch->setTexture(nullptr);
+                        drawBox(boxX + padding, boxY + padding, boxSize * 0.8f, boxSize * 0.8f, Color4(255, 0, 0, (Uint8)(90 * t)));
+                    }
+                }
+
                 // Draw item texture centered inside the frame
                 if (i < carriedItems.size()) {
                     const auto& carried = carriedItems[i];
