@@ -95,25 +95,25 @@ bool StaticLevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
 //        _itemSpawnPoints.push_back(sp);
 //    }
     
-    // Spawn points are in physics coordinates
-
+    // in SLL we convert into world coords while loading bc we know map height
+    // TODO: change all y to me tw * height - y
     for (auto enem_spawn : json->get("layers")->get(1)->get("layers")->get(1)->get("objects")->children()){
-        auto sp = Vec2(enem_spawn->getFloat("x") / _tileWidth, enem_spawn->getFloat("y") / _tileHeight);
+        auto sp = Vec2(enem_spawn->getFloat("x"), _mapHeight * _tileWidth - enem_spawn->getFloat("y"));
         _enemSpawnPoints.push_back(EnemySpawn(sp, enem_spawn->get("properties")->children()[0]->getInt("value")));
     }
     
     for (auto spawn : json->get("layers")->get(1)->get("layers")->get(2)->get("objects")->children()) {
         auto t = spawn->getString("name");
+        auto sp = Vec2(spawn->getFloat("x"), _mapHeight * _tileWidth - spawn->getFloat("y"));
         
-            if(t == "player")
-                _playerSpawn = Vec2(spawn->getFloat("x") / _tileWidth, spawn->getFloat("y") / _tileHeight);
-
-            if(t=="deposit")
-                _depositSpawn = Vec2(spawn->getFloat("x") / _tileWidth, spawn->getFloat("y") / _tileHeight);
-            if (t=="bot"){
-                auto sp = Vec2(spawn->getFloat("x") / _tileWidth, spawn->getFloat("y") / _tileHeight);
+        if(t == "player")
+            _playerSpawn = sp;
+        
+        if(t=="deposit")
+                _depositSpawn = sp;
+        
+        if (t=="bot")
                 _botSpawnPoints.push_back(BotSpawn(sp, spawn->get("properties")->children()[0]->getInt("value")));
-            }
     }
     // collect events
     for (auto e_data : json->get("layers")->get(1)->get("layers")->get(3)->get("objects")->children()) {

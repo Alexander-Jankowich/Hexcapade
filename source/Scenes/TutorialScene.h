@@ -329,9 +329,10 @@ private:
     pair<SpellType, string> getCombo();
     
 private:
-    /** Initialize networked physics before map built, called by setActive */
+    /** Initialize networked physics, called by setActive */
     void initPhysics();
     
+    void spawnFromMap();
     /**
     * Adds all spell combos to the map.
     * Only adds one version of each combo. The getCombo function will check both ordering of the spells.

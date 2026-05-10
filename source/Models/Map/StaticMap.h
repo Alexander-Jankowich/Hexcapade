@@ -11,6 +11,7 @@
 
 #include <cugl/cugl.h>
 #include "StaticLevelLoader.h"
+#include "../TutorialObstacle.h"
 
 #define TUT_QUOTA 50
 #define TILE_SIZE 40
@@ -59,6 +60,21 @@ private:
     void addSingleNode(std::shared_ptr<Texture> t, Vec2 pos, std::shared_ptr<cugl::scene2::SceneNode> world);
     
     void addWallObstacle(Poly2& poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
+    
+    /** Helper function to add all event obstacles for a room
+     * @param tiledRmData the Tiled Data for this room
+     * @param tlCorner the top left corner of the room in mapGrid coordinates
+     * @param world the physics networld to add all created obstacles to
+     */
+    void addRoomEvents(std::shared_ptr<StaticLevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::physics2::distrib::NetWorld> world);
+    
+    /** Helper function to add a single event
+     * @param poly the rectangle for the collider
+     * @param tex the png to be displayed on collision
+     * @param world the physics networld to add all created obstacles to
+     */
+    void addEventObstacle(Rect& poly, std::shared_ptr<graphics::Texture> tex, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
+
 };
 
 #endif // !__STATICMAP_H__

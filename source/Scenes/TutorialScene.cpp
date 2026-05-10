@@ -1006,6 +1006,18 @@ void TutorialScene::initPhysics() {
     _addedLWalls = true;
 }
 
+void TutorialScene::spawnFromMap() {
+    _quota = _map->getQuota();
+    
+    for (auto e : _map->getData()->getEnemSpawnPoints()) {
+        auto params = _enemyFact->serializeParams((EnemyType) e.enem, e.location / PHYSICS_SCALE);
+        auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
+        _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+    }
+    
+    _depositPosition = _map->getData()->getDepositSpawn();
+}
+
 void TutorialScene::setActive(bool value)
 {
     if (isActive() != value)
@@ -1016,6 +1028,7 @@ void TutorialScene::setActive(bool value)
             _networkCtrl->connectHost();
             _networkCtrl->startGame();
             initPhysics();
+            spawnFromMap();
             _input.activate();
             CULog("I am trying to get a player using this id %s", _networkCtrl->getPID().c_str());
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
