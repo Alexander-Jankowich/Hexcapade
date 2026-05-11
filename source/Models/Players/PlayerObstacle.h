@@ -11,7 +11,7 @@
 #include <cugl/cugl.h>
 #include "../Spells/SpellType.h"
 #include "../Items/Artifact.h"
-#include "../Items/ItemFactory.h"
+#include "../Items/ItemTypeClass.h"
 
 using namespace cugl;
 using namespace std;
@@ -27,11 +27,11 @@ class PlayerObstacle : public physics2::CapsuleObstacle {
 public:
 
     struct CarriedItem {
-        ItemType itemType;
+        ItemTypeClass::ItemType itemType;
         int value;
         int bombTimer;
         
-        CarriedItem(ItemType t, int v, int bt) {
+        CarriedItem(ItemTypeClass::ItemType t, int v, int bt) {
             itemType = t;
             value = v;
             bombTimer = bt;
@@ -150,7 +150,7 @@ public:
     void clearInventory() { _inventory.clear(); }
     int  depositItems();
     int  depositItem(size_t index);
-    bool addItem(ItemType itemType, int item_val);
+    bool addItem(ItemTypeClass::ItemType itemType, int item_val);
 
     // ── Inventory query methods ──────────────────────────────────────────────
     // These mirror the Inventory class queries but work directly on CarriedItem.
@@ -161,7 +161,7 @@ public:
     bool blocksSpellcasting()    const;
     int  getDamageBonus()        const;
     bool hasProtectionArtifact() const;
-    void consumeItem(ItemType itemType); // wtf is this
+    void consumeItem(ItemTypeClass::ItemType itemType); // wtf is this
     bool hasHeavyArtifact()      const;
     void updateTimers(float dt);
     bool isNonDroppable(size_t index) const;

@@ -16,7 +16,7 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s, const shared_
     _speed = 4;
     _health = 6;
     _inventoryLimit = 5;
-    _inventory.push_back(CarriedItem(ItemType::BOOK_FIRE, consts->getInt("value"), 0));
+    _inventory.push_back(CarriedItem(ItemTypeClass::ItemType::BOOK_FIRE, consts->getInt("value"), 0));
 }
 
 void PlayerObstacle::setVelocity(Vec2 v) {
@@ -77,11 +77,11 @@ int PlayerObstacle::getInventoryVal() const {
     return sum;
 }
 
-bool PlayerObstacle::addItem(ItemType itemType, int item_val) {
+bool PlayerObstacle::addItem(ItemTypeClass::ItemType itemType, int item_val) {
     if (!canAddItem()) return false;
 
    
-    int bombTimer = (itemType == ItemType::BOMB) ? 1200 : -1;
+    int bombTimer = (itemType == ItemTypeClass::ItemType::BOMB) ? 1200 : -1;
 
     _inventory.push_back(CarriedItem(itemType, item_val, bombTimer));
     return true;
@@ -103,30 +103,30 @@ int PlayerObstacle::depositItem(size_t index) {
 // spell query
 
 bool PlayerObstacle::hasSpell(SpellType spell) const {
-    std::vector<ItemType> required;
+    std::vector<ItemTypeClass::ItemType> required;
     switch (spell) {
     case SpellType::FIREBALL:
     case SpellType::COMBO_FIREBALL:
         return true;
     case SpellType::FREEZE:
     case SpellType::COMBO_FREEZE:
-        required.push_back(ItemType::BOOK_FREEZE);
+        required.push_back(ItemTypeClass::ItemType::BOOK_FREEZE);
         break;
     case SpellType::HEAL:
-        required.push_back(ItemType::BOOK_HEAL);
+        required.push_back(ItemTypeClass::ItemType::BOOK_HEAL);
         break;
     case SpellType::EARTH:
-        required.push_back(ItemType::BOOK_EARTH);
+        required.push_back(ItemTypeClass::ItemType::BOOK_EARTH);
         break;
     case SpellType::DEATH:
-        required.push_back(ItemType::BOOK_DEATH);
+        required.push_back(ItemTypeClass::ItemType::BOOK_DEATH);
         break;
     case SpellType::COMBO_EFREEZE:
-        required.push_back(ItemType::BOOK_EARTH);
-            required.push_back(ItemType::BOOK_FREEZE);
+        required.push_back(ItemTypeClass::ItemType::BOOK_EARTH);
+            required.push_back(ItemTypeClass::ItemType::BOOK_FREEZE);
         break;
     case SpellType::WATER:
-        required.push_back(ItemType::BOOK_FREEZE);
+        required.push_back(ItemTypeClass::ItemType::BOOK_FREEZE);
         break;
     default:
         return false;
@@ -146,7 +146,7 @@ bool PlayerObstacle::hasSpell(SpellType spell) const {
 
 bool PlayerObstacle::blocksSpellcasting() const {
     for (const auto& item : _inventory) {
-        if (item.itemType == ItemType::SPELL_RESTRICTION)
+        if (item.itemType == ItemTypeClass::ItemType::SPELL_RESTRICTION)
             return true;
     }
     return false;
@@ -155,9 +155,9 @@ bool PlayerObstacle::blocksSpellcasting() const {
 int PlayerObstacle::getDamageBonus() const {
     int bonus = 0;
     for (const auto& item : _inventory) {
-            if (item.itemType == ItemType::SPELL_BOOST)
+            if (item.itemType == ItemTypeClass::ItemType::SPELL_BOOST)
                 bonus += 2;
-            else if (item.itemType == ItemType::SPELL_REDUCE)
+            else if (item.itemType == ItemTypeClass::ItemType::SPELL_REDUCE)
                 bonus -= 2;
     }
     return bonus;
@@ -165,13 +165,13 @@ int PlayerObstacle::getDamageBonus() const {
 
 bool PlayerObstacle::hasProtectionArtifact() const {
     for (const auto& item : _inventory) {
-        if (item.itemType == ItemType::PROTECTION)
+        if (item.itemType == ItemTypeClass::ItemType::PROTECTION)
             return true;
     }
     return false;
 }
 
-void PlayerObstacle::consumeItem(ItemType itemType) {
+void PlayerObstacle::consumeItem(ItemTypeClass::ItemType itemType) {
     for (auto it = _inventory.begin(); it != _inventory.end(); ++it) {
         if (it->itemType == itemType) {
             _inventory.erase(it);
@@ -182,7 +182,7 @@ void PlayerObstacle::consumeItem(ItemType itemType) {
 
 bool PlayerObstacle::hasHeavyArtifact() const {
     for (const auto& item : _inventory) {
-        if (item.itemType == ItemType::HEAVY)
+        if (item.itemType == ItemTypeClass::ItemType::HEAVY)
             return true;
     }
     return false;
@@ -190,8 +190,8 @@ bool PlayerObstacle::hasHeavyArtifact() const {
 
 bool PlayerObstacle::isNonDroppable(size_t index) const {
     if (index >= _inventory.size()) return false;
-    ItemType e = _inventory[index].itemType;
-    return e == ItemType::BOMB || e == ItemType::GOLD;
+    ItemTypeClass::ItemType e = _inventory[index].itemType;
+    return e == ItemTypeClass::ItemType::BOMB || e == ItemTypeClass::ItemType::GOLD;
 }
 
 void PlayerObstacle::updateTimers(float dt) {

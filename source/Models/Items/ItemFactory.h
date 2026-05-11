@@ -9,39 +9,10 @@
 #define __ITEM_FACTORY_H__
 
 #include <cugl/cugl.h>
-
+#include "ItemTypeClass.h"
 using namespace cugl;
 using namespace cugl::physics2::distrib;
 using namespace std;
-
-enum class ItemType {
-    BOOK_FIRE, // 0
-    BOOK_FREEZE,
-    BOOK_EARTH,
-    BOOK_WATER,
-    BOOK_DEATH,
-    BOOK_HEAL, // 5
-    /** No effect - low value */
-    NONE_LOW,
-    /** No effect - medium value */
-    NONE_MED,
-    /** No effect - high value */
-    NONE_HIGH,
-    /** Player cannot cast spells. */
-    SPELL_RESTRICTION,
-    /** Attack spells deal +2 damage. */
-    SPELL_BOOST,
-    /** Attack spells deal -2 damage. */
-    SPELL_REDUCE,
-    /** Tanks one lethal hit, then consumed. */
-    PROTECTION,
-    /** Player moves at half speed. */
-    HEAVY,
-    /** High-value item (real). Non-droppable. */
-    GOLD,
-    /** Explodes after a timer, dealing damage. Non-droppable. */
-    BOMB
-};
 
 
 /**
@@ -51,21 +22,21 @@ class ItemObstacle : public physics2::BoxObstacle {
 protected:
     /** Deposit value */
     int _value;
-    ItemType _type;
+    ItemTypeClass::ItemType _type;
     int _itemID;
 
 public:
     /** Constructs an ItemObstacle at the given position. */
-    ItemObstacle(const cugl::Vec2& pos, int value, ItemType t, int i);
+    ItemObstacle(const cugl::Vec2& pos, int value, ItemTypeClass::ItemType t, int i);
 
-    static std::shared_ptr<ItemObstacle> alloc(const cugl::Vec2& pos, int value, ItemType t, int i) {
+    static std::shared_ptr<ItemObstacle> alloc(const cugl::Vec2& pos, int value, ItemTypeClass::ItemType t, int i) {
         auto f = std::make_shared<ItemObstacle>(pos, value, t, i);
         f->createFixtures();
         return f;
     }
 
     int getValue() const { return _value; }
-    ItemType getItemType() const { return _type; }
+    ItemTypeClass::ItemType getItemType() const { return _type; }
     int getID() const {return _itemID;}
 };
 
@@ -87,7 +58,7 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>,std::shared_ptr<scene2::SceneNode>> createObstacle(cugl::Vec2 pos, int value, ItemType t, int i);
+    std::pair<std::shared_ptr<physics2::Obstacle>,std::shared_ptr<scene2::SceneNode>> createObstacle(cugl::Vec2 pos, int value, ItemTypeClass::ItemType t, int i);
 
 public:
     ItemFactory() {};

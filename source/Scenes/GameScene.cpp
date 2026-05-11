@@ -1145,7 +1145,7 @@ void GameScene::renderHUD()
 
                 if (i < carriedItems.size()) {
                     const auto& carried = carriedItems[i];
-                    if (carried.effect == ArtifactEffect::BOMB && carried.bombTimer >= 0 && carried.bombTimer <= 300) {
+                    if (carried.itemType == ItemType::BOMB && carried.bombTimer >= 0 && carried.bombTimer <= 300) {
                         float t = 1.0f - ((float)carried.bombTimer / 300.0f);
                         float padding = boxSize * 0.1f;
                         _batch->setTexture(nullptr);
