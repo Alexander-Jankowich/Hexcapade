@@ -118,7 +118,7 @@ public:
     void resetHost();
 
     const std::string& getPlayerName(const std::string& pid) const {
-        static const std::string fallback = "";
+        static const std::string fallback = "PLAYER" + to_string(_shortUID);
         auto it = _playerNames.find(pid);
         return it != _playerNames.end() ? it->second : fallback;
     }
