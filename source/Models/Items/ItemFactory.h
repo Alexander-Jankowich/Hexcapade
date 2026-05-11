@@ -14,6 +14,36 @@ using namespace cugl;
 using namespace cugl::physics2::distrib;
 using namespace std;
 
+enum class ItemType {
+    BOOK_FIRE, // 0
+    BOOK_FREEZE,
+    BOOK_EARTH,
+    BOOK_WATER,
+    BOOK_DEATH,
+    BOOK_HEAL, // 5
+    /** No effect - low value */
+    NONE_LOW,
+    /** No effect - medium value */
+    NONE_MED,
+    /** No effect - high value */
+    NONE_HIGH,
+    /** Player cannot cast spells. */
+    SPELL_RESTRICTION,
+    /** Attack spells deal +2 damage. */
+    SPELL_BOOST,
+    /** Attack spells deal -2 damage. */
+    SPELL_REDUCE,
+    /** Tanks one lethal hit, then consumed. */
+    PROTECTION,
+    /** Player moves at half speed. */
+    HEAVY,
+    /** High-value item (real). Non-droppable. */
+    GOLD,
+    /** Explodes after a timer, dealing damage. Non-droppable. */
+    BOMB
+};
+
+
 /**
  * An extension of BoxObstacle to represent a world item (artifact or spellbook).
  */
@@ -21,22 +51,21 @@ class ItemObstacle : public physics2::BoxObstacle {
 protected:
     /** Deposit value */
     int _value;
-    /** Asset manager key for the item's texture */
-    std::string _itemType;
+    ItemType _type;
     int _itemID;
 
 public:
     /** Constructs an ItemObstacle at the given position. */
-    ItemObstacle(const cugl::Vec2& pos, int value, const std::string& itemType, int i);
+    ItemObstacle(const cugl::Vec2& pos, int value, ItemType t, int i);
 
-    static std::shared_ptr<ItemObstacle> alloc(const cugl::Vec2& pos, int value, const std::string& itemType, int i) {
-        auto f = std::make_shared<ItemObstacle>(pos, value, itemType, i);
+    static std::shared_ptr<ItemObstacle> alloc(const cugl::Vec2& pos, int value, ItemType t, int i) {
+        auto f = std::make_shared<ItemObstacle>(pos, value, t, i);
         f->createFixtures();
         return f;
     }
 
     int getValue() const { return _value; }
-    const std::string& getItemType() const { return _itemType; }
+    ItemType getItemType() const { return _type; }
     int getID() const {return _itemID;}
 };
 
@@ -58,7 +87,7 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>,std::shared_ptr<scene2::SceneNode>> createObstacle(cugl::Vec2 pos, int value, const std::string& itemType, int i);
+    std::pair<std::shared_ptr<physics2::Obstacle>,std::shared_ptr<scene2::SceneNode>> createObstacle(cugl::Vec2 pos, int value, ItemType t, int i);
 
 public:
     ItemFactory() {};
@@ -83,7 +112,7 @@ public:
     
     std::shared_ptr<ItemObstacle> getItem(int i) {return current.contains(i) ? current.at(i) : nullptr;}
 
-    std::shared_ptr<std::vector<std::byte>> serializeParams(cugl::Vec2 pos, int value, const std::string& itemType);
+    std::shared_ptr<std::vector<std::byte>> serializeParams(cugl::Vec2 pos, int value, ItemType itemType);
     
     std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>>createObstacle(const std::vector<std::byte>& params) override;
 

@@ -409,6 +409,8 @@
 
   },
   "artifacts": {
-
+      "spellbook-fire": {
+          "value": 25
+      }
   }
 }

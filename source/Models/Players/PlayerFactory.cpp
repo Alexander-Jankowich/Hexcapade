@@ -31,7 +31,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
     size.height /= rows;
     
     // Create the PlayerObstacle
-    auto pl = PlayerObstacle::alloc(pos, pid, size);
+    auto pl = PlayerObstacle::alloc(pos, pid, size, _assets->get<JsonValue>("constants")->get("artifacts")->get("spellbook-fire"));
     pl->setShared(true);
 
     current.emplace(pl);

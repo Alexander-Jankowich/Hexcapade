@@ -424,9 +424,6 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
             // convert coords
             auto ep_mg = cugl::Vec2(std::get<2>(res).x + ep.x,
                                     std::get<2>(res).y + ep.y);
-            // Just map grid units to world pixels.
-            // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
-            _enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
             
             auto dist = pl_mg.distance(ep_mg);
             

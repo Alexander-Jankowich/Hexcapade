@@ -79,7 +79,6 @@ private:
     std::vector<cugl::Vec2> _z1itemSpawnPoints;
     std::vector<cugl::Vec2> _z2itemSpawnPoints;
     std::vector<cugl::Vec2> _z3itemSpawnPoints;
-    std::vector<cugl::Vec2> _enemySpawnPoints;
     std::vector<cugl::Vec2> _z1enemySpawnPoints;
     std::vector<cugl::Vec2> _z2enemySpawnPoints;
     std::vector<cugl::Vec2> _z3enemySpawnPoints;
@@ -113,7 +112,6 @@ public:
     
     std::shared_ptr<cugl::scene2::SceneNode> getLowerWallNode() {return lw_node;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
-    const std::vector<Vec2>& getEnemySpawnPoints() const {return _enemySpawnPoints;}
     const std::vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
     int getItemSpawnZone(const Vec2& worldPoint) const;
     float getItemValueZoneMin(int zone) const;
