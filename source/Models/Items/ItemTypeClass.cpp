@@ -75,26 +75,26 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getTexture(ItemType t){
             return _assets->get<cugl::graphics::Texture>("spellbook_heal");
 
         case ItemType::SCROLL:
-            return _assets->get<cugl::graphics::Texture>("artifact_scroll");
+            return _assets->get<cugl::graphics::Texture>("scroll");
 
         case ItemType::SKULL:
-            return _assets->get<cugl::graphics::Texture>("skull_incense");
+            return _assets->get<cugl::graphics::Texture>("skull");
 
         case ItemType::GEM:
-            return _assets->get<cugl::graphics::Texture>("artifact_gem");
+            return _assets->get<cugl::graphics::Texture>("gem_gold");
 
         case ItemType::SPELL_RESTRICTION:
-            return _assets->get<cugl::graphics::Texture>("forbidden_chains");
+            return _assets->get<cugl::graphics::Texture>("spell_restrict");
 
         case ItemType::SPELL_BOOST:
-            return _assets->get<cugl::graphics::Texture>("ystical_brooch");
+            return _assets->get<cugl::graphics::Texture>("spell_boost");
 
         case ItemType::SPELL_REDUCE:
             //TODO: frank which one is it lol
-            return _assets->get<cugl::graphics::Texture>("gem_brown");
+            return _assets->get<cugl::graphics::Texture>("spell_reduce");
 
         case ItemType::PROTECTION:
-            return _assets->get<cugl::graphics::Texture>("zombie_totem");
+            return _assets->get<cugl::graphics::Texture>("protection");
 
         case ItemType::HEAVY:
             return _assets->get<cugl::graphics::Texture>("heavy_treasure");
@@ -103,7 +103,7 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getTexture(ItemType t){
         case ItemType::GOLD_FAKE:
             return _assets->get<cugl::graphics::Texture>("fools_gold");
         case ItemType::BOMB:
-            return _assets->get<cugl::graphics::Texture>("exploding_potion");
+            return _assets->get<cugl::graphics::Texture>("bomb");
 
         default:
             return nullptr;

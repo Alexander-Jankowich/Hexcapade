@@ -444,10 +444,6 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
         return node;
     }
 
-void Map::generateItemSpawns() {
-    // TODO: this...
-}
-
 void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::physics2::distrib::NetWorld> world) {
     for (auto coll : tiledRmData->getColliders()) {
         vector<Vec2> translatedPoints;
@@ -645,27 +641,33 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
     _config._zone2EnemyProb = data->get("zone-probs")->asFloatArray()[1];
     _config._zone3EnemyProb = data->get("zone-probs")->asFloatArray()[2];
 
-    // currently mirrors whiteboard values, now loaded from level_config
-    std::shared_ptr<JsonValue> itemValueZones = data->get("item-value-zones");
-    if (itemValueZones && itemValueZones->size() >= 3) {
-        for (int zone = 0; zone < 3; zone++) {
-            std::vector<float> valueRange = itemValueZones->get(zone)->asFloatArray();
-            _config._itemValueZoneMins[zone] = valueRange[0];
-            _config._itemValueZoneMaxs[zone] = valueRange[1];
-        }
+   
+    // TODO: fill this in w all item types and string (use the like... idk texture name for consistency?)
+    for (auto e : data->get("items")->asStringArray()) {
+        if (e == "spellbook-fire") _config._itemTypes.push_back(ItemTypeClass::ItemType::BOOK_FIRE);
+        else if (e == "spellbook-freeze") _config._itemTypes.push_back(ItemTypeClass::ItemType::BOOK_FREEZE);
+        else if (e == "spellbook-earth") _config._itemTypes.push_back(ItemTypeClass::ItemType::BOOK_EARTH);
     }
-
-    std::shared_ptr<JsonValue> itemCategoryProbs = data->get("item-category-probs");
-    if (itemCategoryProbs && itemCategoryProbs->size() >= 3) {
-        for (int zone = 0; zone < 3; zone++) {
-            std::vector<float> probs = itemCategoryProbs->get(zone)->asFloatArray();
-            _config._itemSpellbookZoneProbs[zone] = probs[0];
-            _config._itemArtifactZoneProbs[zone] = probs[1];
-        }
-    }
+    
+    // json needs to be filled in w zone probs btw just put whatever in as long as each row adds to 1
 }
 
 
+
+void Map::generateItemSpawns() {
+    // TODO: this...
+    // for each spawn point, randomly select an item based on zone prob.
+    // this is basically done, just use correct zone probs for each zone. prob factor into separate method lol
+//    float item = _rng.getFloat();
+//
+//    float acc = 0;
+//    int itemIdx = -1;
+//    while (acc < enem) {
+//        itemIdx++;
+//        acc += zoneprobs[itemIdx];
+//    }
+    
+}
 
 std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns(const std::vector<Vec2> playersPos) {
     std::vector<std::pair<Vec2, EnemyType>> res;

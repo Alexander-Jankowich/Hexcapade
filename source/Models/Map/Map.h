@@ -49,11 +49,11 @@ private:
         float _zone2EnemyProb;
         float _zone3EnemyProb;
         
-        // item zone values come from level_config
-        std::array<float, 3> _itemValueZoneMins;
-        std::array<float, 3> _itemValueZoneMaxs;
-        std::array<float, 3> _itemSpellbookZoneProbs;
-        std::array<float, 3> _itemArtifactZoneProbs;
+        // item stuff
+        std::vector<ItemTypeClass::ItemType> _itemTypes;
+        std::vector<float> _zone1WeightsIt;
+        std::vector<float> _zone2WeightsIt;
+        std::vector<float> _zone3WeightsIt;
     };
     struct MapDoor {
         Vec2 pos;
