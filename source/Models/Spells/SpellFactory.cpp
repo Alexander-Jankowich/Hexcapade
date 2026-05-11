@@ -98,7 +98,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::MUD_WATER:
         values = _spellConsts->get("mud-water");
-        image = _assets->get<graphics::Texture>("freeze");
+        image = _assets->get<graphics::Texture>("mud");
         break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
