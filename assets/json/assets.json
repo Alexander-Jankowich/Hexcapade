@@ -37,22 +37,22 @@
       "file": "textures/death_sheet.png"
     },
     "earth": {
-        "file": "textures/earth_sheet.png"
+      "file": "textures/earth_sheet.png"
     },
     "water": {
-        "file": "textures/water_sheet.png"
+      "file": "textures/water_sheet.png"
     },
     "mud": {
-        "file": "textures/mud_sheet.png"
+      "file": "textures/mud_sheet.png"
     },
     "shield": {
       "file": "textures/shield_sheet.png"
     },
     "shield_entity": {
-        "file": "textures/shield-entity_sheet.png"
+      "file": "textures/shield-entity_sheet.png"
     },
     "buff": {
-        "file": "textures/buff_sheet.png"
+      "file": "textures/buff_sheet.png"
     },
     "buff_entity": {
       "file": "textures/buff-entity_sheet.png"
@@ -114,8 +114,17 @@
     "artifact_bomb": {
       "file": "textures/bomb.png"
     },
-    "artifact_scroll": {
+    "artifact_restrict": {
       "file": "textures/spell_restriction.png"
+    },
+    "artifact_scroll": {
+      "file": "textures/scroll.png"
+    },
+    "artifact_gem": {
+      "file": "textures/gem.png"
+    },
+    "artifact_ribbon": {
+      "file": "textures/ribbon.png"
     },
     "spellbook_fire": {
       "file": "textures/spellbook_fire.png"

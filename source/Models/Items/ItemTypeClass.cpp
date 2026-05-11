@@ -23,17 +23,17 @@ std::shared_ptr<cugl::JsonValue> ItemTypeClass::getConsts(ItemType t) {
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("spellbook-heal");
         case ItemType::SCROLL:
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("scroll");
-        case ItemType::SKULL:
-            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("skull");
+        case ItemType::RIBBON:
+            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("ribbon");
         case ItemType::GEM:
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("gem");
         case ItemType::SPELL_RESTRICTION:
-            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("spell_restriction");
+            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("spell-restriction");
         case ItemType::SPELL_BOOST:
-            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("spell_boost");
+            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("spell-boost");
 
         case ItemType::SPELL_REDUCE:
-            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("spell_reduce");
+            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("spell-reduce");
 
         case ItemType::PROTECTION:
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("protection");
@@ -69,13 +69,13 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getTexture(ItemType t) {
     case ItemType::BOOK_HEAL:
         return _assets->get<cugl::graphics::Texture>("spellbook_heal");
     case ItemType::SCROLL:
-        return nullptr; // no asset yet
-    case ItemType::SKULL:
-        return nullptr; // no asset yet
-    case ItemType::GEM:
-        return nullptr; // no asset yet
-    case ItemType::SPELL_RESTRICTION:
         return _assets->get<cugl::graphics::Texture>("artifact_scroll");
+    case ItemType::RIBBON:
+        return _assets->get<cugl::graphics::Texture>("artifact_ribbon");
+    case ItemType::GEM:
+        return _assets->get<cugl::graphics::Texture>("artifact_gem");
+    case ItemType::SPELL_RESTRICTION:
+        return _assets->get<cugl::graphics::Texture>("artifact_restrict");
     case ItemType::SPELL_BOOST:
         return _assets->get<cugl::graphics::Texture>("artifact_boost");
     case ItemType::SPELL_REDUCE:
@@ -124,7 +124,7 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getCard(ItemType t) {
     case ItemType::BOMB:
         return _assets->get<cugl::graphics::Texture>("explodingPotion_info");
     case ItemType::SCROLL:
-    case ItemType::SKULL:
+    case ItemType::RIBBON:
     case ItemType::GEM:
     default:
         return nullptr; // no card assets yet

@@ -641,32 +641,104 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
     _config._zone2EnemyProb = data->get("zone-probs")->asFloatArray()[1];
     _config._zone3EnemyProb = data->get("zone-probs")->asFloatArray()[2];
 
-   
-    // TODO: fill this in w all item types and string (use the like... idk texture name for consistency?)
-    for (auto e : data->get("items")->asStringArray()) {
-        if (e == "spellbook-fire") _config._itemTypes.push_back(ItemTypeClass::ItemType::BOOK_FIRE);
-        else if (e == "spellbook-freeze") _config._itemTypes.push_back(ItemTypeClass::ItemType::BOOK_FREEZE);
-        else if (e == "spellbook-earth") _config._itemTypes.push_back(ItemTypeClass::ItemType::BOOK_EARTH);
+    // Helper lambda
+    auto strToItemType = [](const std::string& s) -> ItemTypeClass::ItemType {
+        if (s == "spellbook-fire")    return ItemTypeClass::ItemType::BOOK_FIRE;
+        if (s == "spellbook-freeze")  return ItemTypeClass::ItemType::BOOK_FREEZE;
+        if (s == "spellbook-earth")   return ItemTypeClass::ItemType::BOOK_EARTH;
+        if (s == "spellbook-water")   return ItemTypeClass::ItemType::BOOK_WATER;
+        if (s == "spellbook-death")   return ItemTypeClass::ItemType::BOOK_DEATH;
+        if (s == "spellbook-heal")    return ItemTypeClass::ItemType::BOOK_HEAL;
+        if (s == "scroll")            return ItemTypeClass::ItemType::SCROLL;
+        if (s == "ribbon")            return ItemTypeClass::ItemType::RIBBON;
+        if (s == "gem")               return ItemTypeClass::ItemType::GEM;
+        if (s == "spell-restriction") return ItemTypeClass::ItemType::SPELL_RESTRICTION;
+        if (s == "spell-boost")       return ItemTypeClass::ItemType::SPELL_BOOST;
+        if (s == "spell-reduce")      return ItemTypeClass::ItemType::SPELL_REDUCE;
+        if (s == "protection")        return ItemTypeClass::ItemType::PROTECTION;
+        if (s == "heavy")             return ItemTypeClass::ItemType::HEAVY;
+        if (s == "gold-real")         return ItemTypeClass::ItemType::GOLD;
+        if (s == "gold-fake")         return ItemTypeClass::ItemType::GOLD_FAKE;
+        if (s == "bomb")              return ItemTypeClass::ItemType::BOMB;
+        CULog("loadLevelConfig: unknown item type string '%s'", s.c_str());
+        return ItemTypeClass::ItemType::SCROLL;
+    };
+
+    _config._spellbookTypes.clear();
+    for (auto& s : data->get("item-spellbook-types")->asStringArray()) {
+        _config._spellbookTypes.push_back(strToItemType(s));
     }
-    
-    // json needs to be filled in w zone probs btw just put whatever in as long as each row adds to 1
+
+    _config._artifactTypes.clear();
+    for (auto& s : data->get("item-artifact-types")->asStringArray()) {
+        _config._artifactTypes.push_back(strToItemType(s));
+    }
+
+    _config._zoneSpellbookProb = data->get("item-zone-spellbook-prob")->asFloatArray();
+
+    // Load per-zone spellbook weights and normalize them
+    _config._spellbookWeights.clear();
+    auto sbWeightsJson = data->get("item-spellbook-weights");
+    for (int z = 0; z < 3; z++) {
+        auto rawWeights = sbWeightsJson->get(z)->asFloatArray();
+        float total = 0.0f;
+        for (float w : rawWeights) total += w;
+        if (total > 0.0f) for (float& w : rawWeights) w /= total;
+        _config._spellbookWeights.push_back(rawWeights);
+    }
+
+    // Load per-zone artifact weights and normalize them
+    _config._artifactWeights.clear();
+    auto artWeightsJson = data->get("item-artifact-weights");
+    for (int z = 0; z < 3; z++) {
+        auto rawWeights = artWeightsJson->get(z)->asFloatArray();
+        float total = 0.0f;
+        for (float w : rawWeights) total += w;
+        if (total > 0.0f) for (float& w : rawWeights) w /= total;
+        _config._artifactWeights.push_back(rawWeights);
+    }
 }
 
-
-
 void Map::generateItemSpawns() {
-    // TODO: this...
-    // for each spawn point, randomly select an item based on zone prob.
-    // this is basically done, just use correct zone probs for each zone. prob factor into separate method lol
-//    float item = _rng.getFloat();
-//
-//    float acc = 0;
-//    int itemIdx = -1;
-//    while (acc < enem) {
-//        itemIdx++;
-//        acc += zoneprobs[itemIdx];
-//    }
-    
+    const std::vector<std::vector<Vec2>*> zonePts = {
+        &_z1itemSpawnPoints,
+        &_z2itemSpawnPoints,
+        &_z3itemSpawnPoints
+    };
+
+    for (int z = 0; z < 3; z++) {
+        for (const Vec2& pt : *zonePts[z]) {
+            ItemTypeClass::ItemType chosen = chooseItemType(z);
+            _itemSpawns.push_back({ pt, chosen });
+        }
+    }
+    for (auto& spawn : _itemSpawns) {
+        CULog("Item spawn: type %d at (%.1f, %.1f)", (int)spawn.second, spawn.first.x, spawn.first.y);
+    }
+    CULog("Map: generated %zu item spawns", _itemSpawns.size());
+}
+
+ItemTypeClass::ItemType Map::chooseItemType(int zoneIndex) {
+    float roll = _rng.getFloat();
+    bool isSpellbook = roll < _config._zoneSpellbookProb[zoneIndex];
+
+    const std::vector<ItemTypeClass::ItemType>& pool =
+        isSpellbook ? _config._spellbookTypes : _config._artifactTypes;
+    const std::vector<float>& weights =
+        isSpellbook ? _config._spellbookWeights[zoneIndex] : _config._artifactWeights[zoneIndex];
+
+    float pick = _rng.getFloat();
+    float acc = 0.0f;
+    int idx = (int)pool.size() - 1; // default to last as fallback
+    for (int i = 0; i < (int)weights.size(); i++) {
+        acc += weights[i];
+        if (pick <= acc) {
+            idx = i;
+            break;
+        }
+    }
+
+    return pool[idx];
 }
 
 std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns(const std::vector<Vec2> playersPos) {

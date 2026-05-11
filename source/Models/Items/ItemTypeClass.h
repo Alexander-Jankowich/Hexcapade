@@ -31,7 +31,7 @@ public:
         /** No effect - low value */
         SCROLL,
         /** No effect - medium value */
-        SKULL,
+        RIBBON,
         /** No effect - high value */
         GEM,
         /** Player cannot cast spells. */
