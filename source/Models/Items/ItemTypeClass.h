@@ -46,6 +46,8 @@ public:
         HEAVY,
         /** High-value item (real). Non-droppable. */
         GOLD,
+        /** fake gold */
+        GOLD_FAKE,
         /** Explodes after a timer, dealing damage. Non-droppable. */
         BOMB
     };
@@ -53,11 +55,11 @@ public:
     ItemTypeClass(std::shared_ptr<cugl::AssetManager>& a) {
         _assets = a;
     }
-    static std::shared_ptr<cugl::JsonValue> getConsts(ItemType t);
+    std::shared_ptr<cugl::JsonValue> getConsts(ItemType t);
     
-    static std::shared_ptr<cugl::graphics::Texture> getTexture(ItemType t);
+    std::shared_ptr<cugl::graphics::Texture> getTexture(ItemType t);
     
-    static std::shared_ptr<cugl::graphics::Texture> getCard(ItemType t);
+    std::shared_ptr<cugl::graphics::Texture> getCard(ItemType t);
 
 };
 

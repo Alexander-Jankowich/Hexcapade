@@ -47,6 +47,7 @@ protected:
     //unordered_map<string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
     InputController _input;
+    ItemTypeClass _itemInfo;
     shared_ptr<InputDisplay> _inputDisplay;
     shared_ptr<Random> _random;
     bool _addedLWalls;

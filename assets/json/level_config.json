@@ -6,17 +6,7 @@
         "map-size-incr": 10,
         "quota": 150,
         "quota-incr": 50,
-        "items": [
-            {
-                "type": "spellbook-heal",
-                "min-depth": 0,
-                "max-depth": 100,
-                "value": 40,
-                "effect": "none",
-                "base-prob": 0.1,
-                "prob-incr": -0.01
-            }
-        ],
+        "items": ["protection", "spell-boost", "gem", "scroll", "spell-reduce", "heavy", ],
         "enemies": ["slow-bat", "ghost", "octoplush"],
         "enemies-probs": [
             [1.0, 0.0, 0.0],

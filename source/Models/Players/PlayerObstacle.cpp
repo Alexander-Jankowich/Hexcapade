@@ -16,7 +16,7 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s, const shared_
     _speed = 4;
     _health = 6;
     _inventoryLimit = 5;
-    _inventory.push_back(CarriedItem(ItemTypeClass::ItemType::BOOK_FIRE, consts->getInt("value"), 0));
+    _inventory.push_back(CarriedItem(ItemTypeClass::ItemType::BOOK_EARTH, consts->getInt("value"), 0));
 }
 
 void PlayerObstacle::setVelocity(Vec2 v) {

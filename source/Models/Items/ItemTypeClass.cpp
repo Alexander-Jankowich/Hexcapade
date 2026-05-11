@@ -42,7 +42,9 @@ std::shared_ptr<cugl::JsonValue> ItemTypeClass::getConsts(ItemType t) {
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("heavy");
 
         case ItemType::GOLD:
-            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("fools-gold");
+            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("gold-real");
+        case ItemType::GOLD_FAKE:
+            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("gold-fake");
 
         case ItemType::BOMB:
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("bomb");
@@ -98,8 +100,8 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getTexture(ItemType t){
             return _assets->get<cugl::graphics::Texture>("heavy_treasure");
 
         case ItemType::GOLD:
+        case ItemType::GOLD_FAKE:
             return _assets->get<cugl::graphics::Texture>("fools_gold");
-
         case ItemType::BOMB:
             return _assets->get<cugl::graphics::Texture>("exploding_potion");
 
@@ -143,6 +145,7 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getCard(ItemType t){
             return _assets->get<cugl::graphics::Texture>("inventory_cards/heavy_info");
 
         case ItemType::GOLD:
+        case ItemType::GOLD_FAKE:
             return _assets->get<cugl::graphics::Texture>("inventory_cards/foolsGold_info");
 
         case ItemType::BOMB:

@@ -410,7 +410,55 @@
   },
   "artifacts": {
       "spellbook-fire": {
+          "value": 50
+      },
+      "spellbook-water": {
           "value": 25
-      }
+      },
+      "spellbook-earth": {
+          "value": 25
+      },
+      "spellbook-freeze": {
+          "value": 25
+      },
+      "spellbook-death": {
+          "value": 75
+      },
+      "spellbook-heal": {
+          "value": 50
+      },
+      "scroll": {
+          "value": 25
+      },
+      "skull": {
+          "value": 50
+      },
+      "gem": {
+          "value": 75
+      },
+      "spell-restriction": {
+          "value": 75
+      },
+      "spell-reduce": {
+          "value": 50
+      },
+      "spell-boost": {
+          "value": 25
+      },
+      "protection": {
+          "value": 25
+      },
+      "heavy": {
+          "value": 50
+      },
+      "gold-real": {
+          "value": 200
+      },
+      "gold-fake": {
+          "value": 5
+      },
+      "bomb": {
+          "value": 100
+      },
   }
 }
