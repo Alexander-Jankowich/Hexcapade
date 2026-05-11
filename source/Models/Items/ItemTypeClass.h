@@ -16,7 +16,7 @@ using namespace std;
 
 class ItemTypeClass {
 private:
-    static std::shared_ptr<cugl::AssetManager> _assets;
+    std::shared_ptr<cugl::AssetManager> _assets;
     
 public:
     // one entry per texture, populate as more item textures come in

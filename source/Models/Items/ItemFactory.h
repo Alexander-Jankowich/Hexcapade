@@ -54,6 +54,7 @@ protected:
     /** Deserializer for supporting parameters */
     cugl::netcode::NetcodeDeserializer _deserializer;
     int _count =0;
+    ItemTypeClass _itemInfo;
 
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
@@ -79,6 +80,7 @@ public:
 
     void init(std::shared_ptr<cugl::AssetManager>& assets) {
         _assets = assets;
+        _itemInfo = ItemTypeClass(assets);
     }
     
     std::shared_ptr<ItemObstacle> getItem(int i) {return current.contains(i) ? current.at(i) : nullptr;}

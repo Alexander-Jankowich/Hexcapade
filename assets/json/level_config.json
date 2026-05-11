@@ -6,7 +6,7 @@
         "map-size-incr": 10,
         "quota": 150,
         "quota-incr": 50,
-        "items": ["protection", "spell-boost", "gem", "skull", "scroll", "spell-reduce", "heavy", ],
+        "items": ["protection", "spell-boost", "gem", "skull", "scroll", "spell-reduce", "heavy"],
         "enemies": ["slow-bat", "ghost", "octoplush"],
         "enemies-probs": [
             [1.0, 0.0, 0.0],

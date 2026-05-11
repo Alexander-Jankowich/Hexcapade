@@ -14,6 +14,8 @@
 using namespace std;
 using namespace cugl;
 
+using ItemType = ItemTypeClass::ItemType;
+
 ItemObstacle::ItemObstacle(const cugl::Vec2& pos, int value, ItemType t, int i) {
     init(pos, cugl::Size(ITEM_SIZE, ITEM_SIZE));
     setBodyType(b2_staticBody);
@@ -31,53 +33,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> ItemFactory:
     current.insert(std::pair<int, std::shared_ptr<ItemObstacle>>(i, item));
 
     // Grab the item's texture based on itemType 
-    auto texture = nullptr;
-    switch(t) {
-        case ItemType::BOOK_FIRE:
-            break;
-        case ItemType::BOOK_FREEZE:
-                
-            break;
-        case ItemType::BOOK_EARTH:
-            break;
-        case ItemType::BOOK_WATER:
-            break;
-        case ItemType::BOOK_DEATH:
-            
-            break;
-        case ItemType::BOOK_HEAL:
-            break;
-        case ItemType::NONE_LOW:
-                
-            break;
-        case ItemType::NONE_MED:
-                
-            break;
-        case ItemType::NONE_HIGH:
-                    
-            break;
-        case ItemType::SPELL_RESTRICTION:
-                
-            break;
-        case ItemType::SPELL_BOOST:
-                
-            break;
-        case ItemType::SPELL_REDUCE:
-                
-            break;
-        case ItemType::PROTECTION:
-                
-            break;
-        case ItemType::HEAVY:
-                
-            break;
-        case ItemType::GOLD:
-                
-            break;
-        case ItemType::BOMB:
-                
-            break;
-    }
+    auto texture = _itemInfo.getTexture(t);
 
     std::shared_ptr<scene2::PolygonNode> sprite;
     if (texture) {
