@@ -109,7 +109,7 @@ public:
     void setSpeed(float s) { _speed = s; }
 
     EnemyState getState() { return _state; }
-    void setState(EnemyState s) { _state = s; }
+    void setState(EnemyState s) { if (!isDead()) _state = s; }
 
     void startAttack() { _state = EnemyState::ATTACKING; }
     bool isAttacking() { return _state == EnemyState::ATTACKING; }
