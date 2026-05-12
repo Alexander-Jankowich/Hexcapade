@@ -52,6 +52,7 @@ void NetworkController::init(const std::shared_ptr<AssetManager> &a) {
     attachEventType<RestartGameEvent>();
     attachEventType<StartGameEvent>();
     attachEventType<PlayerNameEvent>();
+    attachEventType<PlayerStateEvent>();
     cugl::physics2::distrib::NetEventController::init(a);
     _rng = Random::alloc();
     _rng->init();
@@ -96,7 +97,10 @@ std::tuple<int,int> NetworkController::customEvents(){
         } else if (auto rse = std::dynamic_pointer_cast<RestartGameEvent>(e)){
             CULog("RESTART GAME GOT");
             processRestartEvent(rse);
-        } else if (auto sse = std::dynamic_pointer_cast<SetSpellEvent>(e)){
+        } else if (auto rse = std::dynamic_pointer_cast<PlayerStateEvent>(e)){
+            CULog("PLAYER STATE GOT");
+            processStateEvent(rse);
+        }else if (auto sse = std::dynamic_pointer_cast<SetSpellEvent>(e)){
             //CULog("SET SPELL GOT");
             for (auto& p : _playerFactory->current) {
                 if (p->getPID() == sse->getPID()) {
@@ -212,4 +216,19 @@ void NetworkController::processRestartEvent(const std::shared_ptr<RestartGameEve
     _gameState=NCGameState::UNSTARTED;
 }
 
+void NetworkController::processStateEvent(const std::shared_ptr<PlayerStateEvent> &e){
+    if(e -> pid == getPID()){
+        return;
+    }
+    auto p = _playerFactory -> getPlayerByPID(e -> pid);
+    
+    p -> setHealth(e -> hp);
+    p -> setFrozen(e -> freeze);
+    p -> setBuff(e -> buff);
+    p -> setMud(e -> mud);
+    p -> setShieldCount(e -> numShields);
+    if(p -> getShieldCount() == 0){
+        p -> setShield(false);
+    }
+}
 

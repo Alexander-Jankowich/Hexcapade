@@ -11,5 +11,6 @@
 #include "./Events/RestartGameEvent.h"
 #include "./Events/StartGameEvent.h"
 #include "./Events/PlayerNameEvent.h"
+#include "./Events/PlayerStateEvent.h"
 
 #endif // !__EVENT_INCLUDES_H__

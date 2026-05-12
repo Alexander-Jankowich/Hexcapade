@@ -23,9 +23,11 @@ private:
     const int END;
     const int END_FRAMES;
 
-    bool shouldEnd;
-    bool ended;
-    bool finishedCreate;
+    bool _shouldEnd;
+    bool _ended;
+    bool _finishedCreate;
+
+    int _existingOffset;
 
 public:
     SpellEntityNode(shared_ptr<graphics::Texture> texture, shared_ptr<JsonValue> consts);
@@ -38,7 +40,9 @@ public:
     /**
     * Call this function to trigger the end entity animation
     */
-    void end() { shouldEnd = true; }
+    void end() { _shouldEnd = true; }
+
+    void setOffset(int o) { _existingOffset = o; }
 };
 
 #endif
