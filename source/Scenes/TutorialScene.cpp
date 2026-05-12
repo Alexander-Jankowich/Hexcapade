@@ -14,67 +14,6 @@ using namespace std;
 using namespace cugl::graphics;
 
 
-
-//    std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entries,
-//        const PlayerObstacle::CarriedItem& item) {
-//        for (const auto& itemEntry : entries) {
-//            if (itemEntry.textureAsset == item.itemType || itemEntry.id == item.itemType) {
-//                return itemEntry.name;
-//            }
-//        }
-//        return item.itemType;
-//    }
-    // Naming standard - Use this.
-
-    // Artifacts need renaming - galiba
-std::string TutorialScene::getICTextureKey(const std::string& itemType) {
-        if (itemType == "artifact_heavy" || itemType == "gem_blue") {
-            return "heavyTreasure_info";
-        }
-        if (itemType == "artifact_protection" || itemType == "gem_brown") {
-            return "zombieTotem_info";
-        }
-        if (itemType == "artifact_gold" || itemType == "artifact_gold_real" ||
-            itemType == "artifact_gold_fake" || itemType == "gem_gold") {
-            return "foolsGold_info";
-        }
-        if (itemType == "artifact_boost" || itemType == "artifact_gem_boost" ||
-            itemType == "gem_neon") {
-            return "mysticalBrooch_info";
-        }
-        if (itemType == "artifact_bomb" || itemType == "gem_pink") {
-            return "explodingPotion_info";
-        }
-        if (itemType == "artifact_reduce" || itemType == "artifact_gem_reduce" ||
-            itemType == "artifact_gem") {
-            return "antiMagic_info";
-        }
-        if (itemType == "artifact_scroll") {
-            return "cursedScroll_info";
-        }
-
-        static const std::string prefix = "spellbook_";
-        static const std::string suffix = "_spellbook";
-        std::string cardBase;
-
-        if (itemType.rfind(prefix, 0) == 0) {
-            cardBase = itemType.substr(prefix.size());
-        }
-        else if (itemType.size() > suffix.size() &&
-            itemType.compare(itemType.size() - suffix.size(), suffix.size(), suffix) == 0) {
-            cardBase = itemType.substr(0, itemType.size() - suffix.size());
-        }
-        else {
-            return "";
-        }
-
-        if (cardBase == "death") {
-            cardBase = "disintegrate";
-        }
-
-        return cardBase + "_card";
-    }
-
 #pragma mark -
 #pragma mark Level Layout
 
@@ -201,6 +140,9 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
     n->setPriority(0.0f);
     _worldnode->addChild(n);
     
+    _itemInfo = ItemTypeClass(_assets);
+
+    
     setActive(false);
     return true;
 }
@@ -242,9 +184,7 @@ void TutorialScene::removeItemNode(const std::shared_ptr<ItemObstacle>& item) {
 void TutorialScene::showInventoryCard(size_t slotIndex) {
     hideInventoryCard();
 
-    std::string textureKey = getICTextureKey(_player->getInventory()[slotIndex].itemType);
-    auto cardTex = _assets->get<graphics::Texture>(textureKey);
-    CULog("inventory slot %zu card %s opened", slotIndex, textureKey.c_str());
+    auto cardTex = _itemInfo.getCard(_player->getInventory()[slotIndex].itemType);
 
     _inventoryCardNode = scene2::PolygonNode::allocWithTexture(cardTex);
     _inventoryCardNode->setAnchor(Vec2::ANCHOR_CENTER);
@@ -597,61 +537,11 @@ void TutorialScene::preUpdate(float dt)
             }
 
             //CULog("Casting spell type: %d", t);
-            switch (t) {
-            case SpellType::DEATH:
-                for (int i = 0; i < 16; i++) {
-                    angle = angle.rotate((M_PI / 8) * i);
-                    auto params = _spellFact->serializeParams((playerScreenPos / PHYSICS_SCALE), angle, t, _networkCtrl->getPID());
-                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                }
-                _player->consumeItem("spellbook_death");
-                break;
-            case SpellType::WATER: {
-                int numShots = 8;
-                float start = M_PI / 6.0f;
-                float end = -M_PI / 6.0f;
-                for (int i = 0; i < numShots; i++) {
-                    float alpha = (float)i / (numShots - 1);
-                    float theta = start + alpha * (end - start);
-
-                    Vec2 dir = angle.getNormalization().rotate(theta);
-
-                    auto params = _spellFact->serializeParams(
-                        (playerScreenPos / PHYSICS_SCALE),
-                        dir, t, _networkCtrl->getPID());
-                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                }
-                break;
-            }
-            case SpellType::MUD_WATER: {
-                int numShots = 8;
-                float start = M_PI / 6.0f;
-                float end = -M_PI / 6.0f;
-                for (int i = 0; i < numShots; i++) {
-                    float alpha = (float)i / (numShots - 1);
-                    float theta = start + alpha * (end - start);
-
-                    Vec2 dir = angle.getNormalization().rotate(theta);
-
-                    auto params = _spellFact->serializeParams(
-                        (playerScreenPos / PHYSICS_SCALE),
-                        dir, t, _networkCtrl->getPID());
-                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                }
-                break;
-            }
-            default:
-                int damageBonus = _player->getDamageBonus();
-                auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _player->getPID(), damageBonus,
-                    _player->getBuff());
-                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
-                _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                break;
-            }
-
+            // removed stuff for spells not in tutorial
+            int damageBonus = _player->getDamageBonus();
+            auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _player->getPID(), damageBonus, _player->getBuff());
+            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+            _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
 
             _input.resolveSpell();
             _player->resolveSpell();
@@ -867,7 +757,7 @@ void TutorialScene::renderHUD()
                 // Draw item texture centered inside the frame
                 if (i < carriedItems.size()) {
                     const auto& carried = carriedItems[i];
-                    auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
+                    auto itemTex = _itemInfo.getTexture(carried.itemType);
                     if (itemTex) {
                         float padding = 0.0f;
                         float maxSize = boxSize - padding * 2;
@@ -1015,6 +905,12 @@ void TutorialScene::spawnFromMap() {
         _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
     }
     
+    for (auto e : _map->getData()->getItemSpawnPoints()) {
+        auto params = _itemFact->serializeParams(e.location / PHYSICS_SCALE, _itemInfo.getConsts((ItemTypeClass::ItemType) e.item)->getInt("value"), (ItemTypeClass::ItemType) e.item);
+        auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
+        _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+    }
+    
     _depositPosition = _map->getData()->getDepositSpawn();
 }
 
@@ -1108,21 +1004,9 @@ void TutorialScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& ob
 
 
 /**
- * Just a helper to handle some of our damage processing
+ * Just a helper to handle some of our damage processing - removed code for things not in tutorial
  */
 static void healthHelper(float damage, PlayerObstacle* player) {
-    if (player->hasShield()) {
-        player->setShieldCount(player->getShieldCount() - 1);
-        if (player->getShieldCount() == 0) {
-            player->setShield(false);
-        }
-        return;
-    }
-    if (player->getHealth() - damage <= 0 && player->hasProtectionArtifact()) {
-        player->consumeItem("artifact_protection");
-        player->setHealth(2);
-        return;
-    }
     player->setHealth(player->getHealth() - damage);
 }
 

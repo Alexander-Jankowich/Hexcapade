@@ -89,11 +89,10 @@ bool StaticLevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
     }
     
     // generate the spawn points. order: item, enemies, player/bot/deposit, events, colliders
-    // TODO: IGNORE FOR NOW UNTIL DECIDING ON ENUM
-//    for (auto item_spawn : json->get("layers")->get(1)->get("layers")->get(0)->get("objects")->children()){
-//        auto sp = Vec2(item_spawn->getFloat("x") / _tileWidth, item_spawn->getFloat("y") / _tileHeight);
-//        _itemSpawnPoints.push_back(sp);
-//    }
+    for (auto item_spawn : json->get("layers")->get(1)->get("layers")->get(0)->get("objects")->children()){
+        auto sp = Vec2(item_spawn->getFloat("x"),  _mapHeight * _tileWidth - item_spawn->getFloat("y"));
+        _itemSpawnPoints.push_back(ItemSpawn(sp, item_spawn->get("properties")->children()[0]->getInt("value")));
+    }
     
     // in SLL we convert into world coords while loading bc we know map height
     // TODO: change all y to me tw * height - y

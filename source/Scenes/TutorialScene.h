@@ -56,6 +56,7 @@ protected:
     /** The controller to manage the ship */
     InputController _input;
     shared_ptr<InputDisplay> _inputDisplay;
+    ItemTypeClass _itemInfo;
     shared_ptr<Random> _random;
     bool _addedLWalls;
     /** Reference to the physics root of the scene graph */

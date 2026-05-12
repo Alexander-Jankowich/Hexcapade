@@ -138,13 +138,13 @@
                         {
                          "height":0,
                          "id":19,
-                         "name":"spellbook_fire",
+                         "name":"spellbook_freeze",
                          "point":true,
                          "properties":[
                                 {
                                  "name":"spell",
                                  "type":"int",
-                                 "value":0
+                                 "value":1
                                 }],
                          "rotation":0,
                          "type":"",
@@ -156,13 +156,13 @@
                         {
                          "height":0,
                          "id":34,
-                         "name":"mystical_brooch",
+                         "name":"spell_boost",
                          "point":true,
                          "properties":[
                                 {
                                  "name":"artifact",
                                  "type":"int",
-                                 "value":0
+                                 "value":10
                                 }],
                          "rotation":0,
                          "type":"",
@@ -174,13 +174,13 @@
                         {
                          "height":0,
                          "id":37,
-                         "name":"artifact_scroll",
+                         "name":"spell_restrict",
                          "point":true,
                          "properties":[
                                 {
                                  "name":"artifact",
                                  "type":"int",
-                                 "value":1
+                                 "value":9
                                 }],
                          "rotation":0,
                          "type":"",

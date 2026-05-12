@@ -24,6 +24,15 @@ public:
             png = t;
         }
     };
+    struct ItemSpawn {
+        Vec2 location;
+        int item;
+        
+        ItemSpawn(Vec2 l, int i) {
+            location = l;
+            item =  i;
+        }
+    };
     struct EnemySpawn {
         Vec2 location;
         int enem;
@@ -54,7 +63,7 @@ protected:
     vector<vector<int>> _lowerWalls;
     vector<vector<int>> _deco;
     vector<vector<int>> _visfix;
-    vector<Vec2> _itemSpawnPoints;
+    vector<ItemSpawn> _itemSpawnPoints;
     vector<EnemySpawn> _enemSpawnPoints;
     vector<BotSpawn> _botSpawnPoints;
     Vec2 _playerSpawn;
@@ -116,7 +125,7 @@ public:
     const vector<vector<int>>& getFixLayer() const {return _visfix;}
     
 
-    const vector<Vec2>& getItemSpawnPoints() const {return _itemSpawnPoints;}
+    const vector<ItemSpawn>& getItemSpawnPoints() const {return _itemSpawnPoints;}
     const vector<EnemySpawn>& getEnemSpawnPoints() const {return _enemSpawnPoints;}
     const vector<BotSpawn>& getBotSpawnPoints() const {return _botSpawnPoints;}
 
