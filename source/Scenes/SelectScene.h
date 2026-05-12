@@ -31,7 +31,7 @@ private:
     std::shared_ptr<cugl::scene2::Button>      _bunnyBtn;
     
     std::shared_ptr<cugl::scene2::TextField> _nameField;
-    std::string _playerName = "PLAYER";
+    std::string _playerName;
     
     CharacterType _selectedCharacter = CharacterType::FOX;
     bool _characterChosen = false;
