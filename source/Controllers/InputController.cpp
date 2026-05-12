@@ -970,8 +970,8 @@ void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::
                 recognizer_2 -> removeGesture(*it);
                 recognizerLess_2 -> removeGesture(*it);
             case(3):
-                recognizer_2 -> removeGesture(*it);
-                recognizerLess_2 -> removeGesture(*it);
+                recognizer_3 -> removeGesture(*it);
+                recognizerLess_3 -> removeGesture(*it);
             }
             _activeGestureNamesLess.erase(*it);
             it = _activeGestureNames.erase(it);
