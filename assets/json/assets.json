@@ -6578,8 +6578,8 @@
           },
           "data": {
             "anchor": [
-              0.5,
-              0.5
+              0,
+              1
             ],
             "size": [
               934,
@@ -6614,7 +6614,113 @@
                 ],
                 "visible": true
               },
-              "children": {},
+              "children": {
+                        "player_1_texture": {
+                                  "type": "Image",
+                                  "data": {
+                                            "texture": "fox_pr",
+                                            "anchor": [
+                                                      0,
+                                                      1
+                                            ],
+                                            "size": [
+                                                      182,
+                                                      165
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      0,
+                                                      0
+                                            ],
+                                            "visible": true
+                                  },
+                                  "layout": {
+                                            "x_anchor": "left",
+                                            "y_anchor": "top",
+                                            "absolute": false,
+                                            "x_offset": 0,
+                                            "y_offset": 0
+                                  }
+                        },
+                        "player_1_text": {
+                                  "type": "Label",
+                                  "data": {
+                                            "anchor": [
+                                                      0.5,
+                                                      0.5
+                                            ],
+                                            "size": [
+                                                      281,
+                                                      46
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      182,
+                                                      36
+                                            ],
+                                            "visible": true,
+                                            "font": "CoolveticaRegular38",
+                                            "text": "Deposited: 0",
+                                            "foreground": "#000000ff",
+                                            "background": "#00000000",
+                                            "padding": [
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0
+                                            ],
+                                            "valign": "top",
+                                            "halign": "left"
+                                  },
+                                  "children": {},
+                                  "layout": {
+                                            "x_anchor": "center",
+                                            "y_anchor": "middle",
+                                            "absolute": false,
+                                            "x_offset": 0.2,
+                                            "y_offset": -0.14
+                                  }
+                        },
+                        "player_1_name": {
+                                  "type": "Label",
+                                  "data": {
+                                            "anchor": [
+                                                      0.5,
+                                                      0.5
+                                            ],
+                                            "size": [
+                                                      281,
+                                                      46
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      182,
+                                                      82
+                                            ],
+                                            "visible": true,
+                                            "font": "CoolveticaRegular38",
+                                            "text": "PLAYER",
+                                            "foreground": "#000000ff",
+                                            "background": "#00000000",
+                                            "padding": [
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0
+                                            ],
+                                            "valign": "top",
+                                            "halign": "left"
+                                  },
+                                  "children": {},
+                                  "layout": {
+                                            "x_anchor": "center",
+                                            "y_anchor": "middle",
+                                            "absolute": false,
+                                            "x_offset": 0.2,
+                                            "y_offset": 0.14
+                                  }
+                        }
+              },
               "layout": {
                 "x_anchor": "left",
                 "y_anchor": "top",
@@ -6644,7 +6750,113 @@
                 ],
                 "visible": true
               },
-              "children": {},
+              "children": {
+                        "player_2_texture": {
+                                  "type": "Image",
+                                  "data": {
+                                            "texture": "fox_pr",
+                                            "anchor": [
+                                                      0,
+                                                      1
+                                            ],
+                                            "size": [
+                                                      182,
+                                                      165
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      0,
+                                                      0
+                                            ],
+                                            "visible": true
+                                  },
+                                  "layout": {
+                                            "x_anchor": "left",
+                                            "y_anchor": "top",
+                                            "absolute": false,
+                                            "x_offset": 0,
+                                            "y_offset": 0
+                                  }
+                        },
+                        "player_2_text": {
+                                  "type": "Label",
+                                  "data": {
+                                            "anchor": [
+                                                      0.5,
+                                                      0.5
+                                            ],
+                                            "size": [
+                                                      281,
+                                                      46
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      182,
+                                                      36
+                                            ],
+                                            "visible": true,
+                                            "font": "CoolveticaRegular38",
+                                            "text": "Deposited: 0",
+                                            "foreground": "#000000ff",
+                                            "background": "#00000000",
+                                            "padding": [
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0
+                                            ],
+                                            "valign": "top",
+                                            "halign": "left"
+                                  },
+                                  "children": {},
+                                  "layout": {
+                                            "x_anchor": "center",
+                                            "y_anchor": "middle",
+                                            "absolute": false,
+                                            "x_offset": 0.2,
+                                            "y_offset": -0.14
+                                  }
+                        },
+                        "player_2_name": {
+                                  "type": "Label",
+                                  "data": {
+                                            "anchor": [
+                                                      0.5,
+                                                      0.5
+                                            ],
+                                            "size": [
+                                                      281,
+                                                      46
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      182,
+                                                      82
+                                            ],
+                                            "visible": true,
+                                            "font": "CoolveticaRegular38",
+                                            "text": "PLAYER",
+                                            "foreground": "#000000ff",
+                                            "background": "#00000000",
+                                            "padding": [
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0
+                                            ],
+                                            "valign": "top",
+                                            "halign": "left"
+                                  },
+                                  "children": {},
+                                  "layout": {
+                                            "x_anchor": "center",
+                                            "y_anchor": "middle",
+                                            "absolute": false,
+                                            "x_offset": 0.2,
+                                            "y_offset": 0.14
+                                  }
+                        }
+              },
               "layout": {
                 "x_anchor": "left",
                 "y_anchor": "top",
@@ -6674,7 +6886,113 @@
                 ],
                 "visible": true
               },
-              "children": {},
+              "children": {
+                        "player_3_texture": {
+                                  "type": "Image",
+                                  "data": {
+                                            "texture": "fox_pr",
+                                            "anchor": [
+                                                      0,
+                                                      1
+                                            ],
+                                            "size": [
+                                                      182,
+                                                      165
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      0,
+                                                      0
+                                            ],
+                                            "visible": true
+                                  },
+                                  "layout": {
+                                            "x_anchor": "left",
+                                            "y_anchor": "top",
+                                            "absolute": false,
+                                            "x_offset": 0,
+                                            "y_offset": 0
+                                  }
+                        },
+                        "player_3_text": {
+                                  "type": "Label",
+                                  "data": {
+                                            "anchor": [
+                                                      0.5,
+                                                      0.5
+                                            ],
+                                            "size": [
+                                                      281,
+                                                      46
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      182,
+                                                      36
+                                            ],
+                                            "visible": true,
+                                            "font": "CoolveticaRegular38",
+                                            "text": "Deposited: 0",
+                                            "foreground": "#000000ff",
+                                            "background": "#00000000",
+                                            "padding": [
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0
+                                            ],
+                                            "valign": "top",
+                                            "halign": "left"
+                                  },
+                                  "children": {},
+                                  "layout": {
+                                            "x_anchor": "center",
+                                            "y_anchor": "middle",
+                                            "absolute": false,
+                                            "x_offset": 0.2,
+                                            "y_offset": -0.14
+                                  }
+                        },
+                        "player_3_name": {
+                                  "type": "Label",
+                                  "data": {
+                                            "anchor": [
+                                                      0.5,
+                                                      0.5
+                                            ],
+                                            "size": [
+                                                      281,
+                                                      46
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      182,
+                                                      82
+                                            ],
+                                            "visible": true,
+                                            "font": "CoolveticaRegular38",
+                                            "text": "PLAYER",
+                                            "foreground": "#000000ff",
+                                            "background": "#00000000",
+                                            "padding": [
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0
+                                            ],
+                                            "valign": "top",
+                                            "halign": "left"
+                                  },
+                                  "children": {},
+                                  "layout": {
+                                            "x_anchor": "center",
+                                            "y_anchor": "middle",
+                                            "absolute": false,
+                                            "x_offset": 0.2,
+                                            "y_offset": 0.14
+                                  }
+                        }
+              },
               "layout": {
                 "x_anchor": "left",
                 "y_anchor": "top",
@@ -6704,7 +7022,113 @@
                 ],
                 "visible": true
               },
-              "children": {},
+              "children": {
+                        "player_4_texture": {
+                                  "type": "Image",
+                                  "data": {
+                                            "texture": "fox_pr",
+                                            "anchor": [
+                                                      0,
+                                                      1
+                                            ],
+                                            "size": [
+                                                      182,
+                                                      165
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      0,
+                                                      0
+                                            ],
+                                            "visible": true
+                                  },
+                                  "layout": {
+                                            "x_anchor": "left",
+                                            "y_anchor": "top",
+                                            "absolute": false,
+                                            "x_offset": 0,
+                                            "y_offset": 0
+                                  }
+                        },
+                        "player_4_text": {
+                                  "type": "Label",
+                                  "data": {
+                                            "anchor": [
+                                                      0.5,
+                                                      0.5
+                                            ],
+                                            "size": [
+                                                      281,
+                                                      46
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      182,
+                                                      36
+                                            ],
+                                            "visible": true,
+                                            "font": "CoolveticaRegular38",
+                                            "text": "Deposited: 0",
+                                            "foreground": "#000000ff",
+                                            "background": "#00000000",
+                                            "padding": [
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0
+                                            ],
+                                            "valign": "top",
+                                            "halign": "left"
+                                  },
+                                  "children": {},
+                                  "layout": {
+                                            "x_anchor": "center",
+                                            "y_anchor": "middle",
+                                            "absolute": false,
+                                            "x_offset": 0.2,
+                                            "y_offset": -0.14
+                                  }
+                        },
+                        "player_4_name": {
+                                  "type": "Label",
+                                  "data": {
+                                            "anchor": [
+                                                      0.5,
+                                                      0.5
+                                            ],
+                                            "size": [
+                                                      281,
+                                                      46
+                                            ],
+                                            "angle": 0,
+                                            "position": [
+                                                      182,
+                                                      82
+                                            ],
+                                            "visible": true,
+                                            "font": "CoolveticaRegular38",
+                                            "text": "PLAYER",
+                                            "foreground": "#000000ff",
+                                            "background": "#00000000",
+                                            "padding": [
+                                                      0,
+                                                      0,
+                                                      0,
+                                                      0
+                                            ],
+                                            "valign": "top",
+                                            "halign": "left"
+                                  },
+                                  "children": {},
+                                  "layout": {
+                                            "x_anchor": "center",
+                                            "y_anchor": "middle",
+                                            "absolute": false,
+                                            "x_offset": 0.2,
+                                            "y_offset": 0.14
+                                  }
+                        }
+              },
               "layout": {
                 "x_anchor": "left",
                 "y_anchor": "top",
@@ -6715,11 +7139,11 @@
             }
           },
           "layout": {
-            "x_anchor": "center",
-            "y_anchor": "middle",
-            "absolute": false,
-            "x_offset": 0.01,
-            "y_offset": 0.04
+            "x_anchor": "left",
+            "y_anchor": "top",
+            "absolute": true,
+            "x_offset": 210,
+            "y_offset": -149
           }
         },
         "result": {

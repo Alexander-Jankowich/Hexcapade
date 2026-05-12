@@ -7,6 +7,14 @@
 using namespace cugl;
 using namespace cugl::graphics;
 #define SCENE_HEIGHT 720
+
+static std::string endPortraitKey(const std::string& character) {
+    if (character == "player_cat") return "cat_pr";
+    if (character == "player_duck") return "duck_pr";
+    if (character == "player_bunny") return "bunny_pr";
+    return "fox_pr";
+}
+
 bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     if (!assets) return false;
     if (!Scene2::initWithHint(Size(0, SCENE_HEIGHT))) return false;
@@ -14,6 +22,7 @@ bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _assets = assets;
     _state = State::NONE;
     _replayPressed = false;
+    _exitPressed = false;
 
     Size dimen = getSize();
     std::shared_ptr<scene2::SceneNode> scene = _assets->get<scene2::SceneNode>("end");
@@ -23,6 +32,20 @@ bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     _replayButton = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("end.next_round"));
     _exitButton = std::dynamic_pointer_cast<scene2::Button>(_assets->get<scene2::SceneNode>("end.quit"));
     _resultLabel = std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>("end.result.result_text"));
+    
+    auto addPlayerSlot = [this](const std::string& player) {
+        std::string slot = "end.player_stats." + player;
+
+        _playerSlots.push_back(_assets->get<scene2::SceneNode>(slot));
+        _playerPortraits.push_back(std::dynamic_pointer_cast<scene2::PolygonNode>(_assets->get<scene2::SceneNode>(slot + "." + player + "_texture")));
+        _playerNames.push_back(std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>(slot + "." + player + "_name")));
+        _playerDeposits.push_back(std::dynamic_pointer_cast<scene2::Label>(_assets->get<scene2::SceneNode>(slot + "." + player + "_text")));
+    };
+
+    addPlayerSlot("player_1");
+    addPlayerSlot("player_2");
+    addPlayerSlot("player_3");
+    addPlayerSlot("player_4");
 
     _replayButton->addListener([this](const std::string& name, bool down) {
         if (down && _networkCtrl->isHost()) {
@@ -30,6 +53,14 @@ bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
             CULog("host sending restart");
             _networkCtrl->pushOutEvent(RestartGameEvent::allocRestartGameEvent(0));
             _networkCtrl->updateNet();
+        }
+    });
+
+    // EXIT BUTTON
+    _exitButton->addListener([this](const std::string& name, bool down) {
+        if (down) {
+            // exit button placeholder
+            _exitPressed = true;
         }
     });
 
@@ -48,16 +79,58 @@ void EndScene::dispose() {
     _replayButton = nullptr;
     _exitButton = nullptr;
     _resultLabel = nullptr;
+    _playerSlots.clear();
+    _playerPortraits.clear();
+    _playerNames.clear();
+    _playerDeposits.clear();
+    _endPlayerIds.clear();
 }
 
 void EndScene::show(bool won) {
     _state = won ? State::WIN : State::LOSE;
     _resultLabel->setText(won ? "Success" : "Failure");
+    
+    // get snapshot of connected player ids for this end screen
+    // each id is used to look up its name, character, and deposit total - better way?
+    _endPlayerIds.clear();
+    for (const auto& pid : _networkCtrl->getPlayers()) {
+        _endPlayerIds.push_back(pid);
+    }
+    updatePlayerStats();
+}
+
+void EndScene::updatePlayerStats() {
+    // hide every slot first (stale data)
+    for (auto& slot : _playerSlots) {
+        slot->setVisible(false);
+    }
+
+    // fill one endgame slot for each player who finished the round
+    int index = 0;
+    for (const auto& pid : _endPlayerIds) {
+        if (index == (int)_playerSlots.size()) break;
+
+        Size portraitSize = _playerPortraits[index]->getContentSize();
+
+        // swap to the portrait that matches the character chosen this round
+        auto portrait = _assets->get<Texture>(endPortraitKey(_networkCtrl->getPlayerCharacter(pid)));
+        _playerPortraits[index]->setTexture(portrait);
+        
+        // resize portrait to fit inside image section
+        _playerPortraits[index]->setContentSize(portraitSize);
+
+        // player name, player deposit amount
+        _playerNames[index]->setText(_networkCtrl->getPlayerName(pid));
+        _playerDeposits[index]->setText("Deposited: " + std::to_string(_networkCtrl->getPlayerDeposit(pid)));
+        _playerSlots[index]->setVisible(true);
+        index++;
+    }
 }
 
 void EndScene::update(float dt) {
     _networkCtrl->updateNet();
     _networkCtrl->customEvents();
+    updatePlayerStats();
 }
 
 void EndScene::render() {
@@ -70,14 +143,20 @@ void EndScene::setActive(bool active) {
         Scene2::setActive(active);
         if (active) {
             _replayPressed = false;
+            _exitPressed = false;
+            _replayButton->setVisible(true);
             _replayButton->activate();
-            _exitButton->deactivate();
+            // EXIT BUTTON
+            _exitButton->activate();
             if (!_networkCtrl->isHost()) {
+                _replayButton->setVisible(false);
                 _replayButton->deactivate();
             }
         } else {
             _state = State::NONE;
             _replayPressed = false;
+            // EXIT BUTTON
+            _exitPressed = false;
             _replayButton->deactivate();
             _exitButton->deactivate();
             _replayButton->setDown(false);

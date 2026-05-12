@@ -17,11 +17,20 @@ private:
     std::shared_ptr<cugl::scene2::Button> _replayButton;
     std::shared_ptr<cugl::scene2::Button> _exitButton;
     std::shared_ptr<cugl::scene2::Label> _resultLabel;
+    std::vector<std::shared_ptr<cugl::scene2::SceneNode>> _playerSlots;
+    std::vector<std::shared_ptr<cugl::scene2::PolygonNode>> _playerPortraits;
+    std::vector<std::shared_ptr<cugl::scene2::Label>> _playerNames;
+    std::vector<std::shared_ptr<cugl::scene2::Label>> _playerDeposits;
+    std::vector<std::string> _endPlayerIds;
     State _state;
     bool  _replayPressed;
+    // EXIT BUTTON
+    bool  _exitPressed;
+
+    void updatePlayerStats();
 
 public:
-    EndScene() : cugl::scene2::Scene2(), _state(State::NONE), _replayPressed(false) {}
+    EndScene() : cugl::scene2::Scene2(), _state(State::NONE), _replayPressed(false), _exitPressed(false) {}
     ~EndScene() { dispose(); }
 
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
@@ -37,6 +46,8 @@ public:
 
     void release() {_networkCtrl = nullptr;}
     bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->gameState()==NetworkController::NCGameState::UNSTARTED); }
+    // EXIT BUTTON
+    bool didPressExit() const { return _exitPressed; }
 
     void update(float dt) override;
     void render() override;

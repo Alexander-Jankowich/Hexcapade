@@ -123,6 +123,7 @@ void SelectScene::onCharacterSelected(CharacterType c) {
     }
     if (_networkCtrl) {
         _networkCtrl->setPlayerCharacter(_networkCtrl->getPID(), charStr);
+        _networkCtrl->pushOutEvent(PlayerNameEvent::allocPlayerNameEvent(_networkCtrl->getPID(), _playerName, charStr));
     }
 
     auto tex = _assets->get<graphics::Texture>(portraitKey(c));

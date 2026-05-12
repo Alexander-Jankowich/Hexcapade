@@ -506,6 +506,11 @@ void GeometryApp::updateGameScene(float dt) {
 
 void GeometryApp::updateEndScene(float dt) {
     _endScene.update(dt);
+    // EXIT BUTTON
+    if (_endScene.didPressExit()) {
+        // exit button placeholder
+        return;
+    }
     if (_endScene.didPressReplay()) {
         // transfer connect ownership to new scene
         CULog("replay was pressed");
