@@ -955,31 +955,29 @@ void InputController::_addGestureByName(
     activeSet.insert(name);
 }
 
-bool InputController::_spellbookEnablesSpell(const std::string& itemType, SpellType spell) {
+bool InputController::_spellbookEnablesSpell(ItemTypeClass::ItemType itemType, SpellType spell) {
     switch (spell) {
     case SpellType::FIREBALL:
-        return itemType == "spellbook_fire";
+        return itemType == ItemTypeClass::ItemType::BOOK_FIRE;
     case SpellType::FREEZE:
-        return itemType == "spellbook_freeze";
+        return itemType == ItemTypeClass::ItemType::BOOK_FREEZE;
     case SpellType::HEAL:
-        return itemType == "spellbook_heal";
+        return itemType == ItemTypeClass::ItemType::BOOK_HEAL;
     case SpellType::EARTH:
-        return itemType == "spellbook_earth";
+        return itemType == ItemTypeClass::ItemType::BOOK_EARTH;
     case SpellType::DEATH:
-        return itemType == "spellbook_death";
+        return itemType == ItemTypeClass::ItemType::BOOK_DEATH;
     case SpellType::WATER:
-        return itemType == "spellbook_water";
+        return itemType == ItemTypeClass::ItemType::BOOK_FREEZE;
     default:
         return false;
     }
 }
 
 void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::CarriedItem>& inventory) {
-    std::unordered_set<std::string> currentSpellbookSet;
+    std::unordered_set<int> currentSpellbookSet;
     for (const auto& item : inventory) {
-        if (item.kind == PlayerObstacle::ItemKind::SPELLBOOK) {
-            currentSpellbookSet.insert(item.itemType);
-        }
+        currentSpellbookSet.insert((int)item.itemType);
     }
 
     if (currentSpellbookSet == _lastSpellbookSet) return;
@@ -988,7 +986,7 @@ void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::
     std::unordered_set<std::string> desired;
     for (const auto& itemType : currentSpellbookSet) {
         for (auto& [spellType, gestureName] : _spellToGestureName) {
-            if (_spellbookEnablesSpell(itemType, spellType)) {
+            if (_spellbookEnablesSpell((ItemTypeClass::ItemType)itemType, spellType)) {
                 desired.insert(gestureName);
             }
         }

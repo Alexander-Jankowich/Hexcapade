@@ -37,13 +37,13 @@
       "file": "textures/death_sheet.png"
     },
     "earth": {
-        "file": "textures/earth_sheet.png"
+      "file": "textures/earth_sheet.png"
     },
     "water": {
-        "file": "textures/water_sheet.png"
+      "file": "textures/water_sheet.png"
     },
     "mud": {
-        "file": "textures/mud_sheet.png"
+      "file": "textures/mud_sheet.png"
     },
     "efreeze": {
         "file": "textures/efreeze_sheet.png"
@@ -52,10 +52,10 @@
       "file": "textures/shield_sheet.png"
     },
     "shield_entity": {
-        "file": "textures/shield-entity_sheet.png"
+      "file": "textures/shield-entity_sheet.png"
     },
     "buff": {
-        "file": "textures/buff_sheet.png"
+      "file": "textures/buff_sheet.png"
     },
     "buff_entity": {
       "file": "textures/buff-entity_sheet.png"
@@ -100,25 +100,34 @@
       "file": "textures/playerduck_sheet.png"
     },
     "artifact_reduce": {
-      "file": "textures/skull_incense.png"
+      "file": "textures/skull.png"
     },
     "artifact_boost": {
-      "file": "textures/mystical_brooch.png"
+      "file": "textures/spell_boost.png"
     },
     "artifact_heavy": {
       "file": "textures/heavy_treasure.png"
     },
     "artifact_protection": {
-      "file": "textures/zombie_totem.png"
+      "file": "textures/protection.png"
     },
     "artifact_gold": {
       "file": "textures/fools_gold.png"
     },
     "artifact_bomb": {
-      "file": "textures/exploding_potion.png"
+      "file": "textures/bomb.png"
+    },
+    "artifact_restrict": {
+      "file": "textures/spell_restriction.png"
     },
     "artifact_scroll": {
-      "file": "textures/forbidden_chains.png"
+      "file": "textures/scroll.png"
+    },
+    "artifact_gem": {
+      "file": "textures/gem.png"
+    },
+    "artifact_ribbon": {
+      "file": "textures/ribbon.png"
     },
     "spellbook_fire": {
       "file": "textures/spellbook_fire.png"
@@ -157,25 +166,10 @@
       "file": "textures/inventory_cards/disintegrate_card.png"
     },
     "heavyTreasure_info": {
-      "file": "textures/inventory_cards/artifact_cards/heavyTreasure_info.png"
+      "file": "textures/inventory_cards/artifact_cards/heavy_info.png"
     },
     "zombieTotem_info": {
-      "file": "textures/inventory_cards/artifact_cards/zombieTotem_info.png"
-    },
-    "foolsGold_info": {
-      "file": "textures/inventory_cards/artifact_cards/foolsGold_info.png"
-    },
-    "mysticalBrooch_info": {
-      "file": "textures/inventory_cards/artifact_cards/mysticalBrooch_info.png"
-    },
-    "explodingPotion_info": {
-      "file": "textures/inventory_cards/artifact_cards/explodingPotion_info.png"
-    },
-    "antiMagic_info": {
-      "file": "textures/inventory_cards/artifact_cards/antiMagic_info.png"
-    },
-    "cursedScroll_info": {
-      "file": "textures/inventory_cards/artifact_cards/cursedScroll_info.png"
+      "file": "textures/inventory_cards/artifact_cards/protection_info.png"
     },
     "hex-icon-bunny": {
       "file": "textures/hex-icon-bunny.png"

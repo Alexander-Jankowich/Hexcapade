@@ -398,7 +398,7 @@ protected:
     std::unordered_map<SpellType, std::string> _spellToGestureName;
 
     /** The spellbook item types present in inventory at the last sync */
-    std::unordered_set<std::string> _lastSpellbookSet;
+    std::unordered_set<int> _lastSpellbookSet;
     
     std::function<cugl::Vec2(const cugl::Vec2&)> _screenToWorld;
 
@@ -609,7 +609,7 @@ private:
     void motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus);
 
     void _addGestureByName(const std::string& name, std::shared_ptr<PGestureRecognizer> recognizer, std::unordered_set<std::string>& activeSet);
-    bool _spellbookEnablesSpell(const std::string& itemType, SpellType spell);
+    bool _spellbookEnablesSpell(ItemTypeClass::ItemType itemType, SpellType spell);
 
     /** The zone the mouse drag started in */
     Zone _mouseDownZone = Zone::UNDEFINED;

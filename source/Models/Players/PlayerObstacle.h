@@ -11,6 +11,7 @@
 #include <cugl/cugl.h>
 #include "../Spells/SpellType.h"
 #include "../Items/Artifact.h"
+#include "../Items/ItemTypeClass.h"
 
 using namespace cugl;
 using namespace std;
@@ -24,20 +25,17 @@ using namespace cugl::physics2::distrib;
 class PlayerObstacle : public physics2::CapsuleObstacle {
     /** enum for animation state bc its impacted by collisions (haha pun)*/
 public:
-    /** Category stored on each carried item. */
-    enum class ItemKind {
-        ARTIFACT,
-        SPELLBOOK
-    };
 
     struct CarriedItem {
-        std::string itemType;
+        ItemTypeClass::ItemType itemType;
         int value;
-        ItemKind kind;
         int bombTimer;
-        ArtifactEffect effect;
-
-        static ItemKind kindFromType(const std::string& t);
+        
+        CarriedItem(ItemTypeClass::ItemType t, int v, int bt) {
+            itemType = t;
+            value = v;
+            bombTimer = bt;
+        }
     };
     
 protected:
@@ -80,10 +78,10 @@ protected:
     bool _dirty = false;
 
 public:
-    PlayerObstacle(Vec2 pos, string pid, cugl::Size s);
+    PlayerObstacle(Vec2 pos, string pid, cugl::Size s, const shared_ptr<JsonValue>& consts);
 
-    static shared_ptr<PlayerObstacle> alloc(Vec2 pos, string pid, cugl::Size& s) {
-        auto f = make_shared<PlayerObstacle>(pos, pid, s);
+    static shared_ptr<PlayerObstacle> alloc(Vec2 pos, string pid, cugl::Size& s, const shared_ptr<JsonValue>& consts) {
+        auto f = make_shared<PlayerObstacle>(pos, pid, s, consts);
         f -> createFixtures();
         return f;
     }
@@ -168,7 +166,7 @@ public:
     void clearInventory() { _inventory.clear(); }
     int  depositItems();
     int  depositItem(size_t index);
-    bool addItem(const std::string& itemType, int item_val);
+    bool addItem(ItemTypeClass::ItemType itemType, int item_val);
 
     // ── Inventory query methods ──────────────────────────────────────────────
     // These mirror the Inventory class queries but work directly on CarriedItem.
@@ -179,7 +177,7 @@ public:
     bool blocksSpellcasting()    const;
     int  getDamageBonus()        const;
     bool hasProtectionArtifact() const;
-    void consumeItem(const std::string& itemType);
+    void consumeItem(ItemTypeClass::ItemType itemType); // wtf is this
     bool hasHeavyArtifact()      const;
     void updateTimers(float dt);
     bool isNonDroppable(size_t index) const;
