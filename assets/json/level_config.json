@@ -2,6 +2,9 @@
   "medium-start": 4,
   "hard-start": 7,
   "easy": {
+    "max-enemies": 10,
+    "max-enemies-incr": 1,
+    "enemy-interval": 12,
     "map-size": 70,
     "map-size-incr": 10,
     "quota": 150,
@@ -47,6 +50,9 @@
     ]
   },
   "medium": {
+      "max-enemies": 15,
+      "max-enemies-incr": 2,
+      "enemy-interval": 10,
     "map-size": 90,
     "map-size-incr": 10,
     "quota": 375,
@@ -92,6 +98,9 @@
     ]
   },
   "hard": {
+    "max-enemies": 17,
+    "max-enemies-incr": 2,
+    "enemy-interval": 8,
     "map-size": 100,
     "map-size-incr": 5,
     "quota": 450,

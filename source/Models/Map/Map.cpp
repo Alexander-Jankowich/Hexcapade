@@ -25,9 +25,9 @@ void Map::reset() {
     lw_node->removeAllChildren();
 }
 
-std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
+std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world, int numPlayers) {
     _assets = assets;
-    loadLevelConfig(level, _assets->get<cugl::JsonValue>("level-config"));
+    loadLevelConfig(level, numPlayers, _assets->get<cugl::JsonValue>("level-config"));
     _extruder = SimpleExtruder();
     // ensure everything cleared before generation
     _mapGrid.clear();
@@ -52,12 +52,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
     std::vector<MapDoor> doors;
     _rng.reset(seed);
 
-    //get minimum room width/height
-    int minRoomW = INT_MAX;
-    int minRoomH = INT_MAX;
+    //get maximum room width/height
+    _maxRoomW = 0;
+    _maxRoomH = 0;
     for (auto r : *rooms){
-        minRoomW = _assets->get<LevelLoader>(r)->getWidth() < minRoomW ? assets->get<LevelLoader>(r)->getWidth() : minRoomW;
-        minRoomH = _assets->get<LevelLoader>(r)->getHeight() < minRoomH ? assets->get<LevelLoader>(r)->getHeight() : minRoomH;
+        _maxRoomW = _assets->get<LevelLoader>(r)->getWidth() > _maxRoomW ? assets->get<LevelLoader>(r)->getWidth() : _maxRoomW;
+        _maxRoomH = _assets->get<LevelLoader>(r)->getHeight() > _maxRoomH ? assets->get<LevelLoader>(r)->getHeight() : _maxRoomH;
     }
     
     // calc lists of room w each door type:
@@ -513,7 +513,19 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
     std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoor& d, std::vector<std::string>& rooms, Door::Direction connDir) {
         
         if(rooms.size()==0) return std::make_tuple(nullptr, -1, Vec2(-1, -1)); // no viable room
-        
+        // clear dead end rooms if not near map boundaries
+        bool clearDeadEnds = false;
+        if(connDir==Door::Direction::NORTH || connDir==Door::Direction::SOUTH) {
+            clearDeadEnds = d.pos.y > _maxRoomH && d.pos.y < _mapGrid.size() - _maxRoomH;
+        }
+        if(connDir==Door::Direction::EAST || connDir==Door::Direction::WEST) {
+            clearDeadEnds = d.pos.x > _maxRoomW && d.pos.y < _mapGrid.at(0).size() - _maxRoomW;
+        }
+        std::vector<std::string> keptRooms;
+            for (auto r : rooms) {
+                if (clearDeadEnds && _assets->get<LevelLoader>(r)->getNumDoors()==1) continue;
+                keptRooms.push_back(r);
+            }
         int attempts = 0;
         //TODO: these will be in level config file perhaps?
         int minHallUnits = 2;
@@ -521,8 +533,8 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
         while (attempts < 3){
             CULog("attempt: %d", attempts);
             // select room for this attempt
-            int rm_idx = (int) _rng.getOpenSint64(0, rooms.size());
-            auto rmData = _assets->get<LevelLoader>(rooms.at(rm_idx));
+            int rm_idx = (int) _rng.getOpenSint64(0, keptRooms.size());
+            auto rmData = _assets->get<LevelLoader>(keptRooms.at(rm_idx));
             
             // try to fit room with varying hall sizes
             for (int i=minHallUnits; i<=maxHallUnits; i++) {
@@ -609,7 +621,7 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
         
     }
 
-void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
+void Map::loadLevelConfig(int level, int numPlayers, std::shared_ptr<cugl::JsonValue> config) {
     std::shared_ptr<JsonValue> data;
     int incr = 0;
     if (level < config->getInt("medium-start")) {
@@ -622,9 +634,11 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
         data = config->get("hard");
         incr = level - 7;
     }
-    
+    _config.maxEnemies = data->getInt("max-enemies") + data->getInt("max-enemies-incr") * incr;
+    _config.enemSpawnInterval = data->getInt("enemy-interval");
+
     _config._mapSize = data->getInt("map-size") + data->getInt("map-size-incr") * incr;
-    _config.quota = data->getInt("quota") + data->getInt("quota-incr") * incr;
+    _config.quota = numPlayers * (data->getInt("quota") + data->getInt("quota-incr") * incr);
     
     for (auto e : data->get("enemies")->asStringArray()) {
         if (e == "octoplush") _config._enemyTypes.push_back(EnemyType::OCTO);
@@ -730,34 +744,34 @@ ItemTypeClass::ItemType Map::chooseItemType(const std::vector<float> zoneSpellbo
     return pool[idx];
 }
 
-std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns(const std::vector<Vec2> playersPos) {
+std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns(const std::vector<Vec2> playersPos, const std::vector<Vec2> enemsPos) {
     std::vector<std::pair<Vec2, EnemyType>> res;
     // it is fine to use the random number generator here since we re-init for next round
     bool z1 = _rng.getFloat() <= _config._zone1EnemyProb;
     bool z2 = _rng.getFloat() <= _config._zone2EnemyProb;
     bool z3 = _rng.getFloat() <= _config._zone3EnemyProb;
     
-    if (z1 && _z1enemySpawnPoints.size()>0) {
+    if (z1 && _z1enemySpawnPoints.size()>0 && enemsPos.size() < _config.maxEnemies) {
         CULog("zone 1 spawn");
-        auto spawn = chooseEnemySpawnPoint(_z1enemySpawnPoints, playersPos, _config._zone1WeightsEn);
+        auto spawn = chooseEnemySpawnPoint(_z1enemySpawnPoints, playersPos, enemsPos, _config._zone1WeightsEn);
         res.push_back(spawn);
     }
     
-    if (z2 && _z2enemySpawnPoints.size()>0) {
+    if (z2 && _z2enemySpawnPoints.size()>0 && enemsPos.size()+1 < _config.maxEnemies) {
         CULog("zone 2 spawn");
-        auto spawn = chooseEnemySpawnPoint(_z2enemySpawnPoints, playersPos, _config._zone2WeightsEn);
+        auto spawn = chooseEnemySpawnPoint(_z2enemySpawnPoints, playersPos, enemsPos, _config._zone2WeightsEn);
         res.push_back(spawn);
     }
     
-    if (z3 && _z3enemySpawnPoints.size()>0) {
+    if (z3 && _z3enemySpawnPoints.size()>0 && enemsPos.size()+2 < _config.maxEnemies) {
         CULog("zone 3 spawn");
-        auto spawn = chooseEnemySpawnPoint(_z3enemySpawnPoints, playersPos, _config._zone3WeightsEn);
+        auto spawn = chooseEnemySpawnPoint(_z3enemySpawnPoints, playersPos, enemsPos, _config._zone3WeightsEn);
         res.push_back(spawn);
     }
     return res;
 }
 
-std::pair<Vec2, EnemyType> Map::chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates) {
+std::pair<Vec2, EnemyType> Map::chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<Vec2> enemsPos, const std::vector<float> zoneRates) {
     // filter to valid points
     vector<Vec2> validPts;
     
@@ -766,6 +780,12 @@ std::pair<Vec2, EnemyType> Map::chooseEnemySpawnPoint(const std::vector<Vec2> zo
         for (auto pos : playersPos) {
             if (p.distance(pos) < 10 * TILE_SIZE) { // since points are in tile coords
                 //T
+                valid = false;
+                break;
+            }
+        }
+        for (auto pos : enemsPos) {
+            if (p == pos) {
                 valid = false;
                 break;
             }

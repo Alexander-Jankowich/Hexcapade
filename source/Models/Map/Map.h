@@ -39,6 +39,8 @@ private:
     struct LevelConfig {
         int _mapSize;
         int quota;
+        int maxEnemies;
+        int enemSpawnInterval;
         
         std::vector<EnemyType> _enemyTypes;
         std::vector<float> _zone1WeightsEn;
@@ -79,6 +81,9 @@ private:
     std::vector<std::vector<int>> _mapGrid;
     std::shared_ptr<AssetManager> _assets;
     
+    int _maxRoomW;
+    int _maxRoomH;
+    
     cugl::Vec2 _origin;
     cugl::Size _sceneSize;
     SimpleExtruder _extruder;
@@ -110,12 +115,12 @@ public:
      * @param rooms the list of all string keys used to access each room in the AssetManager
      * @return a pair, the world node and the lower walls node
      */
-    std::shared_ptr<cugl::scene2::SceneNode> generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
+    std::shared_ptr<cugl::scene2::SceneNode> generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world, int numPlayers);
     
     /**
      * called by GLGameScene to roll die for each zone and generate an enemy spawn if the zone die roll succeeds.
      */
-    std::vector<std::pair<Vec2, EnemyType>> generateEnemySpawns(const std::vector<Vec2> playersPos);
+    std::vector<std::pair<Vec2, EnemyType>> generateEnemySpawns(const std::vector<Vec2> playersPos, const std::vector<Vec2> enemsPos);
     
     /**
      * called by GLGameScene to populate item spawns for the run
@@ -128,7 +133,7 @@ public:
     const std::vector<std::shared_ptr<Room>> getRooms() const {return _rooms;}
     int getNumRooms() { return (int)_rooms.size(); }
     int getQuota() {return _config.quota;}
-    
+    int getEnemInterval() {return _config.enemSpawnInterval;}
 private:
     /** Helper function to add all sceneNodes for a room (given tiled data) in the right place.
      * Side effect:  fills in the mapGrid with 1s for each space this room covers
@@ -158,11 +163,11 @@ private:
     
     void addWallObstacle(Poly2& poly, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
     
-    void loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config);
+    void loadLevelConfig(int level, int numPlayers, std::shared_ptr<cugl::JsonValue> config);
    
     
     
-    std::pair<Vec2, EnemyType> chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates);
+    std::pair<Vec2, EnemyType> chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<Vec2> enemsPos, const std::vector<float> zoneRates);
     /** Picks an item type for a single spawn point using the zone's spellbook/artifact split + zoneIndex is 0-indexed so 0/1/2 for zone 1/2/3. */
     ItemTypeClass::ItemType chooseItemType(const std::vector<float> zoneSpellbookWeights, const std::vector<float> zoneArtifactWeights, float spellBookProb);
 };

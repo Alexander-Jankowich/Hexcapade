@@ -308,7 +308,7 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-    auto n = _map->generate(_networkCtrl->getRound(), _mapSeed, _assets, _rooms, getSize(), _world);
+    auto n = _map->generate(_networkCtrl->getRound(), _mapSeed, _assets, _rooms, getSize(), _world, _networkCtrl->getNumPlayers());
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
     n->setPriority(0.0f);
@@ -462,10 +462,10 @@ void GameScene::preUpdate(float dt)
     if (_networkCtrl->isHost()) {
         // spawn an enemy if host and need to spawn
         lastEnemySpawn += dt;
-        if (lastEnemySpawn > 8) {
+        if (lastEnemySpawn > _map->getEnemInterval()) {
             lastEnemySpawn = 0;
 
-            auto res = _map->generateEnemySpawns(_playerFact->getPlayerPositions());
+            auto res = _map->generateEnemySpawns(_playerFact->getPlayerPositions(), _enemyFact->getEnemyPositions());
             for (auto r : res) {
                 //CULog("enemy type: %d", type);
                 // 

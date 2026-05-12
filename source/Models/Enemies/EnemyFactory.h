@@ -15,7 +15,7 @@
 #include "../Animations.h"
 
 #define ATTACK_DELAY 1.3f
-
+#define PHYSICS_SCALE 50
 using namespace cugl;
 using namespace cugl::physics2::distrib;
 using namespace std;
@@ -93,6 +93,12 @@ public:
     * @return a set of all enemies to be removed from the world
     */
     std::unordered_set<std::shared_ptr<EnemyObstacle>> getRemoved();
+    
+    std::vector<Vec2> getEnemyPositions() {
+        std::vector<Vec2> res;
+        for (auto p : current) res.push_back(p->getPosition() / PHYSICS_SCALE);
+        return res;
+    }
 };
 
 #endif // !__ENEMY_FACTORY_H__
