@@ -427,7 +427,9 @@ void GameScene::preUpdate(float dt)
     //it is a little weird to do this every frame but this allows host to acquire themselves
     _networkCtrl->getPhysController()->acquireObs(_player, 0);
 
+#ifndef ENABLE_ALL_SPELLS
     _input.syncGesturesToInventory(_player->getInventory());
+#endif // !ENABLE_ALL_SPELLS
 
     if (_gameEnded) {
         return;
@@ -734,27 +736,15 @@ void GameScene::preUpdate(float dt)
     else if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
         _weakSpell = false;
-#ifndef ENABLE_ALL_SPELLS
-        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
-#endif
-            _player->setSpell(newSpell);
-            _networkCtrl->pushOutEvent(
-                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-#ifndef ENABLE_ALL_SPELLS
-        }
-#endif
+        _player->setSpell(newSpell);
+        _networkCtrl->pushOutEvent(
+            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
     }else if (_input.getGestureLess() != SpellType::NONE && _player -> getSpell() == SpellType::NONE){
         SpellType newSpell = _input.getGestureLess();
-#ifndef ENABLE_ALL_SPELLS
-        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
-#endif
-            _player->setSpell(newSpell);
-            _weakSpell = true;
-            _networkCtrl->pushOutEvent(
-                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-#ifndef ENABLE_ALL_SPELLS
-        }
-#endif
+        _player->setSpell(newSpell);
+        _weakSpell = true;
+        _networkCtrl->pushOutEvent(
+            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
     }
 
     Vec2 angle = _input.getSpellAngle();
@@ -1417,7 +1407,7 @@ void GameScene::initCombos() {
         });
 }
 
-pair<SpellType, string> GameScene::getCombo() {
+std::pair<SpellType, string> GameScene::getCombo() {
     SpellType spell = _player->getSpell();
     string cid = _player->getPID();
 

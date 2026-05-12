@@ -43,7 +43,7 @@ protected:
 
     float _speed;
 
-    SpellType _curSpell = SpellType::NONE;
+    SpellType _curSpell;
     bool _releasedSpell = false;
 
     /** Velocity of entity */

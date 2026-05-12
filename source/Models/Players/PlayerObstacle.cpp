@@ -12,6 +12,9 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s, const shared_
     setAwake(true);
     setEnabled(true);
     setFixedRotation(true);
+
+    _curSpell = SpellType::NONE;
+
     _pid = pid;
     _speed = 4;
     _health = 6;

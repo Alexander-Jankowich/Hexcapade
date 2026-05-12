@@ -130,3 +130,22 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getCard(ItemType t) {
         return nullptr; // no card assets yet
     }
 }
+
+SpellType ItemTypeClass::getSpell(ItemType t) {
+    switch (t) {
+    case ItemType::BOOK_FIRE:
+        return SpellType::FIREBALL;
+    case ItemType::BOOK_FREEZE:
+        return SpellType::FREEZE;
+    case ItemType::BOOK_EARTH:
+        return SpellType::EARTH;
+    case ItemType::BOOK_WATER:
+        return SpellType::WATER;
+    case ItemType::BOOK_DEATH:
+        return SpellType::DEATH;
+    case ItemType::BOOK_HEAL:
+        return SpellType::HEAL;
+    default:
+        return SpellType::NONE;
+    }
+}
