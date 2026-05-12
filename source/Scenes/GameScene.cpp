@@ -613,6 +613,8 @@ void GameScene::preUpdate(float dt)
 
     if (_player->isFrozen() || _player->isHurt()) {
         //_player->setVelocity(Vec2::ZERO);
+    }else if (_player -> getWater()){
+        _player -> setVelocity(_player -> getPushDir() * _player -> getSpeed());
     }
     else {
         _player->setVelocity(velocity);
@@ -1643,7 +1645,28 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             spell->setRemove();
             break;
         case SpellType::WATER:
+            {
+            if(player -> getWater()){
+                break;
+            }
+            Vec2 pushDir = player->getPosition() - spell->getPosition();
+            pushDir.normalize();
+            player->setWater(true, pushDir);
+            player -> setWaterTimer(60);
+            }
+            break;
         case SpellType::MUD_WATER:
+            {
+            if(player -> getWater()){
+                break;
+            }
+            Vec2 pushDir = player->getPosition() - spell->getPosition();
+            pushDir.normalize();
+            player->setWater(true, pushDir);
+            player -> setWaterTimer(90);
+            player -> setMud(true);
+            player -> setMudTimer(240);
+            }
             break;
         case SpellType::SHIELD:
             player->setShield(true);

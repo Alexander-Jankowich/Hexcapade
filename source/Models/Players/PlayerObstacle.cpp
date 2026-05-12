@@ -228,6 +228,14 @@ void PlayerObstacle::updateTimers(float dt) {
             _dirty = true;
         }
     }
+    if(_water){
+        _waterTimer -= 1;
+        if (_waterTimer <= 0) {
+            _waterTimer = 0;
+            _water = false;
+            _waterPushDir = Vec2::ZERO;
+        }
+    }
 
     // Bomb countdown — erase on expiry and deal damage
     for (size_t i = 0; i < _inventory.size(); ++i) {
