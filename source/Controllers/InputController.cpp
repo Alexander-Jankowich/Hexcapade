@@ -963,14 +963,15 @@ void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::
         if (!desired.count(*it)) {
             switch(_strokeMap[*it]){
             case(1):
-                _addGestureByName(*it, recognizer_1, _activeGestureNames);
-                _addGestureByName(*it, recognizerLess_1, _activeGestureNames);
+                recognizer_1 -> removeGesture(*it);
+                recognizerLess_1 -> removeGesture(*it);
+
             case(2):
-                _addGestureByName(*it, recognizer_2, _activeGestureNames);
-                _addGestureByName(*it, recognizerLess_2, _activeGestureNames);
+                recognizer_2 -> removeGesture(*it);
+                recognizerLess_2 -> removeGesture(*it);
             case(3):
-                _addGestureByName(*it, recognizer_3, _activeGestureNames);
-                _addGestureByName(*it, recognizerLess_3, _activeGestureNames);
+                recognizer_2 -> removeGesture(*it);
+                recognizerLess_2 -> removeGesture(*it);
             }
             _activeGestureNamesLess.erase(*it);
             it = _activeGestureNames.erase(it);
