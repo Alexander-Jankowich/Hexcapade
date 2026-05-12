@@ -50,17 +50,19 @@ private:
         float _zone3EnemyProb;
         
         // item stuff
-        std::vector<ItemTypeClass::ItemType> _itemTypes;
-        std::vector<float> _zone1WeightsIt;
-        std::vector<float> _zone2WeightsIt;
-        std::vector<float> _zone3WeightsIt;
-
         std::vector<ItemTypeClass::ItemType> _spellbookTypes;
+        std::vector<float> _zone1WeightsSp;
+        std::vector<float> _zone2WeightsSp;
+        std::vector<float> _zone3WeightsSp;
+
         std::vector<ItemTypeClass::ItemType> _artifactTypes;
+        std::vector<float> _zone1WeightsArt;
+        std::vector<float> _zone2WeightsArt;
+        std::vector<float> _zone3WeightsArt;
+        
         // spellbook vs artifact chance
         std::vector<float> _zoneSpellbookProb;
-        std::vector<std::vector<float>> _spellbookWeights;
-        std::vector<std::vector<float>> _artifactWeights;
+        float _goldChance;
     };
     struct MapDoor {
         Vec2 pos;
@@ -162,7 +164,7 @@ private:
     
     std::pair<Vec2, EnemyType> chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates);
     /** Picks an item type for a single spawn point using the zone's spellbook/artifact split + zoneIndex is 0-indexed so 0/1/2 for zone 1/2/3. */
-    ItemTypeClass::ItemType chooseItemType(int zoneIndex);
+    ItemTypeClass::ItemType chooseItemType(const std::vector<float> zoneSpellbookWeights, const std::vector<float> zoneArtifactWeights, float spellBookProb);
 };
 
 #endif // __HEXCAPADE_MAP_H__

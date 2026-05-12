@@ -1,6 +1,6 @@
 {
-    "medium-start": 4,
-    "hard-start": 7,
+  "medium-start": 4,
+  "hard-start": 7,
   "easy": {
     "map-size": 70,
     "map-size-incr": 10,
@@ -14,36 +14,36 @@
     ],
     "zone-probs": [ 0.33, 0.4, 0.5 ],
     "item-spellbook-types": [
-      "spellbook-fire",
-      "spellbook-freeze",
       "spellbook-earth",
+      "spellbook-heal",
+      "spellbook-freeze",
       "spellbook-water",
-      "spellbook-death",
-      "spellbook-heal"
+      "spellbook-fire",
+      "spellbook-death"
     ],
     "item-artifact-types": [
-      "scroll",
-      "ribbon",
-      "gem",
-      "spell-restriction",
+      "low-val",
+      "medium-val",
+      "high-val",
       "spell-boost",
       "spell-reduce",
       "protection",
       "heavy",
-      "gold-real",
-      "gold-fake",
+      "fools-gold",
+      "spell-restriction",
       "bomb"
     ],
+    "gold-real-prob": 0.7,
     "item-zone-spellbook-prob": [ 0.6, 0.5, 0.3 ],
-    "item-spellbook-weights": [
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ]
+    "spellbook-weights": [
+      [ 0.04, 0.33, 0.33, 0.3, 0.0, 0.0 ],
+      [ 0.0, 0.25, 0.25, 0.25, 0.25, 0.0 ],
+      [ 0.0, 0.2, 0.2, 0.2, 0.2, 0.2 ]
     ],
-    "item-artifact-weights": [
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ]
+    "artifact-weights": [
+      [ 0.4, 0.1, 0.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.15, 0.25, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.05, 0.25, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0 ]
     ]
   },
   "medium": {
@@ -59,36 +59,36 @@
     ],
     "zone-probs": [ 0.33, 0.5, 0.5 ],
     "item-spellbook-types": [
-      "spellbook-fire",
-      "spellbook-freeze",
       "spellbook-earth",
+      "spellbook-heal",
+      "spellbook-freeze",
       "spellbook-water",
-      "spellbook-death",
-      "spellbook-heal"
+      "spellbook-fire",
+      "spellbook-death"
     ],
     "item-artifact-types": [
-      "scroll",
-      "ribbon",
-      "gem",
-      "spell-restriction",
+      "low-val",
+      "medium-val",
+      "high-val",
       "spell-boost",
       "spell-reduce",
       "protection",
       "heavy",
-      "gold-real",
-      "gold-fake",
+      "fools-gold",
+      "spell-restriction",
       "bomb"
     ],
+    "gold-real-prob": 0.65,
     "item-zone-spellbook-prob": [ 0.6, 0.5, 0.3 ],
-    "item-spellbook-weights": [
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ]
+    "spellbook-weights": [
+      [ 0.04, 0.33, 0.33, 0.3, 0.0, 0.0 ],
+      [ 0.0, 0.25, 0.25, 0.25, 0.25, 0.0 ],
+      [ 0.0, 0.2, 0.2, 0.2, 0.2, 0.2 ]
     ],
-    "item-artifact-weights": [
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ]
+    "artifact-weights": [
+      [ 0.4, 0.1, 0.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.15, 0.25, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.05, 0.25, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0 ]
     ]
   },
   "hard": {
@@ -104,36 +104,36 @@
     ],
     "zone-probs": [ 0.4, 0.5, 0.55 ],
     "item-spellbook-types": [
-      "spellbook-fire",
-      "spellbook-freeze",
       "spellbook-earth",
+      "spellbook-heal",
+      "spellbook-freeze",
       "spellbook-water",
-      "spellbook-death",
-      "spellbook-heal"
+      "spellbook-fire",
+      "spellbook-death"
     ],
     "item-artifact-types": [
-      "scroll",
-      "ribbon",
-      "gem",
-      "spell-restriction",
+      "low-val",
+      "medium-val",
+      "high-val",
       "spell-boost",
       "spell-reduce",
       "protection",
       "heavy",
-      "gold-real",
-      "gold-fake",
+      "fools-gold",
+      "spell-restriction",
       "bomb"
     ],
+    "gold-real-prob": 0.6,
     "item-zone-spellbook-prob": [ 0.6, 0.5, 0.3 ],
-    "item-spellbook-weights": [
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ]
+    "spellbook-weights": [
+      [ 0.04, 0.33, 0.33, 0.3, 0.0, 0.0 ],
+      [ 0.0, 0.25, 0.25, 0.25, 0.25, 0.0 ],
+      [ 0.0, 0.2, 0.2, 0.2, 0.2, 0.2 ]
     ],
-    "item-artifact-weights": [
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0 ],
-      [ 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ]
+    "artifact-weights": [
+      [ 0.4, 0.1, 0.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.15, 0.25, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.05, 0.25, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0 ]
     ]
   }
 }
