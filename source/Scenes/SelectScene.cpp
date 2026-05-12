@@ -128,7 +128,7 @@ void SelectScene::onCharacterSelected(CharacterType c) {
     auto tex = _assets->get<graphics::Texture>(portraitKey(c));
     if (tex) {
         _portrait->setTexture(tex);
-        _portrait->setContentSize(Size(396, 475));
+        _portrait->setContentSize(Size(400, 400));
         _portrait->setVisible(true);
     }
 
