@@ -43,7 +43,10 @@
       "file": "textures/water_sheet.png"
     },
     "mud": {
-      "file": "textures/mud_sheet.png"
+        "file": "textures/mud_sheet.png"
+    },
+    "steam": {
+        "file": "textures/steam_sheet.png"
     },
     "efreeze": {
         "file": "textures/efreeze_sheet.png"
