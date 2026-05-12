@@ -978,6 +978,12 @@ void GameScene::fixedUpdate(Uint64 step)
     _playerWon = _networkCtrl->gameState() == NetworkController::NCGameState::WON;
     _inventoryValue = std::get<0>(values);
     _depositedValue += std::get<1>(values);
+    if(_player and _player -> isDirty()){
+        _networkCtrl->pushOutEvent(
+            PlayerStateEvent::allocPlayerStateEvent(_networkCtrl->getPID(), _player -> getHealth(), _player -> isFrozen(), _player -> getBuff(), _player -> getMud(), _player -> getShieldCount()));
+        _player -> setDirty(false);
+    }
+    
 
     _currOverlappedItem = -1;
     _world->update(step / 1000000.0f);
@@ -1588,6 +1594,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (spell->shouldRemove()) {
             return;
         }
+        if(player -> getPID() != _player -> getPID()){
+            return;
+        }
+        
 
         //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID() == player->getPID()) return;

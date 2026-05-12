@@ -115,6 +115,8 @@ public:
     
     void processRestartEvent(const std::shared_ptr<RestartGameEvent> &e);
     
+    void processStateEvent(const std::shared_ptr<PlayerStateEvent> &e);
+    
     void resetHost();
 
     const std::string& getPlayerName(const std::string& pid) const {
