@@ -136,7 +136,7 @@ void PlayerNode::updateAnimationState(int health, SpellType curSpell, bool m) {
     else if (curSpell != SpellType::NONE) {
         _nextAnimation = AnimationType::CASTING;
     }
-    else if ((_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation == AnimationType::RELEASE_CAST)) {
+    else if (_nextAnimation != AnimationType::RELEASE_CAST || _curAnimation == AnimationType::RELEASE_CAST) {
         _nextAnimation = _velocity.length() < idleThreshold ? AnimationType::IDLE : AnimationType::WALK;
     }
 }
@@ -186,7 +186,8 @@ bool PlayerNode::skipToNext() {
     return (_curAnimation == AnimationType::IDLE && _nextAnimation != AnimationType::IDLE) ||
         (_curAnimation == AnimationType::CASTING && _nextAnimation != AnimationType::CASTING) ||
         (_nextAnimation == AnimationType::DEAD && _curAnimation != AnimationType::DEAD) ||
-        (_nextAnimation == AnimationType::DAMAGED && _curAnimation != AnimationType::DAMAGED);
+        (_nextAnimation == AnimationType::DAMAGED && _curAnimation != AnimationType::DAMAGED) ||
+        (_nextAnimation == AnimationType::RELEASE_CAST && _curAnimation == AnimationType::CASTING);
 }
 
 void PlayerNode::draw(const std::shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) {
