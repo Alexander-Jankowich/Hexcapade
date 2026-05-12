@@ -42,6 +42,12 @@
     "water": {
         "file": "textures/water_sheet.png"
     },
+    "mud": {
+        "file": "textures/mud_sheet.png"
+    },
+    "efreeze": {
+        "file": "textures/efreeze_sheet.png"
+    },
     "shield": {
       "file": "textures/shield_sheet.png"
     },

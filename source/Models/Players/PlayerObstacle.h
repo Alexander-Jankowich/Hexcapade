@@ -52,7 +52,7 @@ protected:
     cugl::Vec2 _velocity;
 
     /** The amount of health this entity has */
-    int _health;
+    float _health;
 
     /** The angle the enity is facing */
     cugl::Vec2 _angle;
@@ -76,6 +76,8 @@ protected:
     bool _shield = false;
     
     int _shieldCount = 0;
+    
+    bool _dirty = false;
 
 public:
     PlayerObstacle(Vec2 pos, string pid, cugl::Size s);
@@ -89,11 +91,22 @@ public:
     int  _bombExpiredIndex = -1;
 
 #pragma mark PO_Getters_and_Setters
-    int getHealth() {return _health;}
+    float getHealth() {return _health;}
 
     cugl::Vec2 getDirection() { return _angle; }
 
     void setHealth(int h);
+    void setHealthDirect(int h) {
+        _health = std::min(h, MAX_HEALTH);
+        if(h < _health){
+            _hurt = true;
+        }
+        if (_health <= 0) {
+            setVelocity(Vec2::ZERO);
+            setLinearVelocity(Vec2::ZERO);
+            _health = 0;
+        }
+    }
     bool isHurt() { return _hurt; }
     void setHurt(bool h) { _hurt = h; }
 
@@ -107,21 +120,21 @@ public:
     void setAimSlowTimer(float t) { _aimSlowTimer = t; }
     float getAimSlowTimer() const { return _aimSlowTimer; }
 
-    void setMud(bool m) {_mud = m;}
+    void setMud(bool m) {_mud = m; _dirty = true;}
     bool getMud() {return _mud;}
     void setMudTimer(int i) { _mudTimer = i; }
 
-    void setFrozen(bool f) { _frozen = f; }
+    void setFrozen(bool f) { _frozen = f; _dirty = true;}
     bool isFrozen() { return _frozen; }
     void setFrozeTimer(int i) {_frozenTimer = i;}
     
-    void setShield(bool s) {_shield = s; }
+    void setShield(bool s) {_shield = s;}
     bool hasShield() { return _shield; }
-    void setShieldCount(int c) { _shieldCount = c; }
+    void setShieldCount(int c) { _shieldCount = c; _dirty = true;}
     int getShieldCount() { return _shieldCount; }
 
     bool getBuff() {return _buff;}
-    void setBuff(bool b) {_buff = b;}
+    void setBuff(bool b) {_buff = b; _dirty = true;}
     void setBuffTimer(int i) {_buffTimer =i;}
 
     void setReleasedSpell(bool released) { _releasedSpell = released; }
@@ -129,6 +142,9 @@ public:
     
     void setVelocity(Vec2 v);
     cugl::Vec2 getVelocity() {return _velocity;}
+    
+    bool isDirty() { return _dirty; }
+    void setDirty(bool d) { _dirty = d; }
 
     /**
     * Sets the current spell of the player.

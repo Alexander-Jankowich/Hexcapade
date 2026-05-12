@@ -18,14 +18,8 @@ int SpellNode::mainLoopFrames = 1;
 int SpellNode::end = 0;
 int SpellNode::endFrames = 1;
 
-SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, SpellType t, std::shared_ptr<cugl::graphics::Texture> tex) {
+SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, std::shared_ptr<cugl::graphics::Texture> tex) {
     initWithSheet(tex, rows, cols);
-    if(t == SpellType::COMBO_EFREEZE){
-        setColor(Color4::GRAY);
-    }
-    if(t == SpellType::MUD_WATER){
-        setColor(Color4::PAPYRUS);
-    }
     
     _velocity = vel;
     _position = pos;

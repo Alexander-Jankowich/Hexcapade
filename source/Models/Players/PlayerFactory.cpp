@@ -38,7 +38,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
 
     // Create player
     auto sprite = std::make_shared<PlayerNode>(image);
-    sprite -> setScale(0.15);
+    sprite -> setScale(0.5);
 
     return std::make_pair(pl, sprite);
 }
@@ -128,6 +128,10 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
             node->removeChild(shield);
         });
         animations->endAnimation(shield);
+    }
+    else if (obs->hasShield()) {
+        auto shield = dynamic_pointer_cast<SpellEntityNode>(node->getChildByTag(SHIELD_ID));
+        shield->setOffset(3 - obs->getShieldCount());
     }
 
     // Check buff status, update child node if needed

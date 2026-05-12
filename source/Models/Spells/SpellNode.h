@@ -9,7 +9,6 @@
 
 #include <cugl/cugl.h>
 #include "../Animations.h"
-#include "SpellType.h"
 
 using namespace cugl;
 using namespace cugl::scene2;
@@ -37,7 +36,7 @@ private:
     static int endFrames;
 
 public:
-    SpellNode(const cugl::Vec2 pos, cugl::Vec2 vel, SpellType t, std::shared_ptr<cugl::graphics::Texture> texture);
+    SpellNode(const cugl::Vec2 pos, cugl::Vec2 vel, std::shared_ptr<cugl::graphics::Texture> texture);
 
     /**
     * Returns the next animation function and duration

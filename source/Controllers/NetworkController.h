@@ -115,10 +115,12 @@ public:
     
     void processRestartEvent(const std::shared_ptr<RestartGameEvent> &e);
     
+    void processStateEvent(const std::shared_ptr<PlayerStateEvent> &e);
+    
     void resetHost();
 
     const std::string& getPlayerName(const std::string& pid) const {
-        static const std::string fallback = "";
+        static const std::string fallback = "PLAYER" + to_string(_shortUID);
         auto it = _playerNames.find(pid);
         return it != _playerNames.end() ? it->second : fallback;
     }

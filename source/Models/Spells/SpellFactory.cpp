@@ -86,7 +86,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::COMBO_EFREEZE:
         values = _spellConsts->get("combo_efreeze");
-        image =_assets -> get<graphics::Texture>("freeze");
+        image =_assets -> get<graphics::Texture>("efreeze");
         break;
     case SpellType::BUFF:
         values = _spellConsts->get("buff");
@@ -98,7 +98,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         break;
     case SpellType::MUD_WATER:
         values = _spellConsts->get("mud-water");
-        image = _assets->get<graphics::Texture>("freeze");
+        image = _assets->get<graphics::Texture>("mud");
         break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
@@ -134,7 +134,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     current.emplace(spell);
 
     // Create spell node
-    auto sprite = std::make_shared<SpellNode>(pos, vel, type, image);
+    auto sprite = std::make_shared<SpellNode>(pos, vel, image);
 
     return std::make_pair(spell, sprite);
 }
