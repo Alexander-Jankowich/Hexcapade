@@ -427,7 +427,9 @@ void GameScene::preUpdate(float dt)
     //it is a little weird to do this every frame but this allows host to acquire themselves
     _networkCtrl->getPhysController()->acquireObs(_player, 0);
 
+#ifndef ENABLE_ALL_SPELLS
     _input.syncGesturesToInventory(_player->getInventory());
+#endif // !ENABLE_ALL_SPELLS
 
     if (_gameEnded) {
         return;
@@ -544,6 +546,8 @@ void GameScene::preUpdate(float dt)
 
     if (_player->isFrozen() || _player->isHurt()) {
         //_player->setVelocity(Vec2::ZERO);
+    }else if (_player -> getWater()){
+        _player -> setVelocity(_player -> getPushDir() * _player -> getSpeed());
     }
     else {
         _player->setVelocity(velocity);
@@ -734,27 +738,15 @@ void GameScene::preUpdate(float dt)
     else if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
         _weakSpell = false;
-#ifndef ENABLE_ALL_SPELLS
-        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
-#endif
-            _player->setSpell(newSpell);
-            _networkCtrl->pushOutEvent(
-                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-#ifndef ENABLE_ALL_SPELLS
-        }
-#endif
+        _player->setSpell(newSpell);
+        _networkCtrl->pushOutEvent(
+            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
     }else if (_input.getGestureLess() != SpellType::NONE && _player -> getSpell() == SpellType::NONE){
         SpellType newSpell = _input.getGestureLess();
-#ifndef ENABLE_ALL_SPELLS
-        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
-#endif
-            _player->setSpell(newSpell);
-            _weakSpell = true;
-            _networkCtrl->pushOutEvent(
-                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-#ifndef ENABLE_ALL_SPELLS
-        }
-#endif
+        _player->setSpell(newSpell);
+        _weakSpell = true;
+        _networkCtrl->pushOutEvent(
+            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
     }
 
     Vec2 angle = _input.getSpellAngle();
@@ -1417,7 +1409,7 @@ void GameScene::initCombos() {
         });
 }
 
-pair<SpellType, string> GameScene::getCombo() {
+std::pair<SpellType, string> GameScene::getCombo() {
     SpellType spell = _player->getSpell();
     string cid = _player->getPID();
 
@@ -1574,7 +1566,28 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             spell->setRemove();
             break;
         case SpellType::WATER:
+            {
+            if(player -> getWater()){
+                break;
+            }
+            Vec2 pushDir = player->getPosition() - spell->getPosition();
+            pushDir.normalize();
+            player->setWater(true, pushDir);
+            player -> setWaterTimer(60);
+            }
+            break;
         case SpellType::MUD_WATER:
+            {
+            if(player -> getWater()){
+                break;
+            }
+            Vec2 pushDir = player->getPosition() - spell->getPosition();
+            pushDir.normalize();
+            player->setWater(true, pushDir);
+            player -> setWaterTimer(90);
+            player -> setMud(true);
+            player -> setMudTimer(240);
+            }
             break;
         case SpellType::SHIELD:
             player->setShield(true);

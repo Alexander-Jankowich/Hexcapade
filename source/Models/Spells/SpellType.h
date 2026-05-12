@@ -25,4 +25,48 @@ enum class SpellType {
     STEAM = 13
 };
 
+inline SpellType strToSpell(std::string s) {
+    static std::map<std::string, SpellType> gesturemap = {
+        {"fire", SpellType::FIREBALL},
+        {"freeze", SpellType::FREEZE},
+        {"heal", SpellType::HEAL },
+        {"death", SpellType::DEATH},
+        {"earth", SpellType::EARTH},
+        {"water", SpellType::WATER}
+    };
+
+    try {
+        return gesturemap[s];
+    }
+    catch (...) {
+        return SpellType::NONE;
+    }
+}
+
+inline std::string spellToStr(SpellType t) {
+    static std::map<SpellType, std::string> gesturemap = {
+        {SpellType::FIREBALL, "fire"},
+        {SpellType::FREEZE, "freeze"},
+        {SpellType::HEAL, "heal"},
+        {SpellType::DEATH, "death"},
+        {SpellType::EARTH, "earth"},
+        {SpellType::WATER, "water"},
+        {SpellType::COMBO_FIREBALL, "combo-fire"},
+        {SpellType::COMBO_EFREEZE, "combo-efreeze"},
+        {SpellType::COMBO_FREEZE, "combo-freeze"},
+        {SpellType::MUD_WATER, "mud-water"},
+        {SpellType::SHIELD, "shield"},
+        {SpellType::BUFF, "buff"},
+        {SpellType::STEAM, "steam"}
+    };
+
+    try {
+        return gesturemap[t];
+    }
+    catch (...) {
+        CULog("missing string for spell %d", t);
+        return "none";
+    }
+}
+
 #endif

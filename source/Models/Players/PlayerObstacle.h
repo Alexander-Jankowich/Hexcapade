@@ -43,7 +43,7 @@ protected:
 
     float _speed;
 
-    SpellType _curSpell = SpellType::NONE;
+    SpellType _curSpell;
     bool _releasedSpell = false;
 
     /** Velocity of entity */
@@ -76,6 +76,11 @@ protected:
     int _shieldCount = 0;
     
     bool _dirty = false;
+    
+    bool _water = false;
+    int _waterTimer = 0;
+    
+    Vec2 _waterPushDir = Vec2::ZERO;
 
 public:
     PlayerObstacle(Vec2 pos, string pid, cugl::Size s, const shared_ptr<JsonValue>& consts);
@@ -135,6 +140,11 @@ public:
     void setBuff(bool b) {_buff = b; _dirty = true;}
     void setBuffTimer(int i) {_buffTimer =i;}
 
+    bool getWater() { return _water; }
+    void setWater(bool w, Vec2 pushDir) { _water = w;  _waterPushDir = pushDir;}
+    int getWaterTimer() { return _waterTimer; }
+    Vec2 getPushDir() {return _waterPushDir; }
+    void setWaterTimer(int i) { _waterTimer = i; }
     void setReleasedSpell(bool released) { _releasedSpell = released; }
     bool hasReleasedSpell() { return _releasedSpell; }
     

@@ -12,6 +12,9 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s, const shared_
     setAwake(true);
     setEnabled(true);
     setFixedRotation(true);
+
+    _curSpell = SpellType::NONE;
+
     _pid = pid;
     _speed = 4;
     _health = 6;
@@ -215,6 +218,14 @@ void PlayerObstacle::updateTimers(float dt) {
             _mudTimer = 0;
             _mud = false;
             _dirty = true;
+        }
+    }
+    if(_water){
+        _waterTimer -= 1;
+        if (_waterTimer <= 0) {
+            _waterTimer = 0;
+            _water = false;
+            _waterPushDir = Vec2::ZERO;
         }
     }
 

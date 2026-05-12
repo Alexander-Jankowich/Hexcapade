@@ -8,6 +8,7 @@
 #define __ITEM_TYPE_CLASS_H__
 
 #include <cugl/cugl.h>
+#include "../Spells/SpellType.h"
 
 using namespace cugl;
 using namespace cugl::physics2::distrib;
@@ -60,6 +61,8 @@ public:
     std::shared_ptr<cugl::graphics::Texture> getTexture(ItemType t);
     
     std::shared_ptr<cugl::graphics::Texture> getCard(ItemType t);
+
+    static SpellType getSpell(ItemType t);
 
 };
 
