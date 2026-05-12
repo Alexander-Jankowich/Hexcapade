@@ -109,11 +109,9 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
     _map = std::make_shared<Map>();
     _roomController.setRooms(_map->getRooms());
     _mapSeed = 0;
-    loadGameplayConfig();
 
     // Initialize inventory system
     _depositedValue = 0;
-    //_quota = std::max(1, _runConfig.quota);
     _playerWon = false;
     _gameEnded = false;
 
@@ -187,7 +185,6 @@ void GameScene::reset()
     CULog("game scene reset called");
     hideInventoryCard();
     hideTutorial();
-    loadGameplayConfig();
     _mapSeed = 0;
     _map->reset();
     _world->clear(true); // reset box2d + phys world
@@ -297,10 +294,6 @@ void GameScene::hideTutorial() {
         _tutorialNode = nullptr;
     }
     _tutorialPage = 0;
-}
-
-void GameScene::loadGameplayConfig() {
-    _runConfig = hexcapade::gameplayconfig::loadRunBalanceConfigFromAssets();
 }
 
 void GameScene::rebuildMapForRun() {
