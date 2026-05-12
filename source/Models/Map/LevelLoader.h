@@ -47,6 +47,7 @@ protected:
     vector<vector<int>> _visfix;
     vector<vector<int>> _mask;
     shared_ptr<Door> _doors[4];
+    int _numDoors;
     vector<Vec2> _itemSpawnPoints;
     vector<Vec2> _enemSpawnPoints;
     Vec2 _playerSpawn;
@@ -66,7 +67,7 @@ public:
     
     Uint32 getTileW() {return _tileWidth;}
     Uint32 getTileH() {return _tileHeight;}
-    
+    int getNumDoors() {return _numDoors;}
     /**
      * Creates a loader with no source file.
      *

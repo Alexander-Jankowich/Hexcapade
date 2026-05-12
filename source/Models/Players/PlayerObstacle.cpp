@@ -1,12 +1,9 @@
 #include "PlayerObstacle.h"
 #define PHYSICS_SCALE 50.0f
 
-PlayerObstacle::ItemKind PlayerObstacle::CarriedItem::kindFromType(const std::string& t) {
-    return (t.rfind("spellbook", 0) == 0) ? ItemKind::SPELLBOOK : ItemKind::ARTIFACT;
-}
 
-PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
-    init(pos, (s * 0.4) / PHYSICS_SCALE);
+PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s, const shared_ptr<JsonValue>& consts) {
+    init(pos, (s * 0.12) / PHYSICS_SCALE);
     setBodyType(b2_dynamicBody);
     setDensity(1.0f);
     //setLinearDamping(15.0f);
@@ -15,11 +12,14 @@ PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s) {
     setAwake(true);
     setEnabled(true);
     setFixedRotation(true);
+
+    _curSpell = SpellType::NONE;
+
     _pid = pid;
     _speed = 4;
     _health = 6;
     _inventoryLimit = 5;
-    _inventory.push_back({ "spellbook_fire", 0, CarriedItem::kindFromType("spellbook_fire"), -1, ArtifactEffect::NONE });
+    _inventory.push_back(CarriedItem(ItemTypeClass::ItemType::BOOK_EARTH, consts->getInt("value"), -1));
 }
 
 void PlayerObstacle::setVelocity(Vec2 v) {
@@ -54,12 +54,14 @@ void PlayerObstacle::setVelocity(Vec2 v) {
 }
 
 void PlayerObstacle::setHealth(int h) {
+    _dirty = true;
     if (h < _health) {
         if (_hurt) {
             // Cannot be hit if already hit very recently
             return;
         }
         _hurt = true;
+        
     }
 
     _health = min(h, MAX_HEALTH);
@@ -67,7 +69,7 @@ void PlayerObstacle::setHealth(int h) {
     if (_health <= 0) {
         setVelocity(Vec2::ZERO);
         setLinearVelocity(Vec2::ZERO);
-
+        
         _health = 0;
     }
 }
@@ -80,16 +82,13 @@ int PlayerObstacle::getInventoryVal() const {
     return sum;
 }
 
-bool PlayerObstacle::addItem(const std::string& itemType, int item_val) {
+bool PlayerObstacle::addItem(ItemTypeClass::ItemType itemType, int item_val) {
     if (!canAddItem()) return false;
 
-    ItemKind       kind = CarriedItem::kindFromType(itemType);
-    ArtifactEffect effect = (kind == ItemKind::ARTIFACT)
-        ? Artifact::effectFromItemType(itemType)
-        : ArtifactEffect::NONE;
-    int bombTimer = (effect == ArtifactEffect::BOMB) ? 1200 : -1;
+   
+    int bombTimer = (itemType == ItemTypeClass::ItemType::BOMB) ? 1200 : -1;
 
-    _inventory.push_back({ itemType, item_val, kind, bombTimer, effect });
+    _inventory.push_back(CarriedItem(itemType, item_val, bombTimer));
     return true;
 }
 
@@ -109,30 +108,30 @@ int PlayerObstacle::depositItem(size_t index) {
 // spell query
 
 bool PlayerObstacle::hasSpell(SpellType spell) const {
-    std::vector<std::string> required;
+    std::vector<ItemTypeClass::ItemType> required;
     switch (spell) {
     case SpellType::FIREBALL:
     case SpellType::COMBO_FIREBALL:
         return true;
     case SpellType::FREEZE:
     case SpellType::COMBO_FREEZE:
-        required.push_back("spellbook_freeze");
+        required.push_back(ItemTypeClass::ItemType::BOOK_FREEZE);
         break;
     case SpellType::HEAL:
-        required.push_back("spellbook_heal");
+        required.push_back(ItemTypeClass::ItemType::BOOK_HEAL);
         break;
     case SpellType::EARTH:
-        required.push_back("spellbook_earth");
+        required.push_back(ItemTypeClass::ItemType::BOOK_EARTH);
         break;
     case SpellType::DEATH:
-        required.push_back("spellbook_death");
+        required.push_back(ItemTypeClass::ItemType::BOOK_DEATH);
         break;
     case SpellType::COMBO_EFREEZE:
-        required.push_back("spellbook_earth");
-        required.push_back("spellbook_freeze");
+        required.push_back(ItemTypeClass::ItemType::BOOK_EARTH);
+            required.push_back(ItemTypeClass::ItemType::BOOK_FREEZE);
         break;
     case SpellType::WATER:
-        required.push_back("spellbook_water");
+        required.push_back(ItemTypeClass::ItemType::BOOK_FREEZE);
         break;
     default:
         return false;
@@ -140,7 +139,7 @@ bool PlayerObstacle::hasSpell(SpellType spell) const {
 
     for (const auto& item : _inventory) {
         for (const auto& t : required) {
-            if (item.kind == ItemKind::SPELLBOOK && item.itemType == t) {
+            if (item.itemType == t) {
                 return true;
             }
         }
@@ -152,8 +151,7 @@ bool PlayerObstacle::hasSpell(SpellType spell) const {
 
 bool PlayerObstacle::blocksSpellcasting() const {
     for (const auto& item : _inventory) {
-        if (item.kind == ItemKind::ARTIFACT &&
-            item.effect == ArtifactEffect::SPELL_RESTRICTION)
+        if (item.itemType == ItemTypeClass::ItemType::SPELL_RESTRICTION)
             return true;
     }
     return false;
@@ -162,26 +160,23 @@ bool PlayerObstacle::blocksSpellcasting() const {
 int PlayerObstacle::getDamageBonus() const {
     int bonus = 0;
     for (const auto& item : _inventory) {
-        if (item.kind == ItemKind::ARTIFACT) {
-            if (item.effect == ArtifactEffect::SPELL_BOOST)
+            if (item.itemType == ItemTypeClass::ItemType::SPELL_BOOST)
                 bonus += 2;
-            else if (item.effect == ArtifactEffect::SPELL_REDUCE)
+            else if (item.itemType == ItemTypeClass::ItemType::SPELL_REDUCE)
                 bonus -= 2;
-        }
     }
     return bonus;
 }
 
 bool PlayerObstacle::hasProtectionArtifact() const {
     for (const auto& item : _inventory) {
-        if (item.kind == ItemKind::ARTIFACT &&
-            item.effect == ArtifactEffect::PROTECTION)
+        if (item.itemType == ItemTypeClass::ItemType::PROTECTION)
             return true;
     }
     return false;
 }
 
-void PlayerObstacle::consumeItem(const std::string& itemType) {
+void PlayerObstacle::consumeItem(ItemTypeClass::ItemType itemType) {
     for (auto it = _inventory.begin(); it != _inventory.end(); ++it) {
         if (it->itemType == itemType) {
             _inventory.erase(it);
@@ -192,8 +187,7 @@ void PlayerObstacle::consumeItem(const std::string& itemType) {
 
 bool PlayerObstacle::hasHeavyArtifact() const {
     for (const auto& item : _inventory) {
-        if (item.kind == ItemKind::ARTIFACT &&
-            item.effect == ArtifactEffect::HEAVY)
+        if (item.itemType == ItemTypeClass::ItemType::HEAVY)
             return true;
     }
     return false;
@@ -201,8 +195,8 @@ bool PlayerObstacle::hasHeavyArtifact() const {
 
 bool PlayerObstacle::isNonDroppable(size_t index) const {
     if (index >= _inventory.size()) return false;
-    ArtifactEffect e = _inventory[index].effect;
-    return e == ArtifactEffect::BOMB || e == ArtifactEffect::GOLD;
+    ItemTypeClass::ItemType e = _inventory[index].itemType;
+    return e == ItemTypeClass::ItemType::BOMB || e == ItemTypeClass::ItemType::GOLD;
 }
 
 void PlayerObstacle::updateTimers(float dt) {
@@ -211,6 +205,7 @@ void PlayerObstacle::updateTimers(float dt) {
         if (_frozenTimer <= 0) {
             _frozenTimer = 0;
             _frozen = false;
+            _dirty = true;
         }
         if (getBody()) {
             getBody()->SetLinearVelocity(b2Vec2(0, 0));
@@ -222,6 +217,15 @@ void PlayerObstacle::updateTimers(float dt) {
         if (_mudTimer <= 0) {
             _mudTimer = 0;
             _mud = false;
+            _dirty = true;
+        }
+    }
+    if(_water){
+        _waterTimer -= 1;
+        if (_waterTimer <= 0) {
+            _waterTimer = 0;
+            _water = false;
+            _waterPushDir = Vec2::ZERO;
         }
     }
 
@@ -231,7 +235,7 @@ void PlayerObstacle::updateTimers(float dt) {
         if (item.bombTimer < 0) continue;
         item.bombTimer -= 1;
         if (item.bombTimer <= 0) {
-            _inventory.erase(_inventory.begin() + i);
+            _bombExpiredIndex = (int)i;
             _bombExpired = true;
             setHealth(_health - 2);
             break;

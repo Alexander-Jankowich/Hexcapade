@@ -67,17 +67,9 @@ void EnemyNode::setVelocity(Vec2 value) {
 }
 
 void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s) {
-    //if (statue && !frozen) {
-    //    setColor(Color4::GRAY);
-    //}
-    //else if (!frozen) {
-    //    setColor(Color4::WHITE);
-    //}
-
     if (s == EnemyObstacle::EnemyState::DEATH) {
         _nextAnimation = AnimationType::DEAD;
     }
-    //else if (_hurt && _curAnimation != AnimationType::DAMAGED) {
     else if (s == EnemyObstacle::EnemyState::HURT && _curAnimation != AnimationType::DAMAGED) {
         _nextAnimation = AnimationType::DAMAGED;
     }

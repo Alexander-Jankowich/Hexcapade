@@ -33,6 +33,7 @@ private:
     NCGameState _gameState = NCGameState::UNSTARTED;
     int _round;
     std::unordered_map<std::string, std::string> _playerNames;
+    std::unordered_map<std::string, std::string> _playerCharacters;
     
     // network controller ptrs to models it needs
     std::shared_ptr<ItemFactory> _itemFactory;
@@ -114,16 +115,28 @@ public:
     
     void processRestartEvent(const std::shared_ptr<RestartGameEvent> &e);
     
+    void processStateEvent(const std::shared_ptr<PlayerStateEvent> &e);
+    
     void resetHost();
 
     const std::string& getPlayerName(const std::string& pid) const {
-        static const std::string fallback = "";
+        static const std::string fallback = "PLAYER" + to_string(_shortUID);
         auto it = _playerNames.find(pid);
         return it != _playerNames.end() ? it->second : fallback;
     }
 
     void setPlayerName(const std::string& pid, const std::string& name) {
         _playerNames[pid] = name;
+    }
+
+    const std::string& getPlayerCharacter(const std::string& pid) const {
+        static const std::string fallback = "player_fox";
+        auto it = _playerCharacters.find(pid);
+        return it != _playerCharacters.end() ? it->second : fallback;
+    }
+
+    void setPlayerCharacter(const std::string& pid, const std::string& character) {
+        _playerCharacters[pid] = character;
     }
     
     std::tuple<int,int> customEvents();

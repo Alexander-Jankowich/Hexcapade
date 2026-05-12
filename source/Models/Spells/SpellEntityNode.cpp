@@ -18,27 +18,28 @@ SpellEntityNode::SpellEntityNode(shared_ptr<graphics::Texture> texture, shared_p
 		END(consts->getInt("end")),
 		END_FRAMES(consts->getInt("end_frames")) {
 	initWithSheet(texture, consts->getInt("rows"), consts->getInt("columns"));
-	shouldEnd = false;
-	ended = false;
-	finishedCreate = false;
+	_shouldEnd = false;
+	_ended = false;
+	_finishedCreate = false;
+	_existingOffset = 0;
 
 	setFrame(CREATED);
 }
 
 pair<ActionFunction, float> SpellEntityNode::getNextAnimation() {
-	if (ended) {
+	if (_ended) {
 		return END_ANIMATION;
 	}
 
-	if (!finishedCreate) {
-		finishedCreate = true;
+	if (!_finishedCreate) {
+		_finishedCreate = true;
 		return getAnimationPair(CREATED, CREATED_FRAMES);
 	}
 
-	if (shouldEnd) {
-		ended = true;
+	if (_shouldEnd) {
+		_ended = true;
 		return getAnimationPair(END, END_FRAMES);
 	}
 
-	return getAnimationPair(EXISTING, EXISTING_FRAMES);
+	return getAnimationPair(EXISTING + _existingOffset, EXISTING_FRAMES);
 }

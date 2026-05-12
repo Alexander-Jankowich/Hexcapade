@@ -111,7 +111,7 @@
       "_comment": "water spellbook",
       "id": "spellbook_water",
       "name": "Water Spellbook",
-      "value": 5,
+      "value": 7,
       "weight": 0.5,
       "texture_asset": "spellbook_water"
     }

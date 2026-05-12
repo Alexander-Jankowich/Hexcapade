@@ -9,8 +9,11 @@
 #define __GP_PLAYER_H__
 
 #include <cugl/cugl.h>
-#include "PlayerObstacle.h"
+#include "../Spells/SpellType.h"
 #include "../Animations.h"
+
+using namespace cugl;
+using namespace std;
 
 class PlayerNode : public AnimatedSprite {
 private:
@@ -76,6 +79,21 @@ private:
     bool _shield = false;
     bool _hurt = false;
 
+    static shared_ptr<cugl::graphics::Texture> spellIconTex;
+    static int spellIconRows;
+    static int spellIconCols;
+
+    static float spellIconOffset;
+
+    static int fireballFrame;
+    static int freezeFrame;
+    static int healFrame;
+    static int earthFrame;
+    static int waterFrame;
+    static int deathFrame;
+
+    shared_ptr<scene2::SpriteNode> _spellIcon;
+
     Color4 _tint;
     
     int getDirection() override { return facingLeft * 2 + facingBack; }
@@ -86,7 +104,7 @@ public:
     /**
      * Creates a player
      */
-    PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& t);
+    PlayerNode(const shared_ptr<cugl::graphics::Texture>& t);
 
 
     /**
@@ -95,12 +113,12 @@ public:
     ~PlayerNode() {}
     
 #pragma mark Graphics
-    void draw(const std::shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) override;
+    void draw(const shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) override;
 
     void setTint(Color4 t) { _tint = t; }
 
 #pragma mark Properties
-    static void setConsts(std::shared_ptr<JsonValue> consts) {
+    static void setConsts(shared_ptr<AssetManager>& assets, shared_ptr<JsonValue> consts) {
         //CULog("set consts-------------");
         PlayerNode::cols = consts->getInt("columns");
         PlayerNode::rows = consts->getInt("rows");
@@ -160,6 +178,20 @@ public:
         PlayerNode::deadFrames = consts->getInt("dead_frames");
 
         PlayerNode::idleThreshold = consts->getFloat("idle_threshold");
+
+        auto spellIconConsts = consts->get("spell_icons");
+        PlayerNode::spellIconTex = assets->get<graphics::Texture>("spell_icons");
+        PlayerNode::spellIconRows = spellIconConsts->getInt("rows");
+        PlayerNode::spellIconCols = spellIconConsts->getInt("columns");
+
+        PlayerNode::spellIconOffset = spellIconConsts->getInt("offset");
+
+        PlayerNode::fireballFrame = spellIconConsts->getInt("fireball");
+        PlayerNode::freezeFrame = spellIconConsts->getInt("freeze");
+        PlayerNode::healFrame = spellIconConsts->getInt("heal");
+        PlayerNode::waterFrame = spellIconConsts->getInt("water");
+        PlayerNode::earthFrame = spellIconConsts->getInt("earth");
+        PlayerNode::deathFrame = spellIconConsts->getInt("death");
     }
     
     void reset() {
@@ -174,11 +206,11 @@ public:
         _buff = false;
     }
     
-    void updateAnimationState(int health, bool casting, bool m);
+    void updateAnimationState(int health, SpellType curSpell, bool m);
 
-    void setVelocity(cugl::Vec2 value);
+    void setVelocity(Vec2 value);
 
-    std::pair<cugl::ActionFunction, float> getNextAnimation() override;
+    std::pair<ActionFunction, float> getNextAnimation() override;
 
     void releasedSpell() { _nextAnimation = AnimationType::RELEASE_CAST; }
 

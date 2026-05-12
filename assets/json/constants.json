@@ -1,42 +1,37 @@
 {
     "player": {
         "columns": 8,
-        "rows": 16,
-
-        "walk-right_forward": 16,
-        "walk-left_forward": 24,
-        "walk-right_backward": 32,
-        "walk-left_backward": 40,
+        "rows": 20,
 
         "idle-right_forward": 0,
         "idle-left_forward": 8,
-        "idle-right_backward": 0,
-        "idle-left_backward": 8,
+        "idle-right_backward": 16,
+        "idle-left_backward": 24,
 
-        "start_cast-right_forward": 48,
-        "start_cast-left_forward": 64,
-        "start_cast-right_backward": 48,
-        "start_cast-left_backward": 64,
+        "walk-right_forward": 32,
+        "walk-left_forward": 40,
+        "walk-right_backward": 48,
+        "walk-left_backward": 56,
 
-        "casting-right_forward": 52,
-        "casting-left_forward": 68,
-        "casting-right_backward": 52,
-        "casting-left_backward": 68,
+        "start_cast-right_forward": 64,
+        "start_cast-left_forward": 80,
+        "start_cast-right_backward": 64,
+        "start_cast-left_backward": 80,
 
-        "end_cast-right_forward": 58,
-        "end_cast-left_forward": 74,
-        "end_cast-right_backward": 58,
-        "end_cast-left_backward": 74,
+        "casting-right_forward": 68,
+        "casting-left_forward": 84,
+        "casting-right_backward": 68,
+        "casting-left_backward": 84,
 
-        "release_cast-right_forward": 56,
-        "release_cast-left_forward": 72,
-        "release_cast-right_backward": 56,
-        "release_cast-left_backward": 72,
+        "end_cast-right_forward": 74,
+        "end_cast-left_forward": 90,
+        "end_cast-right_backward": 74,
+        "end_cast-left_backward": 90,
 
-        "damage-right_forward": 80,
-        "damage-left_forward": 88,
-        "damage-right_backward": 80,
-        "damage-left_backward": 88,
+        "release_cast-right_forward": 72,
+        "release_cast-left_forward": 88,
+        "release_cast-right_backward": 72,
+        "release_cast-left_backward": 88,
 
         "dying-right_forward": 96,
         "dying-left_forward": 112,
@@ -48,6 +43,11 @@
         "dead-right_backward": 104,
         "dead-left_backward": 120,
 
+        "damage-right_forward": 128,
+        "damage-left_forward": 136,
+        "damage-right_backward": 144,
+        "damage-left_backward": 152,
+
         "walk_frames": 6,
         "idle_frames": 8,
         "start_cast_frames": 4,
@@ -56,9 +56,22 @@
         "release_cast_frames": 5,
         "damage_frames": 4,
         "dying_frames": 8,
-        "death_frames": 1,
+        "dead_frames": 1,
 
-        "idle_threshold": 0.5
+        "idle_threshold": 0.5,
+
+        "spell_icons": {
+            "offset": 100,
+            "rows": 2,
+            "columns": 3,
+
+            "fireball": 0,
+            "freeze": 1,
+            "heal": 2,
+            "earth": 3,
+            "water": 4,
+            "death": 5
+        }
     },
     "input": {
         "aim_time": 1,
@@ -70,9 +83,10 @@
         },
         "gesture_trail": {
             "width": 30,
-            "color": [ 199, 140, 6, 150 ],
+            "color": [ 128, 0, 128, 150 ],
             "correct-color": [ 76, 187, 23, 150 ],
-            "incorrect-color": [240, 29, 0, 150]
+            "incorrect-color": [240, 29, 0, 150],
+            "less-accurate-color" : [ 199, 140, 6, 150 ]
         },
         "aim": {
             "color": [ 199, 140, 6, 255 ]
@@ -86,315 +100,365 @@
         "end": 4,
         "end_frames": 4,
 
-        "water": {
-            "speed": 4,
-            "damage": 0.0,
-            "range": 3.0
-        },
-        "combo_efreeze": {
-            "speed": 3,
-            "damage": 1,
-            "range": 10.0
-        },
-        "earth": {
-            "speed": 3,
-            "damage": 2,
-            "range": 5.0
-        },
-        "death": {
-            "speed": 5,
-            "damage": 500,
-            "range": 5.0
-        },
-        "combo_fireball": {
-            "speed": 5,
-            "damage": 10,
-            "range": 10.0
-        },
-        "combo_freeze": {
-            "speed": 5,
-            "damage": 2,
-            "range": 10.0,
-            "freeze": true
-        },
-        "fireball": {
-            "speed": 5,
-            "damage": 3,
-            "range": 5.0
-        },
-        "freeze": {
-            "speed": 5,
-            "damage": 1,
-            "range": 5.0,
-            "freeze": true
-        },
-        "heal": {
-            "speed": 5,
-            "damage": 0,
-            "range": 5.0,
-            "heal": true
-        },
-        "buff": {
-            "speed": 5,
-            "damage": 0,
-            "range": 5.0
-        },
-        "shield": {
-            "speed": 5,
-            "damage": 0,
-            "range": 5.0
-        },
-        "mud-water": {
-            "speed": 5,
-            "damage": 1,
-            "range": 3.0
-        },
-        "steam": {
-            "speed": 0,
-            "damage": 0,
-            "range": 0
-        },
-        "shield-entity": {
-            "rows": 2,
-            "columns": 6,
-
-            "created": 0,
-            "existing": 4,
-            "end": 6,
-            "created_frames": 4,
-            "existing_frames": 1,
-            "end_frames": 6
-        },
-        "buff-entity": {
-            "rows": 2,
-            "columns": 6,
-
-            "created": 0,
-            "existing": 4,
-            "end": 8,
-            "created_frames": 4,
-            "existing_frames": 4,
-            "end_frames": 4
-        },
-        "freeze-entity": {
-            "rows": 2,
-            "columns": 4,
-
-            "created": 0,
-            "existing": 4,
-            "end": 5,
-            "created_frames": 4,
-            "existing_frames": 1,
-            "end_frames": 3
-        }
+    "water": {
+      "speed": 6,
+      "damage": 1.0,
+      "range": 3.0
     },
-    "enemies": {
-        "ghost": {
-            "health": 5,
-            "speed": 4.0,
-            "range": 4.5,
-            "attack_range": 0,
-            "texture": "ghost",
-            "columns": 8,
-            "rows": 14,
-
-            "walk-right_forward": 0,
-            "walk-left_forward": 8,
-            "walk-right_backward": 24,
-            "walk-left_backward": 16,
-            "walk_frames": 8,
-
-            "idle-right_forward": 0,
-            "idle-left_forward": 8,
-            "idle-right_backward": 24,
-            "idle-left_backward": 16,
-            "idle_frames": 8,
-
-            "attack-right_forward": 32,
-            "attack-left_forward": 40,
-            "attack-right_backward": 48,
-            "attack-left_backward": 56,
-            "attack_frames": 8,
-
-            "damage-right_forward": 80,
-            "damage-left_forward": 88,
-            "damage-right_backward": 80,
-            "damage-left-backward": 88,
-            "damage_frames": 4,
-
-            "death-right_forward": 96,
-            "death-left_forward": 104,
-            "death-right_backward": 96,
-            "death-left-backward": 104,
-            "death_frames": 8
-        },
-        "bat": {
-            "health": 3,
-            "speed": 5.0,
-            "range": 8,
-            "attack_range": 5,
-            "texture": "bat",
-            "columns": 8,
-            "rows": 14,
-
-            "walk-right_forward": 0,
-            "walk-left_forward": 8,
-            "walk-right_backward": 16,
-            "walk-left_backward": 24,
-            "walk_frames": 8,
-
-            "idle-right_forward": 0,
-            "idle-left_forward": 8,
-            "idle-right_backward": 24,
-            "idle-left_backward": 16,
-            "idle_frames": 8,
-
-            "attack-right_forward": 32,
-            "attack-left_forward": 40,
-            "attack-right_backward": 56,
-            "attack-left_backward": 48,
-            "attack_frames": 8,
-
-            "damage-right_forward": 80,
-            "damage-left_forward": 88,
-            "damage-right_backward": 80,
-            "damage-left-backward": 88,
-            "damage_frames": 4,
-
-            "death-right_forward": 96,
-            "death-left_forward": 104,
-            "death-right_backward": 96,
-            "death-left-backward": 104,
-            "death_frames": 8
-        },
-        "slow-bat": {
-            "health": 3,
-            "speed": 3.0,
-            "range": 8,
-            "attack_range": 5,
-            "texture": "bat",
-            "columns": 8,
-            "rows": 14,
-
-            "walk-right_forward": 0,
-            "walk-left_forward": 8,
-            "walk-right_backward": 16,
-            "walk-left_backward": 24,
-            "walk_frames": 8,
-
-            "idle-right_forward": 0,
-            "idle-left_forward": 8,
-            "idle-right_backward": 24,
-            "idle-left_backward": 16,
-            "idle_frames": 8,
-
-            "attack-right_forward": 32,
-            "attack-left_forward": 40,
-            "attack-right_backward": 56,
-            "attack-left_backward": 48,
-            "attack_frames": 8,
-
-            "damage-right_forward": 80,
-            "damage-left_forward": 88,
-            "damage-right_backward": 80,
-            "damage-left-backward": 88,
-            "damage_frames": 4,
-
-            "death-right_forward": 96,
-            "death-left_forward": 104,
-            "death-right_backward": 96,
-            "death-left-backward": 104,
-            "death_frames": 8
-        },
-        "octoplush": {
-            "health": 12,
-            "speed": 2.0,
-            "range": 8,
-            "attack_range": 0,
-            "texture": "octoplush",
-            "columns": 8,
-            "rows": 10,
-
-            "walk-right_forward": 0,
-            "walk-left_forward": 8,
-            "walk-right_backward": 16,
-            "walk-left_backward": 24,
-            "walk_frames": 8,
-
-            "idle-right_forward": 0,
-            "idle-left_forward": 8,
-            "idle-right_backward": 24,
-            "idle-left_backward": 16,
-            "idle_frames": 8,
-
-            "attack-right_forward": 0,
-            "attack-left_forward": 0,
-            "attack-right_backward": 0,
-            "attack-left_backward": 0,
-            "attack_frames": 6,
-            "attack_rows": 2,
-            "attack_columns": 8,
-            "attack_offset_x": 88.5,
-            "attack_offset_y": 127.5,
-
-            "damage-right_forward": 48,
-            "damage-left_forward": 56,
-            "damage-right_backward": 48,
-            "damage-left-backward": 56,
-            "damage_frames": 4,
-
-            "death-right_forward": 64,
-            "death-left_forward": 72,
-            "death-right_backward": 64,
-            "death-left-backward": 72,
-            "death_frames": 8
-        },
-        "mini-octoplush": {
-            "health": 5,
-            "speed": 2.0,
-            "range": 8,
-            "attack_range": 0,
-            "texture": "octoplush",
-            "columns": 8,
-            "rows": 10,
-
-            "walk-right_forward": 0,
-            "walk-left_forward": 8,
-            "walk-right_backward": 16,
-            "walk-left_backward": 24,
-            "walk_frames": 8,
-
-            "idle-right_forward": 0,
-            "idle-left_forward": 8,
-            "idle-right_backward": 24,
-            "idle-left_backward": 16,
-            "idle_frames": 8,
-
-            "attack-right_forward": 0,
-            "attack-left_forward": 0,
-            "attack-right_backward": 0,
-            "attack-left_backward": 0,
-            "attack_frames": 6,
-            "attack_rows": 2,
-            "attack_columns": 8,
-            "attack_offset_x": 88.5,
-            "attack_offset_y": 127.5,
-
-            "damage-right_forward": 48,
-            "damage-left_forward": 56,
-            "damage-right_backward": 48,
-            "damage-left-backward": 56,
-            "damage_frames": 4,
-
-            "death-right_forward": 64,
-            "death-left_forward": 72,
-            "death-right_backward": 64,
-            "death-left-backward": 72,
-            "death_frames": 8
-        }
-        
+    "combo_efreeze": {
+      "speed": 3,
+      "damage": 1,
+      "range": 10.0
     },
-    "artifacts": {
+    "earth": {
+      "speed": 3,
+      "damage": 2,
+      "range": 5.0
+    },
+    "death": {
+      "speed": 5,
+      "damage": 500,
+      "range": 5.0
+    },
+    "combo_fireball": {
+      "speed": 5,
+      "damage": 10,
+      "range": 10.0
+    },
+    "combo_freeze": {
+      "speed": 5,
+      "damage": 2,
+      "range": 10.0,
+      "freeze": true
+    },
+    "fireball": {
+      "speed": 5,
+      "damage": 3,
+      "range": 5.0
+    },
+    "freeze": {
+      "speed": 5,
+      "damage": 1,
+      "range": 5.0,
+      "freeze": true
+    },
+    "heal": {
+      "speed": 5,
+      "damage": 0,
+      "range": 5.0,
+      "heal": true
+    },
+    "buff": {
+      "speed": 5,
+      "damage": 0,
+      "range": 5.0
+    },
+    "shield": {
+      "speed": 5,
+      "damage": 0,
+      "range": 5.0
+    },
+    "mud-water": {
+      "speed": 5,
+      "damage": 1,
+      "range": 3.0
+    },
+    "steam": {
+      "speed": 0,
+      "damage": 0,
+      "range": 0
+    },
+    "shield-entity": {
+      "rows": 3,
+      "columns": 4,
 
+      "created": 0,
+      "existing": 4,
+      "end": 8,
+      "created_frames": 4,
+      "existing_frames": 1,
+      "end_frames": 4
+    },
+    "buff-entity": {
+      "rows": 2,
+      "columns": 6,
+
+      "created": 0,
+      "existing": 4,
+      "end": 8,
+      "created_frames": 4,
+      "existing_frames": 4,
+      "end_frames": 4
+    },
+    "freeze-entity": {
+      "rows": 2,
+      "columns": 4,
+
+      "created": 0,
+      "existing": 4,
+      "end": 5,
+      "created_frames": 4,
+      "existing_frames": 1,
+      "end_frames": 3
     }
+  },
+  "enemies": {
+    "ghost": {
+      "health": 5,
+      "speed": 4.0,
+      "range": 4.5,
+      "attack_range": 0,
+      "texture": "ghost",
+      "columns": 8,
+      "rows": 14,
+
+      "walk-right_forward": 0,
+      "walk-left_forward": 8,
+      "walk-right_backward": 24,
+      "walk-left_backward": 16,
+      "walk_frames": 8,
+
+      "idle-right_forward": 0,
+      "idle-left_forward": 8,
+      "idle-right_backward": 24,
+      "idle-left_backward": 16,
+      "idle_frames": 8,
+
+      "attack-right_forward": 32,
+      "attack-left_forward": 40,
+      "attack-right_backward": 48,
+      "attack-left_backward": 56,
+      "attack_frames": 8,
+
+      "damage-right_forward": 80,
+      "damage-left_forward": 88,
+      "damage-right_backward": 80,
+      "damage-left-backward": 88,
+      "damage_frames": 4,
+
+      "death-right_forward": 96,
+      "death-left_forward": 104,
+      "death-right_backward": 96,
+      "death-left-backward": 104,
+      "death_frames": 8
+    },
+    "bat": {
+      "health": 3,
+      "speed": 5.0,
+      "range": 8,
+      "attack_range": 5,
+      "texture": "bat",
+      "columns": 8,
+      "rows": 14,
+
+      "walk-right_forward": 0,
+      "walk-left_forward": 8,
+      "walk-right_backward": 16,
+      "walk-left_backward": 24,
+      "walk_frames": 8,
+
+      "idle-right_forward": 0,
+      "idle-left_forward": 8,
+      "idle-right_backward": 24,
+      "idle-left_backward": 16,
+      "idle_frames": 8,
+
+      "attack-right_forward": 32,
+      "attack-left_forward": 40,
+      "attack-right_backward": 56,
+      "attack-left_backward": 48,
+      "attack_frames": 8,
+
+      "damage-right_forward": 80,
+      "damage-left_forward": 88,
+      "damage-right_backward": 80,
+      "damage-left-backward": 88,
+      "damage_frames": 4,
+
+      "death-right_forward": 96,
+      "death-left_forward": 104,
+      "death-right_backward": 96,
+      "death-left-backward": 104,
+      "death_frames": 8
+    },
+    "slow-bat": {
+      "health": 3,
+      "speed": 3.0,
+      "range": 8,
+      "attack_range": 5,
+      "texture": "bat",
+      "columns": 8,
+      "rows": 14,
+
+      "walk-right_forward": 0,
+      "walk-left_forward": 8,
+      "walk-right_backward": 16,
+      "walk-left_backward": 24,
+      "walk_frames": 8,
+
+      "idle-right_forward": 0,
+      "idle-left_forward": 8,
+      "idle-right_backward": 24,
+      "idle-left_backward": 16,
+      "idle_frames": 8,
+
+      "attack-right_forward": 32,
+      "attack-left_forward": 40,
+      "attack-right_backward": 56,
+      "attack-left_backward": 48,
+      "attack_frames": 8,
+
+      "damage-right_forward": 80,
+      "damage-left_forward": 88,
+      "damage-right_backward": 80,
+      "damage-left-backward": 88,
+      "damage_frames": 4,
+
+      "death-right_forward": 96,
+      "death-left_forward": 104,
+      "death-right_backward": 96,
+      "death-left-backward": 104,
+      "death_frames": 8
+    },
+    "octoplush": {
+      "health": 12,
+      "speed": 2.0,
+      "range": 8,
+      "attack_range": 0,
+      "texture": "octoplush",
+      "columns": 8,
+      "rows": 10,
+
+      "walk-right_forward": 0,
+      "walk-left_forward": 8,
+      "walk-right_backward": 16,
+      "walk-left_backward": 24,
+      "walk_frames": 8,
+
+      "idle-right_forward": 0,
+      "idle-left_forward": 8,
+      "idle-right_backward": 24,
+      "idle-left_backward": 16,
+      "idle_frames": 8,
+
+      "attack-right_forward": 0,
+      "attack-left_forward": 0,
+      "attack-right_backward": 0,
+      "attack-left_backward": 0,
+      "attack_frames": 6,
+      "attack_rows": 2,
+      "attack_columns": 8,
+      "attack_offset_x": 88.5,
+      "attack_offset_y": 127.5,
+
+      "damage-right_forward": 48,
+      "damage-left_forward": 56,
+      "damage-right_backward": 48,
+      "damage-left-backward": 56,
+      "damage_frames": 4,
+
+      "death-right_forward": 64,
+      "death-left_forward": 72,
+      "death-right_backward": 64,
+      "death-left-backward": 72,
+      "death_frames": 8
+    },
+    "mini-octoplush": {
+      "health": 5,
+      "speed": 2.0,
+      "range": 8,
+      "attack_range": 0,
+      "texture": "octoplush",
+      "columns": 8,
+      "rows": 10,
+
+      "walk-right_forward": 0,
+      "walk-left_forward": 8,
+      "walk-right_backward": 16,
+      "walk-left_backward": 24,
+      "walk_frames": 8,
+
+      "idle-right_forward": 0,
+      "idle-left_forward": 8,
+      "idle-right_backward": 24,
+      "idle-left_backward": 16,
+      "idle_frames": 8,
+
+      "attack-right_forward": 0,
+      "attack-left_forward": 0,
+      "attack-right_backward": 0,
+      "attack-left_backward": 0,
+      "attack_frames": 6,
+      "attack_rows": 2,
+      "attack_columns": 8,
+      "attack_offset_x": 88.5,
+      "attack_offset_y": 127.5,
+
+      "damage-right_forward": 48,
+      "damage-left_forward": 56,
+      "damage-right_backward": 48,
+      "damage-left-backward": 56,
+      "damage_frames": 4,
+
+      "death-right_forward": 64,
+      "death-left_forward": 72,
+      "death-right_backward": 64,
+      "death-left-backward": 72,
+      "death_frames": 8
+    }
+
+  },
+  "artifacts": {
+    "spellbook-fire": {
+      "value": 50
+    },
+    "spellbook-water": {
+      "value": 25
+    },
+    "spellbook-earth": {
+      "value": 25
+    },
+    "spellbook-freeze": {
+      "value": 25
+    },
+    "spellbook-death": {
+      "value": 75
+    },
+    "spellbook-heal": {
+      "value": 50
+    },
+    "scroll": {
+      "value": 25
+    },
+    "ribbon": {
+      "value": 50
+    },
+    "gem": {
+      "value": 75
+    },
+    "spell-restriction": {
+      "value": 75
+    },
+    "spell-reduce": {
+      "value": 50
+    },
+    "spell-boost": {
+      "value": 25
+    },
+    "protection": {
+      "value": 25
+    },
+    "heavy": {
+      "value": 50
+    },
+    "gold-real": {
+      "value": 200
+    },
+    "gold-fake": {
+      "value": 5
+    },
+    "bomb": {
+      "value": 100
+    }
+  }
 }

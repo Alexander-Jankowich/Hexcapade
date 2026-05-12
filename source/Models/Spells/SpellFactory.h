@@ -10,6 +10,7 @@
 
 #include <cugl/cugl.h>
 #include "SpellNode.h"
+#include "SpellType.h"
 
 #define HEAL_AMT 2;
 
@@ -24,21 +25,19 @@ using namespace std;
 class SpellObstacle : public physics2::WheelObstacle {
 protected:
     float _damage;
-    
     std::string _caster;
-
     cugl::Vec2 _start;
     float _range;
-
     bool _atEnd;
+    bool _weak;
 
 public:
     const SpellType TYPE;
-    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range, SpellType type, std::string c);
+    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range, SpellType type, std::string c, bool weak);
 
     static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos, cugl::Vec2 vel, float radius,
-        int dmg, float range, SpellType type, std::string c) {
-        auto f = std::make_shared<SpellObstacle>(pos, vel, radius, dmg, range, type, c);
+        int dmg, float range, SpellType type, std::string c, bool weak) {
+        auto f = std::make_shared<SpellObstacle>(pos, vel, radius, dmg, range, type, c, weak);
         f->createFixtures();
         return f;
     }
@@ -47,6 +46,7 @@ public:
     std::string getCasterUID() {return _caster;}
     float getRange() { return _range; }
     float getTraveled() { return getPosition().distance(_start); }
+    bool getWeak() { return _weak; }
 
     void setRemove() { _atEnd = true; }
     bool shouldRemove() { return _atEnd; }
@@ -73,7 +73,7 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, SpellType type, std::string c_uid, int damageBonus, bool buff);
+    std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>> createObstacle(Vec2 pos, Vec2 velocity, SpellType type, std::string c_uid, int damageBonus, bool buff, bool weak);
 
 
 public:
@@ -104,7 +104,7 @@ public:
     /**
      * Helper method for converting normal parameters into byte vectors used for syncing.
      */
-    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, Vec2 velocity, SpellType type, std::string c, int damageBonus = 0, bool buff = false);
+    std::shared_ptr<std::vector<std::byte>> serializeParams(Vec2 pos, Vec2 velocity, SpellType type, std::string c, int damageBonus = 0, bool buff = false, bool weak = false);
 
     /**
      * Generate a pair of Obstacle and SceneNode using serialized parameters.

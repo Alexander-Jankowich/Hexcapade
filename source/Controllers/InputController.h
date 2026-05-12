@@ -6,7 +6,8 @@
 // Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
 #ifndef __INPUT_CONTROLLER_H__
 #define __INPUT_CONTROLLER_H__
-#include "../Models/Spells/SpellFactory.h"
+
+#include "../Models/Spells/SpellType.h"
 #include "../Models/Players/PlayerObstacle.h"
 
 /**
@@ -76,6 +77,8 @@ public:
      */
     void update(float dt);
 
+    void reset();
+
 #pragma mark Attributes
     /**
      * Returns true if this control is active.
@@ -104,11 +107,23 @@ public:
     SpellType getGesture() {
         return _lastGesture;
     }
+    
+    /**
+    * Returns the last (less accurate) gesture the user has done.
+    *
+    * Should call {@link #resolvedGesture} once the gesture has been
+    * resolved to clear the gesture.
+    *
+    * @return Last gesture user has done
+    */
+    SpellType getGestureLess() {
+        return _lastGestureLess;
+    }
 
     /**
     * Call this function after resolving a gesture
     */
-    void resolvedGesture() { _lastGesture = SpellType::NONE; }
+    void resolvedGesture() { _lastGesture = SpellType::NONE; _lastGestureLess = SpellType::NONE; }
 
     /**
     * Returns a vector containing the current stroke
@@ -123,6 +138,12 @@ public:
     * @return true if the gesture was recognized, false in all other cases
     */
     bool wasGestureRecognized() { return _gestureRecognized; }
+    
+    /**
+    * Returns whether the most recent gesture was recognized using less accurate recognizer (for display purposes)
+    * @return true if the gesture was recognized, false in all other cases
+    */
+    bool wasLessAccurate() { return _lessAccurateRecognized; }
 
     int getNumStrokes() { return _curStrokes; }
 
@@ -287,11 +308,11 @@ public:
 
 #pragma mark Spell/aim attributes
 
-    void clearSpell() { _lastGesture = SpellType::NONE; }
+    void clearSpell() { _lastGesture = SpellType::NONE; _lastGestureLess = SpellType::NONE; }
 
     bool shouldReleaseSpell() { return _releaseSpell; }
 
-    void resolveSpell() { _releaseSpell = false; _lastGesture = SpellType::NONE; _isAiming = false; }
+    void resolveSpell() { _releaseSpell = false; _lastGesture = SpellType::NONE;_lastGestureLess = SpellType::NONE; _isAiming = false; }
 
     bool showAim() { return _isAiming; }
 
@@ -317,6 +338,9 @@ protected:
 
     /** The last gesture done */
     SpellType _lastGesture;
+    
+    /**The last (less accurate) gesture done**/
+    SpellType _lastGestureLess;
 
 	/** The key for the mouse listeners */
 	Uint32 _mouseKey;
@@ -361,22 +385,33 @@ protected:
     std::vector<cugl::Vec2> thirdStroke;
 
     std::unordered_map<std::string, std::vector<std::vector<std::vector<cugl::Vec2>>>> _allGestureData;
+    
+    /**A mapping of strokes to gesture names*/
+    std::unordered_map<std::string, std::int8_t> _strokeMap;
+    
     /** The set of gesture names currently registered in the recognizer */
     std::unordered_set<std::string> _activeGestureNames;
-
-    /** Maps SpellType to its gesture name, inverse of _gesturemap */
-    std::unordered_map<SpellType, std::string> _spellToGestureName;
+    /** The set of gesture names currently registered in the recognizer */
+    std::unordered_set<std::string> _activeGestureNamesLess;
 
     /** The spellbook item types present in inventory at the last sync */
-    std::unordered_set<std::string> _lastSpellbookSet;
+    std::unordered_set<SpellType> _lastSpellbookSet;
     
     std::function<cugl::Vec2(const cugl::Vec2&)> _screenToWorld;
 
     /**The gesture recognizer*/
-    std::shared_ptr<cugl::PGestureRecognizer> recognizer;
-
-    /** Mapping of gesture strings to the correct Gesture */
-    std::unordered_map<std::string, SpellType> _gesturemap;
+    std::shared_ptr<cugl::PGestureRecognizer> recognizer_1;
+    /**The gesture recognizer two stroke*/
+    std::shared_ptr<cugl::PGestureRecognizer> recognizer_2;
+    /**The gesture recognizer three stroke*/
+    std::shared_ptr<cugl::PGestureRecognizer> recognizer_3;
+    
+    /**The (less accurate) gesture recognizer**/
+    std::shared_ptr<cugl::PGestureRecognizer> recognizerLess_1;
+    /**The (less accurate) gesture recognizer stroke 2**/
+    std::shared_ptr<cugl::PGestureRecognizer> recognizerLess_2;
+    /**The (less accurate) gesture recognizer stroke 3**/
+    std::shared_ptr<cugl::PGestureRecognizer> recognizerLess_3;
 
     /** The time since the last gesture thing */
     float _timeSinceLastStroke;
@@ -385,6 +420,8 @@ protected:
     int _curStrokes;
 
     bool _gestureRecognized;
+    
+    bool _lessAccurateRecognized;
     
 #pragma mark Spell aim variables
 
@@ -565,8 +602,7 @@ private:
      */
     void motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus);
 
-    void _addGestureByName(const std::string& name);
-    bool _spellbookEnablesSpell(const std::string& itemType, SpellType spell);
+    void _addGestureByName(const std::string& name, std::shared_ptr<PGestureRecognizer> recognizer, std::unordered_set<std::string>& activeSet);
 
     /** The zone the mouse drag started in */
     Zone _mouseDownZone = Zone::UNDEFINED;

@@ -116,6 +116,7 @@ bool LevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
     for (auto door_sp : json->get("layers")->get(1)->get("layers")->get(3)->get("objects")->children()){
         auto d = std::make_shared<Door>(Door(static_cast<Door::Direction>(door_sp->get("properties")->get(0)->getInt("value")), door_sp->getInt("x") / _tileWidth, door_sp->getInt("y") / _tileHeight, door_sp->getInt("width") / _tileWidth, door_sp->getInt("height") / _tileHeight));
         _doors[door_sp->get("properties")->get(0)->getInt("value")] = d;
+        _numDoors++;
     }
     
     // collect colliders

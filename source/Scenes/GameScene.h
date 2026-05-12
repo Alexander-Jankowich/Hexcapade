@@ -63,6 +63,7 @@ protected:
     //unordered_map<string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
     InputController _input;
+    ItemTypeClass _itemInfo;
     shared_ptr<InputDisplay> _inputDisplay;
     shared_ptr<Random> _random;
     bool _addedLWalls;
@@ -88,6 +89,9 @@ protected:
     Uint32 _itemFactId;
 
     shared_ptr<PlayerObstacle> _player;
+    
+    //Just if we have a weak spell, I am doing it this way
+    bool _weakSpell = false;
 
     /** Action Timeline for animations */
     shared_ptr<Animator> _animations;
@@ -214,6 +218,7 @@ public:
     void initPhysics();
     /** initialize map once network is populated with random seed for this round */
     void initMap();
+    void spawnPlayers();
     /**
      * Returns true if the player is host.
      *

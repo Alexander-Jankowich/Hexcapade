@@ -738,10 +738,10 @@ std::vector<std::vector<Vec2>> WATER_GESTURE_2 = {
 
 
 
-// The screen is divided into four zones: Left and Right
+// The screen is divided into three zones: Left, Right, Top
 //
 //   |---------------|
-//   |       |       |
+//   |______ T ______|
 //   | L     |     R |
 //   |       |       |
 //   |---------------|
@@ -781,13 +781,15 @@ _inventoryTouchPos(Vec2::ZERO),
 _inventoryHotkeyIndex(-1),
 _resetPressed(false),
 _lastGesture(SpellType::NONE),
+_lastGestureLess(SpellType::NONE),
 _isAiming(false),
 _releaseSpell(false),
 _timeSinceCast(0),
 _spellAngle(Vec2::ZERO),
 _timeSinceLastStroke(0),
 _curStrokes(0),
-_gestureRecognized(false)
+_gestureRecognized(false),
+_lessAccurateRecognized(false)
 {
 }
 
@@ -808,29 +810,35 @@ _gestureRecognized(false)
 bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
                             std::function<cugl::Vec2(const cugl::Vec2&)> screenToWorld) {
     _screenToWorld = screenToWorld;
-    recognizer = cugl::PGestureRecognizer::alloc();
-    // Update the gesturemap with more spells later on
-    _gesturemap = {
-    {"Fire", SpellType::FIREBALL},
-    {"Freeze", SpellType::FREEZE},
-    {"Heal", SpellType::HEAL },
-    {"Death", SpellType::DEATH},
-    {"Earth", SpellType::EARTH},
-    {"Water", SpellType::WATER}
-    };
+    recognizer_1 = cugl::PGestureRecognizer::alloc();
+    recognizer_2 = cugl::PGestureRecognizer::alloc();
+    recognizer_3 = cugl::PGestureRecognizer::alloc();
+    recognizerLess_1 = cugl::PGestureRecognizer::alloc();
+    recognizerLess_2 = cugl::PGestureRecognizer::alloc();
+    recognizerLess_3 = cugl::PGestureRecognizer::alloc();
 
-    _allGestureData["Death"] = { DEATH_GESTURE, DEATH_GESTURE_1 };
-    _allGestureData["Earth"] = { X_GESTURE, X_GESTURE_1 };
-    _allGestureData["Fire"] = { ARROW_GESTURE, ARROW_GESTURE_1 };
-    _allGestureData["Freeze"] = { FREEZE_GESTURE, FREEZE_GESTURE_1 };
-    _allGestureData["Heal"] = { HEAL_GESTURE, HEAL_GESTURE_2 };
-    _allGestureData["Water"] = { WATER_GESTURE };
+    _allGestureData["death"] = { DEATH_GESTURE, DEATH_GESTURE_1 };
+    _allGestureData["earth"] = { X_GESTURE, X_GESTURE_1 };
+    _allGestureData["fire"] = { ARROW_GESTURE, ARROW_GESTURE_1 };
+    _allGestureData["freeze"] = { FREEZE_GESTURE, FREEZE_GESTURE_1 };
+    _allGestureData["heal"] = { HEAL_GESTURE, HEAL_GESTURE_2 };
+    _allGestureData["water"] = { WATER_GESTURE };
+    //This is mapping the number of strokes to gesture names
+    _strokeMap["death"] = 3;
+    _strokeMap["earth"] = 1;
+    _strokeMap["fire"] = 2;
+    _strokeMap["heal"] = 3;
+    _strokeMap["water"] = 2;
+    _strokeMap["freeze"] = 1;
 
-    for (auto& [gestureName, spellType] : _gesturemap) {
-        _spellToGestureName[spellType] = gestureName;
-    }
-
-    recognizer->set_accuracy(0.80f);
+    
+    //I am so sorry
+    recognizer_1 -> set_accuracy(0.83f);
+    recognizer_2 -> set_accuracy(0.83f);
+    recognizer_3 -> set_accuracy(0.83f);
+    recognizerLess_1 -> set_accuracy(0.77f);
+    recognizerLess_2 -> set_accuracy(0.77f);
+    recognizerLess_3 -> set_accuracy(0.77f);
 
     _joyradius = values->get("joystick")->getInt("radius");
     _deadzone = values->get("joystick")->getInt("dead_zone");
@@ -886,41 +894,61 @@ void InputController::dispose() {
     _active = false;
 }
 
-void InputController::_addGestureByName(const std::string& name) {
-    if (_activeGestureNames.count(name)) return;
+void InputController::reset() {
+    _currPos = Vec2::ZERO;
+    _prevPos = Vec2::ZERO;
+    _currDown = false;
+    _prevDown = false;
+    clearTouchInstance(_ltouch);
+    clearTouchInstance(_rtouch);
+    clearTouchInstance(_itouch);
+    clearTouchInstance(_mtouch);
+
+    _lastGesture = SpellType::NONE;
+    _lastGestureLess = SpellType::NONE;
+    _gestureRecognized = false;
+    _lessAccurateRecognized = false;
+    currentStroke.clear();
+    secondStroke.clear();
+    thirdStroke.clear();
+    _curStrokes = 0;
+    _timeSinceLastStroke = 0;
+
+    _isAiming = false;
+    _releaseSpell = false;
+    _timeSinceCast = 0;
+
+    _touchDown = false;
+    _cardDismissTap = false;
+
+    _pickupPressed = false;
+    _depositPressed = false;
+    _inventoryReleased = false;
+
+    _move = Vec2::ZERO;
+    _joystick = false;
+}
+
+void InputController::_addGestureByName(
+    const std::string& name,
+    std::shared_ptr<PGestureRecognizer> rec,
+    std::unordered_set<std::string>& activeSet)
+{
+    if (activeSet.count(name)) return;
     auto it = _allGestureData.find(name);
     if (it == _allGestureData.end()) return;
     for (auto& sample : it->second) {
-        recognizer->addGesture(name, sample);
+        rec->addGesture(name, sample);
     }
-    _activeGestureNames.insert(name);
-}
-
-bool InputController::_spellbookEnablesSpell(const std::string& itemType, SpellType spell) {
-    switch (spell) {
-    case SpellType::FIREBALL:
-        return itemType == "spellbook_fire";
-    case SpellType::FREEZE:
-        return itemType == "spellbook_freeze";
-    case SpellType::HEAL:
-        return itemType == "spellbook_heal";
-    case SpellType::EARTH:
-        return itemType == "spellbook_earth";
-    case SpellType::DEATH:
-        return itemType == "spellbook_death";
-    case SpellType::WATER:
-        return itemType == "spellbook_water";
-    default:
-        return false;
-    }
+    activeSet.insert(name);
 }
 
 void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::CarriedItem>& inventory) {
-    std::unordered_set<std::string> currentSpellbookSet;
+    std::unordered_set<SpellType> currentSpellbookSet;
     for (const auto& item : inventory) {
-        if (item.kind == PlayerObstacle::ItemKind::SPELLBOOK) {
-            currentSpellbookSet.insert(item.itemType);
-        }
+        SpellType temp = ItemTypeClass::getSpell(item.itemType);
+        if (temp != SpellType::NONE)
+            currentSpellbookSet.insert(temp);
     }
 
     if (currentSpellbookSet == _lastSpellbookSet) return;
@@ -928,23 +956,41 @@ void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::
 
     std::unordered_set<std::string> desired;
     for (const auto& itemType : currentSpellbookSet) {
-        for (auto& [spellType, gestureName] : _spellToGestureName) {
-            if (_spellbookEnablesSpell(itemType, spellType)) {
-                desired.insert(gestureName);
-            }
-        }
+        desired.insert(spellToStr(itemType));
     }
+
     for (auto it = _activeGestureNames.begin(); it != _activeGestureNames.end(); ) {
         if (!desired.count(*it)) {
-            recognizer->removeGesture(*it);
+            switch(_strokeMap[*it]){
+            case(1):
+                recognizer_1 -> removeGesture(*it);
+                recognizerLess_1 -> removeGesture(*it);
+
+            case(2):
+                recognizer_2 -> removeGesture(*it);
+                recognizerLess_2 -> removeGesture(*it);
+            case(3):
+                recognizer_3 -> removeGesture(*it);
+                recognizerLess_3 -> removeGesture(*it);
+            }
+            _activeGestureNamesLess.erase(*it);
             it = _activeGestureNames.erase(it);
-        }
-        else {
+        } else {
             ++it;
         }
     }
     for (const auto& name : desired) {
-        _addGestureByName(name);
+        switch(_strokeMap[name]){
+        case(1):
+            _addGestureByName(name, recognizer_1, _activeGestureNames);
+            _addGestureByName(name, recognizerLess_1, _activeGestureNamesLess);
+        case(2):
+            _addGestureByName(name, recognizer_2, _activeGestureNames);
+            _addGestureByName(name, recognizerLess_2, _activeGestureNamesLess);
+        case(3):
+            _addGestureByName(name, recognizer_3, _activeGestureNames);
+            _addGestureByName(name, recognizerLess_3, _activeGestureNamesLess);
+        }
     }
 }
 
@@ -1002,6 +1048,7 @@ void InputController::clearInput() {
     _curStrokes = 0;
     _timeSinceLastStroke = 0;
     _gestureRecognized = false;
+    _lessAccurateRecognized = false;
 
     _isAiming = false;
     _releaseSpell = false;
@@ -1264,18 +1311,18 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         //CULog("Angle: %.2f %.2f", _spellAngle.x, _spellAngle.y);
         return;
     }
-    CULog("First Stroke points:");
-    for (const auto& p : currentStroke) {
-        CULog("{%f, %f},", p.x, p.y);
-    }
-    CULog("Second Stroke points:");
-    for (const auto& p : secondStroke) {
-        CULog("{%f, %f},", p.x, p.y);
-    }
-    CULog("Third Stroke points:");
-    for (const auto& p : thirdStroke) {
-        CULog("{%f, %f},", p.x, p.y);
-    }
+//    CULog("First Stroke points:");
+//    for (const auto& p : currentStroke) {
+//        CULog("{%f, %f},", p.x, p.y);
+//    }
+//    CULog("Second Stroke points:");
+//    for (const auto& p : secondStroke) {
+//        CULog("{%f, %f},", p.x, p.y);
+//    }
+//    CULog("Third Stroke points:");
+//    for (const auto& p : thirdStroke) {
+//        CULog("{%f, %f},", p.x, p.y);
+//    }
     _timeSinceLastStroke = 0;
     _curStrokes++;
     if (_curStrokes > 3) {
@@ -1289,14 +1336,18 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
     if (currentStroke.size() > 5) {
         try {
             // Check all the strokes currently on the screen!
+            // Only match with same number of strokes!
             if (_curStrokes == 1) {
-                _lastGesture = _gesturemap[recognizer->match({ currentStroke })];
+                _lastGesture = strToSpell(recognizer_1 -> match({ currentStroke }));
+                _lastGestureLess = strToSpell(recognizerLess_1 -> match({ currentStroke}));
             }
             else if (_curStrokes == 2) {
-                _lastGesture = _gesturemap[recognizer->match({ currentStroke, secondStroke })];
+                _lastGesture = strToSpell(recognizer_2->match({ currentStroke, secondStroke  }));
+                _lastGestureLess = strToSpell(recognizerLess_2->match({ currentStroke, secondStroke }));
             }
             else if (_curStrokes == 3) {
-                _lastGesture = _gesturemap[recognizer->match({ currentStroke, secondStroke, thirdStroke })];
+                _lastGesture = strToSpell(recognizer_3->match({ currentStroke, secondStroke, thirdStroke }));
+                _lastGestureLess = strToSpell(recognizerLess_3->match({ currentStroke, secondStroke, thirdStroke }));
             }
             else {
                 CULog("Error! Number of strokes recorded is more than 3???");
@@ -1306,6 +1357,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
         catch (std::out_of_range) {
             // Not a recognized gesture... probably
             _lastGesture = SpellType::NONE;
+            _lastGestureLess = SpellType::NONE;
         }
 
         if (_lastGesture != SpellType::NONE) {
@@ -1316,6 +1368,14 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
             currentStroke.clear();
             _gestureRecognized = true;
             _curStrokes = 0;
+        }else if (_lastGestureLess != SpellType::NONE){
+            CULog("Correct Less Accurate Spell");
+            _isAiming = true;
+            thirdStroke.clear();
+            secondStroke.clear();
+            currentStroke.clear();
+            _lessAccurateRecognized = true;
+            _curStrokes = 0;
         }
         else if (_curStrokes >= 3) {
             CULog("Not Correct spell! --------------------------------");
@@ -1324,6 +1384,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
             secondStroke.clear();
             currentStroke.clear();
             _gestureRecognized = false;
+            _lessAccurateRecognized = false;
         }
         else {
             CULog("Still searching...");
@@ -1331,6 +1392,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
             secondStroke = currentStroke;
             currentStroke.clear();
             _gestureRecognized = false;
+            _lessAccurateRecognized = false;
         }
 
         //CULog("%s", gesture.c_str());
@@ -1401,6 +1463,7 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
         _rtouch.touchids.insert(event.touch);
         if (!_isAiming) {
             _gestureRecognized = false;
+            _lessAccurateRecognized = false;
             if (_curStrokes >= 3) {
                 _curStrokes = 0;
             }
@@ -1493,6 +1556,7 @@ void InputController::buttonDownCB(const cugl::MouseEvent& event, Uint8 clicks, 
         _mouseDownZone = Zone::RIGHT;
         if (!_isAiming) {
             _gestureRecognized = false;
+            _lessAccurateRecognized = false;
             if (_curStrokes >= 3) {
                 _curStrokes = 0;
             }

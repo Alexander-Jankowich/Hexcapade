@@ -16,68 +16,6 @@ using namespace cugl;
 using namespace std;
 using namespace cugl::graphics;
 
-
-
-static std::string getCarriedItemName(const std::vector<ItemCatalogEntryConfig>& entries,
-        const PlayerObstacle::CarriedItem& item) {
-        for (const auto& itemEntry : entries) {
-            if (itemEntry.textureAsset == item.itemType || itemEntry.id == item.itemType) {
-                return itemEntry.name;
-            }
-        }
-        return item.itemType;
-}
-    // Naming standard - Use this.
-
-    // Artifacts need renaming - galiba
-static std::string getInventoryCardTextureKey(const std::string& itemType) {
-        if (itemType == "artifact_heavy" || itemType == "gem_blue") {
-            return "heavyTreasure_info";
-        }
-        if (itemType == "artifact_protection" || itemType == "gem_brown") {
-            return "zombieTotem_info";
-        }
-        if (itemType == "artifact_gold" || itemType == "artifact_gold_real" ||
-            itemType == "artifact_gold_fake" || itemType == "gem_gold") {
-            return "foolsGold_info";
-        }
-        if (itemType == "artifact_boost" || itemType == "artifact_gem_boost" ||
-            itemType == "gem_neon") {
-            return "mysticalBrooch_info";
-        }
-        if (itemType == "artifact_bomb" || itemType == "gem_pink") {
-            return "explodingPotion_info";
-        }
-        if (itemType == "artifact_reduce" || itemType == "artifact_gem_reduce" ||
-            itemType == "artifact_gem") {
-            return "antiMagic_info";
-        }
-        if (itemType == "artifact_scroll") {
-            return "cursedScroll_info";
-        }
-
-        static const std::string prefix = "spellbook_";
-        static const std::string suffix = "_spellbook";
-        std::string cardBase;
-
-        if (itemType.rfind(prefix, 0) == 0) {
-            cardBase = itemType.substr(prefix.size());
-        }
-        else if (itemType.size() > suffix.size() &&
-            itemType.compare(itemType.size() - suffix.size(), suffix.size(), suffix) == 0) {
-            cardBase = itemType.substr(0, itemType.size() - suffix.size());
-        }
-        else {
-            return "";
-        }
-
-        if (cardBase == "death") {
-            cardBase = "disintegrate";
-        }
-
-        return cardBase + "_card";
-}
-
 #pragma mark -
 #pragma mark Level Layout
 
@@ -206,6 +144,8 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
     _world->update(1);
 
     _networkCtrl = nullptr;
+    
+    _itemInfo = ItemTypeClass(_assets);
     setActive(false);
     return true;
 }
@@ -227,6 +167,8 @@ void GameScene::dispose()
 void GameScene::reset()
 {
     CULog("game scene reset called");
+    hideInventoryCard();
+    hideTutorial();
     loadGameplayConfig();
     _mapSeed = 0;
     _map->reset();
@@ -236,6 +178,8 @@ void GameScene::reset()
     removeAllChildren();
     _worldnode = nullptr;
 
+    _input.reset();
+    _inputDisplay->reset();
 
     _player = nullptr;
     _enemyFact->reset();
@@ -263,8 +207,6 @@ void GameScene::reset()
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
     _timer = ROUND_TIMER;
-    hideInventoryCard();
-    hideTutorial();
     Scene::reset();
 }
 
@@ -292,9 +234,8 @@ void GameScene::removeItemNode(const std::shared_ptr<ItemObstacle>& item) {
 void GameScene::showInventoryCard(size_t slotIndex) {
     hideInventoryCard();
 
-    std::string textureKey = getInventoryCardTextureKey(_player->getInventory()[slotIndex].itemType);
-    auto cardTex = _assets->get<graphics::Texture>(textureKey);
-    CULog("inventory slot %zu card %s opened", slotIndex, textureKey.c_str());
+    auto cardTex = _itemInfo.getCard(_player->getInventory()[slotIndex].itemType);
+    //CULog("inventory slot %zu card %s opened", slotIndex, textureKey.c_str());
 
     _inventoryCardNode = scene2::PolygonNode::allocWithTexture(cardTex);
     _inventoryCardNode->setAnchor(Vec2::ANCHOR_CENTER);
@@ -349,7 +290,7 @@ void GameScene::rebuildMapForRun() {
         _map = std::make_shared<Map>();
     }
 
-    auto n = _map->generate(_networkCtrl->getRound(), _mapSeed, _assets, _rooms, getSize(), _world);
+    auto n = _map->generate(_networkCtrl->getRound(), _mapSeed, _assets, _rooms, getSize(), _world, _networkCtrl->getNumPlayers());
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
     n->setPosition(Vec2::ZERO);
     n->setPriority(0.0f);
@@ -372,23 +313,16 @@ void GameScene::rebuildMapForRun() {
 }
 
 void GameScene::spawnItemsFromMap() {
-    auto itemSpawns = _map->generateItemSpawnChoices(
-        _runConfig.item.entries,
-        _quota,
-        _runConfig.item.quotaCoverageRatio,
-        _random
-    );
+    auto itemSpawns = _map->getItemSpawns();
     if (itemSpawns.empty()) {
         return;
     }
 
     for (auto spawn : itemSpawns) {
         Vec2 physPos = spawn.first / PHYSICS_SCALE;
-        ItemCatalogEntryConfig item = spawn.second;
-        int itemValue = item.value;
-        std::string itemType = item.textureAsset.empty() ? item.id : item.textureAsset;
+        ItemTypeClass::ItemType t = spawn.second;
 
-        auto params = _itemFact->serializeParams(physPos, itemValue, itemType);
+        auto params = _itemFact->serializeParams(physPos, _itemInfo.getConsts(t)->getInt("value"), t);
         _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
     }
     CULog("ItemFactory: spawned %zu items", itemSpawns.size());
@@ -475,7 +409,9 @@ void GameScene::preUpdate(float dt)
     //it is a little weird to do this every frame but this allows host to acquire themselves
     _networkCtrl->getPhysController()->acquireObs(_player, 0);
 
+#ifndef ENABLE_ALL_SPELLS
     _input.syncGesturesToInventory(_player->getInventory());
+#endif // !ENABLE_ALL_SPELLS
 
     if (_gameEnded) {
         return;
@@ -486,10 +422,18 @@ void GameScene::preUpdate(float dt)
     }
     if (_timer == 0) {
         bool won = _quota <= _depositedValue;
-        _playerWon = won;
+//        _playerWon = won;
         _networkCtrl->pushOutEvent(EndGameEvent::allocEndGameEvent(won));
         return;
     }
+    // all dead check
+    if (_networkCtrl->isHost() && _playerFact->allPlayersDead()) {
+//        _gameEnded = true;
+//        _playerWon = false;
+        _networkCtrl->pushOutEvent(EndGameEvent::allocEndGameEvent(false));
+        return;
+    }
+    
 
     _input.update(dt);
 
@@ -502,10 +446,10 @@ void GameScene::preUpdate(float dt)
     if (_networkCtrl->isHost()) {
         // spawn an enemy if host and need to spawn
         lastEnemySpawn += dt;
-        if (lastEnemySpawn > 8) {
+        if (lastEnemySpawn > _map->getEnemInterval()) {
             lastEnemySpawn = 0;
 
-            auto res = _map->generateEnemySpawns(_playerFact->getPlayerPositions());
+            auto res = _map->generateEnemySpawns(_playerFact->getPlayerPositions(), _enemyFact->getEnemyPositions());
             for (auto r : res) {
                 //CULog("enemy type: %d", type);
                 // 
@@ -562,10 +506,14 @@ void GameScene::preUpdate(float dt)
 
     if (_player->_bombExpired) {
         _player->_bombExpired = false;
-        CULog("artifact_bomb expired for player %s", _player->getPID().c_str());
+        int bombIdx = _player->_bombExpiredIndex;
+        _player->_bombExpiredIndex = -1;
+        if (_networkCtrl->isHost()) {
+            _player->depositItem((size_t)bombIdx);
+        }
         _inventoryValue = _player->getInventoryVal();
         _networkCtrl->pushOutEvent(
-            DepositEvent::allocDepositEvent(_player->getPID(), 0, true));
+            DepositEvent::allocDepositEvent(_player->getPID(), 0, true, bombIdx));
     }
 
     // Player movement
@@ -580,6 +528,8 @@ void GameScene::preUpdate(float dt)
 
     if (_player->isFrozen() || _player->isHurt()) {
         //_player->setVelocity(Vec2::ZERO);
+    }else if (_player -> getWater()){
+        _player -> setVelocity(_player -> getPushDir() * _player -> getSpeed());
     }
     else {
         _player->setVelocity(velocity);
@@ -756,7 +706,8 @@ void GameScene::preUpdate(float dt)
     }
 
 #pragma mark Spellcasting, Combos, Blocking, and Casting logic
-    // Spellcasting
+   // Spellcasting
+   //This is really terrible... I know we said no casual comments but I apologize - Alex
     if (_player->blocksSpellcasting()) {
         // restriction artifact needs to supress all spells (even the ones casted alr)
         if (_player->getSpell() != SpellType::NONE) {
@@ -768,15 +719,16 @@ void GameScene::preUpdate(float dt)
     }
     else if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
-#ifndef ENABLE_ALL_SPELLS
-        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
-#endif
-            _player->setSpell(newSpell);
-            _networkCtrl->pushOutEvent(
-                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-#ifndef ENABLE_ALL_SPELLS
-        }
-#endif
+        _weakSpell = false;
+        _player->setSpell(newSpell);
+        _networkCtrl->pushOutEvent(
+            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
+    }else if (_input.getGestureLess() != SpellType::NONE && _player -> getSpell() == SpellType::NONE){
+        SpellType newSpell = _input.getGestureLess();
+        _player->setSpell(newSpell);
+        _weakSpell = true;
+        _networkCtrl->pushOutEvent(
+            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
     }
 
     Vec2 angle = _input.getSpellAngle();
@@ -820,7 +772,7 @@ void GameScene::preUpdate(float dt)
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
-                _player->consumeItem("spellbook_death");
+                _player->consumeItem(ItemTypeClass::ItemType::BOOK_DEATH);
                 break;
             case SpellType::WATER: {
                 int numShots = 8;
@@ -834,7 +786,7 @@ void GameScene::preUpdate(float dt)
 
                     auto params = _spellFact->serializeParams(
                         (playerScreenPos / PHYSICS_SCALE),
-                        dir, t, _networkCtrl->getPID());
+                        dir, t, _networkCtrl->getPID(), _player -> getBuff(), _weakSpell);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
@@ -852,7 +804,7 @@ void GameScene::preUpdate(float dt)
 
                     auto params = _spellFact->serializeParams(
                         (playerScreenPos / PHYSICS_SCALE),
-                        dir, t, _networkCtrl->getPID());
+                        dir, t, _networkCtrl->getPID(),_player -> getBuff(), _weakSpell);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 }
@@ -861,7 +813,7 @@ void GameScene::preUpdate(float dt)
             default:
                 int damageBonus = _player->getDamageBonus();
                 auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _player->getPID(), damageBonus,
-                    _player->getBuff());
+                    _player->getBuff(), _weakSpell);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                 break;
@@ -888,8 +840,8 @@ void GameScene::preUpdate(float dt)
     }
     if (_input.pressedPickup()) {
         // I just use this to test combo animations - Kaz
-        //_player->setFrozen(!_player->isFrozen());
-        //_player->setFrozeTimer(90);
+        //_player->setShield(true);
+        //_player->setShieldCount(3);
         _input.resolvedPickup();
     }
 
@@ -931,6 +883,12 @@ void GameScene::fixedUpdate(Uint64 step)
     _playerWon = _networkCtrl->gameState() == NetworkController::NCGameState::WON;
     _inventoryValue = std::get<0>(values);
     _depositedValue += std::get<1>(values);
+    if(_player and _player -> isDirty()){
+        _networkCtrl->pushOutEvent(
+            PlayerStateEvent::allocPlayerStateEvent(_networkCtrl->getPID(), _player -> getHealth(), _player -> isFrozen(), _player -> getBuff(), _player -> getMud(), _player -> getShieldCount()));
+        _player -> setDirty(false);
+    }
+    
 
     _currOverlappedItem = -1;
     _world->update(step / 1000000.0f);
@@ -1096,10 +1054,20 @@ void GameScene::renderHUD()
                 _batch->setColor(Color4::WHITE);
                 _batch->draw(boxTex, Rect(boxX, boxY, boxSize, boxSize));
 
+                if (i < carriedItems.size()) {
+                    const auto& carried = carriedItems[i];
+                    if (carried.itemType == ItemTypeClass::ItemType::BOMB && carried.bombTimer >= 0 && carried.bombTimer <= 300) {
+                        float t = 1.0f - ((float)carried.bombTimer / 300.0f);
+                        float padding = boxSize * 0.1f;
+                        _batch->setTexture(nullptr);
+                        drawBox(boxX + padding, boxY + padding, boxSize * 0.8f, boxSize * 0.8f, Color4(255, 0, 0, (Uint8)(90 * t)));
+                    }
+                }
+
                 // Draw item texture centered inside the frame
                 if (i < carriedItems.size()) {
                     const auto& carried = carriedItems[i];
-                    auto itemTex = _assets->get<graphics::Texture>(carried.itemType);
+                    auto itemTex = _itemInfo.getTexture(carried.itemType);
                     if (itemTex) {
                         float padding = 0.0f;
                         float maxSize = boxSize - padding * 2;
@@ -1282,24 +1250,27 @@ void GameScene::initMap() {
     if (_mapSeed != 0) {
         rebuildMapForRun();
     }
-    if (_networkCtrl->isHost()) {
-        auto players = _networkCtrl->getPlayers();
-        for (auto& p : players) {
-            CULog("i am making a player with the following id %s", p.c_str());
-            auto params = _playerFact->serializeParams(
-                _map->getPlayerSpawn() / PHYSICS_SCALE,
-                p
-            );
-            _networkCtrl->getPhysController()
-                ->addSharedObstacle(_playerFactId, params);
-        }
+}
 
-        if (!_addedLWalls) {
-            CULog("adding lower walls in initmap");
-            _map->getLowerWallNode()->setPriority(1.0f);
-            _worldnode->addChild(_map->getLowerWallNode());
-            _addedLWalls = true;
-        }
+void GameScene::spawnPlayers() {
+    if (!_networkCtrl->isHost()) return;
+    auto players = _networkCtrl->getPlayers();
+    for (auto& p : players) {
+        CULog("i am making a player with the following id %s", p.c_str());
+        auto params = _playerFact->serializeParams(
+            _map->getPlayerSpawn() / PHYSICS_SCALE,
+            p,
+            _networkCtrl->getPlayerCharacter(p)
+        );
+        _networkCtrl->getPhysController()
+            ->addSharedObstacle(_playerFactId, params);
+    }
+
+    if (!_addedLWalls) {
+        CULog("adding lower walls in initmap");
+        _map->getLowerWallNode()->setPriority(1.0f);
+        _worldnode->addChild(_map->getLowerWallNode());
+        _addedLWalls = true;
     }
 }
 
@@ -1401,7 +1372,7 @@ static void healthHelper(float damage, PlayerObstacle* player) {
         return;
     }
     if (player->getHealth() - damage <= 0 && player->hasProtectionArtifact()) {
-        player->consumeItem("artifact_protection");
+        player->consumeItem(ItemTypeClass::ItemType::PROTECTION);
         player->setHealth(2);
         return;
     }
@@ -1420,7 +1391,7 @@ void GameScene::initCombos() {
         });
 }
 
-pair<SpellType, string> GameScene::getCombo() {
+std::pair<SpellType, string> GameScene::getCombo() {
     SpellType spell = _player->getSpell();
     string cid = _player->getPID();
 
@@ -1528,6 +1499,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (spell->shouldRemove()) {
             return;
         }
+        if(player -> getPID() != _player -> getPID()){
+            return;
+        }
+        
 
         //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID() == player->getPID()) return;
@@ -1538,7 +1513,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
                 player->setHealth(1);
                 spell->setRemove();
                 auto caster = _playerFact->getPlayerByPID(spell->getCasterUID());
-                if (caster) caster->consumeItem("spellbook_heal");
+                if (caster) caster->consumeItem(ItemTypeClass::ItemType::BOOK_HEAL);
                 break;
             }
             player->setHealth(nh);
@@ -1573,7 +1548,28 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             spell->setRemove();
             break;
         case SpellType::WATER:
+            {
+            if(player -> getWater()){
+                break;
+            }
+            Vec2 pushDir = player->getPosition() - spell->getPosition();
+            pushDir.normalize();
+            player->setWater(true, pushDir);
+            player -> setWaterTimer(60);
+            }
+            break;
         case SpellType::MUD_WATER:
+            {
+            if(player -> getWater()){
+                break;
+            }
+            Vec2 pushDir = player->getPosition() - spell->getPosition();
+            pushDir.normalize();
+            player->setWater(true, pushDir);
+            player -> setWaterTimer(90);
+            player -> setMud(true);
+            player -> setMudTimer(240);
+            }
             break;
         case SpellType::SHIELD:
             player->setShield(true);
@@ -1632,7 +1628,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             return;
         }
         if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
-            player->consumeItem("artifact_protection");
+            player->consumeItem(ItemTypeClass::ItemType::PROTECTION);
             player->setHealth(2);
         }
         else {
@@ -1655,12 +1651,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         {
             Vec2 pushDir = enemy->getPosition() - spell->getPosition();
             pushDir.normalize();
-            enemy->setWaterPush(pushDir, 60);
+            enemy->setWaterPush(pushDir, spell -> getWeak() ? 30 : 60);
             break;
         }
         case SpellType::FREEZE:
             enemy->setFrozen(true);
-            enemy->setFrozenTimer(240);
+            enemy->setFrozenTimer(spell -> getWeak() ? 120 : 240);
             enemy->setHealth(enemy->getHealth() - spell->getDamage());
             spell->setRemove();
             break;
@@ -1677,7 +1673,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             break;
         case SpellType::EARTH:
             enemy->setMud(true);
-            enemy->setMudTimer(300);
+            enemy->setMudTimer(spell -> getWeak() ? 150 : 300);
             enemy->setHealth(enemy->getHealth() - spell->getDamage());
             spell->setRemove();
             break;

@@ -44,7 +44,7 @@ CU_ROOTCLASS(GeometryApp)
     setFPS(60.0f);
 
     // Get rid of the cornflower blue
-    setClearColor(Color4(70,120,124));
+    setClearColor(Color4(50,25,70));
 }
 
 /**
@@ -470,6 +470,7 @@ void GeometryApp::updateSelectScene(float dt) {
             break;
         case SelectScene::SSStatus::START:
             CULog("in start");
+            _gameplay.spawnPlayers();
             _selectScene.setActive(false);
             _selectScene.release();
             _gameplay.setActive(true); // alr has connection from host/client scene

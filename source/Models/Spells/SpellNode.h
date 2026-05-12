@@ -13,24 +13,6 @@
 using namespace cugl;
 using namespace cugl::scene2;
 
-
-enum class SpellType {
-    NONE=0,
-    FREEZE=1,
-    FIREBALL=2,
-    HEAL=3,
-    COMBO_FIREBALL=4,
-    COMBO_FREEZE=5,
-    DEATH = 6,
-    EARTH = 7,
-    COMBO_EFREEZE = 8,
-    WATER = 9,
-    BUFF = 10,
-    SHIELD = 11,
-    MUD_WATER = 12,
-    STEAM = 13
-};
-
 class SpellNode : public AnimatedSprite {
 private:
     enum AnimationType {
@@ -54,7 +36,7 @@ private:
     static int endFrames;
 
 public:
-    SpellNode(const cugl::Vec2 pos, cugl::Vec2 vel, SpellType t, std::shared_ptr<cugl::graphics::Texture> texture);
+    SpellNode(const cugl::Vec2 pos, cugl::Vec2 vel, std::shared_ptr<cugl::graphics::Texture> texture);
 
     /**
     * Returns the next animation function and duration
