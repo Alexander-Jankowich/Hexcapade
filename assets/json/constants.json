@@ -169,15 +169,15 @@
       "range": 0
     },
     "shield-entity": {
-      "rows": 2,
-      "columns": 6,
+      "rows": 3,
+      "columns": 4,
 
       "created": 0,
       "existing": 4,
-      "end": 6,
+      "end": 8,
       "created_frames": 4,
       "existing_frames": 1,
-      "end_frames": 6
+      "end_frames": 4
     },
     "buff-entity": {
       "rows": 2,
@@ -409,6 +409,56 @@
 
   },
   "artifacts": {
-
+    "spellbook-fire": {
+      "value": 50
+    },
+    "spellbook-water": {
+      "value": 25
+    },
+    "spellbook-earth": {
+      "value": 25
+    },
+    "spellbook-freeze": {
+      "value": 25
+    },
+    "spellbook-death": {
+      "value": 75
+    },
+    "spellbook-heal": {
+      "value": 50
+    },
+    "scroll": {
+      "value": 25
+    },
+    "ribbon": {
+      "value": 50
+    },
+    "gem": {
+      "value": 75
+    },
+    "spell-restriction": {
+      "value": 75
+    },
+    "spell-reduce": {
+      "value": 50
+    },
+    "spell-boost": {
+      "value": 25
+    },
+    "protection": {
+      "value": 25
+    },
+    "heavy": {
+      "value": 50
+    },
+    "gold-real": {
+      "value": 200
+    },
+    "gold-fake": {
+      "value": 5
+    },
+    "bomb": {
+      "value": 100
+    }
   }
 }

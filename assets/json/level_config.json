@@ -1,84 +1,139 @@
 {
-    "medium-start": 4,
-    "hard-start": 7,
-    "easy": {
-        "map-size": 70,
-        "map-size-incr": 10,
-        "quota": 150,
-        "quota-incr": 50,
-        "items": [
-            {
-                "type": "spellbook-heal",
-                "min-depth": 0,
-                "max-depth": 100,
-                "value": 40,
-                "effect": "none",
-                "base-prob": 0.1,
-                "prob-incr": -0.01
-            }
-        ],
-        "enemies": ["slow-bat", "ghost", "octoplush"],
-        "enemies-probs": [
-            [1.0, 0.0, 0.0],
-            [0.6, 0.4, 0.0],
-            [0.1, 0.45, 0.45]
-        ],
-        "zone-probs": [0.33, 0.4, 0.5],
-        "item-value-zones": [
-            [0.0, 0.30],
-            [0.30, 0.75],
-            [0.75, 1.0]
-        ],
-        "item-category-probs": [
-            [0.70, 0.30],
-            [0.50, 0.50],
-            [0.30, 0.70]
-        ]
-    },
-    "medium": {
-        "map-size": 90,
-        "map-size-incr": 10,
-        "quota": 375,
-        "quota-incr": 50,
-        "enemies": ["bat", "ghost", "octoplush"],
-        "enemies-probs": [
-            [0.9, 0.1, 0.0],
-            [0.5, 0.4, 0.1],
-            [0.1, 0.35, 0.55]
-        ],
-        "zone-probs": [0.33, 0.5, 0.5],
-        "item-value-zones": [
-            [0.0, 0.30],
-            [0.30, 0.75],
-            [0.75, 1.0]
-        ],
-        "item-category-probs": [
-            [0.70, 0.30],
-            [0.50, 0.50],
-            [0.30, 0.70]
-        ]
-    },
-    "hard": {
-        "map-size": 100,
-        "map-size-incr": 5,
-        "quota": 450,
-        "quota-incr": 50,
-        "enemies": ["bat", "ghost", "octoplush"],
-        "enemies-probs": [
-            [0.8, 0.15, 0.05],
-            [0.45, 0.35, 0.2],
-            [0.1, 0.4, 0.5]
-        ],
-        "zone-probs": [0.4, 0.5, 0.55],
-        "item-value-zones": [
-            [0.0, 0.30],
-            [0.30, 0.75],
-            [0.75, 1.0]
-        ],
-        "item-category-probs": [
-            [0.70, 0.30],
-            [0.50, 0.50],
-            [0.30, 0.70]
-        ]
-    }
+  "medium-start": 4,
+  "hard-start": 7,
+  "easy": {
+    "map-size": 70,
+    "map-size-incr": 10,
+    "quota": 150,
+    "quota-incr": 50,
+    "enemies": [ "slow-bat", "ghost", "octoplush" ],
+    "enemies-probs": [
+      [ 1.0, 0.0, 0.0 ],
+      [ 0.6, 0.4, 0.0 ],
+      [ 0.1, 0.45, 0.45 ]
+    ],
+    "zone-probs": [ 0.33, 0.4, 0.5 ],
+    "item-spellbook-types": [
+      "spellbook-earth",
+      "spellbook-heal",
+      "spellbook-freeze",
+      "spellbook-water",
+      "spellbook-fire",
+      "spellbook-death"
+    ],
+    "item-artifact-types": [
+      "low-val",
+      "medium-val",
+      "high-val",
+      "spell-boost",
+      "spell-reduce",
+      "protection",
+      "heavy",
+      "fools-gold",
+      "spell-restriction",
+      "bomb"
+    ],
+    "gold-real-prob": 0.7,
+    "item-zone-spellbook-prob": [ 0.5, 0.3, 0.25 ],
+    "spellbook-weights": [
+      [ 0.04, 0.33, 0.33, 0.3, 0.0, 0.0 ],
+      [ 0.0, 0.25, 0.25, 0.25, 0.25, 0.0 ],
+      [ 0.0, 0.0, 0.2, 0.2, 0.3, 0.3 ]
+    ],
+    "artifact-weights": [
+      [ 0.4, 0.1, 0.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.15, 0.25, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.05, 0.25, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0 ]
+    ]
+  },
+  "medium": {
+    "map-size": 90,
+    "map-size-incr": 10,
+    "quota": 375,
+    "quota-incr": 50,
+    "enemies": [ "bat", "ghost", "octoplush" ],
+    "enemies-probs": [
+      [ 0.9, 0.1, 0.0 ],
+      [ 0.5, 0.4, 0.1 ],
+      [ 0.1, 0.35, 0.55 ]
+    ],
+    "zone-probs": [ 0.33, 0.5, 0.5 ],
+    "item-spellbook-types": [
+      "spellbook-earth",
+      "spellbook-heal",
+      "spellbook-freeze",
+      "spellbook-water",
+      "spellbook-fire",
+      "spellbook-death"
+    ],
+    "item-artifact-types": [
+      "low-val",
+      "medium-val",
+      "high-val",
+      "spell-boost",
+      "spell-reduce",
+      "protection",
+      "heavy",
+      "fools-gold",
+      "spell-restriction",
+      "bomb"
+    ],
+    "gold-real-prob": 0.65,
+    "item-zone-spellbook-prob": [ 0.6, 0.5, 0.3 ],
+    "spellbook-weights": [
+      [ 0.04, 0.33, 0.33, 0.3, 0.0, 0.0 ],
+      [ 0.0, 0.25, 0.25, 0.25, 0.25, 0.0 ],
+      [ 0.0, 0.2, 0.2, 0.2, 0.2, 0.2 ]
+    ],
+    "artifact-weights": [
+      [ 0.4, 0.1, 0.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.15, 0.25, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.05, 0.25, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0 ]
+    ]
+  },
+  "hard": {
+    "map-size": 100,
+    "map-size-incr": 5,
+    "quota": 450,
+    "quota-incr": 50,
+    "enemies": [ "bat", "ghost", "octoplush" ],
+    "enemies-probs": [
+      [ 0.8, 0.15, 0.05 ],
+      [ 0.45, 0.35, 0.2 ],
+      [ 0.1, 0.4, 0.5 ]
+    ],
+    "zone-probs": [ 0.4, 0.5, 0.55 ],
+    "item-spellbook-types": [
+      "spellbook-earth",
+      "spellbook-heal",
+      "spellbook-freeze",
+      "spellbook-water",
+      "spellbook-fire",
+      "spellbook-death"
+    ],
+    "item-artifact-types": [
+      "low-val",
+      "medium-val",
+      "high-val",
+      "spell-boost",
+      "spell-reduce",
+      "protection",
+      "heavy",
+      "fools-gold",
+      "spell-restriction",
+      "bomb"
+    ],
+    "gold-real-prob": 0.6,
+    "item-zone-spellbook-prob": [ 0.6, 0.5, 0.3 ],
+    "spellbook-weights": [
+      [ 0.04, 0.33, 0.33, 0.3, 0.0, 0.0 ],
+      [ 0.0, 0.25, 0.25, 0.25, 0.25, 0.0 ],
+      [ 0.0, 0.2, 0.2, 0.2, 0.2, 0.2 ]
+    ],
+    "artifact-weights": [
+      [ 0.4, 0.1, 0.0, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.15, 0.25, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0],
+      [ 0.05, 0.25, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.0, 0.0 ]
+    ]
+  }
 }

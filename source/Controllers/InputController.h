@@ -394,11 +394,8 @@ protected:
     /** The set of gesture names currently registered in the recognizer */
     std::unordered_set<std::string> _activeGestureNamesLess;
 
-    /** Maps SpellType to its gesture name, inverse of _gesturemap */
-    std::unordered_map<SpellType, std::string> _spellToGestureName;
-
     /** The spellbook item types present in inventory at the last sync */
-    std::unordered_set<std::string> _lastSpellbookSet;
+    std::unordered_set<SpellType> _lastSpellbookSet;
     
     std::function<cugl::Vec2(const cugl::Vec2&)> _screenToWorld;
 
@@ -415,9 +412,6 @@ protected:
     std::shared_ptr<cugl::PGestureRecognizer> recognizerLess_2;
     /**The (less accurate) gesture recognizer stroke 3**/
     std::shared_ptr<cugl::PGestureRecognizer> recognizerLess_3;
-
-    /** Mapping of gesture strings to the correct Gesture */
-    std::unordered_map<std::string, SpellType> _gesturemap;
 
     /** The time since the last gesture thing */
     float _timeSinceLastStroke;
@@ -609,7 +603,6 @@ private:
     void motionCB(const cugl::MouseEvent& event, const cugl::Vec2 previous, bool focus);
 
     void _addGestureByName(const std::string& name, std::shared_ptr<PGestureRecognizer> recognizer, std::unordered_set<std::string>& activeSet);
-    bool _spellbookEnablesSpell(const std::string& itemType, SpellType spell);
 
     /** The zone the mouse drag started in */
     Zone _mouseDownZone = Zone::UNDEFINED;

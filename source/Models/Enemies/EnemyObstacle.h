@@ -109,9 +109,9 @@ public:
     void setSpeed(float s) { _speed = s; }
 
     EnemyState getState() { return _state; }
-    void setState(EnemyState s) { _state = s; }
+    void setState(EnemyState s) { if (!isDead()) _state = s; }
 
-    void startAttack() { _state = EnemyState::ATTACKING; }
+    void startAttack() { setState(EnemyState::ATTACKING); }
     bool isAttacking() { return _state == EnemyState::ATTACKING; }
 
     void setAttackFunc(float t, ActionListener listener) { _attackFuncTime = t; _attackFunc = listener; }
@@ -167,7 +167,7 @@ public:
     
     float getAttackRange() const { return _attackRange; }
 
-    void setHurt(bool h) { _state = h ? EnemyState::HURT : EnemyState::IDLE; }
+    void setHurt(bool h) { setState(h ? EnemyState::HURT : EnemyState::IDLE); }
     bool isHurt() { return _state == EnemyState::HURT; }
 };
 
