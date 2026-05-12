@@ -54,12 +54,14 @@ void PlayerObstacle::setVelocity(Vec2 v) {
 }
 
 void PlayerObstacle::setHealth(int h) {
+    _dirty = true;
     if (h < _health) {
         if (_hurt) {
             // Cannot be hit if already hit very recently
             return;
         }
         _hurt = true;
+        
     }
 
     _health = min(h, MAX_HEALTH);
@@ -67,7 +69,7 @@ void PlayerObstacle::setHealth(int h) {
     if (_health <= 0) {
         setVelocity(Vec2::ZERO);
         setLinearVelocity(Vec2::ZERO);
-
+        
         _health = 0;
     }
 }
@@ -211,6 +213,7 @@ void PlayerObstacle::updateTimers(float dt) {
         if (_frozenTimer <= 0) {
             _frozenTimer = 0;
             _frozen = false;
+            _dirty = true;
         }
         if (getBody()) {
             getBody()->SetLinearVelocity(b2Vec2(0, 0));
@@ -222,6 +225,7 @@ void PlayerObstacle::updateTimers(float dt) {
         if (_mudTimer <= 0) {
             _mudTimer = 0;
             _mud = false;
+            _dirty = true;
         }
     }
 
