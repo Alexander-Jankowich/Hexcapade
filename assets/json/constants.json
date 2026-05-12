@@ -169,15 +169,15 @@
       "range": 0
     },
     "shield-entity": {
-      "rows": 2,
-      "columns": 6,
+      "rows": 3,
+      "columns": 4,
 
       "created": 0,
       "existing": 4,
-      "end": 6,
+      "end": 8,
       "created_frames": 4,
       "existing_frames": 1,
-      "end_frames": 6
+      "end_frames": 4
     },
     "buff-entity": {
       "rows": 2,

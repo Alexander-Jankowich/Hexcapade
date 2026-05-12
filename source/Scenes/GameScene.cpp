@@ -935,8 +935,8 @@ void GameScene::preUpdate(float dt)
     }
     if (_input.pressedPickup()) {
         // I just use this to test combo animations - Kaz
-        //_player->setFrozen(!_player->isFrozen());
-        //_player->setFrozeTimer(90);
+        _player->setShield(true);
+        _player->setShieldCount(3);
         _input.resolvedPickup();
     }
 
