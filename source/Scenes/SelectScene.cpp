@@ -172,9 +172,9 @@ void SelectScene::setActive(bool value) {
 
         _portrait->setVisible(false);
 
-        _playerName = "PLAYER";
+        _playerName = _networkCtrl->getPlayerName(_networkCtrl->getPID());
         if (_nameField) {
-            _nameField->setText("PLAYER");
+            _nameField->setText(_playerName);
             _nameField->activate();
         }
 
