@@ -935,8 +935,8 @@ void GameScene::preUpdate(float dt)
     }
     if (_input.pressedPickup()) {
         // I just use this to test combo animations - Kaz
-        _player->setShield(true);
-        _player->setShieldCount(3);
+        //_player->setShield(true);
+        //_player->setShieldCount(3);
         _input.resolvedPickup();
     }
 
