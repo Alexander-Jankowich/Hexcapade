@@ -1338,15 +1338,15 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
             // Only match with same number of strokes!
             if (_curStrokes == 1) {
                 _lastGesture = strToSpell(recognizer_1 -> match({ currentStroke }));
-                _lastGestureLess = strToSpell(recognizerLess_1 -> match({ currentStroke }));
+                _lastGestureLess = strToSpell(recognizerLess_1 -> match({ currentStroke}));
             }
             else if (_curStrokes == 2) {
-                _lastGesture = strToSpell(recognizer_2->match({ currentStroke }));
-                _lastGestureLess = strToSpell(recognizerLess_2->match({ currentStroke }));
+                _lastGesture = strToSpell(recognizer_2->match({ currentStroke, secondStroke  }));
+                _lastGestureLess = strToSpell(recognizerLess_2->match({ currentStroke, secondStroke }));
             }
             else if (_curStrokes == 3) {
-                _lastGesture = strToSpell(recognizer_3->match({ currentStroke }));
-                _lastGestureLess = strToSpell(recognizerLess_3->match({ currentStroke }));
+                _lastGesture = strToSpell(recognizer_3->match({ currentStroke, secondStroke, thirdStroke }));
+                _lastGestureLess = strToSpell(recognizerLess_3->match({ currentStroke, secondStroke, thirdStroke }));
             }
             else {
                 CULog("Error! Number of strokes recorded is more than 3???");
