@@ -132,6 +132,8 @@ protected:
     /** Which tutorial page is currently open, or 0 if closed */
     int _tutorialPage = 0;
 
+    int _glowItemId = -1;
+
 public:
 #pragma mark -
 #pragma mark Constructors

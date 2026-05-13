@@ -27,6 +27,8 @@ std::shared_ptr<cugl::JsonValue> ItemTypeClass::getConsts(ItemType t) {
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("ribbon");
         case ItemType::GEM:
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("gem");
+        case ItemType::OCTOLING:
+            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("octoling");
         case ItemType::SPELL_RESTRICTION:
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("spell-restriction");
         case ItemType::SPELL_BOOST:
@@ -74,6 +76,8 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getTexture(ItemType t) {
         return _assets->get<cugl::graphics::Texture>("artifact_ribbon");
     case ItemType::GEM:
         return _assets->get<cugl::graphics::Texture>("artifact_gem");
+    case ItemType::OCTOLING:
+        return _assets->get<cugl::graphics::Texture>("artifact_octoling");
     case ItemType::SPELL_RESTRICTION:
         return _assets->get<cugl::graphics::Texture>("artifact_restrict");
     case ItemType::SPELL_BOOST:
@@ -89,6 +93,48 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getTexture(ItemType t) {
         return _assets->get<cugl::graphics::Texture>("artifact_gold");
     case ItemType::BOMB:
         return _assets->get<cugl::graphics::Texture>("artifact_bomb");
+    default:
+        return nullptr;
+    }
+}
+
+std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getGlowTexture(ItemType t) {
+    switch (t) {
+    case ItemType::BOOK_FIRE:
+        return _assets->get<cugl::graphics::Texture>("spellbook_fire_glow");
+    case ItemType::BOOK_FREEZE:
+        return _assets->get<cugl::graphics::Texture>("spellbook_freeze_glow");
+    case ItemType::BOOK_EARTH:
+        return _assets->get<cugl::graphics::Texture>("spellbook_earth_glow");
+    case ItemType::BOOK_WATER:
+        return _assets->get<cugl::graphics::Texture>("spellbook_water_glow");
+    case ItemType::BOOK_DEATH:
+        return _assets->get<cugl::graphics::Texture>("spellbook_death_glow");
+    case ItemType::BOOK_HEAL:
+        return _assets->get<cugl::graphics::Texture>("spellbook_heal_glow");
+    case ItemType::SCROLL:
+        return _assets->get<cugl::graphics::Texture>("artifact_scroll_glow");
+    case ItemType::RIBBON:
+        return _assets->get<cugl::graphics::Texture>("artifact_ribbon_glow");
+    case ItemType::GEM:
+        return _assets->get<cugl::graphics::Texture>("artifact_gem_glow");
+    case ItemType::OCTOLING:
+        return _assets->get<cugl::graphics::Texture>("artifact_octoling_glow");
+    case ItemType::SPELL_RESTRICTION:
+        return _assets->get<cugl::graphics::Texture>("artifact_restrict_glow");
+    case ItemType::SPELL_BOOST:
+        return _assets->get<cugl::graphics::Texture>("artifact_boost_glow");
+    case ItemType::SPELL_REDUCE:
+        return _assets->get<cugl::graphics::Texture>("artifact_reduce_glow");
+    case ItemType::PROTECTION:
+        return _assets->get<cugl::graphics::Texture>("artifact_protection_glow");
+    case ItemType::HEAVY:
+        return _assets->get<cugl::graphics::Texture>("artifact_heavy_glow");
+    case ItemType::GOLD:
+    case ItemType::GOLD_FAKE:
+        return _assets->get<cugl::graphics::Texture>("artifact_gold_glow");
+    case ItemType::BOMB:
+        return _assets->get<cugl::graphics::Texture>("artifact_bomb_glow");
     default:
         return nullptr;
     }
@@ -126,6 +172,7 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getCard(ItemType t) {
     case ItemType::SCROLL:
     case ItemType::RIBBON:
     case ItemType::GEM:
+    case ItemType::OCTOLING:
     default:
         return nullptr; // no card assets yet
     }
