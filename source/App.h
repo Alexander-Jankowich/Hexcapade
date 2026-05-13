@@ -5,6 +5,7 @@
 #ifndef __APP_H__
 #define __APP_H__
 
+#include <string>
 #include <cugl/cugl.h>
 #include "Scenes/GameScene.h"
 #include "Scenes/EndScene.h"
@@ -33,6 +34,10 @@ protected:
 
     /** Whether or not we have finished loading all assets */
     bool _loaded;
+    /** Whether menu music has started on the loading play screen */
+    bool _menuMusicStarted;
+    /** The current looping music asset key */
+    std::string _currentMusicKey;
     /** The current application state */
     State _scene;
 
@@ -70,6 +75,9 @@ private:
     void updateClientScene(float dt);
     void updateGameScene(float dt);
     void updateEndScene(float dt);
+    void playSound(const std::string& key, float volumeMultiplier);
+    void playMusic(const std::string& key, float volumeMultiplier);
+    void stopMusic();
 
 };
 

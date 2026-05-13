@@ -5,6 +5,7 @@
 #include "ClientScene.h"
 
 using namespace cugl;
+using namespace cugl::audio;
 using namespace cugl::netcode;
 using namespace cugl::graphics;
 
@@ -43,6 +44,8 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     
     _backout->addListener([this](const std::string& name, bool down) {
         if (down) {
+            auto sound = _assets->get<Sound>("general_click");
+            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
             _backPressed = true;
             disconnect();
         }
@@ -50,6 +53,8 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
     _startgame->addListener([=,this](const std::string& name, bool down) {
         if (down) {
+            auto sound = _assets->get<Sound>("general_click");
+            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
             if (!_roomInput.empty()) {
                 _networkCtrl->connectClient(_roomInput);
             }
@@ -57,17 +62,28 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     });
 
     _deletebutton->addListener([this](const std::string& name, bool down) {
-        if (down && !_roomInput.empty()) {
-            _roomInput.pop_back();
-            _gameid->setText(_roomInput);
+        if (down) {
+            // delete is still a button tap even when there is nothing to remove
+            auto sound = _assets->get<Sound>("general_click");
+            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
+            if (!_roomInput.empty()) {
+                _roomInput.pop_back();
+                _gameid->setText(_roomInput);
+            }
         }
     });
     
     for (int ii = 0; ii < 10; ii++) {
         _keypad[ii]->addListener([this, ii](const std::string& name, bool down) {
-            if (down && _roomInput.size() < 5) {
-                _roomInput.push_back((char)('0' + ii));
-                _gameid->setText(_roomInput);
+            if (down) {
+                // play the tap sound before checking the code length
+                // this keeps number buttons clicking even after five digits
+                auto sound = _assets->get<Sound>("general_click");
+                AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
+                if (_roomInput.size() < 5) {
+                    _roomInput.push_back((char)('0' + ii));
+                    _gameid->setText(_roomInput);
+                }
             }
         });
     }

@@ -31,6 +31,7 @@
 //#define ENABLE_ALL_SPELLS
 
 using namespace cugl;
+using namespace cugl::audio;
 using namespace std;
 using namespace cugl::graphics;
 
@@ -378,6 +379,73 @@ Vec2 GameScene::getHUDOffset() const {
     return _cameraBottomLeft;
 }
 
+// local audio helpers
+// these are not network synced each client plays sounds locally
+void GameScene::playSound(const std::string& key, float volumeMultiplier) {
+    // normal gameplay sounds can play once with their asset key
+    auto sound = _assets->get<Sound>(key);
+    AudioEngine::get()->play(key, sound, false, volumeMultiplier);
+}
+
+void GameScene::restartSound(const std::string& key, float volumeMultiplier) {
+    // click and error sounds should restart right away when tapped again
+    auto sound = _assets->get<Sound>(key);
+    AudioEngine::get()->play(key, sound, false, volumeMultiplier, true);
+}
+
+void GameScene::playSpellCast(SpellType type) {
+    // map spell types to first pass cast sounds
+    switch (type) {
+    case SpellType::FIREBALL:
+        playSound("spell_fire", 0.75f);
+        break;
+    case SpellType::FREEZE:
+        playSound("spell_ice", 0.75f);
+        break;
+    case SpellType::WATER:
+        playSound("spell_water", 0.75f);
+        break;
+    case SpellType::EARTH:
+        playSound("spell_earth", 0.75f);
+        break;
+    case SpellType::COMBO_EFREEZE:
+        playSound("spell_stone", 0.80f);
+        break;
+    case SpellType::COMBO_FIREBALL:
+        playSound("spell_big_fire", 0.80f);
+        break;
+    default:
+        break;
+    }
+}
+
+void GameScene::playEnemyAttackSound(EnemyType type) {
+    // placeholder mapping for enemy attack starts
+    // later replace each key with its final enemy attack sound
+    switch (type) {
+    case EnemyType::BAT:
+    case EnemyType::SLOWBAT:
+        // using attack-statue file for now while keeping the bat key replaceable
+        playSound("attack_bat", 0.5f);
+        break;
+    case EnemyType::GHOST:
+        // using attack-statue file for now while keeping the ghost key replaceable
+        playSound("attack_ghost", 0.5f);
+        break;
+    case EnemyType::OCTO:
+        // using attack-statue file for now while keeping the octopus key replaceable
+        playSound("attack_octopus", 0.5f);
+        break;
+    }
+    // once a statue enemy type exists?
+}
+
+void GameScene::playItemDepositSound() {
+    // general_deposit is only for successful deposit zone drop off
+    CULog("sound play: deposit");
+    restartSound("general_deposit", 1.0f);
+}
+
 #pragma mark -
 #pragma mark Gameplay Handling
 /**
@@ -595,14 +663,17 @@ void GameScene::preUpdate(float dt)
 
             if (tutorialBounds.contains(tapPos) && _tutorialPage == 1 && tapPos.x >= pageMidX) {
                 // right side of tutorial page clicked go to tutorial page 2
+                restartSound("general_click", 0.75f);
                 showTutorialPage(2);
             }
             else if (tutorialBounds.contains(tapPos) && _tutorialPage == 2 && tapPos.x < pageMidX) {
                 // left side of tutorial page clicked go back to tutorial page 1
+                restartSound("general_click", 0.75f);
                 showTutorialPage(1);
             }
             else {
                 // tutorial tap was not a page turn so close it
+                restartSound("general_click", 0.50f);
                 hideTutorial();
             }
             _input.resolvedInventoryRelease();
@@ -611,6 +682,7 @@ void GameScene::preUpdate(float dt)
         }
         else if (getHelpButtonBounds().contains(tapPos)) {
             // help button clicked open tutorial page 1
+            restartSound("general_click", 0.75f);
             showTutorialPage(1);
             _input.resolvedInventoryRelease();
             _input.resolvedCardDismissTap();
@@ -621,6 +693,7 @@ void GameScene::preUpdate(float dt)
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
             //CULog("click detected, card closed");
+            restartSound("general_click", 0.50f);
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
         }
@@ -648,6 +721,7 @@ void GameScene::preUpdate(float dt)
 
             if (doubleTap) {
                 CULog("slot double tapped");
+                // double tap means deposit so do not play the normal card click
                 depositIndex = tappedIndex;
                 _pendingInventoryTapIndex = -1;
                 hideInventoryCard();
@@ -668,6 +742,8 @@ void GameScene::preUpdate(float dt)
     if (_pendingInventoryTapIndex >= 0) {
         Timestamp now;
         if (Timestamp::ellapsedMillis(_lastInventoryTapTime, now) > 200) {
+            // wait past the double tap window before treating this as a card open
+            restartSound("general_click", 0.75f);
             showInventoryCard((size_t)_pendingInventoryTapIndex);
             _pendingInventoryTapIndex = -1;
         }
@@ -685,7 +761,9 @@ void GameScene::preUpdate(float dt)
                 if (_canDeposit) {
                     int deposited = _player->depositItem((size_t)depositIndex);
                     if (deposited > 0) {
+                        // deposit sound only plays after a successful drop off
                         _inventoryValue = _player->getInventoryVal();
+                        playItemDepositSound();
                         _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
                     }
                 }
@@ -700,6 +778,8 @@ void GameScene::preUpdate(float dt)
                     auto params = _itemFact->serializeParams(dropPos, carried.value, carried.itemType);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                    // dropping from inventory is not a deposit zone drop off
+                    // todo audio: general_drop can go here once drop behavior gets its own sound
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
                 }
             }
@@ -716,7 +796,9 @@ void GameScene::preUpdate(float dt)
             if (_networkCtrl->isHost()) {
                 int deposited = _player->depositItems();
                 if (deposited > 0) {
+                    // deposit sound only plays after a successful drop off
                     _inventoryValue = _player->getInventoryVal();
+                    playItemDepositSound();
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true));
                 }
             }
@@ -754,6 +836,11 @@ void GameScene::preUpdate(float dt)
         _networkCtrl->pushOutEvent(
             SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
     }
+    else if (_input.failedGesture()) {
+        // failed cast feedback
+        restartSound("effect_error", 1.0f);
+        _input.resolvedFailedGesture();
+    }
 
     Vec2 angle = _input.getSpellAngle();
     if (angle.isZero()) {
@@ -765,6 +852,8 @@ void GameScene::preUpdate(float dt)
 
         //CULog("Spell type: %d", _player->getSpell());
         if (_player->getSpell() == SpellType::NONE) {
+            // failed cast feedback
+            restartSound("effect_error", 1.0f);
             _input.resolveSpell();
             _player->resolveSpell();
         }
@@ -788,6 +877,8 @@ void GameScene::preUpdate(float dt)
             }
 
             //CULog("Casting spell type: %d", t);
+            // local player cast only enemy projectiles do not use player spell sfx
+            playSpellCast(t);
             switch (t) {
             case SpellType::DEATH:
                 for (int i = 0; i < 16; i++) {
@@ -1365,6 +1456,10 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
+                if (e->isAttacking() && !e_node->isAttacking()) {
+                    // play when the attack animation starts not when contact happens
+                    playEnemyAttackSound(e->TYPE);
+                }
                 _enemyFact->linkFunc(e, e_node, _animations);
                 });
 
@@ -1520,6 +1615,11 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID() == player->getPID()) return;
         int nh = player->getHealth() + HEAL_AMT;
+        // todo audio: player spell status sounds go here when effects turn on
+        // hit_freeze when frozen starts
+        // hit_unfreeze later when frozen ends
+        // hit_buff / hit_shield when those effects activate
+        // damage_cat / damage_fox / damage_bunny / damage_duck go near player health loss
         switch (spell->TYPE) {
         case SpellType::HEAL:
             if (player->getHealth() < 0) {
@@ -1630,6 +1730,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
         if (player->getPID() != _player->getPID()) return;
         //CULog("enemy and player");
+        if (enemy->TYPE == EnemyType::GHOST) {
+            // ghosts attack by contact damage instead of an attack animation
+            playEnemyAttackSound(enemy->TYPE);
+        }
+        // todo audio: player damage sounds go here when enemy contact removes health
+        // damage_cat / damage_fox / damage_bunny / damage_duck depend on player character
         player->damage(1);
         return;
     }
@@ -1643,6 +1749,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (spell->shouldRemove()) {
             return;
         }
+        // todo audio: enemy spell status sounds go here when effects turn on
+        // hit_freeze when frozen starts
+        // hit_unfreeze later when frozen ends
+        // damage_bat / damage_ghost / damage_octopus / damage_statue go near enemy health loss
         switch (spell->TYPE) {
         case SpellType::WATER:
         {

@@ -789,7 +789,8 @@ _spellAngle(Vec2::ZERO),
 _timeSinceLastStroke(0),
 _curStrokes(0),
 _gestureRecognized(false),
-_lessAccurateRecognized(false)
+_lessAccurateRecognized(false),
+_failedGesture(false)
 {
 }
 
@@ -908,6 +909,7 @@ void InputController::reset() {
     _lastGestureLess = SpellType::NONE;
     _gestureRecognized = false;
     _lessAccurateRecognized = false;
+    _failedGesture = false;
     currentStroke.clear();
     secondStroke.clear();
     thirdStroke.clear();
@@ -1049,6 +1051,7 @@ void InputController::clearInput() {
     _timeSinceLastStroke = 0;
     _gestureRecognized = false;
     _lessAccurateRecognized = false;
+    _failedGesture = false;
 
     _isAiming = false;
     _releaseSpell = false;
@@ -1367,6 +1370,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
             secondStroke.clear();
             currentStroke.clear();
             _gestureRecognized = true;
+            _failedGesture = false;
             _curStrokes = 0;
         }else if (_lastGestureLess != SpellType::NONE){
             CULog("Correct Less Accurate Spell");
@@ -1375,6 +1379,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
             secondStroke.clear();
             currentStroke.clear();
             _lessAccurateRecognized = true;
+            _failedGesture = false;
             _curStrokes = 0;
         }
         else if (_curStrokes >= 3) {
@@ -1385,6 +1390,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
             currentStroke.clear();
             _gestureRecognized = false;
             _lessAccurateRecognized = false;
+            _failedGesture = true;
         }
         else {
             CULog("Still searching...");

@@ -6,6 +6,7 @@
 
 
 using namespace cugl;
+using namespace cugl::audio;
 using namespace cugl::graphics;
 using namespace cugl::scene2;
 
@@ -28,7 +29,7 @@ CU_ROOTCLASS(GeometryApp)
  * initialization that requires access to CUGL must happen in onStartup().
  */
     GeometryApp::GeometryApp() : Application(),
-    _loaded(false), _scene(State::LOAD) {
+    _loaded(false), _menuMusicStarted(false), _scene(State::LOAD) {
     // Pre-launch configuration. Nothing here can be reassigned later.
     setName("Hexcapade");
     setOrganization("GDIAC");
@@ -79,6 +80,9 @@ void GeometryApp::onStartup() {
     _assets->attach<Texture>(TextureLoader::alloc()->getHook());
     _assets->attach<Font>(FontLoader::alloc()->getHook());
     _assets->attach<JsonValue>(JsonLoader::alloc()->getHook());
+    // this lets the asset manager load sounds by key
+    _assets->attach<Sound>(SoundLoader::alloc()->getHook());
+    AudioEngine::start();
     // Needed for loading screen
     _assets->attach<WidgetValue>(WidgetLoader::alloc()->getHook());
     _assets->attach<scene2::SceneNode>(Scene2Loader::alloc()->getHook());
@@ -129,6 +133,7 @@ void GeometryApp::onStartup() {
  * causing the application to be deleted.
  */
 void GeometryApp::onShutdown() {
+    AudioEngine::stop();
     _mainmenu.dispose();
     _hostScene.dispose();
     _clientScene.dispose();
@@ -160,6 +165,7 @@ void GeometryApp::onShutdown() {
  * the background.
  */
 void GeometryApp::onSuspend() {
+    AudioEngine::get()->pause();
 }
 
 /**
@@ -173,6 +179,13 @@ void GeometryApp::onSuspend() {
  * paused before app suspension.
  */
 void GeometryApp::onResume() {
+    AudioEngine::get()->resume();
+    auto musicQueue = AudioEngine::get()->getMusicQueue();
+    musicQueue->resume();
+    if (musicQueue->getState() == AudioEngine::State::INACTIVE && !_currentMusicKey.empty()) {
+        // resume the current music after app focus returns
+        playMusic(_currentMusicKey, 1.0f);
+    }
 }
 
 /**
@@ -231,13 +244,16 @@ void GeometryApp::preUpdate(float dt) {
     
 
     if (_gameplay.gameEnded()) {
+        bool won = _gameplay.hasWon();
         _endScene.setNetwork(_gameplay.getNetwork());
         CULog("app: displaying end game scene");
-        _endScene.show(_gameplay.hasWon());
+        _endScene.show(won);
         _gameplay.reset();
         _gameplay.release();
         _endScene.setActive(true);
         _gameplay.setActive(false);
+        // keep game music playing into the end scene and layer the result sound on top
+        playSound(won ? "effect_win" : "effect_lose", 1.0f);
         _scene = State::END;
 
     }
@@ -352,6 +368,11 @@ void GeometryApp::draw() {
 void GeometryApp::updateLoadingScene(float dt) {
     if (_loading.isActive()) {
         _loading.update(dt);
+        if (_loading.isPending() && !_menuMusicStarted) {
+            // loading is done and the play button is visible so start menu music here
+            playMusic("music_menu", 1.0f);
+            _menuMusicStarted = true;
+        }
         return;
     }
 
@@ -380,6 +401,7 @@ void GeometryApp::updateLoadingScene(float dt) {
     setDeterministic(true);
     _scene = State::MENU;
     _mainmenu.setActive(true);
+    // menu music already started on the loading play screen
 }
 
 void GeometryApp::updateMenuScene(float dt) {
@@ -459,6 +481,8 @@ void GeometryApp::updateSelectScene(float dt) {
             _selectScene.setActive(false);
             _selectScene.release();
             _gameplay.setActive(true); // alr has connection from host/client scene
+            // entering gameplay replaces menu music with the looping game track
+            playMusic("music_ingame", 1.0f);
             _scene = State::GAME;
             break;
     }
@@ -521,6 +545,8 @@ void GeometryApp::updateEndScene(float dt) {
         _endScene.reset();
         _endScene.release();
         _mainmenu.setActive(true);
+        // leaving end screen returns to the menu music loop
+        playMusic("music_menu", 1.0f);
         _scene = State::MENU;
         return;
     }
@@ -531,6 +557,8 @@ void GeometryApp::updateEndScene(float dt) {
         _gameplay.initNetwork(_endScene.getNetwork());
         _endScene.release();
         _selectScene.setActive(true);
+        // replay goes back to select first so menu music starts again there
+        playMusic("music_menu", 1.0f);
         _scene = State::SELECT;
         return;
             
@@ -542,7 +570,32 @@ void GeometryApp::updateEndScene(float dt) {
         _endScene.reset();
         _endScene.release();
         _mainmenu.setActive(true);
+        // network errors leave the game flow so return to menu music
+        playMusic("music_menu", 1.0f);
         _scene = State::MENU;
     }
     return;
+}
+
+void GeometryApp::playSound(const std::string& key, float volumeMultiplier) {
+    // force true makes repeated clicks restart right away
+    auto sound = _assets->get<Sound>(key);
+    AudioEngine::get()->play(key, sound, false, volumeMultiplier, true);
+}
+
+void GeometryApp::playMusic(const std::string& key, float volumeMultiplier) {
+    CULog("audio: play music %s", key.c_str());
+    _currentMusicKey = key;
+    auto music = _assets->get<Sound>(key);
+    auto musicQueue = AudioEngine::get()->getMusicQueue();
+    // the music queue owns the one looping track so scene changes cannot overlap music
+    musicQueue->clear(0);
+    musicQueue->play(music, true, volumeMultiplier, 0);
+}
+
+void GeometryApp::stopMusic() {
+    CULog("audio: stop music");
+    // clear the queue when a scene needs music silence
+    AudioEngine::get()->getMusicQueue()->clear(0);
+    _currentMusicKey.clear();
 }

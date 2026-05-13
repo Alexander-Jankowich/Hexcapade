@@ -5,6 +5,7 @@
 #include "HostScene.h"
 
 using namespace cugl;
+using namespace cugl::audio;
 using namespace cugl::netcode;
 using namespace cugl::graphics;
 
@@ -39,6 +40,9 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     // Program the buttons
     _backout->addListener([this](const std::string& name, bool down) {
         if (down) {
+            // back is a ui tap so play click before leaving the room
+            auto sound = _assets->get<Sound>("general_click");
+            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
             _backPressed = true;
             disconnect();
         }
@@ -46,6 +50,9 @@ bool HostScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
     _startgame->addListener([this](const std::string& name, bool down) {
         if (down) {
+            // start game click plays locally before the network starts the game
+            auto sound = _assets->get<Sound>("general_click");
+            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
             _networkCtrl->startGame();
         }
     });

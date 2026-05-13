@@ -4,6 +4,7 @@
 //
 #include "MenuScene.h"
 using namespace cugl;
+using namespace cugl::audio;
 using namespace cugl::graphics;
 using namespace cugl::scene2;
 using namespace std;
@@ -32,12 +33,18 @@ bool MenuScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     // Program the buttons
     _hostbutton->addListener([this](const std::string& name, bool down) {
         if (down) {
+            // menu buttons play the shared click sound before changing scenes
+            auto sound = _assets->get<Sound>("general_click");
+            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
             CULog("host pressed");
             _choice = Choice::HOST;
         }
     });
     _joinbutton->addListener([this](const std::string& name, bool down) {
         if (down) {
+            // using force true makes fast repeated taps restart the click
+            auto sound = _assets->get<Sound>("general_click");
+            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
             _choice = Choice::JOIN;
         }
     });

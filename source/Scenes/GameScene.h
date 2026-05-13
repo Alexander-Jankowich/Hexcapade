@@ -334,6 +334,11 @@ private:
 
     // this returns the camera offset used to keep hud elements screen-anchored
     Vec2 getHUDOffset() const;
+    void playSound(const string& key, float volumeMultiplier);
+    void restartSound(const string& key, float volumeMultiplier);
+    void playSpellCast(SpellType type);
+    void playEnemyAttackSound(EnemyType type);
+    void playItemDepositSound();
 
     // this draws the prototype deposit zone so desktop/mobile tests can target it
     void drawDepositZone();

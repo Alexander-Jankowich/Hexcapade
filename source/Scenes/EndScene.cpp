@@ -5,6 +5,7 @@
 #include "EndScene.h"
 
 using namespace cugl;
+using namespace cugl::audio;
 using namespace cugl::graphics;
 #define SCENE_HEIGHT 720
 
@@ -49,6 +50,9 @@ bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
     _replayButton->addListener([this](const std::string& name, bool down) {
         if (down && _networkCtrl->isHost()) {
+            // replay click plays locally before the host sends restart
+            auto sound = _assets->get<Sound>("general_click");
+            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
             _replayPressed = true;
             CULog("host sending restart");
             _networkCtrl->pushOutEvent(RestartGameEvent::allocRestartGameEvent(0));
@@ -59,6 +63,9 @@ bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     // EXIT BUTTON
     _exitButton->addListener([this](const std::string& name, bool down) {
         if (down) {
+            // exit click plays locally before returning to menu
+            auto sound = _assets->get<Sound>("general_click");
+            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
             // exit button placeholder
             _exitPressed = true;
         }

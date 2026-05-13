@@ -145,6 +145,10 @@ public:
     */
     bool wasLessAccurate() { return _lessAccurateRecognized; }
 
+    bool failedGesture() { return _failedGesture; }
+
+    void resolvedFailedGesture() { _failedGesture = false; }
+
     int getNumStrokes() { return _curStrokes; }
 
     float getTimeSinceLastStroke() { return _timeSinceLastStroke; }
@@ -422,6 +426,8 @@ protected:
     bool _gestureRecognized;
     
     bool _lessAccurateRecognized;
+
+    bool _failedGesture;
     
 #pragma mark Spell aim variables
 
