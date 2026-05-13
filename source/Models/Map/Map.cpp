@@ -672,7 +672,7 @@ void Map::loadLevelConfig(int level, int numPlayers, std::shared_ptr<cugl::JsonV
         if (s == "spell-reduce")      return ItemTypeClass::ItemType::SPELL_REDUCE;
         if (s == "protection")        return ItemTypeClass::ItemType::PROTECTION;
         if (s == "heavy")             return ItemTypeClass::ItemType::HEAVY;
-        if (s == "gold")              return ItemTypeClass::ItemType::GOLD;
+        if (s == "fools-gold")        return ItemTypeClass::ItemType::GOLD;
         if (s == "bomb")              return ItemTypeClass::ItemType::BOMB;
         CULog("loadLevelConfig: unknown item type string '%s'", s.c_str());
         return ItemTypeClass::ItemType::SCROLL;
@@ -714,11 +714,119 @@ void Map::generateItemSpawns() {
         ItemTypeClass::ItemType chosen = chooseItemType(_config._zone3WeightsSp, _config._zone3WeightsArt, _config._zoneSpellbookProb[2]);
         _itemSpawns.push_back({ pt, chosen });
     }
+
+    applyItemConstraints();
     
     for (auto& spawn : _itemSpawns) {
         CULog("Item spawn: type %d at (%.1f, %.1f)", (int)spawn.second, spawn.first.x, spawn.first.y);
     }
     CULog("Map: generated %zu item spawns", _itemSpawns.size());
+}
+
+ItemTypeClass::ItemType Map::neutralFallback() {
+    static const ItemTypeClass::ItemType kNeutrals[] = {
+        ItemTypeClass::ItemType::SCROLL,
+        ItemTypeClass::ItemType::RIBBON,
+        ItemTypeClass::ItemType::GEM
+    };
+    int idx = (int)_rng.getOpenSint64(0, 3);
+    return kNeutrals[idx];
+}
+
+void Map::applyItemConstraints() {
+    auto constraints = _assets->get<cugl::JsonValue>("level-config")->get("item-constraints");
+
+    if (!constraints) {
+        return;
+    }
+
+    // add to here for constraints
+    auto strToItemType = [](const std::string& s) -> ItemTypeClass::ItemType {
+        if (s == "spellbook-heal")    return ItemTypeClass::ItemType::BOOK_HEAL;
+        if (s == "bomb")              return ItemTypeClass::ItemType::BOMB;
+        if (s == "spell-restriction") return ItemTypeClass::ItemType::SPELL_RESTRICTION;
+        if (s == "spell-boost")       return ItemTypeClass::ItemType::SPELL_BOOST;
+        if (s == "spell-reduce")      return ItemTypeClass::ItemType::SPELL_REDUCE;
+        if (s == "protection")        return ItemTypeClass::ItemType::PROTECTION;
+        return ItemTypeClass::ItemType::SCROLL;
+        };
+
+    auto maxNode = constraints->get("max");
+    if (maxNode) {
+        for (auto& rule : maxNode->children()) {
+            ItemTypeClass::ItemType t = strToItemType(rule->getString("type"));
+            int maxCount = rule->getInt("count");
+
+            std::vector<int> found;
+            for (int i = 0; i < (int)_itemSpawns.size(); i++) {
+                if (_itemSpawns[i].second == t) {
+                    found.push_back(i);
+                }
+            }
+            for (int i = maxCount; i < (int)found.size(); i++) {
+                _itemSpawns[found[i]].second = neutralFallback();
+                CULog("applyItemConstraints: capped type %d at index %d", (int)t, found[i]);
+            }
+        }
+    }
+
+    auto minNode = constraints->get("min");
+    if (minNode) {
+        for (auto& rule : minNode->children()) {
+            ItemTypeClass::ItemType t = strToItemType(rule->getString("type"));
+            int minCount = rule->getInt("count");
+            int preferredZone = rule->getInt("preferred-zone");
+
+            int found = 0;
+            for (auto& spawn : _itemSpawns) {
+                if (spawn.second == t) found++;
+            }
+
+            int needed = minCount - found;
+            if (needed <= 0) continue;
+
+            auto zoneByNumber = [&](int z) -> std::vector<cugl::Vec2>*{
+                if (z == 1) 
+                    return &_z1itemSpawnPoints;
+                if (z == 2) 
+                    return &_z2itemSpawnPoints;
+                return &_z3itemSpawnPoints;
+                };
+
+            std::vector<std::vector<cugl::Vec2>*> zoneOrder;
+            zoneOrder.push_back(zoneByNumber(preferredZone));
+            for (int z = 1; z <= 3; z++) {
+                if (z != preferredZone) zoneOrder.push_back(zoneByNumber(z));
+            }
+
+            for (int n = 0; n < needed; n++) {
+                bool placed = false;
+                for (auto* zonePoints : zoneOrder) {
+                    if (zonePoints->empty()) continue;
+
+                    std::vector<int> candidates;
+                    for (int i = 0; i < (int)_itemSpawns.size(); i++) {
+                        for (auto& pt : *zonePoints) {
+                            if (_itemSpawns[i].first == pt) {
+                                candidates.push_back(i);
+                                break;
+                            }
+                        }
+                    }
+                    if (candidates.empty()) continue;
+
+                    int pick = (int)_rng.getOpenSint64(0, candidates.size());
+                    _itemSpawns[candidates[pick]].second = t;
+                    CULog("applyItemConstraints: enforced min for type %d at index %d", (int)t, candidates[pick]);
+                    placed = true;
+                    break;
+                }
+                if (!placed) {
+                    CULog("applyItemConstraints: WARNING - could not place min for type %d", (int)t);
+                }
+            }
+        }
+    }
 }
 
 ItemTypeClass::ItemType Map::chooseItemType(const std::vector<float> zoneSpellbookWeights, const std::vector<float> zoneArtifactWeights, float spellBookProb) {
