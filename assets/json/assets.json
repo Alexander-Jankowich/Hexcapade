@@ -136,22 +136,22 @@
       "file": "textures/artifacts/octoling.png"
     },
     "spellbook_fire": {
-      "file": "textures/spellbook_fire.png"
+      "file": "textures/spellbooks/spellbook_fire.png"
     },
     "spellbook_freeze": {
-      "file": "textures/spellbook_freeze.png"
+      "file": "textures/spellbooks/spellbook_freeze.png"
     },
     "spellbook_heal": {
-      "file": "textures/spellbook_heal.png"
+      "file": "textures/spellbooks/spellbook_heal.png"
     },
     "spellbook_death": {
-      "file": "textures/spellbook_disintegrate.png"
+      "file": "textures/spellbooks/spellbook_disintegrate.png"
     },
     "spellbook_earth": {
-      "file": "textures/spellbook_earth.png"
+      "file": "textures/spellbooks/spellbook_earth.png"
     },
     "spellbook_water": {
-      "file": "textures/spellbook_water.png"
+      "file": "textures/spellbooks/spellbook_water.png"
     },
     "fire_card": {
       "file": "textures/inventory_cards/fire_card.png"
