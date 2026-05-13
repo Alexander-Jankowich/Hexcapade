@@ -9,10 +9,11 @@
 #define __ITEM_FACTORY_H__
 
 #include <cugl/cugl.h>
-
+#include "ItemTypeClass.h"
 using namespace cugl;
 using namespace cugl::physics2::distrib;
 using namespace std;
+
 
 /**
  * An extension of BoxObstacle to represent a world item (artifact or spellbook).
@@ -21,22 +22,21 @@ class ItemObstacle : public physics2::BoxObstacle {
 protected:
     /** Deposit value */
     int _value;
-    /** Asset manager key for the item's texture */
-    std::string _itemType;
+    ItemTypeClass::ItemType _type;
     int _itemID;
 
 public:
     /** Constructs an ItemObstacle at the given position. */
-    ItemObstacle(const cugl::Vec2& pos, int value, const std::string& itemType, int i);
+    ItemObstacle(const cugl::Vec2& pos, int value, ItemTypeClass::ItemType t, int i);
 
-    static std::shared_ptr<ItemObstacle> alloc(const cugl::Vec2& pos, int value, const std::string& itemType, int i) {
-        auto f = std::make_shared<ItemObstacle>(pos, value, itemType, i);
+    static std::shared_ptr<ItemObstacle> alloc(const cugl::Vec2& pos, int value, ItemTypeClass::ItemType t, int i) {
+        auto f = std::make_shared<ItemObstacle>(pos, value, t, i);
         f->createFixtures();
         return f;
     }
 
     int getValue() const { return _value; }
-    const std::string& getItemType() const { return _itemType; }
+    ItemTypeClass::ItemType getItemType() const { return _type; }
     int getID() const {return _itemID;}
 };
 
@@ -54,11 +54,12 @@ protected:
     /** Deserializer for supporting parameters */
     cugl::netcode::NetcodeDeserializer _deserializer;
     int _count =0;
+    ItemTypeClass _itemInfo;
 
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>,std::shared_ptr<scene2::SceneNode>> createObstacle(cugl::Vec2 pos, int value, const std::string& itemType, int i);
+    std::pair<std::shared_ptr<physics2::Obstacle>,std::shared_ptr<scene2::SceneNode>> createObstacle(cugl::Vec2 pos, int value, ItemTypeClass::ItemType t, int i);
 
 public:
     ItemFactory() {};
@@ -79,11 +80,12 @@ public:
 
     void init(std::shared_ptr<cugl::AssetManager>& assets) {
         _assets = assets;
+        _itemInfo = ItemTypeClass(assets);
     }
     
     std::shared_ptr<ItemObstacle> getItem(int i) {return current.contains(i) ? current.at(i) : nullptr;}
 
-    std::shared_ptr<std::vector<std::byte>> serializeParams(cugl::Vec2 pos, int value, const std::string& itemType);
+    std::shared_ptr<std::vector<std::byte>> serializeParams(cugl::Vec2 pos, int value, ItemTypeClass::ItemType itemType);
     
     std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>>createObstacle(const std::vector<std::byte>& params) override;
 

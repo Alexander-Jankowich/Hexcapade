@@ -14,7 +14,6 @@
 #include "../Controllers/RoomController.h"
 #include "../Controllers/Pathfinder.h"
 
-#include "../Models/GameplayConfig.h"
 #include "../Models/Map/Map.h"
 #include "../Models/Items/ItemFactory.h"
 #include "../Models/Players/PlayerFactory.h"
@@ -22,7 +21,6 @@
 #include "../Models/Enemies/EnemyFactory.h"
 #include "../Models/Events.h"
 
-#include "../Models/GameplayConfigLoader.h"
 #include "../Models/Animations.h"
 
 #include "InputDisplay.h"
@@ -47,6 +45,7 @@ protected:
     //unordered_map<string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
     InputController _input;
+    ItemTypeClass _itemInfo;
     shared_ptr<InputDisplay> _inputDisplay;
     shared_ptr<Random> _random;
     bool _addedLWalls;
@@ -81,7 +80,6 @@ protected:
     
     shared_ptr<Map> _map;
     RoomController _roomController;
-    RunBalanceConfig _runConfig;
     Vec2 _cameraBottomLeft;
     float _cameraZoom;
     unsigned int _mapSeed;
@@ -103,7 +101,7 @@ protected:
     /** Whether thegame has ended */
     bool  _gameEnded;
     /**Timer for end of game**/
-    float _timer = ROUND_TIMER;
+    float _timer = 0;
 
     shared_ptr<AssetManager> _assets;
     /** list of rooms */
@@ -324,8 +322,6 @@ private:
     void spawnItemsFromMap();
 
 #pragma mark Map things
-    // this loads map/item quota tuning from json without changing the networking path
-    void loadGameplayConfig();
     // this rebuilds the current map from host-owned run metadata
     void rebuildMapForRun();
 

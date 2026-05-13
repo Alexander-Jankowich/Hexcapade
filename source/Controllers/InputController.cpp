@@ -781,6 +781,7 @@ _inventoryTouchPos(Vec2::ZERO),
 _inventoryHotkeyIndex(-1),
 _resetPressed(false),
 _lastGesture(SpellType::NONE),
+_lastGestureLess(SpellType::NONE),
 _isAiming(false),
 _releaseSpell(false),
 _timeSinceCast(0),
@@ -815,33 +816,20 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     recognizerLess_1 = cugl::PGestureRecognizer::alloc();
     recognizerLess_2 = cugl::PGestureRecognizer::alloc();
     recognizerLess_3 = cugl::PGestureRecognizer::alloc();
-    // Update the gesturemap with more spells later on
-    _gesturemap = {
-    {"Fire", SpellType::FIREBALL},
-    {"Freeze", SpellType::FREEZE},
-    {"Heal", SpellType::HEAL },
-    {"Death", SpellType::DEATH},
-    {"Earth", SpellType::EARTH},
-    {"Water", SpellType::WATER}
-    };
 
-    _allGestureData["Death"] = { DEATH_GESTURE, DEATH_GESTURE_1 };
-    _allGestureData["Earth"] = { X_GESTURE, X_GESTURE_1 };
-    _allGestureData["Fire"] = { ARROW_GESTURE, ARROW_GESTURE_1 };
-    _allGestureData["Freeze"] = { FREEZE_GESTURE, FREEZE_GESTURE_1 };
-    _allGestureData["Heal"] = { HEAL_GESTURE, HEAL_GESTURE_2 };
-    _allGestureData["Water"] = { WATER_GESTURE };
+    _allGestureData["death"] = { DEATH_GESTURE, DEATH_GESTURE_1 };
+    _allGestureData["earth"] = { X_GESTURE, X_GESTURE_1 };
+    _allGestureData["fire"] = { ARROW_GESTURE, ARROW_GESTURE_1 };
+    _allGestureData["freeze"] = { FREEZE_GESTURE, FREEZE_GESTURE_1 };
+    _allGestureData["heal"] = { HEAL_GESTURE, HEAL_GESTURE_2 };
+    _allGestureData["water"] = { WATER_GESTURE };
     //This is mapping the number of strokes to gesture names
-    _strokeMap["Death"] = 3;
-    _strokeMap["Earth"] = 1;
-    _strokeMap["Fire"] = 2;
-    _strokeMap["Heal"] = 3;
-    _strokeMap["Water"] = 2;
-    _strokeMap["Freeze"] = 1;
-
-    for (auto& [gestureName, spellType] : _gesturemap) {
-        _spellToGestureName[spellType] = gestureName;
-    }
+    _strokeMap["death"] = 3;
+    _strokeMap["earth"] = 1;
+    _strokeMap["fire"] = 2;
+    _strokeMap["heal"] = 3;
+    _strokeMap["water"] = 2;
+    _strokeMap["freeze"] = 1;
 
     
     //I am so sorry
@@ -955,31 +943,12 @@ void InputController::_addGestureByName(
     activeSet.insert(name);
 }
 
-bool InputController::_spellbookEnablesSpell(const std::string& itemType, SpellType spell) {
-    switch (spell) {
-    case SpellType::FIREBALL:
-        return itemType == "spellbook_fire";
-    case SpellType::FREEZE:
-        return itemType == "spellbook_freeze";
-    case SpellType::HEAL:
-        return itemType == "spellbook_heal";
-    case SpellType::EARTH:
-        return itemType == "spellbook_earth";
-    case SpellType::DEATH:
-        return itemType == "spellbook_death";
-    case SpellType::WATER:
-        return itemType == "spellbook_water";
-    default:
-        return false;
-    }
-}
-
 void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::CarriedItem>& inventory) {
-    std::unordered_set<std::string> currentSpellbookSet;
+    std::unordered_set<SpellType> currentSpellbookSet;
     for (const auto& item : inventory) {
-        if (item.kind == PlayerObstacle::ItemKind::SPELLBOOK) {
-            currentSpellbookSet.insert(item.itemType);
-        }
+        SpellType temp = ItemTypeClass::getSpell(item.itemType);
+        if (temp != SpellType::NONE)
+            currentSpellbookSet.insert(temp);
     }
 
     if (currentSpellbookSet == _lastSpellbookSet) return;
@@ -987,24 +956,22 @@ void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::
 
     std::unordered_set<std::string> desired;
     for (const auto& itemType : currentSpellbookSet) {
-        for (auto& [spellType, gestureName] : _spellToGestureName) {
-            if (_spellbookEnablesSpell(itemType, spellType)) {
-                desired.insert(gestureName);
-            }
-        }
+        desired.insert(spellToStr(itemType));
     }
+
     for (auto it = _activeGestureNames.begin(); it != _activeGestureNames.end(); ) {
         if (!desired.count(*it)) {
             switch(_strokeMap[*it]){
-                case(1):
-                    _addGestureByName(*it, recognizer_1, _activeGestureNames);
-                    _addGestureByName(*it, recognizerLess_1, _activeGestureNames);
-                case(2):
-                    _addGestureByName(*it, recognizer_2, _activeGestureNames);
-                    _addGestureByName(*it, recognizerLess_2, _activeGestureNames);
-                case(3):
-                    _addGestureByName(*it, recognizer_3, _activeGestureNames);
-                    _addGestureByName(*it, recognizerLess_3, _activeGestureNames);
+            case(1):
+                recognizer_1 -> removeGesture(*it);
+                recognizerLess_1 -> removeGesture(*it);
+
+            case(2):
+                recognizer_2 -> removeGesture(*it);
+                recognizerLess_2 -> removeGesture(*it);
+            case(3):
+                recognizer_3 -> removeGesture(*it);
+                recognizerLess_3 -> removeGesture(*it);
             }
             _activeGestureNamesLess.erase(*it);
             it = _activeGestureNames.erase(it);
@@ -1014,15 +981,15 @@ void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::
     }
     for (const auto& name : desired) {
         switch(_strokeMap[name]){
-            case(1):
-                _addGestureByName(name, recognizer_1, _activeGestureNames);
-                _addGestureByName(name, recognizerLess_1, _activeGestureNamesLess);
-            case(2):
-                _addGestureByName(name, recognizer_2, _activeGestureNames);
-                _addGestureByName(name, recognizerLess_2, _activeGestureNamesLess);
-            case(3):
-                _addGestureByName(name, recognizer_3, _activeGestureNames);
-                _addGestureByName(name, recognizerLess_3, _activeGestureNamesLess);
+        case(1):
+            _addGestureByName(name, recognizer_1, _activeGestureNames);
+            _addGestureByName(name, recognizerLess_1, _activeGestureNamesLess);
+        case(2):
+            _addGestureByName(name, recognizer_2, _activeGestureNames);
+            _addGestureByName(name, recognizerLess_2, _activeGestureNamesLess);
+        case(3):
+            _addGestureByName(name, recognizer_3, _activeGestureNames);
+            _addGestureByName(name, recognizerLess_3, _activeGestureNamesLess);
         }
     }
 }
@@ -1371,16 +1338,16 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
             // Check all the strokes currently on the screen!
             // Only match with same number of strokes!
             if (_curStrokes == 1) {
-                _lastGesture = _gesturemap[recognizer_1 -> match({ currentStroke })];
-                _lastGestureLess = _gesturemap[recognizerLess_1 -> match({ currentStroke })];
+                _lastGesture = strToSpell(recognizer_1 -> match({ currentStroke }));
+                _lastGestureLess = strToSpell(recognizerLess_1 -> match({ currentStroke}));
             }
             else if (_curStrokes == 2) {
-                _lastGesture = _gesturemap[recognizer_2 -> match({ currentStroke, secondStroke })];
-                _lastGestureLess = _gesturemap[recognizerLess_2 -> match({ currentStroke, secondStroke })];
+                _lastGesture = strToSpell(recognizer_2->match({ currentStroke, secondStroke  }));
+                _lastGestureLess = strToSpell(recognizerLess_2->match({ currentStroke, secondStroke }));
             }
             else if (_curStrokes == 3) {
-                _lastGesture = _gesturemap[recognizer_3 -> match({ currentStroke, secondStroke, thirdStroke })];
-                _lastGestureLess = _gesturemap[recognizerLess_3 -> match({ currentStroke, secondStroke, thirdStroke })];
+                _lastGesture = strToSpell(recognizer_3->match({ currentStroke, secondStroke, thirdStroke }));
+                _lastGestureLess = strToSpell(recognizerLess_3->match({ currentStroke, secondStroke, thirdStroke }));
             }
             else {
                 CULog("Error! Number of strokes recorded is more than 3???");

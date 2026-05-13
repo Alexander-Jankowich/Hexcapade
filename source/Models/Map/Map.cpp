@@ -15,20 +15,19 @@ _config() {
 }
 
 void Map::reset() {
-    _enemySpawnPoints.clear();
     _z1enemySpawnPoints.clear();
     _z2enemySpawnPoints.clear();
     _z3enemySpawnPoints.clear();
-    _itemSpawnPoints.clear();
+    _itemSpawns.clear();
     _z1itemSpawnPoints.clear();
     _z2itemSpawnPoints.clear();
     _z3itemSpawnPoints.clear();
     lw_node->removeAllChildren();
 }
 
-std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world) {
+std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int seed,  std::shared_ptr<AssetManager> assets, std::shared_ptr<std::vector<std::string>> rooms, const Size& sceneSize, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world, int numPlayers) {
     _assets = assets;
-    loadLevelConfig(level, _assets->get<JsonValue>("level-config"));
+    loadLevelConfig(level, numPlayers, _assets->get<cugl::JsonValue>("level-config"));
     _extruder = SimpleExtruder();
     // ensure everything cleared before generation
     _mapGrid.clear();
@@ -39,11 +38,10 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
     }
    
     
-    _enemySpawnPoints.clear();
     _z1enemySpawnPoints.clear();
     _z2enemySpawnPoints.clear();
     _z3enemySpawnPoints.clear();
-    _itemSpawnPoints.clear();
+    _itemSpawns.clear();
     _z1itemSpawnPoints.clear();
     _z2itemSpawnPoints.clear();
     _z3itemSpawnPoints.clear();
@@ -54,12 +52,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
     std::vector<MapDoor> doors;
     _rng.reset(seed);
 
-    //get minimum room width/height
-    int minRoomW = INT_MAX;
-    int minRoomH = INT_MAX;
+    //get maximum room width/height
+    _maxRoomW = 0;
+    _maxRoomH = 0;
     for (auto r : *rooms){
-        minRoomW = _assets->get<LevelLoader>(r)->getWidth() < minRoomW ? assets->get<LevelLoader>(r)->getWidth() : minRoomW;
-        minRoomH = _assets->get<LevelLoader>(r)->getHeight() < minRoomH ? assets->get<LevelLoader>(r)->getHeight() : minRoomH;
+        _maxRoomW = _assets->get<LevelLoader>(r)->getWidth() > _maxRoomW ? assets->get<LevelLoader>(r)->getWidth() : _maxRoomW;
+        _maxRoomH = _assets->get<LevelLoader>(r)->getHeight() > _maxRoomH ? assets->get<LevelLoader>(r)->getHeight() : _maxRoomH;
     }
     
     // calc lists of room w each door type:
@@ -417,22 +415,24 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
             // Just map grid units to world pixels.
             // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
             Vec2 itemSpawnPoint = Vec2(ip_mg.x * TILE_SIZE, (_config._mapSize - ip_mg.y) * TILE_SIZE);
-            _itemSpawnPoints.push_back(itemSpawnPoint);
+            
+            auto dist = pl_mg.distance(ip_mg);
+
+            if (dist < .4 * _config._mapSize) _z1itemSpawnPoints.push_back(Vec2(ip_mg.x * TILE_SIZE, (_config._mapSize - ip_mg.y) * TILE_SIZE));
+            else if (dist < 7. * _config._mapSize) _z2itemSpawnPoints.push_back(Vec2(ip_mg.x * TILE_SIZE, (_config._mapSize - ip_mg.y) * TILE_SIZE));
+            else _z3itemSpawnPoints.push_back(Vec2(ip_mg.x * TILE_SIZE, (_config._mapSize - ip_mg.y) * TILE_SIZE));
         }
         // add enemy spawns
         for (auto ep : std::get<0>(res)->getEnemSpawnPoints()) {
             // convert coords
             auto ep_mg = cugl::Vec2(std::get<2>(res).x + ep.x,
                                     std::get<2>(res).y + ep.y);
-            // Just map grid units to world pixels.
-            // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
-            _enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
             
             auto dist = pl_mg.distance(ep_mg);
             
             if (.1 * _config._mapSize < dist && dist < .4 * _config._mapSize) _z1enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
             else if (dist < 7. * _config._mapSize) _z2enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
-            else _z3enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
+            else if (dist >= 7. * _config._mapSize) _z3enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
         }
         // add colliders
         addRoomObstacles(std::get<0>(res), std::get<2>(res), world);
@@ -440,7 +440,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
             
         }
     
-        updateItemSpawnZones();
+        generateItemSpawns();
         return node;
     }
 
@@ -513,7 +513,19 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
     std::tuple<std::shared_ptr<LevelLoader>, int, Vec2> Map::attemptToFitRoom(MapDoor& d, std::vector<std::string>& rooms, Door::Direction connDir) {
         
         if(rooms.size()==0) return std::make_tuple(nullptr, -1, Vec2(-1, -1)); // no viable room
-        
+        // clear dead end rooms if not near map boundaries
+        bool clearDeadEnds = false;
+        if(connDir==Door::Direction::NORTH || connDir==Door::Direction::SOUTH) {
+            clearDeadEnds = d.pos.y > _maxRoomH && d.pos.y < _mapGrid.size() - _maxRoomH;
+        }
+        if(connDir==Door::Direction::EAST || connDir==Door::Direction::WEST) {
+            clearDeadEnds = d.pos.x > _maxRoomW && d.pos.y < _mapGrid.at(0).size() - _maxRoomW;
+        }
+        std::vector<std::string> keptRooms;
+            for (auto r : rooms) {
+                if (clearDeadEnds && _assets->get<LevelLoader>(r)->getNumDoors()==1) continue;
+                keptRooms.push_back(r);
+            }
         int attempts = 0;
         //TODO: these will be in level config file perhaps?
         int minHallUnits = 2;
@@ -521,8 +533,8 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
         while (attempts < 3){
             CULog("attempt: %d", attempts);
             // select room for this attempt
-            int rm_idx = (int) _rng.getOpenSint64(0, rooms.size());
-            auto rmData = _assets->get<LevelLoader>(rooms.at(rm_idx));
+            int rm_idx = (int) _rng.getOpenSint64(0, keptRooms.size());
+            auto rmData = _assets->get<LevelLoader>(keptRooms.at(rm_idx));
             
             // try to fit room with varying hall sizes
             for (int i=minHallUnits; i<=maxHallUnits; i++) {
@@ -609,7 +621,7 @@ void Map::addRoomObstacles(std::shared_ptr<LevelLoader> tiledRmData, Vec2 tlCorn
         
     }
 
-void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
+void Map::loadLevelConfig(int level, int numPlayers, std::shared_ptr<cugl::JsonValue> config) {
     std::shared_ptr<JsonValue> data;
     int incr = 0;
     if (level < config->getInt("medium-start")) {
@@ -617,14 +629,18 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
         incr = level - 1;
     } else if (level < config->getInt("hard-start")) {
         data = config->get("medium");
-        incr = level - 4;
+        incr = level - config->getInt("medium-start");
     } else {
         data = config->get("hard");
-        incr = level - 7;
+        incr = level - config->getInt("hard-start");
     }
+    _config.time = data->getInt("time") + data->getInt("time-incr") * incr;
     
+    _config.maxEnemies = data->getInt("max-enemies") + data->getInt("max-enemies-incr") * incr;
+    _config.enemSpawnInterval = data->getInt("enemy-interval");
+
     _config._mapSize = data->getInt("map-size") + data->getInt("map-size-incr") * incr;
-    _config.quota = data->getInt("quota") + data->getInt("quota-incr") * incr;
+    _config.quota = numPlayers * (data->getInt("quota") + data->getInt("quota-incr") * incr);
     
     for (auto e : data->get("enemies")->asStringArray()) {
         if (e == "octoplush") _config._enemyTypes.push_back(EnemyType::OCTO);
@@ -641,279 +657,245 @@ void Map::loadLevelConfig(int level, std::shared_ptr<cugl::JsonValue> config) {
     _config._zone2EnemyProb = data->get("zone-probs")->asFloatArray()[1];
     _config._zone3EnemyProb = data->get("zone-probs")->asFloatArray()[2];
 
-    // currently mirrors whiteboard values, now loaded from level_config
-    std::shared_ptr<JsonValue> itemValueZones = data->get("item-value-zones");
-    if (itemValueZones && itemValueZones->size() >= 3) {
-        for (int zone = 0; zone < 3; zone++) {
-            std::vector<float> valueRange = itemValueZones->get(zone)->asFloatArray();
-            _config._itemValueZoneMins[zone] = valueRange[0];
-            _config._itemValueZoneMaxs[zone] = valueRange[1];
+    // Helper lambda
+    // TODO: change this later...? to allow extra textures for normal items?
+    auto strToItemType = [](const std::string& s) -> ItemTypeClass::ItemType {
+        if (s == "spellbook-fire")    return ItemTypeClass::ItemType::BOOK_FIRE;
+        if (s == "spellbook-freeze")  return ItemTypeClass::ItemType::BOOK_FREEZE;
+        if (s == "spellbook-earth")   return ItemTypeClass::ItemType::BOOK_EARTH;
+        if (s == "spellbook-water")   return ItemTypeClass::ItemType::BOOK_WATER;
+        if (s == "spellbook-death")   return ItemTypeClass::ItemType::BOOK_DEATH;
+        if (s == "spellbook-heal")    return ItemTypeClass::ItemType::BOOK_HEAL;
+        if (s == "low-val")           return ItemTypeClass::ItemType::RIBBON;
+        if (s == "medium-val")        return ItemTypeClass::ItemType::SCROLL;
+        if (s == "high-val")          return ItemTypeClass::ItemType::GEM;
+        if (s == "spell-restriction") return ItemTypeClass::ItemType::SPELL_RESTRICTION;
+        if (s == "spell-boost")       return ItemTypeClass::ItemType::SPELL_BOOST;
+        if (s == "spell-reduce")      return ItemTypeClass::ItemType::SPELL_REDUCE;
+        if (s == "protection")        return ItemTypeClass::ItemType::PROTECTION;
+        if (s == "heavy")             return ItemTypeClass::ItemType::HEAVY;
+        if (s == "fools-gold")        return ItemTypeClass::ItemType::GOLD;
+        if (s == "bomb")              return ItemTypeClass::ItemType::BOMB;
+        CULog("loadLevelConfig: unknown item type string '%s'", s.c_str());
+        return ItemTypeClass::ItemType::SCROLL;
+    };
+
+    _config._spellbookTypes.clear();
+    for (auto& s : data->get("item-spellbook-types")->asStringArray()) {
+        _config._spellbookTypes.push_back(strToItemType(s));
+    }
+
+    _config._artifactTypes.clear();
+    for (auto& s : data->get("item-artifact-types")->asStringArray()) {
+        _config._artifactTypes.push_back(strToItemType(s));
+    }
+
+    _config._zoneSpellbookProb = data->get("item-zone-spellbook-prob")->asFloatArray();
+    _config._goldChance = data->getFloat("gold-real-prob");
+
+    _config._zone1WeightsSp = data->get("spellbook-weights")->get(0)->asFloatArray();
+    _config._zone2WeightsSp = data->get("spellbook-weights")->get(1)->asFloatArray();
+    _config._zone3WeightsSp = data->get("spellbook-weights")->get(2)->asFloatArray();
+
+    _config._zone1WeightsArt = data->get("artifact-weights")->get(0)->asFloatArray();
+    _config._zone2WeightsArt = data->get("artifact-weights")->get(1)->asFloatArray();
+    _config._zone3WeightsArt = data->get("artifact-weights")->get(2)->asFloatArray();
+}
+
+void Map::generateItemSpawns() {
+    
+    for (auto pt : _z1itemSpawnPoints) {
+        ItemTypeClass::ItemType chosen = chooseItemType(_config._zone1WeightsSp, _config._zone1WeightsArt, _config._zoneSpellbookProb[0]);
+        _itemSpawns.push_back({ pt, chosen });
+    }
+    for (auto pt : _z2itemSpawnPoints) {
+        ItemTypeClass::ItemType chosen = chooseItemType(_config._zone2WeightsSp, _config._zone2WeightsArt, _config._zoneSpellbookProb[1]);
+        _itemSpawns.push_back({ pt, chosen });
+    }
+    for (auto pt : _z3itemSpawnPoints) {
+        ItemTypeClass::ItemType chosen = chooseItemType(_config._zone3WeightsSp, _config._zone3WeightsArt, _config._zoneSpellbookProb[2]);
+        _itemSpawns.push_back({ pt, chosen });
+    }
+
+    applyItemConstraints();
+    
+    for (auto& spawn : _itemSpawns) {
+        CULog("Item spawn: type %d at (%.1f, %.1f)", (int)spawn.second, spawn.first.x, spawn.first.y);
+    }
+    CULog("Map: generated %zu item spawns", _itemSpawns.size());
+}
+
+ItemTypeClass::ItemType Map::neutralFallback() {
+    static const ItemTypeClass::ItemType kNeutrals[] = {
+        ItemTypeClass::ItemType::SCROLL,
+        ItemTypeClass::ItemType::RIBBON,
+        ItemTypeClass::ItemType::GEM
+    };
+    int idx = (int)_rng.getOpenSint64(0, 3);
+    return kNeutrals[idx];
+}
+
+void Map::applyItemConstraints() {
+    auto constraints = _assets->get<cugl::JsonValue>("level-config")->get("item-constraints");
+
+    if (!constraints) {
+        return;
+    }
+
+    // add to here for constraints
+    auto strToItemType = [](const std::string& s) -> ItemTypeClass::ItemType {
+        if (s == "spellbook-heal")    return ItemTypeClass::ItemType::BOOK_HEAL;
+        if (s == "bomb")              return ItemTypeClass::ItemType::BOMB;
+        if (s == "spell-restriction") return ItemTypeClass::ItemType::SPELL_RESTRICTION;
+        if (s == "spell-boost")       return ItemTypeClass::ItemType::SPELL_BOOST;
+        if (s == "spell-reduce")      return ItemTypeClass::ItemType::SPELL_REDUCE;
+        if (s == "protection")        return ItemTypeClass::ItemType::PROTECTION;
+        return ItemTypeClass::ItemType::SCROLL;
+        };
+
+    auto maxNode = constraints->get("max");
+    if (maxNode) {
+        for (auto& rule : maxNode->children()) {
+            ItemTypeClass::ItemType t = strToItemType(rule->getString("type"));
+            int maxCount = rule->getInt("count");
+
+            std::vector<int> found;
+            for (int i = 0; i < (int)_itemSpawns.size(); i++) {
+                if (_itemSpawns[i].second == t) {
+                    found.push_back(i);
+                }
+            }
+            for (int i = maxCount; i < (int)found.size(); i++) {
+                _itemSpawns[found[i]].second = neutralFallback();
+                CULog("applyItemConstraints: capped type %d at index %d", (int)t, found[i]);
+            }
         }
     }
 
-    std::shared_ptr<JsonValue> itemCategoryProbs = data->get("item-category-probs");
-    if (itemCategoryProbs && itemCategoryProbs->size() >= 3) {
-        for (int zone = 0; zone < 3; zone++) {
-            std::vector<float> probs = itemCategoryProbs->get(zone)->asFloatArray();
-            _config._itemSpellbookZoneProbs[zone] = probs[0];
-            _config._itemArtifactZoneProbs[zone] = probs[1];
+    auto minNode = constraints->get("min");
+    if (minNode) {
+        for (auto& rule : minNode->children()) {
+            ItemTypeClass::ItemType t = strToItemType(rule->getString("type"));
+            int minCount = rule->getInt("count");
+            int preferredZone = rule->getInt("preferred-zone");
+
+            int found = 0;
+            for (auto& spawn : _itemSpawns) {
+                if (spawn.second == t) found++;
+            }
+
+            int needed = minCount - found;
+            if (needed <= 0) continue;
+
+            auto zoneByNumber = [&](int z) -> std::vector<cugl::Vec2>*{
+                if (z == 1) 
+                    return &_z1itemSpawnPoints;
+                if (z == 2) 
+                    return &_z2itemSpawnPoints;
+                return &_z3itemSpawnPoints;
+                };
+
+            std::vector<std::vector<cugl::Vec2>*> zoneOrder;
+            zoneOrder.push_back(zoneByNumber(preferredZone));
+            for (int z = 1; z <= 3; z++) {
+                if (z != preferredZone) zoneOrder.push_back(zoneByNumber(z));
+            }
+
+            for (int n = 0; n < needed; n++) {
+                bool placed = false;
+                for (auto* zonePoints : zoneOrder) {
+                    if (zonePoints->empty()) continue;
+
+                    std::vector<int> candidates;
+                    for (int i = 0; i < (int)_itemSpawns.size(); i++) {
+                        for (auto& pt : *zonePoints) {
+                            if (_itemSpawns[i].first == pt) {
+                                candidates.push_back(i);
+                                break;
+                            }
+                        }
+                    }
+                    if (candidates.empty()) continue;
+
+                    int pick = (int)_rng.getOpenSint64(0, candidates.size());
+                    _itemSpawns[candidates[pick]].second = t;
+                    CULog("applyItemConstraints: enforced min for type %d at index %d", (int)t, candidates[pick]);
+                    placed = true;
+                    break;
+                }
+                if (!placed) {
+                    CULog("applyItemConstraints: WARNING - could not place min for type %d", (int)t);
+                }
+            }
         }
     }
 }
 
-void Map::updateItemSpawnZones() {
-    _z1itemSpawnPoints.clear();
-    _z2itemSpawnPoints.clear();
-    _z3itemSpawnPoints.clear();
+ItemTypeClass::ItemType Map::chooseItemType(const std::vector<float> zoneSpellbookWeights, const std::vector<float> zoneArtifactWeights, float spellBookProb) {
+    float roll = _rng.getFloat();
+    bool isSpellbook = roll <= spellBookProb;
 
-    float farthestPointDistance = 0.0f;
-    for (const auto& spawnPoint : _itemSpawnPoints) {
-        float distance = spawnPoint.distance(_playerSpawn);
-        if (distance > farthestPointDistance) {
-            farthestPointDistance = distance;
+    const std::vector<ItemTypeClass::ItemType>& pool =
+        isSpellbook ? _config._spellbookTypes : _config._artifactTypes;
+    const std::vector<float>& weights =
+        isSpellbook ? zoneSpellbookWeights : zoneArtifactWeights;
+
+    float pick = _rng.getFloat();
+    float acc = 0.0f;
+    int idx = (int)pool.size() - 1; // default to last as fallback
+    for (int i = 0; i < (int)weights.size(); i++) {
+        acc += weights[i];
+        if (pick <= acc) {
+            idx = i;
+            break;
         }
     }
-
-    for (const auto& spawnPoint : _itemSpawnPoints) {
-        // split item spawns into thirds based on the farthest item point this run
-        float distancePercentOfFarthestPoint =
-            spawnPoint.distance(_playerSpawn) / farthestPointDistance;
-        if (distancePercentOfFarthestPoint < (1.0f / 3.0f)) {
-            _z1itemSpawnPoints.push_back(spawnPoint);
-        } else if (distancePercentOfFarthestPoint < (2.0f / 3.0f)) {
-            _z2itemSpawnPoints.push_back(spawnPoint);
-        } else {
-            _z3itemSpawnPoints.push_back(spawnPoint);
-        }
-    }
+    if (pool[idx]==ItemTypeClass::ItemType::GOLD) return _rng.getFloat() <= _config._goldChance ? ItemTypeClass::ItemType::GOLD : ItemTypeClass::ItemType::GOLD_FAKE;
+    return pool[idx];
 }
 
-// returns the config row for whichever item bucket owns this spawn point
-int Map::getItemSpawnZone(const Vec2& worldPoint) const {
-    for (const auto& spawnPoint : _z1itemSpawnPoints) {
-        if (spawnPoint.distance(worldPoint) < 0.01f) {
-            return 0;
-        }
-    }
-    for (const auto& spawnPoint : _z2itemSpawnPoints) {
-        if (spawnPoint.distance(worldPoint) < 0.01f) {
-            return 1;
-        }
-    }
-    for (const auto& spawnPoint : _z3itemSpawnPoints) {
-        if (spawnPoint.distance(worldPoint) < 0.01f) {
-            return 2;
-        }
-    }
-    return 2;
-}
-
-// gives gamescene the min value ratio for the chosen item zone
-float Map::getItemValueZoneMin(int zone) const {
-    return _config._itemValueZoneMins[zone];
-}
-
-// gives gamescene the max value ratio for the chosen item zone
-float Map::getItemValueZoneMax(int zone) const {
-    return _config._itemValueZoneMaxs[zone];
-}
-
-// gives gamescene the spellbook roll chance for this item zone
-float Map::getItemSpellbookZoneProb(int zone) const {
-    return _config._itemSpellbookZoneProbs[zone];
-}
-
-// gives gamescene the artifact roll chance for this item zone
-float Map::getItemArtifactZoneProb(int zone) const {
-    return _config._itemArtifactZoneProbs[zone];
-}
-
-std::vector<std::pair<Vec2, ItemCatalogEntryConfig>> Map::generateItemSpawnChoices(const std::vector<ItemCatalogEntryConfig>& entries,
-                                                                                   int quota,
-                                                                                   float itemValueRatio,
-                                                                                   const std::shared_ptr<cugl::Random>& random) {
-    std::vector<std::pair<Vec2, ItemCatalogEntryConfig>> res;
-    if (_itemSpawnPoints.empty()) {
-        CULog("ItemFactory: no item spawn points found on map");
-        return res;
-    }
-
-    float typicalItemValue = getTypicalItemValue(entries);
-    int maxItemValue = getMaxItemValue(entries);
-    size_t spawnCount = chooseItemSpawnCount(
-        _itemSpawnPoints.size(), _rooms.size(), quota,
-        typicalItemValue, itemValueRatio
-    );
-
-    std::vector<size_t> spawnIndices(_itemSpawnPoints.size());
-    for (size_t spawnIndex = 0; spawnIndex < _itemSpawnPoints.size(); ++spawnIndex) {
-        spawnIndices[spawnIndex] = spawnIndex;
-    }
-
-    for (size_t spawned = 0; spawned < spawnCount && !spawnIndices.empty(); ++spawned) {
-        size_t pickIndex = 0;
-        if (spawnIndices.size() > 1) {
-            pickIndex = (size_t)(random->getUint32() % spawnIndices.size());
-        }
-
-        const Vec2& worldPoint = _itemSpawnPoints[spawnIndices[pickIndex]];
-        spawnIndices[pickIndex] = spawnIndices.back();
-        spawnIndices.pop_back();
-
-        int zone = getItemSpawnZone(worldPoint);
-        ItemCatalogEntryConfig item = chooseItemForZone(
-            entries,
-            maxItemValue,
-            _config._itemValueZoneMins[zone],
-            _config._itemValueZoneMaxs[zone],
-            _config._itemSpellbookZoneProbs[zone],
-            _config._itemArtifactZoneProbs[zone],
-            random
-        );
-
-        res.push_back(std::make_pair(worldPoint, item));
-    }
-    return res;
-}
-
-const ItemCatalogEntryConfig* Map::chooseItemWeight(const std::vector<ItemCatalogEntryConfig>& entries,
-                                                    const std::shared_ptr<cugl::Random>& random) {
-    float totalWeight = 0.0f;
-    for (const auto& item : entries) {
-        totalWeight += item.weight;
-    }
-
-    float roll = random->getClosedFloat(0.0f, totalWeight);
-    for (const auto& item : entries) {
-        if ((roll -= item.weight) <= 0.0f) {
-            return &item;
-        }
-    }
-
-    return &entries.back();
-}
-
-float Map::getTypicalItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
-    // Estimating the average item value from the weighted itemd so spawn count can scale with quota
-    float totalWeight = 0.0f;
-    float totalValue = 0.0f;
-    for (const auto& item : entries) {
-        totalWeight += item.weight;
-        totalValue += item.weight * item.value;
-    }
-
-    return totalValue / totalWeight;
-}
-
-// finds the highest value item so the board cutoffs scale with catalog changes
-int Map::getMaxItemValue(const std::vector<ItemCatalogEntryConfig>& entries) {
-    int maxValue = 0;
-    for (const auto& item : entries) {
-        maxValue = std::max(maxValue, item.value);
-    }
-    return maxValue;
-}
-
-// checks whether an item fits the configured value band for this spawn point's zone
-bool Map::isItemEligibleForZone(const ItemCatalogEntryConfig& item,
-                                int maxItemValue,
-                                float zoneMinRatio,
-                                float zoneMaxRatio) {
-    float lowCutoff = zoneMinRatio * maxItemValue;
-    float highCutoff = zoneMaxRatio * maxItemValue;
-    bool includesMaxValue = zoneMaxRatio >= 1.0f;
-    return item.value >= lowCutoff &&
-        (includesMaxValue ? item.value <= highCutoff : item.value < highCutoff);
-}
-
-// rolls the zone category probabilities from level_config before weighted pick
-std::string Map::chooseItemCategory(float spellbookProb,
-                                    float artifactProb,
-                                    const std::shared_ptr<cugl::Random>& random) {
-    float totalProb = spellbookProb + artifactProb;
-    float roll = random->getClosedFloat(0.0f, totalProb);
-    return roll <= spellbookProb ? "spellbook" : "artifact";
-}
-
-// Goal: enough item value to cover quota, but never spawn more than
-// the authored spawn points we actually have on the map
-size_t Map::chooseItemSpawnCount(size_t spawnPointCount,
-                                 size_t roomCount,
-                                 int quota,
-                                 float typicalItemValue,
-                                 float itemValueRatio) {
-    int valueNeeded = (int)std::ceil((float)quota * itemValueRatio);
-    size_t itemsNeeded = (size_t)std::ceil((float)valueNeeded / typicalItemValue);
-    return std::min(spawnPointCount, std::max(roomCount, itemsNeeded));
-}
-
-ItemCatalogEntryConfig Map::chooseItemForZone(const std::vector<ItemCatalogEntryConfig>& catalogEntries,
-                                              int maxItemValue,
-                                              float zoneMinRatio,
-                                              float zoneMaxRatio,
-                                              float spellbookChance,
-                                              float artifactChance,
-                                              const std::shared_ptr<cugl::Random>& random) {
-    // filter items to the value band for this spawn point's zone
-    std::vector<ItemCatalogEntryConfig> zoneEntries;
-    zoneEntries.reserve(catalogEntries.size());
-    for (const auto& entry : catalogEntries) {
-        if (isItemEligibleForZone(entry, maxItemValue, zoneMinRatio, zoneMaxRatio)) {
-            zoneEntries.push_back(entry);
-        }
-    }
-
-    // roll spellbook vs artifact using the zone probabilities from level_config
-    std::string itemCategory = chooseItemCategory(spellbookChance, artifactChance, random);
-
-    // then filter the zone band to the category we rolled
-    std::vector<ItemCatalogEntryConfig> categoryEntries;
-    categoryEntries.reserve(zoneEntries.size());
-    for (const auto& entry : zoneEntries) {
-        if (entry.kind == itemCategory) {
-            categoryEntries.push_back(entry);
-        }
-    }
-
-    return *chooseItemWeight(categoryEntries, random);
-}
-
-std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns(const std::vector<Vec2> playersPos) {
+std::vector<std::pair<Vec2, EnemyType>> Map::generateEnemySpawns(const std::vector<Vec2> playersPos, const std::vector<Vec2> enemsPos) {
     std::vector<std::pair<Vec2, EnemyType>> res;
     // it is fine to use the random number generator here since we re-init for next round
     bool z1 = _rng.getFloat() <= _config._zone1EnemyProb;
     bool z2 = _rng.getFloat() <= _config._zone2EnemyProb;
     bool z3 = _rng.getFloat() <= _config._zone3EnemyProb;
     
-    if (z1 && _z1enemySpawnPoints.size()>0) {
+    if (z1 && _z1enemySpawnPoints.size()>0 && enemsPos.size() < _config.maxEnemies) {
         CULog("zone 1 spawn");
-        auto spawn = chooseEnemySpawnPoint(_z1enemySpawnPoints, playersPos, _config._zone1WeightsEn);
+        auto spawn = chooseEnemySpawnPoint(_z1enemySpawnPoints, playersPos, enemsPos, _config._zone1WeightsEn);
         res.push_back(spawn);
     }
     
-    if (z2 && _z2enemySpawnPoints.size()>0) {
+    if (z2 && _z2enemySpawnPoints.size()>0 && enemsPos.size()+1 < _config.maxEnemies) {
         CULog("zone 2 spawn");
-        auto spawn = chooseEnemySpawnPoint(_z2enemySpawnPoints, playersPos, _config._zone2WeightsEn);
+        auto spawn = chooseEnemySpawnPoint(_z2enemySpawnPoints, playersPos, enemsPos, _config._zone2WeightsEn);
         res.push_back(spawn);
     }
     
-    if (z3 && _z3enemySpawnPoints.size()>0) {
+    if (z3 && _z3enemySpawnPoints.size()>0 && enemsPos.size()+2 < _config.maxEnemies) {
         CULog("zone 3 spawn");
-        auto spawn = chooseEnemySpawnPoint(_z3enemySpawnPoints, playersPos, _config._zone3WeightsEn);
+        auto spawn = chooseEnemySpawnPoint(_z3enemySpawnPoints, playersPos, enemsPos, _config._zone3WeightsEn);
         res.push_back(spawn);
     }
     return res;
 }
 
-std::pair<Vec2, EnemyType> Map::chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<float> zoneRates) {
+std::pair<Vec2, EnemyType> Map::chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<Vec2> enemsPos, const std::vector<float> zoneRates) {
     // filter to valid points
     vector<Vec2> validPts;
     
     for (auto p : zonePoints) {
         bool valid = true;
         for (auto pos : playersPos) {
-            if (p.distance(pos) < 10 * TILE_SIZE) { // since points are in tile coords
+            if (p.distance(pos) <= 15 * TILE_SIZE) { // since points are in tile coords
                 //T
+                valid = false;
+                break;
+            }
+        }
+        for (auto pos : enemsPos) {
+            if (p.distance(pos) <= 2 * TILE_SIZE) {
                 valid = false;
                 break;
             }

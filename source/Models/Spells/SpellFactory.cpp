@@ -69,8 +69,8 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         image = _assets->get<graphics::Texture>("freeze");
         break;
     case SpellType::STEAM:
-        // Should never show tbh
         values = _spellConsts->get("steam");
+        image = _assets->get<graphics::Texture>("steam");
         break;
     case SpellType::HEAL:
         values = _spellConsts->get("heal");
