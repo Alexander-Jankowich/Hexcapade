@@ -43,13 +43,13 @@
       "file": "textures/water_sheet.png"
     },
     "mud": {
-        "file": "textures/mud_sheet.png"
+      "file": "textures/mud_sheet.png"
     },
     "steam": {
-        "file": "textures/steam_sheet.png"
+      "file": "textures/steam_sheet.png"
     },
     "efreeze": {
-        "file": "textures/efreeze_sheet.png"
+      "file": "textures/efreeze_sheet.png"
     },
     "shield": {
       "file": "textures/shield_sheet.png"
@@ -102,35 +102,38 @@
     "player_duck": {
       "file": "textures/playerduck_sheet.png"
     },
-    "artifact_reduce": {
-      "file": "textures/skull.png"
-    },
     "artifact_boost": {
-      "file": "textures/spell_boost.png"
+      "file": "textures/artifacts/spell_boost.png"
+    },
+    "artifact_reduce": {
+      "file": "textures/artifacts/skull.png"
     },
     "artifact_heavy": {
-      "file": "textures/heavy_treasure.png"
+      "file": "textures/artifacts/heavy_treasure.png"
     },
     "artifact_protection": {
-      "file": "textures/protection.png"
+      "file": "textures/artifacts/protection.png"
     },
     "artifact_gold": {
-      "file": "textures/fools_gold.png"
+      "file": "textures/artifacts/fools_gold.png"
     },
     "artifact_bomb": {
-      "file": "textures/bomb.png"
+      "file": "textures/artifacts/bomb.png"
     },
     "artifact_restrict": {
-      "file": "textures/spell_restriction.png"
+      "file": "textures/artifacts/spell_restriction.png"
     },
     "artifact_scroll": {
-      "file": "textures/scroll.png"
-    },
-    "artifact_gem": {
-      "file": "textures/gem.png"
+      "file": "textures/artifacts/scroll.png"
     },
     "artifact_ribbon": {
-      "file": "textures/ribbon.png"
+      "file": "textures/artifacts/ribbon.png"
+    },
+    "artifact_gem": {
+      "file": "textures/artifacts/gem.png"
+    },
+    "artifact_octoling": {
+      "file": "textures/artifacts/octoling.png"
     },
     "spellbook_fire": {
       "file": "textures/spellbook_fire.png"
