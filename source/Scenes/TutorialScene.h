@@ -66,6 +66,7 @@ protected:
     shared_ptr<scene2::SceneNode> _inventoryCardNode;
     /** Node for the currently open tutorial page */
     shared_ptr<scene2::SceneNode> _tutorialNode;
+    shared_ptr<graphics::Texture> _pendingTutorialTex = nullptr;
 
     /** The Box2D world */
     shared_ptr<physics2::distrib::NetWorld> _world;
@@ -287,6 +288,9 @@ private:
     int getInventorySlotIndexAt(const Vec2& tapPos) const;
     void showInventoryCard(size_t slotIndex);
     void hideInventoryCard();
+    
+    void showTutorial(std::shared_ptr<graphics::Texture> tex);
+    void hideTutorial();
     /**
      * on recieving a pickup event from player, checks if it is valid.
      */

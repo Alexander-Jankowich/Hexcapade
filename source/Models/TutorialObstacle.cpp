@@ -2,7 +2,7 @@
 #include "TutorialObstacle.h"
 
 
-TutorialObstacle::TutorialObstacle(const cugl::Rect b, std::shared_ptr<graphics::Texture> tex) {
+TutorialObstacle::TutorialObstacle(const cugl::Rect b, std::string tex) {
     setPosition(b.origin);
     setDimension(b.size);
     _png = tex;

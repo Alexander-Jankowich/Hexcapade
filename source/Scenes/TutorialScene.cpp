@@ -205,6 +205,26 @@ void TutorialScene::hideInventoryCard() {
     }
 }
 
+void TutorialScene::showTutorial(std::shared_ptr<graphics::Texture> tex) {
+    hideTutorial();
+    _tutorialNode = scene2::PolygonNode::allocWithTexture(tex);
+    _tutorialNode -> setAnchor(Vec2::ANCHOR_CENTER);
+    float zoom = getActiveCameraZoom();
+    Vec2 offset = getHUDOffset();
+    _tutorialNode->setScale(1.0f / zoom);
+    _tutorialNode->setPosition(Vec2(offset.x + this->getSize().width * 0.5f / zoom,
+        offset.y + this->getSize().height * 0.5f / zoom));
+    _tutorialNode->setPriority(1.0f);
+    addChild(_tutorialNode);
+}
+
+void TutorialScene::hideTutorial() {
+    if (_tutorialNode) {
+        removeChild(_tutorialNode);
+        _tutorialNode = nullptr;
+    }
+}
+
 void TutorialScene::updateCameraFollow() {
     std::shared_ptr<OrthographicCamera> orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera());
     float zoom = getActiveCameraZoom();
@@ -267,6 +287,11 @@ Vec2 TutorialScene::getHUDOffset() const {
  */
 void TutorialScene::preUpdate(float dt)
 {
+    if (_pendingTutorialTex) {
+        CULog("i am trying to display");
+        showTutorial(_pendingTutorialTex);
+        _pendingTutorialTex = nullptr;
+    }
 #pragma mark Input Updates and Player Initialiation
     // @ alex i cleared the rest of the checks since we are always host
     
@@ -278,6 +303,7 @@ void TutorialScene::preUpdate(float dt)
 
     _input.update(dt);
 
+    CULog("current player position: %f, %f", _player -> getPosition().x, _player -> getPosition().y);
     if (_input.pressedReset()) {
         reset();
         _input.resolvedReset();
@@ -374,6 +400,10 @@ void TutorialScene::preUpdate(float dt)
             //CULog("click detected, card closed");
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
+        }
+    }else if(_tutorialNode){
+        if (_input.cardDismissTap()) {
+            hideTutorial();
         }
     }
     _input.resolvedCardDismissTap();
@@ -872,7 +902,6 @@ void TutorialScene::initPhysics() {
     std::function<void(const std::shared_ptr<physics2::Obstacle>&, const std::shared_ptr<scene2::SceneNode>&)> linkSceneToObsFunc = [=, this](const std::shared_ptr<physics2::Obstacle>& obs, const std::shared_ptr<scene2::SceneNode>& node) {
         this->linkSceneToObs(obs, node);
         };
-
     _networkCtrl->enablePhysics(_world, linkSceneToObsFunc);
     _spellFactId = _networkCtrl->getPhysController()->attachFactory(_spellFact);
     _playerFactId = _networkCtrl->getPhysController()->attachFactory(_playerFact);
@@ -1072,6 +1101,7 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
     EnemyObstacle* enemy = nullptr;
     cugl::physics2::PolygonObstacle* wall = nullptr;
     ItemObstacle* item = nullptr;
+    TutorialObstacle* tut = nullptr;
 
     // Get types of the 2 obstacles; only care about collisions between different types of obstacles
     if (auto s = dynamic_cast<SpellObstacle*>(obs1)) {
@@ -1085,6 +1115,8 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
     }
     else if (auto w = dynamic_cast<ItemObstacle*>(obs1)) {
         item = w;
+    }else if (auto o = dynamic_cast<TutorialObstacle*>(obs1)){
+        tut = o;
     }
     else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs1)) {
         wall = w;
@@ -1111,6 +1143,8 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
     }
     else if (auto w = dynamic_cast<ItemObstacle*>(obs2)) {
         item = w;
+    }else if (auto o = dynamic_cast<TutorialObstacle*>(obs2)) {
+        tut = o;
     }
     else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs2)) {
         //CULog("i am a wall");
@@ -1184,8 +1218,18 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
     else if (spell && item) {
         contact->SetEnabled(false);
     }
-    else {
-        contact->SetEnabled(false);
+    else if (player && tut) {
+        auto tex = _assets->get<graphics::Texture>(tut->getPng());
+            if (tex) {
+                _pendingTutorialTex = tex;
+            } else {
+                CULog("texture still null for key: %s", tut->getPng().c_str());
+            }
+            contact->SetEnabled(false);
+    }
+    else if (wall && player) {
+        contact->SetEnabled(true);
+        return;
     }
 
 }

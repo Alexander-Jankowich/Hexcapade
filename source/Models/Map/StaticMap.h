@@ -73,7 +73,7 @@ private:
      * @param tex the png to be displayed on collision
      * @param world the physics networld to add all created obstacles to
      */
-    void addEventObstacle(Rect& poly, std::shared_ptr<graphics::Texture> tex, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
+    void addEventObstacle(Rect& poly, std::string tex, std::shared_ptr<cugl::physics2::distrib::NetWorld>& world);
 
 };
 

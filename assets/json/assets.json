@@ -192,6 +192,30 @@
     "tutorial_2": {
       "file": "textures/tutorial_assets/tutorial_2.png"
     },
+    "tut_0":{
+        "file": "textures/tutorial_assets/tut_0.png"
+    },
+    "tut_1":{
+        "file": "textures/tutorial_assets/tut_1.png"
+    },
+    "tut_2":{
+        "file": "textures/tutorial_assets/tut_2.png"
+    },
+    "tut_3":{
+        "file": "textures/tutorial_assets/tut_3.png"
+    },
+    "tut_4":{
+        "file": "textures/tutorial_assets/tut_4.png"
+    },
+    "tut_5":{
+        "file": "textures/tutorial_assets/tut_5.png"
+    },
+    "tut_6":{
+        "file": "textures/tutorial_assets/tut_6.png"
+    },
+    "tut_7":{
+        "file": "textures/tutorial_assets/tut_7.png"
+    },
     "charSelectBg": {
       "file": "textures/charSelectBg.png"
     },

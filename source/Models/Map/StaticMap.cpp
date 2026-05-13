@@ -19,19 +19,26 @@ std::shared_ptr<cugl::scene2::SceneNode> StaticMap::generateStaticMap(std::share
     _data = _assets->get<StaticLevelLoader>("tutorial");
     addRoomSceneNodes(_data, Vec2(0, 0), node, lw_node);
     addRoomObstacles(_data, Vec2(0, 0), world);
-    // addRoomEvents(_data, Vec2(0, 0), world);
+    addRoomEvents(_data, Vec2(0, 0), world);
     return node;
 }
 
 void StaticMap::addRoomEvents(std::shared_ptr<StaticLevelLoader> tiledRmData, Vec2 tlCorner, std::shared_ptr<cugl::physics2::distrib::NetWorld> world) {
     for (auto e : tiledRmData->getEvents()) {
         // convert rectangle origin to map coords
-        Rect r = Rect(e.location.origin.x, tiledRmData->getHeight() - e.location.origin.y, e.location.size.width, e.location.size.height);
+        Rect r = Rect(e.location.origin.x * TILE_SIZE / PHYSICS_SCALE, (tiledRmData->getHeight() - e.location.origin.y) * TILE_SIZE / PHYSICS_SCALE,  e.location.size.width * TILE_SIZE / PHYSICS_SCALE, e.location.size.height * TILE_SIZE / PHYSICS_SCALE);
         // get texture
-        std::string t = "tutorial_assets/" + e.png;
-        auto text = _assets->get<graphics::Texture>(t);
+        std::string t = e.png;
+        CULog("Event '%s': tiled origin=(%.2f, %.2f) size=(%.2f, %.2f) -> physics rect origin=(%.2f, %.2f) size=(%.2f, %.2f)",
+                    t.c_str(),
+                    e.location.origin.x, e.location.origin.y,
+                    e.location.size.width, e.location.size.height,
+                    r.origin.x, r.origin.y,
+                    r.size.width, r.size.height
+                );
         
-        addEventObstacle(r, text, world);
+        
+        addEventObstacle(r, t, world);
     }
 }
 
@@ -122,9 +129,8 @@ void StaticMap::addWallObstacle(Poly2 &poly, std::shared_ptr<cugl::physics2::dis
     world->addObstacle(obs);
 }
 
-void StaticMap::addEventObstacle(Rect &poly, std::shared_ptr<graphics::Texture> tex, std::shared_ptr<cugl::physics2::distrib::NetWorld> &world) {
+void StaticMap::addEventObstacle(Rect &poly, std::string tex, std::shared_ptr<cugl::physics2::distrib::NetWorld> &world) {
     std::shared_ptr<TutorialObstacle> obs = TutorialObstacle::alloc(poly, tex);
-    
     // copying wall obstacle code since i am hoping they are the same...
     obs->setDensity(1.0);
     obs -> setEnabled(true);

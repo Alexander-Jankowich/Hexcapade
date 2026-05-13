@@ -116,8 +116,13 @@ bool StaticLevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
     }
     // collect events
     for (auto e_data : json->get("layers")->get(1)->get("layers")->get(3)->get("objects")->children()) {
-        Rect bounds = Rect(e_data->getFloat("x") /_tileWidth, e_data->getFloat("y") /_tileHeight, e_data->getInt("width") /_tileWidth, e_data->getInt("height") /_tileHeight);
-        std::string t = &"tut_" [ e_data->get("properties")->children()[0]->getInt("value")];
+        Rect bounds = Rect(
+            e_data->getFloat("x") / _tileWidth,
+            e_data->getFloat("y") / _tileHeight,
+            e_data->getFloat("width") / _tileWidth,
+            e_data->getFloat("height") / _tileHeight
+        );
+        std::string t = "tut_" + std::to_string(e_data->get("properties")->children()[0]->getInt("value"));
         _events.push_back(Event(bounds, t));
     }
     // collect colliders
