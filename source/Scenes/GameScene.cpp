@@ -221,7 +221,7 @@ void GameScene::reset()
     _canDeposit = false;
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
-    _timer = ROUND_TIMER;
+    _timer = 0;
     Scene::reset();
 }
 
@@ -312,6 +312,7 @@ void GameScene::rebuildMapForRun() {
 
     _quota = _map->getQuota();
     _depositPosition = _map->getPlayerSpawn();
+    _timer = _map->getTime() * 60;
 
     if (_networkCtrl->isHost()) {
         spawnItemsFromMap();
