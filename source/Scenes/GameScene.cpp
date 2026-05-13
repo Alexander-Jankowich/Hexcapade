@@ -222,6 +222,7 @@ void GameScene::reset()
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
     _timer = 0;
+    _glowItemId = -1;
     Scene::reset();
 }
 
@@ -410,6 +411,17 @@ void GameScene::preUpdate(float dt)
         if (!_player) return;
         _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
             _player, _input, _depositPosition, _depositRadius);
+    }
+    _glowItemId = -1;
+    Vec2 playerPos = _player->getPosition();
+    for (auto& pair : _itemNodes) {
+        if (pair.first && !pair.first->isRemoved()) {
+            // set PICKUP DISTANCE HERE
+            if (playerPos.distance(pair.first->getPosition()) <= 0.f) {
+                _glowItemId = pair.first->getID();
+                break;
+            }
+        }
     }
     if (_player && !_addedLWalls) {
         CULog("adding lower walls");
@@ -852,13 +864,12 @@ void GameScene::preUpdate(float dt)
         }
     }
 #pragma mark Pickup Logic
-    if (_input.pressedPickup() && _currOverlappedItem >= 0) {
+    if (_input.pressedPickup() && _glowItemId >= 0) {
         CULog("trying to resolve pickup");
-        auto item = _itemFact->getItem(_currOverlappedItem);
-        // Checks if player can pick up anything so inventory doesn't overflow
+        auto item = _itemFact->getItem(_glowItemId);
         if (_player && _player->canAddItem() && item && !item->isRemoved()) {
             _networkCtrl->pushOutEvent(
-                PickupEvent::allocPickupEvent(_player->getPID(), _currOverlappedItem)
+                PickupEvent::allocPickupEvent(_player->getPID(), _glowItemId)
             );
         }
     }
@@ -962,7 +973,30 @@ void GameScene::postUpdate(float remain)
  */
 void GameScene::render()
 {
+    scene2::PolygonNode* glowedNode = nullptr;
+    std::shared_ptr<cugl::graphics::Texture> normalTex = nullptr;
+    if (_glowItemId >= 0) {
+        for (auto& pair : _itemNodes) {
+            if (pair.first && pair.first->getID() == _glowItemId) {
+                auto polyNode = dynamic_cast<scene2::PolygonNode*>(pair.second.get());
+                if (polyNode) {
+                    auto glowTex = _itemInfo.getGlowTexture(pair.first->getItemType());
+                    if (glowTex) {
+                        normalTex = polyNode->getTexture();
+                        polyNode->setTexture(glowTex);
+                        glowedNode = polyNode;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
     Scene2::render();
+
+    if (glowedNode && normalTex) {
+        glowedNode->setTexture(normalTex);
+    }
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
 

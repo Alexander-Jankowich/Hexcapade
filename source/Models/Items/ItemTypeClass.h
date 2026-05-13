@@ -62,6 +62,8 @@ public:
     
     std::shared_ptr<cugl::graphics::Texture> getCard(ItemType t);
 
+    std::shared_ptr<cugl::graphics::Texture> getGlowTexture(ItemType t);
+
     static SpellType getSpell(ItemType t);
 
 };

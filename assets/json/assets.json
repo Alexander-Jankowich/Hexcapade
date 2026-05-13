@@ -105,53 +105,104 @@
     "artifact_boost": {
       "file": "textures/artifacts/spell_boost.png"
     },
+    "artifact_boost_glow": {
+      "file": "textures/artifacts_glow/spell_boost.png"
+    },
     "artifact_reduce": {
       "file": "textures/artifacts/skull.png"
+    },
+    "artifact_reduce_glow": {
+      "file": "textures/artifacts_glow/skull.png"
     },
     "artifact_heavy": {
       "file": "textures/artifacts/heavy_treasure.png"
     },
+    "artifact_heavy_glow": {
+      "file": "textures/artifacts_glow/heavy_treasure.png"
+    },
     "artifact_protection": {
       "file": "textures/artifacts/protection.png"
+    },
+    "artifact_protection_glow": {
+      "file": "textures/artifacts_glow/protection.png"
     },
     "artifact_gold": {
       "file": "textures/artifacts/fools_gold.png"
     },
+    "artifact_gold_glow": {
+      "file": "textures/artifacts_glow/fools_gold.png"
+    },
     "artifact_bomb": {
       "file": "textures/artifacts/bomb.png"
+    },
+    "artifact_bomb_glow": {
+      "file": "textures/artifacts_glow/bomb.png"
     },
     "artifact_restrict": {
       "file": "textures/artifacts/spell_restriction.png"
     },
+    "artifact_restrict_glow": {
+      "file": "textures/artifacts_glow/spell_restriction.png"
+    },
     "artifact_scroll": {
       "file": "textures/artifacts/scroll.png"
+    },
+    "artifact_scroll_glow": {
+      "file": "textures/artifacts_glow/scroll.png"
     },
     "artifact_ribbon": {
       "file": "textures/artifacts/ribbon.png"
     },
+    "artifact_ribbon_glow": {
+      "file": "textures/artifacts_glow/ribbon.png"
+    },
     "artifact_gem": {
       "file": "textures/artifacts/gem.png"
+    },
+    "artifact_gem_glow": {
+      "file": "textures/artifacts_glow/gem.png"
     },
     "artifact_octoling": {
       "file": "textures/artifacts/octoling.png"
     },
+    "artifact_octoling_glow": {
+      "file": "textures/artifacts_glow/octoling.png"
+    },
     "spellbook_fire": {
       "file": "textures/spellbooks/spellbook_fire.png"
+    },
+    "spellbook_fire_glow": {
+      "file": "textures/spellbooks_glow/spellbook_fire.png"
     },
     "spellbook_freeze": {
       "file": "textures/spellbooks/spellbook_freeze.png"
     },
+    "spellbook_freeze_glow": {
+      "file": "textures/spellbooks_glow/spellbook_freeze.png"
+    },
     "spellbook_heal": {
       "file": "textures/spellbooks/spellbook_heal.png"
+    },
+    "spellbook_heal_glow": {
+      "file": "textures/spellbooks_glow/spellbook_heal.png"
     },
     "spellbook_death": {
       "file": "textures/spellbooks/spellbook_disintegrate.png"
     },
+    "spellbook_death_glow": {
+      "file": "textures/spellbooks_glow/spellbook_disintegrate.png"
+    },
     "spellbook_earth": {
       "file": "textures/spellbooks/spellbook_earth.png"
     },
+    "spellbook_earth_glow": {
+      "file": "textures/spellbooks_glow/spellbook_earth.png"
+    },
     "spellbook_water": {
       "file": "textures/spellbooks/spellbook_water.png"
+    },
+    "spellbook_water_glow": {
+      "file": "textures/spellbooks_glow/spellbook_water.png"
     },
     "fire_card": {
       "file": "textures/inventory_cards/fire_card.png"
