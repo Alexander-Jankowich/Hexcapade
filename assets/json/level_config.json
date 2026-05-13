@@ -5,11 +5,6 @@
         "type": "spellbook-heal",
         "count": 1,
         "preferred-zone": 1
-      },
-      {
-        "type": "octoling",
-        "count": 1,
-        "preferred-zone": 1
       }
     ],
     "max": [
