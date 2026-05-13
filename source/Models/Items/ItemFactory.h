@@ -19,6 +19,7 @@ using namespace std;
  * An extension of BoxObstacle to represent a world item (artifact or spellbook).
  */
 class ItemObstacle : public physics2::BoxObstacle {
+
 protected:
     /** Deposit value */
     int _value;

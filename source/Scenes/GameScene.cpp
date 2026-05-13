@@ -3,29 +3,11 @@
 // This is the primary class file for running the game.  It contains all core gameplay loop logic as well as
 // calls to the network controller for processing networked events. 
 // Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
-#include <cugl/cugl.h>
-#include <cugl/core/math/polygon/CUPathFactory.h> // Bug that this is not in <cugl/cugl.h>
-#include <cmath>
-#include <iostream>
-#include <sstream>
-#include <random>
-#include <box2d/b2_draw.h>
-#include <box2d/b2_world.h>
-#include <box2d/b2_contact.h>
-#include <box2d/b2_collision.h>
+
 
 #include "GameScene.h"
 
 
-// Lock the screen size to fixed height regardless of aspect ratio
-#define SCENE_HEIGHT 720
-
-/** The ratio between the physics world and the screen. (40 px = 1 meter, 1 tile is 1m x 1m or 40px x 40px) */
-#define PHYSICS_SCALE 50
-
-#define COMBO_RADIUS 20
-
-#define ITEM_PICKUP_RADIUS 2f
 
 // Uncomment for testing, allows players to use all spells regardless of what books they have in their inventory
 //#define ENABLE_ALL_SPELLS
@@ -1426,6 +1408,25 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     }
 }
 
+
+/**
+ * Just a helper to handle some of our damage processing
+ */
+static void healthHelper(float damage, PlayerObstacle* player) {
+    if (player->hasShield()) {
+        player->setShieldCount(player->getShieldCount() - 1);
+        if (player->getShieldCount() == 0) {
+            player->setShield(false);
+        }
+        return;
+    }
+    if (player->getHealth() - damage <= 0 && player->hasProtectionArtifact()) {
+        player->consumeItem(ItemTypeClass::ItemType::PROTECTION);
+        player->setHealth(2);
+        return;
+    }
+    player->setHealth(player->getHealth() - damage);
+}
 void GameScene::initCombos() {
     _spellCombos.insert({
         {{SpellType::FIREBALL, SpellType::FIREBALL}, SpellType::COMBO_FIREBALL},

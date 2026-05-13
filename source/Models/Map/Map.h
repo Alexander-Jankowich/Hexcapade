@@ -12,7 +12,6 @@
 #include "../Enemies/EnemyObstacle.h"
 #include "../Items/ItemTypeClass.h"
 
-//#include "../../Controllers/NetworkController.h"
 
 #define MAP_HEIGHT 120
 #define MAP_WIDTH 120

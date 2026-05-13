@@ -11,7 +11,6 @@
 #include <cugl/cugl.h>
 #include "PlayerNode.h"
 #include "PlayerObstacle.h"
-#include "../Animations.h"
 #include "../Spells/SpellEntityNode.h"
 
 #define PHYSICS_SCALE 50
