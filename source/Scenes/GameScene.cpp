@@ -3,29 +3,11 @@
 // This is the primary class file for running the game.  It contains all core gameplay loop logic as well as
 // calls to the network controller for processing networked events. 
 // Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
-#include <cugl/cugl.h>
-#include <cugl/core/math/polygon/CUPathFactory.h> // Bug that this is not in <cugl/cugl.h>
-#include <cmath>
-#include <iostream>
-#include <sstream>
-#include <random>
-#include <box2d/b2_draw.h>
-#include <box2d/b2_world.h>
-#include <box2d/b2_contact.h>
-#include <box2d/b2_collision.h>
+
 
 #include "GameScene.h"
 
 
-// Lock the screen size to fixed height regardless of aspect ratio
-#define SCENE_HEIGHT 720
-
-/** The ratio between the physics world and the screen. (40 px = 1 meter, 1 tile is 1m x 1m or 40px x 40px) */
-#define PHYSICS_SCALE 50
-
-#define COMBO_RADIUS 20
-
-#define ITEM_PICKUP_RADIUS 2f
 
 // Uncomment for testing, allows players to use all spells regardless of what books they have in their inventory
 //#define ENABLE_ALL_SPELLS
@@ -229,6 +211,7 @@ void GameScene::reset()
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
     _timer = 0;
+    _glowItemId = -1;
     Scene::reset();
 }
 
@@ -417,6 +400,17 @@ void GameScene::preUpdate(float dt)
         if (!_player) return;
         _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
             _player, _input, _depositPosition, _depositRadius);
+    }
+    _glowItemId = -1;
+    Vec2 playerPos = _player->getPosition();
+    for (auto& pair : _itemNodes) {
+        if (pair.first && !pair.first->isRemoved()) {
+            // set PICKUP DISTANCE HERE
+            if (playerPos.distance(pair.first->getPosition()) <= 0.8f) {
+                _glowItemId = pair.first->getID();
+                break;
+            }
+        }
     }
     if (_player && !_addedLWalls) {
         CULog("adding lower walls");
@@ -859,13 +853,12 @@ void GameScene::preUpdate(float dt)
         }
     }
 #pragma mark Pickup Logic
-    if (_input.pressedPickup() && _currOverlappedItem >= 0) {
+    if (_input.pressedPickup() && _glowItemId >= 0) {
         CULog("trying to resolve pickup");
-        auto item = _itemFact->getItem(_currOverlappedItem);
-        // Checks if player can pick up anything so inventory doesn't overflow
+        auto item = _itemFact->getItem(_glowItemId);
         if (_player && _player->canAddItem() && item && !item->isRemoved()) {
             _networkCtrl->pushOutEvent(
-                PickupEvent::allocPickupEvent(_player->getPID(), _currOverlappedItem)
+                PickupEvent::allocPickupEvent(_player->getPID(), _glowItemId)
             );
         }
     }
@@ -969,7 +962,30 @@ void GameScene::postUpdate(float remain)
  */
 void GameScene::render()
 {
+    scene2::PolygonNode* glowedNode = nullptr;
+    std::shared_ptr<cugl::graphics::Texture> normalTex = nullptr;
+    if (_glowItemId >= 0) {
+        for (auto& pair : _itemNodes) {
+            if (pair.first && pair.first->getID() == _glowItemId) {
+                auto polyNode = dynamic_cast<scene2::PolygonNode*>(pair.second.get());
+                if (polyNode) {
+                    auto glowTex = _itemInfo.getGlowTexture(pair.first->getItemType());
+                    if (glowTex) {
+                        normalTex = polyNode->getTexture();
+                        polyNode->setTexture(glowTex);
+                        glowedNode = polyNode;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
     Scene2::render();
+
+    if (glowedNode && normalTex) {
+        glowedNode->setTexture(normalTex);
+    }
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
 
@@ -1394,6 +1410,25 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     }
 }
 
+
+/**
+ * Just a helper to handle some of our damage processing
+ */
+static void healthHelper(float damage, PlayerObstacle* player) {
+    if (player->hasShield()) {
+        player->setShieldCount(player->getShieldCount() - 1);
+        if (player->getShieldCount() == 0) {
+            player->setShield(false);
+        }
+        return;
+    }
+    if (player->getHealth() - damage <= 0 && player->hasProtectionArtifact()) {
+        player->consumeItem(ItemTypeClass::ItemType::PROTECTION);
+        player->setHealth(2);
+        return;
+    }
+    player->setHealth(player->getHealth() - damage);
+}
 void GameScene::initCombos() {
     _spellCombos.insert({
         {{SpellType::FIREBALL, SpellType::FIREBALL}, SpellType::COMBO_FIREBALL},

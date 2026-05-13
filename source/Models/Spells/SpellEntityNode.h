@@ -45,4 +45,4 @@ public:
     void setOffset(int o) { _existingOffset = o; }
 };
 
-#endif
+#endif // !__SPELL_ENTITY_NODE_H__

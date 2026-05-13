@@ -459,6 +459,9 @@
     },
     "bomb": {
       "value": 100
+    },
+    "octoling": {
+      "value": 75
     }
   }
 }

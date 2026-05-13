@@ -50,7 +50,9 @@ public:
         /** fake gold */
         GOLD_FAKE,
         /** Explodes after a timer, dealing damage. Non-droppable. */
-        BOMB
+        BOMB,
+        /** No effect - for now? */
+        OCTOLING,
     };
     ItemTypeClass() {};
     ItemTypeClass(std::shared_ptr<cugl::AssetManager>& a) {
@@ -61,6 +63,8 @@ public:
     std::shared_ptr<cugl::graphics::Texture> getTexture(ItemType t);
     
     std::shared_ptr<cugl::graphics::Texture> getCard(ItemType t);
+
+    std::shared_ptr<cugl::graphics::Texture> getGlowTexture(ItemType t);
 
     static SpellType getSpell(ItemType t);
 

@@ -85,7 +85,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
     addRoomSceneNodes(tiledData, tlcorner, node, lw_node);
     addRoomObstacles(tiledData, tlcorner, world);
     
-    // get playerSpawn: (mapwidth/2 - roomw /2 + playerSpawn.x, mapheight/2 - roomH/2 + (roomH - playerspawn.y)
+    // get playerSpawn: (mapwidth/2 - roomw /2 + playerSpawn.x, mapheight/2 - roomH/2 + playerspawn.y)
     // Corrected player spawn calculation
     auto pl_mg = cugl::Vec2(_config._mapSize/2 - tiledData->getWidth() / 2 + tiledData->getPlayerSpawn().x,
                             _config._mapSize / 2 - tiledData->getHeight() / 2 + tiledData->getPlayerSpawn().y);
@@ -676,6 +676,7 @@ void Map::loadLevelConfig(int level, int numPlayers, std::shared_ptr<cugl::JsonV
         if (s == "heavy")             return ItemTypeClass::ItemType::HEAVY;
         if (s == "fools-gold")        return ItemTypeClass::ItemType::GOLD;
         if (s == "bomb")              return ItemTypeClass::ItemType::BOMB;
+        if (s == "octoling")          return ItemTypeClass::ItemType::OCTOLING;
         CULog("loadLevelConfig: unknown item type string '%s'", s.c_str());
         return ItemTypeClass::ItemType::SCROLL;
     };
@@ -750,6 +751,7 @@ void Map::applyItemConstraints() {
         if (s == "spell-boost")       return ItemTypeClass::ItemType::SPELL_BOOST;
         if (s == "spell-reduce")      return ItemTypeClass::ItemType::SPELL_REDUCE;
         if (s == "protection")        return ItemTypeClass::ItemType::PROTECTION;
+        if (s == "octoling")          return ItemTypeClass::ItemType::OCTOLING;
         return ItemTypeClass::ItemType::SCROLL;
         };
 
