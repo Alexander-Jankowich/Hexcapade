@@ -12,6 +12,7 @@ _origin(Vec2::ZERO),
 _playerSpawn(Vec2::ZERO),
 _config() {
     _config._mapSize = 70; // just in case
+    lw_node = scene2::SceneNode::alloc();
 }
 
 void Map::reset() {
@@ -48,7 +49,6 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
     
     _sceneSize = sceneSize;
     auto node = scene2::SceneNode::alloc();
-    lw_node = scene2::SceneNode::alloc();
     std::vector<MapDoor> doors;
     _rng.reset(seed);
 

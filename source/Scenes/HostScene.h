@@ -38,8 +38,8 @@ public:
 
     void update(float dt) override;
     void disconnect() {_networkCtrl->disconnect();}
-    void release() { _networkCtrl = nullptr; }
-    void obtainNetwork(std::shared_ptr<NetworkController> n) { _networkCtrl = n; }
+    //void release() { _networkCtrl = nullptr; }
+    //void obtainNetwork(std::shared_ptr<NetworkController> n) { _networkCtrl = n; }
 
     NetworkController::Status getStatus(){return _networkCtrl->getStatus();}
     bool didBackOut() const { return _backPressed; }

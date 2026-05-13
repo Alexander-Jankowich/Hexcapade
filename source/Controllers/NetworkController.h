@@ -80,7 +80,10 @@ public:
     int getRound() {return _round;}
     bool canHostStart() {return _numReady == getNumPlayers() || getNumPlayers()==1;}
     void unreadyPlayers() {_numReady = 1;} // only called by host, always leave host as ready
-    void resetStatus() { _status = Status::IDLE; }
+    void resetStatus() {
+        _randSeed=0;
+        _gameState=NCGameState::UNSTARTED;
+    }
     void rerollRandSeed() { if(_randSeed==0) _randSeed = _rng->getUint32();}
     bool getPhysEnabled() {return _physEnabled;}
     

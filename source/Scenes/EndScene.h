@@ -44,7 +44,7 @@ public:
     std::shared_ptr<NetworkController> getNetwork() const {return _networkCtrl;}
     void setActive(bool active) override;
 
-    void release() {_networkCtrl = nullptr;}
+    //void release() {_networkCtrl = nullptr;}
     bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->gameState()==NetworkController::NCGameState::UNSTARTED); }
     // EXIT BUTTON
     bool didPressExit() const { return _exitPressed; }

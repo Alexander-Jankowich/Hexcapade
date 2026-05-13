@@ -52,7 +52,7 @@ public:
     void setActive(bool value) override;
     
     void obtainNetwork(std::shared_ptr<NetworkController> n) { _networkCtrl = n; }
-    void release() { _networkCtrl = nullptr; }
+    //void release() { _networkCtrl = nullptr; }
     SSStatus getStatus() { return _status; }
     bool canInitMap() { return _networkCtrl->getRandSeed() != 0; }
     bool isHost() { return _networkCtrl && _networkCtrl->isHost(); }

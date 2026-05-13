@@ -162,6 +162,13 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
     _networkCtrl = nullptr;
     
     _itemInfo = ItemTypeClass(_assets);
+    
+    // Create the scene graph
+    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(Vec2::ZERO);
+    addChild(_worldnode);
+    
     setActive(false);
     return true;
 }
@@ -1270,11 +1277,7 @@ void GameScene::initMap() {
     if (_networkCtrl->getRandSeed() == 0) return; // no randSeed
     if (_mapSeed == _networkCtrl->getRandSeed()) return; // already init
 
-    // Create the scene graph
-    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
-    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    _worldnode->setPosition(Vec2::ZERO);
-    addChild(_worldnode);
+    
 
     _mapSeed = _networkCtrl->getRandSeed();
     CULog("set map seed to : %d", _mapSeed);
@@ -1282,7 +1285,6 @@ void GameScene::initMap() {
     if (_mapSeed != 0) {
         rebuildMapForRun();
     }
-    spawnPlayers();
 }
 
 void GameScene::spawnPlayers() {
