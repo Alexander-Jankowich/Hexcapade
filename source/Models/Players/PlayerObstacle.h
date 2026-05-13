@@ -80,6 +80,8 @@ protected:
     bool _water = false;
     int _waterTimer = 0;
     
+    float _aimSlowTimer = 2.0f;
+
     Vec2 _waterPushDir = Vec2::ZERO;
 
 public:
@@ -95,21 +97,16 @@ public:
 
 #pragma mark PO_Getters_and_Setters
     float getHealth() {return _health;}
+    void setHealth(int h);
 
+    /**
+    * Deals the provided amount of damage to the player, taking into account shields and protection artifacts.
+    */
+    void damage(float damage);
+
+    /** Returns the last direction the player traveled in */
     cugl::Vec2 getDirection() { return _angle; }
 
-    void setHealth(int h);
-    void setHealthDirect(int h) {
-        _health = std::min(h, MAX_HEALTH);
-        if(h < _health){
-            _hurt = true;
-        }
-        if (_health <= 0) {
-            setVelocity(Vec2::ZERO);
-            setLinearVelocity(Vec2::ZERO);
-            _health = 0;
-        }
-    }
     bool isHurt() { return _hurt; }
     void setHurt(bool h) { _hurt = h; }
 
@@ -119,7 +116,6 @@ public:
         return (_aimSlowTimer <= 0.0f) ? base * 0.5f : base;
     }
 
-    float _aimSlowTimer = 2.0f;
     void setAimSlowTimer(float t) { _aimSlowTimer = t; }
     float getAimSlowTimer() const { return _aimSlowTimer; }
 
@@ -142,9 +138,10 @@ public:
 
     bool getWater() { return _water; }
     void setWater(bool w, Vec2 pushDir) { _water = w;  _waterPushDir = pushDir;}
+    Vec2 getPushDir() { return _waterPushDir; }
     int getWaterTimer() { return _waterTimer; }
-    Vec2 getPushDir() {return _waterPushDir; }
     void setWaterTimer(int i) { _waterTimer = i; }
+
     void setReleasedSpell(bool released) { _releasedSpell = released; }
     bool hasReleasedSpell() { return _releasedSpell; }
     

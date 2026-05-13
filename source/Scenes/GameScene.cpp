@@ -1377,26 +1377,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     }
 }
 
-
-/**
- * Just a helper to handle some of our damage processing
- */
-void healthHelper(float damage, PlayerObstacle* player) {
-    if (player->hasShield()) {
-        player->setShieldCount(player->getShieldCount() - 1);
-        if (player->getShieldCount() == 0) {
-            player->setShield(false);
-        }
-        return;
-    }
-    if (player->getHealth() - damage <= 0 && player->hasProtectionArtifact()) {
-        player->consumeItem(ItemTypeClass::ItemType::PROTECTION);
-        player->setHealth(2);
-        return;
-    }
-    player->setHealth(player->getHealth() - damage);
-}
-
 void GameScene::initCombos() {
     _spellCombos.insert({
         {{SpellType::FIREBALL, SpellType::FIREBALL}, SpellType::COMBO_FIREBALL},
@@ -1517,7 +1497,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (spell->shouldRemove()) {
             return;
         }
-        if(player -> getPID() != _player -> getPID()){
+        if (player -> getPID() != _player -> getPID()){
             return;
         }
         
@@ -1541,12 +1521,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player->setFrozeTimer(90);
             player->setFrozen(true);
             spell->setRemove();
-            healthHelper(1, player);
+            player->damage(1);
             break;
         case SpellType::COMBO_FREEZE:
             player->setFrozeTimer(180);
             player->setFrozen(true);
-            healthHelper(1, player);
+            player->damage(1);
             spell->setRemove();
             break;
         case SpellType::COMBO_EFREEZE:
@@ -1558,7 +1538,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player->setMudTimer(240);
             player->setMud(true);
             spell->setRemove();
-            healthHelper(1, player);
+            player->damage(1);
             break;
         case SpellType::BUFF:
             player->setBuffTimer(3600);
@@ -1595,16 +1575,16 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             spell->setRemove();
             break;
         case SpellType::FIREBALL:
-            healthHelper(2, player);
+            player->damage(2);
             spell->setRemove();
             break;
         case SpellType::COMBO_FIREBALL:
-            healthHelper(4, player);
+            player->damage(4);
             spell->setRemove();
             break;
             break;
         case SpellType::DEATH:
-            healthHelper(500, player);
+            player->damage(500);
             break;
         default:
             CULog("A None Type Spell Should Not be Colliding With Anything");
@@ -1632,26 +1612,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (!enemy->canAttack()) return;
 
         enemy->setAttackTimer(90);
-        if (player->hasShield()) {
-            player->setShieldCount(player->getShieldCount() - 1);
-            if (player->getShieldCount() == 0) {
-                player->setShield(false);
-            }
-            return;
-        }
 
         if (player->getPID() != _player->getPID()) return;
         //CULog("enemy and player");
-        if (player->getHealth() == 0) {
-            return;
-        }
-        if (player->getHealth() - 1 <= 0 && player->hasProtectionArtifact()) {
-            player->consumeItem(ItemTypeClass::ItemType::PROTECTION);
-            player->setHealth(2);
-        }
-        else {
-            player->setHealth(player->getHealth() - 1);
-        }
+        player->damage(1);
         return;
     }
     else if (enemy && spell) {

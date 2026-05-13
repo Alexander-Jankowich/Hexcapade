@@ -171,8 +171,9 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         //CULog("do attack thing");
         obs->setLinearVelocity(Vec2::ZERO);
         animator->addNextListener(node, obs->getAttackTiming(), obs->getAttack());
-        animator->addNextListener(node, [obs](string key, float time, float actual) {
+        animator->addNextListener(node, [obs, node](string key, float time, float actual) {
             obs->setState(EnemyObstacle::EnemyState::IDLE);
+            node->updateAnimationState(obs->getState());
         });
         animator->endAnimation(node);
     }
