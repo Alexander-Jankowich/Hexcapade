@@ -24,7 +24,7 @@
 #include "../Models/Animations.h"
 
 #include "InputDisplay.h"
-#define ROUND_TIMER 10800
+#define ROUND_TIMER 300
 
 using namespace cugl;
 using namespace std;
@@ -101,7 +101,7 @@ protected:
     /** Whether thegame has ended */
     bool  _gameEnded;
     /**Timer for end of game**/
-    float _timer = ROUND_TIMER;
+    float _timer = 0;
 
     shared_ptr<AssetManager> _assets;
     /** list of rooms */

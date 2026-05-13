@@ -76,7 +76,7 @@ void EnemyNode::updateAnimationState(EnemyObstacle::EnemyState s) {
     else if (s == EnemyObstacle::EnemyState::ATTACKING) {
         _nextAnimation = AnimationType::ATTACK;
     }
-    else if (_velocity.length() < 0.2) {
+    else if (_velocity.length() < 0.05) {
         _nextAnimation = AnimationType::IDLE;
     }
     else {

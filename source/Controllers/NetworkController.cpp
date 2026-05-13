@@ -154,6 +154,7 @@ std::tuple<int,int> NetworkController::customEvents(){
                         }
                     }
                 } else {
+                    _playerDeposits[de->getPID()] += de->getAmount();
                     depositedValue += de->getAmount();
                 }
             } else if (de->isSync()) {
@@ -175,6 +176,7 @@ std::tuple<int,int> NetworkController::customEvents(){
                         break;
                     }
                 }
+                _playerDeposits[de->getPID()] += de->getAmount();
                 depositedValue += de->getAmount();
             }
         } else if (auto pre = std::dynamic_pointer_cast<PickupEvent>(e)) {
@@ -213,6 +215,7 @@ void NetworkController::processEndEvent(const std::shared_ptr<EndGameEvent> &e)
 void NetworkController::processRestartEvent(const std::shared_ptr<RestartGameEvent> &e)
 {
     _round += _gameState == NCGameState::WON; // 1 if won, 0 else
+    _playerDeposits.clear();
     _gameState=NCGameState::UNSTARTED;
 }
 

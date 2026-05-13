@@ -123,6 +123,7 @@ void SelectScene::onCharacterSelected(CharacterType c) {
     }
     if (_networkCtrl) {
         _networkCtrl->setPlayerCharacter(_networkCtrl->getPID(), charStr);
+        _networkCtrl->pushOutEvent(PlayerNameEvent::allocPlayerNameEvent(_networkCtrl->getPID(), _playerName, charStr));
     }
 
     auto tex = _assets->get<graphics::Texture>(portraitKey(c));
@@ -211,17 +212,17 @@ void SelectScene::setActive(bool value) {
 
 void SelectScene::configureStartButton() {
     if (_status == SSStatus::SELECT) {
-        auto text = _networkCtrl->isHost() ? "Waiting for Players" : "Ready";
+        auto text = _networkCtrl->isHost() ? "Waiting..." : "Ready";
         updateText(_startgame, text);
         if (!_networkCtrl->isHost() && _characterChosen) _startgame->activate();
     }
     else if (_status == SSStatus::HANDSHAKE) {
-        auto text = _networkCtrl->isHost() ? "Start" : "Awaiting Host Start";
+        auto text = _networkCtrl->isHost() ? "Start" : "Waiting...";
         updateText(_startgame, text);
         if (_networkCtrl->isHost() && _characterChosen) _startgame->activate();
     }
     else {
-        updateText(_startgame, "Starting Game");
+        updateText(_startgame, "Starting");
         _startgame->deactivate();
     }
 }

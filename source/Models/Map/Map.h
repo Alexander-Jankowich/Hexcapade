@@ -37,6 +37,7 @@ class Map {
 private:
     struct LevelConfig {
         int _mapSize;
+        int time;
         int quota;
         int maxEnemies;
         int enemSpawnInterval;
@@ -132,6 +133,7 @@ public:
     const std::vector<std::shared_ptr<Room>> getRooms() const {return _rooms;}
     int getNumRooms() { return (int)_rooms.size(); }
     int getQuota() {return _config.quota;}
+    int getTime() {return _config.time;}
     int getEnemInterval() {return _config.enemSpawnInterval;}
 private:
     /** Helper function to add all sceneNodes for a room (given tiled data) in the right place.

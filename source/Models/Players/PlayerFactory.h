@@ -104,6 +104,22 @@ public:
         return res;
     }
     
+    std::unordered_set<std::shared_ptr<PlayerObstacle>> getRemoved() {
+        std::unordered_set<std::shared_ptr<PlayerObstacle>> remove;
+
+        for (auto it = current.begin(); it != current.end(); ) {
+            if ((*it)->isRemoved()) {
+                remove.emplace(*it);
+                it = current.erase(it);
+            }
+            else {
+                it++;
+            }
+        }
+
+        return remove;
+    }
+    
     bool allPlayersDead();
     
 

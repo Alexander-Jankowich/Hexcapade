@@ -418,7 +418,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
             
             auto dist = pl_mg.distance(ip_mg);
 
-            if (.1 * _config._mapSize < dist && dist < .4 * _config._mapSize) _z1itemSpawnPoints.push_back(Vec2(ip_mg.x * TILE_SIZE, (_config._mapSize - ip_mg.y) * TILE_SIZE));
+            if (dist < .4 * _config._mapSize) _z1itemSpawnPoints.push_back(Vec2(ip_mg.x * TILE_SIZE, (_config._mapSize - ip_mg.y) * TILE_SIZE));
             else if (dist < 7. * _config._mapSize) _z2itemSpawnPoints.push_back(Vec2(ip_mg.x * TILE_SIZE, (_config._mapSize - ip_mg.y) * TILE_SIZE));
             else _z3itemSpawnPoints.push_back(Vec2(ip_mg.x * TILE_SIZE, (_config._mapSize - ip_mg.y) * TILE_SIZE));
         }
@@ -432,7 +432,7 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
             
             if (.1 * _config._mapSize < dist && dist < .4 * _config._mapSize) _z1enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
             else if (dist < 7. * _config._mapSize) _z2enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
-            else _z3enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
+            else if (dist >= 7. * _config._mapSize) _z3enemySpawnPoints.push_back(Vec2(ep_mg.x * TILE_SIZE, (_config._mapSize - ep_mg.y) * TILE_SIZE));
         }
         // add colliders
         addRoomObstacles(std::get<0>(res), std::get<2>(res), world);
@@ -629,11 +629,13 @@ void Map::loadLevelConfig(int level, int numPlayers, std::shared_ptr<cugl::JsonV
         incr = level - 1;
     } else if (level < config->getInt("hard-start")) {
         data = config->get("medium");
-        incr = level - 4;
+        incr = level - config->getInt("medium-start");
     } else {
         data = config->get("hard");
-        incr = level - 7;
+        incr = level - config->getInt("hard-start");
     }
+    _config.time = data->getInt("time") + data->getInt("time-incr") * incr;
+    
     _config.maxEnemies = data->getInt("max-enemies") + data->getInt("max-enemies-incr") * incr;
     _config.enemSpawnInterval = data->getInt("enemy-interval");
 
@@ -886,14 +888,14 @@ std::pair<Vec2, EnemyType> Map::chooseEnemySpawnPoint(const std::vector<Vec2> zo
     for (auto p : zonePoints) {
         bool valid = true;
         for (auto pos : playersPos) {
-            if (p.distance(pos) < 10 * TILE_SIZE) { // since points are in tile coords
+            if (p.distance(pos) <= 15 * TILE_SIZE) { // since points are in tile coords
                 //T
                 valid = false;
                 break;
             }
         }
         for (auto pos : enemsPos) {
-            if (p == pos) {
+            if (p.distance(pos) <= 2 * TILE_SIZE) {
                 valid = false;
                 break;
             }
