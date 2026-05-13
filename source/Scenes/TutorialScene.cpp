@@ -287,11 +287,16 @@ Vec2 TutorialScene::getHUDOffset() const {
  */
 void TutorialScene::preUpdate(float dt)
 {
-    if (_pendingTutorialTex) {
-        CULog("i am trying to display");
-        showTutorial(_pendingTutorialTex);
-        _pendingTutorialTex = nullptr;
+#pragma mark Tutorial Stuff I Am Putting Here for Simplicity
+    _tutorialTimer -= 1;
+    
+    if(_playerFact -> getPlayerByPID("bot0") -> getSpell() == SpellType::NONE){
+        _playerFact -> getPlayerByPID("bot0") -> setSpell(SpellType::FREEZE);
     }
+    if(_playerFact -> getPlayerByPID("bot1") -> getSpell() == SpellType::NONE){
+        _playerFact -> getPlayerByPID("bot1") -> setSpell(SpellType::FIREBALL);
+    }
+    
 #pragma mark Input Updates and Player Initialiation
     // @ alex i cleared the rest of the checks since we are always host
     
@@ -302,6 +307,14 @@ void TutorialScene::preUpdate(float dt)
     _input.syncGesturesToInventory(_player->getInventory());
 
     _input.update(dt);
+    
+    if (_pendingTutorialTex) {
+        CULog("i am trying to display");
+        showTutorial(_pendingTutorialTex);
+        _pendingTutorialTex = nullptr;
+        _input.resolvedCardDismissTap();
+        _tutorialTimer = 360;
+    }
 
     CULog("current player position: %f, %f", _player -> getPosition().x, _player -> getPosition().y);
     if (_input.pressedReset()) {
@@ -401,7 +414,7 @@ void TutorialScene::preUpdate(float dt)
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
         }
-    }else if(_tutorialNode){
+    }else if(_tutorialNode && (_tutorialTimer <= 0)){
         if (_input.cardDismissTap()) {
             hideTutorial();
         }
@@ -523,15 +536,16 @@ void TutorialScene::preUpdate(float dt)
     }
     else if (_input.getGesture() != SpellType::NONE && _player->getSpell() == SpellType::NONE) {
         SpellType newSpell = _input.getGesture();
-#ifndef ENABLE_ALL_SPELLS
-        if (newSpell != _player->getSpell() && _player->hasSpell(newSpell)) {
-#endif
-            _player->setSpell(newSpell);
-            _networkCtrl->pushOutEvent(
-                SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
-#ifndef ENABLE_ALL_SPELLS
-        }
-#endif
+        _weakSpell = false;
+        _player->setSpell(newSpell);
+        _networkCtrl->pushOutEvent(
+            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
+    }else if (_input.getGestureLess() != SpellType::NONE && _player -> getSpell() == SpellType::NONE){
+        SpellType newSpell = _input.getGestureLess();
+        _player->setSpell(newSpell);
+        _weakSpell = true;
+        _networkCtrl->pushOutEvent(
+            SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
     }
 
     Vec2 angle = _input.getSpellAngle();
@@ -919,6 +933,22 @@ void TutorialScene::initPhysics() {
         _networkCtrl->getPhysController()
             ->addSharedObstacle(_playerFactId, params);
     }
+    int counter = 0;
+    for(auto& p : _map -> getData() -> getBotSpawnPoints()){
+        std::string bot_id = "bot" + std::to_string(counter);
+        _networkCtrl -> setPlayerName(bot_id, bot_id == "bot0" ? "Duck" : "Cat");
+        _networkCtrl -> setPlayerCharacter(bot_id, bot_id == "bot0" ? "player_duck" : "player_cat");
+        
+        auto params = _playerFact->serializeParams(
+            p.location / PHYSICS_SCALE,
+            bot_id,
+            _networkCtrl -> getPlayerCharacter(bot_id)
+        );
+        _networkCtrl -> getPhysController()
+            -> addSharedObstacle(_playerFactId, params);
+        counter += 1;
+        
+    }
 
     _map->getLowerWallNode()->setPriority(1.0f);
     _worldnode->addChild(_map->getLowerWallNode());
@@ -1254,12 +1284,15 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
         contact->SetEnabled(false);
     }
     else if (player && tut) {
-        auto tex = _assets->get<graphics::Texture>(tut->getPng());
+        if(!tut -> getSeen()){
+            auto tex = _assets->get<graphics::Texture>(tut->getPng());
             if (tex) {
                 _pendingTutorialTex = tex;
             } else {
                 CULog("texture still null for key: %s", tut->getPng().c_str());
             }
+            tut -> setSeen(true);
+        }
             contact->SetEnabled(false);
     }
     else if (wall && player) {

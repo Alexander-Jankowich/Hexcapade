@@ -216,6 +216,9 @@
     "tut_7":{
         "file": "textures/tutorial_assets/tut_7.png"
     },
+    "tut_8":{
+        "file": "textures/tutorial_assets/tut_8.png"
+    },
     "charSelectBg": {
       "file": "textures/charSelectBg.png"
     },

@@ -39,7 +39,7 @@
 /** The ratio between the physics world and the screen. (40 px = 1 meter, 1 tile is 1m x 1m or 40px x 40px) */
 #define PHYSICS_SCALE 50
 
-#define COMBO_RADIUS 20
+#define COMBO_RADIUS 4
 
 #define ITEM_PICKUP_RADIUS 2f
 

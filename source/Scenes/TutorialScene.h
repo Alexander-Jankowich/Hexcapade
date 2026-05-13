@@ -35,7 +35,7 @@
 
 /** The ratio between the physics world and the screen */
 #define PHYSICS_SCALE 50
-#define COMBO_RAD 20
+#define COMBO_RAD 4
 
 using namespace cugl;
 using namespace std;
@@ -82,6 +82,9 @@ protected:
     Uint32 _itemFactId;
 
     shared_ptr<PlayerObstacle> _player;
+    
+    bool _weakSpell = false;
+    bool _tutorialTimer = 0;
 
     /** Action Timeline for animations */
     shared_ptr<Animator> _animations;

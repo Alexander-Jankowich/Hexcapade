@@ -350,7 +350,7 @@ protected:
     bool _mouseDown;
     /** Whether a finger is down*/
     bool _touchDown;
-    bool _cardDismissTap;
+    bool _cardDismissTap = false;
     /** Where the finger touch began*/
     cugl::Vec2 _touchStart;
     /**Current touchID**/
