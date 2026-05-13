@@ -7,7 +7,6 @@
 #include <array> 
 #include <cugl/cugl.h>
 
-#include "../GameplayConfig.h"
 #include "Room.h"
 #include "LevelLoader.h"
 #include "../Enemies/EnemyObstacle.h"
