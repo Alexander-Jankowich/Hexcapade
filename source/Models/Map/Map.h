@@ -7,7 +7,6 @@
 #include <array> 
 #include <cugl/cugl.h>
 
-#include "../GameplayConfig.h"
 #include "Room.h"
 #include "LevelLoader.h"
 #include "../Enemies/EnemyObstacle.h"
@@ -38,6 +37,7 @@ class Map {
 private:
     struct LevelConfig {
         int _mapSize;
+        int time;
         int quota;
         int maxEnemies;
         int enemSpawnInterval;
@@ -133,6 +133,7 @@ public:
     const std::vector<std::shared_ptr<Room>> getRooms() const {return _rooms;}
     int getNumRooms() { return (int)_rooms.size(); }
     int getQuota() {return _config.quota;}
+    int getTime() {return _config.time;}
     int getEnemInterval() {return _config.enemSpawnInterval;}
 private:
     /** Helper function to add all sceneNodes for a room (given tiled data) in the right place.
@@ -165,7 +166,10 @@ private:
     
     void loadLevelConfig(int level, int numPlayers, std::shared_ptr<cugl::JsonValue> config);
    
-    
+    /** Returns a random iitem (SCROLL, RIBBON, GEM) as a fallback. */
+    ItemTypeClass::ItemType neutralFallback();
+    /** Post-pass enforcement of item-constraints from level config (min/max rules). */
+    void applyItemConstraints();
     
     std::pair<Vec2, EnemyType> chooseEnemySpawnPoint(const std::vector<Vec2> zonePoints, const std::vector<Vec2> playersPos, const std::vector<Vec2> enemsPos, const std::vector<float> zoneRates);
     /** Picks an item type for a single spawn point using the zone's spellbook/artifact split + zoneIndex is 0-indexed so 0/1/2 for zone 1/2/3. */

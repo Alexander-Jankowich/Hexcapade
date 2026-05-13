@@ -109,11 +109,9 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
     _map = std::make_shared<Map>();
     _roomController.setRooms(_map->getRooms());
     _mapSeed = 0;
-    loadGameplayConfig();
 
     // Initialize inventory system
     _depositedValue = 0;
-    //_quota = std::max(1, _runConfig.quota);
     _playerWon = false;
     _gameEnded = false;
 
@@ -187,7 +185,6 @@ void GameScene::reset()
     CULog("game scene reset called");
     hideInventoryCard();
     hideTutorial();
-    loadGameplayConfig();
     _mapSeed = 0;
     _map->reset();
     _world->clear(true); // reset box2d + phys world
@@ -224,7 +221,7 @@ void GameScene::reset()
     _canDeposit = false;
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
-    _timer = ROUND_TIMER;
+    _timer = 0;
     Scene::reset();
 }
 
@@ -299,10 +296,6 @@ void GameScene::hideTutorial() {
     _tutorialPage = 0;
 }
 
-void GameScene::loadGameplayConfig() {
-    _runConfig = hexcapade::gameplayconfig::loadRunBalanceConfigFromAssets();
-}
-
 void GameScene::rebuildMapForRun() {
     if (!_map) {
         _map = std::make_shared<Map>();
@@ -319,6 +312,7 @@ void GameScene::rebuildMapForRun() {
 
     _quota = _map->getQuota();
     _depositPosition = _map->getPlayerSpawn();
+    _timer = _map->getTime() * 60;
 
     if (_networkCtrl->isHost()) {
         spawnItemsFromMap();
