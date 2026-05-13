@@ -1145,7 +1145,39 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
         {
             Vec2 pushDir = enemy->getPosition() - spell->getPosition();
             pushDir.normalize();
+            enemy->setWaterPush(pushDir, spell -> getWeak() ? 30 : 60);
+            break;
+        }
+        case SpellType::FREEZE:
+            enemy->setFrozen(true);
+            enemy->setFrozenTimer(spell -> getWeak() ? 120 : 240);
+            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            spell->setRemove();
+            break;
+        case SpellType::COMBO_FREEZE:
+            enemy->setFrozen(true);
+            enemy->setFrozenTimer(600);
+            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            break;
+        case SpellType::COMBO_EFREEZE:
+            enemy->setFrozen(true);
+            enemy->setFrozenTimer(-1);
+            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            spell->setRemove();
+            break;
+        case SpellType::EARTH:
+            enemy->setMud(true);
+            enemy->setMudTimer(spell -> getWeak() ? 150 : 300);
+            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            spell->setRemove();
+            break;
+        case SpellType::MUD_WATER:
+        {
+            Vec2 pushDir = enemy->getPosition() - spell->getPosition();
+            pushDir.normalize();
             enemy->setWaterPush(pushDir, 60);
+            enemy->setMud(true);
+            enemy->setMudTimer(600);
             break;
         }
         case SpellType::FIREBALL:
@@ -1153,6 +1185,9 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
             spell->setRemove();
             break;
         case SpellType::COMBO_FIREBALL:
+            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            break;
+        case SpellType::DEATH:
             enemy->setHealth(enemy->getHealth() - spell->getDamage());
             break;
         default:
