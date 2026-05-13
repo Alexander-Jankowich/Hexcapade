@@ -51,6 +51,7 @@ public:
 
     void update(float dt) override;
     void render() override;
+    void updateText(const std::shared_ptr<scene2::Button>& button, const std::string text);
 };
 
 #endif /* __END_SCENE_H__ */

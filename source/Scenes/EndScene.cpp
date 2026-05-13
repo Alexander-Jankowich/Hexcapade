@@ -130,7 +130,6 @@ void EndScene::updatePlayerStats() {
 void EndScene::update(float dt) {
     _networkCtrl->updateNet();
     _networkCtrl->customEvents();
-    updatePlayerStats();
 }
 
 void EndScene::render() {
@@ -144,18 +143,20 @@ void EndScene::setActive(bool active) {
         if (active) {
             _replayPressed = false;
             _exitPressed = false;
-            _replayButton->setVisible(true);
-            _replayButton->activate();
-            // EXIT BUTTON
             _exitButton->activate();
+            
             if (!_networkCtrl->isHost()) {
-                _replayButton->setVisible(false);
                 _replayButton->deactivate();
+                updateText(_replayButton, "Awaiting Host");
+            }
+            else {
+                _replayButton->activate();
+                auto text = _networkCtrl->gameState()==NetworkController::NCGameState::WON ? "Next Round" : "Try Again";
+                updateText(_replayButton, text);
             }
         } else {
             _state = State::NONE;
             _replayPressed = false;
-            // EXIT BUTTON
             _exitPressed = false;
             _replayButton->deactivate();
             _exitButton->deactivate();
@@ -163,4 +164,10 @@ void EndScene::setActive(bool active) {
             _exitButton->setDown(false);
         }
     }
+}
+
+void EndScene::updateText(const std::shared_ptr<scene2::Button>& button, const std::string text) {
+    auto label = std::dynamic_pointer_cast<scene2::Label>(button->getChildByName("action_text"));
+    label->setText(text);
+
 }

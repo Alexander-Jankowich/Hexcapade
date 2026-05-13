@@ -269,6 +269,15 @@ void GeometryApp::preUpdate(float dt) {
 void GeometryApp::fixedUpdate(Uint64 step) {
     if (_scene != State::GAME) return;
     _gameplay.fixedUpdate(step);
+    // need to disconnect
+    if (_gameplay.getNetwork()->getStatus()==NetworkController::Status::NETERROR) {
+        _gameplay.setActive(false);
+        _gameplay.getNetwork()->disconnect();
+        _gameplay.reset();
+        _gameplay.release();
+        _mainmenu.setActive(true);
+        _scene = State::MENU;
+    }
 }
 
 /**
@@ -447,7 +456,6 @@ void GeometryApp::updateSelectScene(float dt) {
             break;
         case SelectScene::SSStatus::START:
             CULog("in start");
-            _gameplay.spawnPlayers();
             _selectScene.setActive(false);
             _selectScene.release();
             _gameplay.setActive(true); // alr has connection from host/client scene
@@ -487,7 +495,7 @@ void GeometryApp::updateClientScene(float dt) {
             _gameplay.initPhysics();
             break;
     case NetworkController::Status::INGAME:
-            CULog("in select");
+            // buffer here until physics enabled
             _clientScene.setActive(false);
             // Transfer connection ownership
             _selectScene.obtainNetwork(_clientScene.getNetwork());
@@ -508,11 +516,15 @@ void GeometryApp::updateEndScene(float dt) {
     _endScene.update(dt);
     // EXIT BUTTON
     if (_endScene.didPressExit()) {
-        // exit button placeholder
+        _endScene.setActive(false);
+        _endScene.getNetwork()->disconnect();
+        _endScene.reset();
+        _endScene.release();
+        _mainmenu.setActive(true);
+        _scene = State::MENU;
         return;
     }
     if (_endScene.didPressReplay()) {
-        // transfer connect ownership to new scene
         CULog("replay was pressed");
         _endScene.setActive(false);
         _selectScene.obtainNetwork(_endScene.getNetwork()); // hand off network,
@@ -520,7 +532,17 @@ void GeometryApp::updateEndScene(float dt) {
         _endScene.release();
         _selectScene.setActive(true);
         _scene = State::SELECT;
+        return;
             
+    }
+    
+    if (_endScene.getNetwork()->getStatus()==NetworkController::Status::NETERROR) {
+        _endScene.setActive(false);
+        _endScene.getNetwork()->disconnect();
+        _endScene.reset();
+        _endScene.release();
+        _mainmenu.setActive(true);
+        _scene = State::MENU;
     }
     return;
 }
