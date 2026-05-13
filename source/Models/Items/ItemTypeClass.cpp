@@ -27,6 +27,8 @@ std::shared_ptr<cugl::JsonValue> ItemTypeClass::getConsts(ItemType t) {
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("ribbon");
         case ItemType::GEM:
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("gem");
+        case ItemType::OCTOLING:
+            return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("octoling");
         case ItemType::SPELL_RESTRICTION:
             return _assets->get<cugl::JsonValue>("constants")->get("artifacts")->get("spell-restriction");
         case ItemType::SPELL_BOOST:
@@ -74,6 +76,8 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getTexture(ItemType t) {
         return _assets->get<cugl::graphics::Texture>("artifact_ribbon");
     case ItemType::GEM:
         return _assets->get<cugl::graphics::Texture>("artifact_gem");
+    case ItemType::OCTOLING:
+        return _assets->get<cugl::graphics::Texture>("artifact_octoling");
     case ItemType::SPELL_RESTRICTION:
         return _assets->get<cugl::graphics::Texture>("artifact_restrict");
     case ItemType::SPELL_BOOST:
@@ -114,6 +118,8 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getGlowTexture(ItemType 
         return _assets->get<cugl::graphics::Texture>("artifact_ribbon_glow");
     case ItemType::GEM:
         return _assets->get<cugl::graphics::Texture>("artifact_gem_glow");
+    case ItemType::OCTOLING:
+        return _assets->get<cugl::graphics::Texture>("artifact_octoling_glow");
     case ItemType::SPELL_RESTRICTION:
         return _assets->get<cugl::graphics::Texture>("artifact_restrict_glow");
     case ItemType::SPELL_BOOST:
@@ -166,6 +172,7 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getCard(ItemType t) {
     case ItemType::SCROLL:
     case ItemType::RIBBON:
     case ItemType::GEM:
+    case ItemType::OCTOLING:
     default:
         return nullptr; // no card assets yet
     }

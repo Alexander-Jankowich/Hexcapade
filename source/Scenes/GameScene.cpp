@@ -417,7 +417,7 @@ void GameScene::preUpdate(float dt)
     for (auto& pair : _itemNodes) {
         if (pair.first && !pair.first->isRemoved()) {
             // set PICKUP DISTANCE HERE
-            if (playerPos.distance(pair.first->getPosition()) <= 0.f) {
+            if (playerPos.distance(pair.first->getPosition()) <= 0.8f) {
                 _glowItemId = pair.first->getID();
                 break;
             }
