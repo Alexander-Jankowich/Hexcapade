@@ -547,4 +547,10 @@ void GeometryApp::updateTutorialScene(float dt) {
     _tutorialScene.preUpdate(dt);
     
     // check for if it was exited and switch state back to correct thing
+    if(_tutorialScene.getEnded()){
+        _tutorialScene.setActive(false);
+        _mainmenu.setActive(true);
+        _scene = State::MENU;
+        _tutorialScene.setEnded(false);
+    }
 }

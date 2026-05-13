@@ -287,6 +287,9 @@ Vec2 TutorialScene::getHUDOffset() const {
  */
 void TutorialScene::preUpdate(float dt)
 {
+    if (_depositedValue >= _quota) {
+        _tutorialEnded = true;
+    }
 #pragma mark Tutorial Stuff I Am Putting Here for Simplicity
     _tutorialTimer -= 1;
     

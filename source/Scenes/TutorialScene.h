@@ -130,6 +130,8 @@ protected:
     Timestamp _lastInventoryTapTime;
     /** Which tutorial page is currently open, or 0 if closed */
     int _tutorialPage = 0;
+    
+    bool _tutorialEnded = false;
 
 public:
 #pragma mark -
@@ -179,6 +181,10 @@ public:
     
     shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
     void release() {_networkCtrl = nullptr;}
+    
+    bool getEnded() { return _tutorialEnded; }
+    
+    void setEnded(bool b) { _tutorialEnded = b; }
 
 
     /**
