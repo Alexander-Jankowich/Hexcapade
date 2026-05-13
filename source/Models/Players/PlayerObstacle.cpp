@@ -74,6 +74,22 @@ void PlayerObstacle::setHealth(int h) {
     }
 }
 
+void PlayerObstacle::damage(float damage) {
+    if (_shield) {
+        setShieldCount(getShieldCount() - 1);
+        if (getShieldCount() == 0) {
+            setShield(false);
+        }
+        return;
+    }
+    if (_health - damage <= 0 && hasProtectionArtifact()) {
+        consumeItem(ItemTypeClass::ItemType::PROTECTION);
+        setHealth(2);
+        return;
+    }
+    setHealth(_health - damage);
+}
+
 // inventory stuff
 
 int PlayerObstacle::getInventoryVal() const {
@@ -160,10 +176,10 @@ bool PlayerObstacle::blocksSpellcasting() const {
 int PlayerObstacle::getDamageBonus() const {
     int bonus = 0;
     for (const auto& item : _inventory) {
-            if (item.itemType == ItemTypeClass::ItemType::SPELL_BOOST)
-                bonus += 2;
-            else if (item.itemType == ItemTypeClass::ItemType::SPELL_REDUCE)
-                bonus -= 2;
+        if (item.itemType == ItemTypeClass::ItemType::SPELL_BOOST)
+            bonus += 2;
+        else if (item.itemType == ItemTypeClass::ItemType::SPELL_REDUCE)
+            bonus -= 2;
     }
     return bonus;
 }

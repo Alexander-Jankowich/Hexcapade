@@ -184,6 +184,15 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
     for (auto en : enemyFact->current) {
         if (en->isFroze() || en->getWaterPushTimer() > 0 || en->isDead() || en->isHurt() || en->isAttacking()) {
             //CULog("skip pathfinding");
+            if (en->TYPE == EnemyType::OCTO && en->isAttacking()) {
+                // deal damage to all nearby players
+                auto players = getValidTargets(en->getPosition(), en->getAttackRange(), playerFact);
+                for (const auto& p : players) {
+                    p->damage(3);
+                    networkCtrl->getPhysController()->acquireObs(p, 0.01);
+                    p->setLinearVelocity((p->getPosition() - en->getPosition()).getNormalization()*3);
+                }
+            }
             continue;
         }
 
@@ -205,35 +214,49 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
                 break;
 
             targ = player->getPosition();
+            if (targ.distance(en->getPosition()) <= en->getAttackRange()) {
+                // Stop when in attack range
+                targ = en->getPosition();
+                en->setLinearVelocity(Vec2::ZERO);
+
+                // Do attack if possible
+                if (en->canAttack()) {
+                    en->startAttack();
+                    en->setAttackFunc(-1, [en, player, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
+                        if (player->getHealth() > 0 && en->isAttacking()) {
+                            Vec2 angle = player->getPosition() - en->getPosition();
+                            auto params = spellFact->serializeParams((en->getPosition()), angle, SpellType::FIREBALL, "bat");
+                            auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
+                            networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                            en->setAttackTimer(120);
+                        }
+                    });
+                }
+            }
+        }
+            break;
+        case EnemyType::OCTO:
+        {
+            // if closest player in attack_range shoot spell
+            auto player = getClosest(en->getPosition(),
+                getVisiblePlayers(world, en->getPosition(), en->getRange(),
+                    getValidTargets(en->getPosition(), en->getRange(), playerFact)));
+            if (!player)
+                break;
+
+            targ = player->getPosition();
+            // Only stop if do attack, keep trying to approach player otherwise
             if (targ.distance(en->getPosition()) <= en->getAttackRange() && en->canAttack()) {
                 targ = en->getPosition();
-                //if (en->canAttack()) {
-                //    auto params = spellFact->serializeParams((en->getPosition()), angle, SpellType::FIREBALL, "bat");
-                //    auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
-                //    networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                //    en->setAttackTimer(120);
-                //}
                 en->setLinearVelocity(Vec2::ZERO);
                 en->startAttack();
-                //CULog("start attack!");
                 en->setAttackFunc(-1, [en, player, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
                     if (player->getHealth() > 0 && en->isAttacking()) {
-                        //CULog("launch attack!");
-                        Vec2 angle = player->getPosition() - en->getPosition();
-                        auto params = spellFact->serializeParams((en->getPosition()), angle, SpellType::FIREBALL, "bat");
-                        auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
-                        networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                         en->setAttackTimer(120);
                     }
                 });
             }
         }
-            //en -> setAttackTimer(en->getAttackTimer() - 1);
-            break;
-        case EnemyType::OCTO:
-            targ = getClosestPlayer(en->getPosition(),
-                getVisiblePlayers(world, en->getPosition(), en->getRange(),
-                    getValidTargets(en->getPosition(), en->getRange(), playerFact)));
             break;
         default:
             CULog("Error! Enemy type not implemented!!! (Pathfinder::updateEnemies)");

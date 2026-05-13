@@ -30,8 +30,9 @@ pair<ActionFunction, float> OctoplushNode::getNextAnimation() {
         _dead = true;
         return getAnimationPair(DEATH, DEATH_FRAMES);
     case AnimationType::DAMAGED:
-        CULog("play hurt animation");
-        return getAnimationPair(_attack, DAMAGE[0], DAMAGE_FRAMES);
+        return getAnimationPair(DAMAGE, DAMAGE_FRAMES);
+    case AnimationType::ATTACK:
+        return getAnimationPair(_attack, ATTACK[0], ATTACK_FRAMES);
     case AnimationType::IDLE:
         return getAnimationPair(IDLE, IDLE_FRAMES);
     case AnimationType::WALK:
@@ -41,7 +42,7 @@ pair<ActionFunction, float> OctoplushNode::getNextAnimation() {
 }
 
 void OctoplushNode::draw(const std::shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) {
-    if (isAttacking()) {
+    if (_curAnimation == AnimationType::ATTACK) {
         _attack->draw(batch, transform + _offset, _tint);
     }
     else {
