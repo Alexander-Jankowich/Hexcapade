@@ -13,23 +13,24 @@ public:
 
 private:
     std::shared_ptr<cugl::AssetManager> _assets;
-    std::shared_ptr<cugl::graphics::Font> _font;
     std::shared_ptr<NetworkController> _networkCtrl;
+    std::shared_ptr<cugl::scene2::Button> _replayButton;
+    std::shared_ptr<cugl::scene2::Button> _exitButton;
+    std::shared_ptr<cugl::scene2::Label> _resultLabel;
+    std::vector<std::shared_ptr<cugl::scene2::SceneNode>> _playerSlots;
+    std::vector<std::shared_ptr<cugl::scene2::PolygonNode>> _playerPortraits;
+    std::vector<std::shared_ptr<cugl::scene2::Label>> _playerNames;
+    std::vector<std::shared_ptr<cugl::scene2::Label>> _playerDeposits;
+    std::vector<std::string> _endPlayerIds;
     State _state;
     bool  _replayPressed;
-    /** Screen-space rect for the replay button */
-    cugl::Rect _buttonRect;
+    // EXIT BUTTON
+    bool  _exitPressed;
 
-#ifdef CU_TOUCH_SCREEN
-    static constexpr Uint32 LISTENER_KEY = 2;
-    void touchEndCB(const cugl::TouchEvent& event, bool focus);
-#else
-    static constexpr Uint32 LISTENER_KEY = 2;
-    void mouseReleaseCB(const cugl::MouseEvent& event, Uint8 clicks, bool focus);
-#endif
+    void updatePlayerStats();
 
 public:
-    EndScene() : cugl::scene2::Scene2(), _state(State::NONE), _replayPressed(false) {}
+    EndScene() : cugl::scene2::Scene2(), _state(State::NONE), _replayPressed(false), _exitPressed(false) {}
     ~EndScene() { dispose(); }
 
     bool init(const std::shared_ptr<cugl::AssetManager>& assets);
@@ -45,9 +46,12 @@ public:
 
     void release() {_networkCtrl = nullptr;}
     bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->gameState()==NetworkController::NCGameState::UNSTARTED); }
+    // EXIT BUTTON
+    bool didPressExit() const { return _exitPressed; }
 
     void update(float dt) override;
     void render() override;
+    void updateText(const std::shared_ptr<scene2::Button>& button, const std::string text);
 };
 
 #endif /* __END_SCENE_H__ */

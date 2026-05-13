@@ -34,6 +34,7 @@ private:
     int _round;
     std::unordered_map<std::string, std::string> _playerNames;
     std::unordered_map<std::string, std::string> _playerCharacters;
+    std::unordered_map<std::string, int> _playerDeposits;
     
     // network controller ptrs to models it needs
     std::shared_ptr<ItemFactory> _itemFactory;
@@ -137,6 +138,11 @@ public:
 
     void setPlayerCharacter(const std::string& pid, const std::string& character) {
         _playerCharacters[pid] = character;
+    }
+
+    int getPlayerDeposit(const std::string& pid) const {
+        auto it = _playerDeposits.find(pid);
+        return it != _playerDeposits.end() ? it->second : 0;
     }
     
     std::tuple<int,int> customEvents();

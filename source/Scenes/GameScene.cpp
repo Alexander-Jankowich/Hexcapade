@@ -487,6 +487,18 @@ void GameScene::preUpdate(float dt)
                 _networkCtrl->getPhysController()->removeSharedObstacle(item);
             }
         }
+        
+        // removing players that disconnected
+        auto pRemove = _playerFact->getRemoved();
+        for (auto p : pRemove) {
+            _networkCtrl->getPhysController()->removeSharedObstacle(p);
+
+            auto params = _spellFact->serializeParams(
+                (p->getPosition()),
+                Vec2::UNIT_X, SpellType::STEAM, _networkCtrl->getPID(),_player -> getBuff(), _weakSpell);
+            auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
+            _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+        }
     }
 
     // Remove spells that have gone out of range
@@ -889,7 +901,15 @@ void GameScene::fixedUpdate(Uint64 step)
 {
     // First process incoming events
     _networkCtrl->updateNet();
-
+    
+    // check disconnected players lol
+    for (auto p : _playerFact->current) {
+        auto curr_players = _networkCtrl->getPlayers();
+        if (!curr_players.contains(p->getPID())) {
+            p->markRemoved(true);
+            _networkCtrl->getPhysController()->acquireObs(p, -1);
+        }
+    }
     std::tuple<int, int> values = _networkCtrl->customEvents();
     _gameEnded = _networkCtrl->gameState() == NetworkController::NCGameState::WON || _networkCtrl->gameState() == NetworkController::NCGameState::LOST;
     _playerWon = _networkCtrl->gameState() == NetworkController::NCGameState::WON;
@@ -1262,6 +1282,7 @@ void GameScene::initMap() {
     if (_mapSeed != 0) {
         rebuildMapForRun();
     }
+    spawnPlayers();
 }
 
 void GameScene::spawnPlayers() {
