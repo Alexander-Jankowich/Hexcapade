@@ -102,6 +102,9 @@
     "player_duck": {
       "file": "textures/playerduck_sheet.png"
     },
+    "player_bunny": {
+      "file": "textures/playerbunny_sheet.png"
+    },
     "artifact_boost": {
       "file": "textures/artifacts/spell_boost.png"
     },
@@ -222,11 +225,38 @@
     "disintegrate_card": {
       "file": "textures/inventory_cards/disintegrate_card.png"
     },
+    "bomb_info": {
+      "file": "textures/inventory_cards/item_cards/bomb_info.png"
+    },
+    "brooch_info": {
+      "file": "textures/inventory_cards/item_cards/brooch_info.png"
+    },
+    "chains_info": {
+      "file": "textures/inventory_cards/item_cards/chains_info.png"
+    },
+    "foolsGold_info": {
+      "file": "textures/inventory_cards/item_cards/foolsGold_info.png"
+    },
+    "gem_info": {
+      "file": "textures/inventory_cards/item_cards/gem_info.png"
+    },
+    "octoling_info": {
+      "file": "textures/inventory_cards/item_cards/octoling_info.png"
+    },
+    "ribbon_info": {
+      "file": "textures/inventory_cards/item_cards/ribbon_info.png"
+    },
+    "scroll_info": {
+      "file": "textures/inventory_cards/item_cards/scroll_info.png"
+    },
+    "skull_info": {
+      "file": "textures/inventory_cards/item_cards/skull_info.png"
+    },
     "heavyTreasure_info": {
-      "file": "textures/inventory_cards/artifact_cards/heavy_info.png"
+      "file": "textures/inventory_cards/item_cards/heavyTreasure_info.png"
     },
     "zombieTotem_info": {
-      "file": "textures/inventory_cards/artifact_cards/protection_info.png"
+      "file": "textures/inventory_cards/item_cards/zombieTotem_info.png"
     },
     "hex-icon-bunny": {
       "file": "textures/hex-icon-bunny.png"
@@ -249,32 +279,32 @@
     "tutorial_2": {
       "file": "textures/tutorial_assets/tutorial_2.png"
     },
-    "tut_0":{
-        "file": "textures/tutorial_assets/tut_0.png"
+    "tut_0": {
+      "file": "textures/tutorial_assets/tut_0.png"
     },
-    "tut_1":{
-        "file": "textures/tutorial_assets/tut_1.png"
+    "tut_1": {
+      "file": "textures/tutorial_assets/tut_1.png"
     },
-    "tut_2":{
-        "file": "textures/tutorial_assets/tut_2.png"
+    "tut_2": {
+      "file": "textures/tutorial_assets/tut_2.png"
     },
-    "tut_3":{
-        "file": "textures/tutorial_assets/tut_3.png"
+    "tut_3": {
+      "file": "textures/tutorial_assets/tut_3.png"
     },
-    "tut_4":{
-        "file": "textures/tutorial_assets/tut_4.png"
+    "tut_4": {
+      "file": "textures/tutorial_assets/tut_4.png"
     },
-    "tut_5":{
-        "file": "textures/tutorial_assets/tut_5.png"
+    "tut_5": {
+      "file": "textures/tutorial_assets/tut_5.png"
     },
-    "tut_6":{
-        "file": "textures/tutorial_assets/tut_6.png"
+    "tut_6": {
+      "file": "textures/tutorial_assets/tut_6.png"
     },
-    "tut_7":{
-        "file": "textures/tutorial_assets/tut_7.png"
+    "tut_7": {
+      "file": "textures/tutorial_assets/tut_7.png"
     },
-    "tut_8":{
-        "file": "textures/tutorial_assets/tut_8.png"
+    "tut_8": {
+      "file": "textures/tutorial_assets/tut_8.png"
     },
     "charSelectBg": {
       "file": "textures/charSelectBg.png"
