@@ -10,8 +10,8 @@
 #define PHYSICS_SCALE 50
 #define ATTACK_DELAY 90.0f
 
-EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s)
-    : TYPE(type) {
+EnemyObstacle::EnemyObstacle(const EnemyType type, uint32 id, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s)
+    : TYPE(type), ID(id) {
     init(pos, s / (2 * PHYSICS_SCALE));
     setAwake(true);
     setEnabled(true);
@@ -26,12 +26,14 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared
     _target = pos;
     _radius = Vec2(s.height / (2 * PHYSICS_SCALE), s.width / (2 * PHYSICS_SCALE)).length() / 2;
 
-    _state = EnemyState::IDLE;
+    _state = EnemyState::REGULAR;
     _frozen = false;
     _mud = false;
     _mudTimer = 0;
     _frozenTimer = 0;
     _attackCounter = 0;
+
+    _propertiesDirty = false;
 }
 
 /**
@@ -41,22 +43,27 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, const Vec2& pos, const shared
  *
  * @param value The current enemy health.
  */
-void EnemyObstacle::setHealth(int value) {
+void EnemyObstacle::setHealth(float value) {
+    float temp = _health;
+
     if (value < _health && !isDead()) {
         if (isHurt()) {
             // Cannot be hit if already hit very recently
             return;
         }
-        CULog("got hurt");
         setHurt(true);
     }
 
     if (value <= 0) {
         _health = 0;
-        _state = EnemyState::DEATH;
+        setState(EnemyState::DEATH);
     }
     else {
         _health = value;
+    }
+
+    if (_health != temp) {
+        _propertiesDirty = true;
     }
 }
 
@@ -87,4 +94,19 @@ void EnemyObstacle::setVelocity(Vec2 v) {
     float scale = mass * 60.0f;
     b2Vec2 force = b2Vec2(velDiff.x * scale, velDiff.y * scale);
     getBody()->ApplyForceToCenter(force, true);
+}
+
+void EnemyObstacle::setFrozen(bool f) {
+    if (_frozen != f) {
+        _frozen = f;
+        _propertiesDirty = true;
+    }
+}
+
+void EnemyObstacle::setState(EnemyState s) {
+    if (!isDead() && _state != s) {
+        //CULog("state change: %d -> %d", _state, s);
+        _state = s;
+        _propertiesDirty = true;
+    }
 }

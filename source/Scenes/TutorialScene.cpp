@@ -991,7 +991,7 @@ void TutorialScene::setActive(bool value)
             CULog("I am trying to get a player using this id %s", _networkCtrl->getPID().c_str());
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
 
-            _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
+            _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
                 _player, _input, _depositPosition, _depositRadius);
 
             CULog("tut setActive: hasNetwork=%d isHost=%d",
@@ -1037,7 +1037,7 @@ void TutorialScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& ob
         else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _enemyFact->linkFunc(e, e_node, _animations);
+                _enemyFact->linkFunc(e, e_node, true, _animations);
                 });
 
             // Add animation

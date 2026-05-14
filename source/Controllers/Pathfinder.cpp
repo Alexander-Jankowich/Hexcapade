@@ -266,7 +266,7 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
         if (!targ.isZero()) { // Found a valid target
             en->setTarget(targ);
             if (!en->isAttacking()) {
-                en->setState(EnemyObstacle::EnemyState::CHASING);
+                en->setState(EnemyObstacle::EnemyState::REGULAR);
                 //CULog("chase");
             }
             //CULog("set target!");
@@ -274,10 +274,10 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
 
         // if chasing, move towards target
         switch (en->getState()) {
-        case EnemyObstacle::EnemyState::CHASING: {
+        case EnemyObstacle::EnemyState::REGULAR: {
             // Check if enemy has reached its target
-            if (en->getTarget().distance(en->getPosition()) < 0.01) {
-                en->setState(EnemyObstacle::EnemyState::IDLE);
+            if (en->getTarget().distance(en->getPosition()) < 0.1) {
+                //en->setState(EnemyObstacle::EnemyState::IDLE);
                 en->setLinearVelocity(Vec2::ZERO);
                 //CULog("reached target!");
                 continue;
@@ -306,10 +306,10 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             en->setVelocity(newVel);
             break;
         }
-        case EnemyObstacle::EnemyState::IDLE:
-            //case EnemyObstacle::EnemyState::
-            en->setVelocity(Vec2::ZERO);
-            break;
+        //case EnemyObstacle::EnemyState::REGULAR:
+        //    //case EnemyObstacle::EnemyState::
+        //    en->setVelocity(Vec2::ZERO);
+        //    break;
         default:
             break;
         }

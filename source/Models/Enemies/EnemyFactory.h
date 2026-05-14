@@ -40,13 +40,18 @@ protected:
     std::shared_ptr<cugl::JsonValue> _enemyConsts;
     std::shared_ptr<cugl::JsonValue> _spellConsts;
 
+    /** Counter for generating enemy ids */
+    uint32 _nextId;
+
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(EnemyType type, Vec2 pos);
+    pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> createObstacle(EnemyType type, uint32 id, Vec2 pos);
 
 public:
-    EnemyFactory() {}
+    EnemyFactory() {
+        _nextId = 0;
+    }
 
     /** Set of all current enemies */
     std::unordered_set<std::shared_ptr<EnemyObstacle>> current;
@@ -84,7 +89,7 @@ public:
     /**
     * The linking function for enemy obstacles -> enemy nodes
     */
-    void linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, const shared_ptr<Animator>& animator);
+    void linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, bool isHost, const shared_ptr<Animator>& animator);
 
     /**
     * Returns a set of enemies that have been flagged for garbage collection and removes them from
@@ -93,11 +98,22 @@ public:
     * @return a set of all enemies to be removed from the world
     */
     std::unordered_set<std::shared_ptr<EnemyObstacle>> getRemoved();
+
+    void addEnemy(std::shared_ptr<EnemyObstacle> en) { current.emplace(en); }
     
     std::vector<Vec2> getEnemyPositions() {
         std::vector<Vec2> res;
-        for (auto p : current) res.push_back(p->getPosition() / PHYSICS_SCALE);
+        for (const auto& e : current) res.push_back(e->getPosition() / PHYSICS_SCALE);
         return res;
+    }
+
+    std::shared_ptr<EnemyObstacle> getEnemyById(uint32 id) {
+        for (const auto& en : current) {
+            if (en->ID == id) {
+                return en;
+            }
+        }
+        return nullptr;
     }
 };
 

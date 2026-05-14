@@ -391,7 +391,7 @@ void GameScene::preUpdate(float dt)
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
         //Have we set our player yet / received signal
         if (!_player) return;
-        _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
+        _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
             _player, _input, _depositPosition, _depositRadius);
     }
     _glowItemId = -1;
@@ -457,12 +457,9 @@ void GameScene::preUpdate(float dt)
 
             auto res = _map->generateEnemySpawns(_playerFact->getPlayerPositions(), _enemyFact->getEnemyPositions());
             for (auto r : res) {
-                //CULog("enemy type: %d", type);
-                // 
                 auto params = _enemyFact->serializeParams(r.second, r.first / PHYSICS_SCALE);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
-                // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             }
         }
@@ -474,6 +471,14 @@ void GameScene::preUpdate(float dt)
 
         // Update enemy movement
         _pathfinder.updateEnemies(_enemyFact, _playerFact, _spellFact, _networkCtrl, _spellFactId, _world);
+
+        // Send network events if enemies have updated
+        for (const auto& en : _enemyFact->current) {
+            if (en->isProperiesDirty()) {
+                _networkCtrl->pushOutEvent(EnemyStateEvent::alloc(en));
+                en->setPropertiesDirty(false);
+            }
+        }
 
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
@@ -502,13 +507,6 @@ void GameScene::preUpdate(float dt)
         _networkCtrl->getPhysController()->removeSharedObstacle(spell);
         //CULog("Remove spell: %d", spell->isRemoved());
     }
-    //for (auto en : _enemyFact -> current){
-    //    // If attack is on cooldown, wait
-    //    if (en->getState() == EnemyObstacle::EnemyState::ATTACK_RESET) {
-    //        CULog("here state");
-    //        continue;
-    //    }
-    //}
 
 
     // Update animations
@@ -546,7 +544,8 @@ void GameScene::preUpdate(float dt)
 
     if (_player->isFrozen() || _player->isHurt()) {
         //_player->setVelocity(Vec2::ZERO);
-    }else if (_player -> getWater()){
+    }
+    else if (_player -> getWater()){
         _player -> setVelocity(_player -> getPushDir() * _player -> getSpeed());
     }
     else {
@@ -1334,7 +1333,7 @@ void GameScene::setActive(bool value)
             CULog("I am trying to get a player using this id %s", _networkCtrl->getPID().c_str());
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
 
-            _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
+            _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
                 _player, _input, _depositPosition, _depositRadius);
 
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
@@ -1379,10 +1378,15 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             _animations->addNode(p_node);
         }
         else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
+            // Add enemy to set
+            if (!_enemyFact->current.contains(e)) {
+                _enemyFact->addEnemy(e);
+            }
+
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _enemyFact->linkFunc(e, e_node, _animations);
-                });
+                _enemyFact->linkFunc(e, e_node, _networkCtrl->isHost(), _animations);
+            });
 
             // Add animation
             _animations->addNode(e_node);
@@ -1641,12 +1645,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
     }
     else if (player && enemy) {
-        //We need a death message
-        //We need to set ATTACKRESET and decrement some sort of timer
         contact->SetEnabled(true);
 
-        if (player->getHealth() <= 0 || enemy->isDead()) {
-
+        if (player->getHealth() <= 0 || enemy->isDead() || player->getPID() != _player->getPID()) {
             return;
         }
 
@@ -1663,21 +1664,16 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
         enemy->setAttackTimer(90);
 
-        if (player->getPID() != _player->getPID()) return;
-        //CULog("enemy and player");
         player->damage(1);
         return;
     }
     else if (enemy && spell) {
-        //CULog("enemy and spell");
         contact->SetEnabled(false);
-        if (spell->getCasterUID() == "bat") {
+
+        if (!_networkCtrl->isHost() || spell->shouldRemove() || spell->getCasterUID() == "bat") {
             return;
         }
-        // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove()) {
-            return;
-        }
+
         switch (spell->TYPE) {
         case SpellType::WATER:
         {

@@ -17,7 +17,7 @@ using namespace cugl;
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory::createObstacle(EnemyType type, Vec2 pos) {
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory::createObstacle(EnemyType type, uint32 id, Vec2 pos) {
 
     shared_ptr<JsonValue> vals;
     switch (type) {
@@ -44,7 +44,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     size.height /= vals->getInt("rows");
     
     // Create the EnemyObstacle
-    auto en = EnemyObstacle::alloc(type, pos, vals, size);
+    auto en = EnemyObstacle::alloc(type, id, pos, vals, size);
 
 //    pl->setAngleSnap(0); // Snap to the nearest degree
 //
@@ -69,6 +69,8 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 shared_ptr<vector<byte>> EnemyFactory::serializeParams(EnemyType type, Vec2 pos) {
     _serializer.reset();
     _serializer.writeUint16((uint16) type);
+    _serializer.writeUint32(_nextId);
+    _nextId++;
     _serializer.writeFloat(pos.x);
     _serializer.writeFloat(pos.y);
     return make_shared<vector<byte>>(_serializer.serialize());
@@ -81,33 +83,38 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     _deserializer.reset();
     _deserializer.receive(params);
     EnemyType type = (EnemyType) _deserializer.readUint16();
+    uint32 id = _deserializer.readUint32();
     float x = _deserializer.readFloat();
     float y = _deserializer.readFloat();
     Vec2 pos = Vec2(x, y);
-    return createObstacle(type, pos);
+    return createObstacle(type, id, pos);
 }
 
 
-void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, const shared_ptr<Animator>& animator) {
-    if (obs->isDead()) {
-        obs->setLinearVelocity(Vec2::ZERO);
-    }
-    else {
-        // If not dead, update attributes
-        obs->updateAttackCounter();
+void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, bool isHost, const shared_ptr<Animator>& animator) {
+    if (isHost) {
+        // Only update timers and velocity if host
 
-        // Update push and frozen
-        if (obs->getWaterPushTimer() > 0) {
-            obs->tickWaterPush();
-            Vec2 pushVel = obs->getWaterPushDir() * obs->getSpeed() * 2.5f;
-            obs->setVelocity(pushVel);
-        }
-        else if (obs->isFroze()) {
+        if (obs->isDead()) {
             obs->setLinearVelocity(Vec2::ZERO);
-            int i = obs->getFrozenTimer() - 1;
-            obs->setFrozenTimer(i);
-            if (obs->getFrozenTimer() == 0) {
-                obs->setFrozen(false);
+        }
+        else {
+            // If not dead, update attributes
+            obs->updateAttackCounter();
+
+            // Update push and frozen
+            if (obs->getWaterPushTimer() > 0) {
+                obs->tickWaterPush();
+                Vec2 pushVel = obs->getWaterPushDir() * obs->getSpeed() * 2.5f;
+                obs->setVelocity(pushVel);
+            }
+            else if (obs->isFroze()) {
+                obs->setLinearVelocity(Vec2::ZERO);
+                int i = obs->getFrozenTimer() - 1;
+                obs->setFrozenTimer(i);
+                if (obs->getFrozenTimer() == 0) {
+                    obs->setFrozen(false);
+                }
             }
         }
     }
@@ -172,7 +179,7 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         obs->setLinearVelocity(Vec2::ZERO);
         animator->addNextListener(node, obs->getAttackTiming(), obs->getAttack());
         animator->addNextListener(node, [obs, node](string key, float time, float actual) {
-            obs->setState(EnemyObstacle::EnemyState::IDLE);
+            obs->setState(EnemyObstacle::EnemyState::REGULAR);
             node->updateAnimationState(obs->getState());
         });
         animator->endAnimation(node);

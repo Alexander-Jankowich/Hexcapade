@@ -29,20 +29,22 @@ private:
     string uuid;
     string _currHost;
     unsigned int _randSeed;
-    std::shared_ptr<cugl::Random> _rng;
+    shared_ptr<Random> _rng;
     NCGameState _gameState = NCGameState::UNSTARTED;
     int _round;
-    std::unordered_map<std::string, std::string> _playerNames;
-    std::unordered_map<std::string, std::string> _playerCharacters;
-    std::unordered_map<std::string, int> _playerDeposits;
+    unordered_map<string, string> _playerNames;
+    unordered_map<string, string> _playerCharacters;
+    unordered_map<string, int> _playerDeposits;
     
     // network controller ptrs to models it needs
-    std::shared_ptr<ItemFactory> _itemFactory;
-    std::shared_ptr<PlayerFactory> _playerFactory;
+    shared_ptr<ItemFactory> _itemFactory;
+    shared_ptr<PlayerFactory> _playerFactory;
+    shared_ptr<EnemyFactory> _enemyFactory;
+
     Uint32 _itemFactId;
-    std::shared_ptr<PlayerObstacle> _localPlayer;
+    shared_ptr<PlayerObstacle> _localPlayer;
     InputController* _inputCtrl;
-    cugl::Vec2 _depositPosition;
+    Vec2 _depositPosition;
     float _depositRadius;
     
 
@@ -50,21 +52,38 @@ private:
     static string dec2hex(const string& dec);
     static string hex2dec(const string& hex);
 
+#pragma mark Process Events
+    void processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
+        if (e->getP2() == _localPlayer->getPID()) {
+            _inputCtrl->resolveSpell();
+            _localPlayer->resolveSpell();
+        }
+    }
+    void processEndEvent(const shared_ptr<EndGameEvent>& e);
+
+    void processRestartEvent(const shared_ptr<RestartGameEvent>& e);
+
+    void processPlayerStateEvent(const shared_ptr<PlayerStateEvent>& e);
+
+    void processEnemyStateEvent(const shared_ptr<EnemyStateEvent>& e);
 
 public:
     NetworkController() {}
     ~NetworkController() {}
 
-    static shared_ptr<NetworkController> alloc(const std::shared_ptr<AssetManager>& assets) {
+    static shared_ptr<NetworkController> alloc(const shared_ptr<AssetManager>& assets) {
         auto f = make_shared<NetworkController>();
         f->init(assets);
         return f;
     }
-    void init(const std::shared_ptr<AssetManager>& a);
-    void initGameStuff(std::shared_ptr<ItemFactory> itemFact,std::shared_ptr<PlayerFactory> playerFact,
-                       Uint32 ifd, std::shared_ptr<PlayerObstacle> player, InputController& input, cugl::Vec2 dp, float dr){
+
+    void init(const shared_ptr<AssetManager>& a);
+    void initGameStuff(shared_ptr<ItemFactory> itemFact, shared_ptr<PlayerFactory> playerFact,
+                        shared_ptr<EnemyFactory> enemyFact, Uint32 ifd, shared_ptr<PlayerObstacle> player,
+                        InputController& input, Vec2 dp, float dr){
         _itemFactory = itemFact;
         _playerFactory = playerFact;
+        _enemyFactory = enemyFact;
         _itemFactId = ifd;
         _localPlayer = player;
         _inputCtrl = &input;
@@ -105,18 +124,6 @@ public:
         string room = getRoomID();
         return hex2dec(room);
     }
-    
-    void processComboEvent(const std::shared_ptr<CastSpellEvent>& e) {
-        if (e->getP2() == _localPlayer->getPID()) {
-            _inputCtrl->resolveSpell();
-            _localPlayer->resolveSpell();
-        }
-    }
-    void processEndEvent(const std::shared_ptr<EndGameEvent> &e);
-    
-    void processRestartEvent(const std::shared_ptr<RestartGameEvent> &e);
-    
-    void processStateEvent(const std::shared_ptr<PlayerStateEvent> &e);
     
     void resetHost();
 
