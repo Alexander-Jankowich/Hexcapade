@@ -90,9 +90,11 @@ pair<ActionFunction, float> EnemyNode::getNextAnimation() {
     switch (_nextAnimation) {
     case AnimationType::DEAD:
         if (_dead) {
+            CULog("stop animation");
             return END_ANIMATION;
         }
         _dead = true;
+        CULog("death animation");
         return getAnimationPair(DEATH, DEATH_FRAMES);
     case AnimationType::DAMAGED:
         return getAnimationPair(DAMAGE, DAMAGE_FRAMES);
