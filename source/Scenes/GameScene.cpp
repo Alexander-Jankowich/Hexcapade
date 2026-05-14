@@ -46,7 +46,7 @@ void GameScene::beginContact(b2Contact* contact) {
  *
  * @return true if the controller is initialized properly, false otherwise.
  */
-bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<std::vector<std::string>>& rooms)
+bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<std::vector<std::string>>& rooms, const std::shared_ptr<NetworkController>& network)
 {
     // Initialize the scene to a locked width
     if (assets == nullptr || !cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
@@ -57,6 +57,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
     _addedLWalls = false;
     _assets = assets;
     _rooms = rooms;
+    _networkCtrl = network;
 
     auto orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera());
     if (orthographicCamera) {
@@ -140,8 +141,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
         beforeSolve(contact, oldManifold);
         };
     _world->update(1);
-
-    _networkCtrl = nullptr;
     
     _itemInfo = ItemTypeClass(_assets);
     
@@ -1274,10 +1273,6 @@ void GameScene::drawDepositZone() {
     _batch->fill(zone);
 }
 
-void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
-    if (_networkCtrl != nullptr) return;
-    _networkCtrl = n;
-}
 
 void GameScene::initPhysics() {
     // initialize physics here, since this should be called post HANDSHAKE
