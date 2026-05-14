@@ -208,8 +208,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
                     CULog("done walling off - S");
                     
                     std::vector<Vec2> north_points = {
-                        Vec2((xPos - 2) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 1) * TILE_SIZE / PHYSICS_SCALE),
-                        Vec2((xPos + 8) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 1) * TILE_SIZE / PHYSICS_SCALE)
+                        Vec2((xPos - 2) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((xPos + 8) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos) * TILE_SIZE / PHYSICS_SCALE)
                     };
                     _extruder.set(north_points,false);
                     _extruder.calculate(0.05f);
