@@ -12,7 +12,7 @@ using namespace cugl::graphics;
 
 #pragma mark Init / Dispose
 
-bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
+bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<NetworkController>& network) {
     canInitGame=false;
     // Initialize the scene to a locked width
     if (assets == nullptr) {
@@ -27,7 +27,6 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     Size dimen = getSize();
     // Acquire the scene built by the asset loader and resize it the scene
     std::shared_ptr<scene2::SceneNode> scene = _assets->get<scene2::SceneNode>("client");
-    _networkCtrl = std::make_shared<NetworkController>();
     scene->setContentSize(dimen);
     scene->doLayout(); // Repositions the HUD
     
@@ -73,7 +72,7 @@ bool ClientScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     }
 
     // Create the server configuration
-    _networkCtrl->init(_assets);
+    _networkCtrl = network;
     
     addChild(scene);
     setActive(false);
@@ -86,7 +85,6 @@ void ClientScene::dispose() {
         _active = false;
         _networkCtrl=nullptr;
         _assets = nullptr;
-        _font = nullptr;
     }
 
 }

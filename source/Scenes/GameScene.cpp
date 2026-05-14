@@ -290,6 +290,12 @@ void GameScene::rebuildMapForRun() {
     if (!_map) {
         _map = std::make_shared<Map>();
     }
+    // Create the scene graph
+    // TODO: maybe just init once...?
+    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(Vec2::ZERO);
+    addChild(_worldnode);
 
     auto n = _map->generate(_networkCtrl->getRound(), _mapSeed, _assets, _rooms, getSize(), _world, _networkCtrl->getNumPlayers());
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);

@@ -116,6 +116,9 @@ void GeometryApp::onStartup() {
     _loading.start();
 
     cugl::netcode::NetworkLayer::start(cugl::netcode::NetworkLayer::Log::DEVELOPER);
+    
+    // Create the server configuration
+    _network = make_shared<NetworkController>();
 
     Application::onStartup(); // YOU MUST END with call to parent
 }
@@ -132,6 +135,7 @@ void GeometryApp::onStartup() {
  * causing the application to be deleted.
  */
 void GeometryApp::onShutdown() {
+    _network->disconnect();
     _mainmenu.dispose();
     _hostScene.dispose();
     _clientScene.dispose();
@@ -370,14 +374,15 @@ void GeometryApp::updateLoadingScene(float dt) {
 
     // Loading finished — initialize all scenes once
     _loading.dispose();
+    _network->init(_assets);
 
     _mainmenu.init(_assets);
     _mainmenu.setSpriteBatch(_batch);
     
-    _hostScene.init(_assets);
+    _hostScene.init(_assets, _network);
     _hostScene.setSpriteBatch(_batch);
     
-    _clientScene.init(_assets);
+    _clientScene.init(_assets, _network);
     _clientScene.setSpriteBatch(_batch);
     
     _selectScene.init(_assets);
@@ -489,8 +494,6 @@ void GeometryApp::updateSelectScene(float dt) {
         _selectScene.setActive(false);
         _gameplay.getNetwork()->disconnect();
         _gameplay.getNetwork()->resetStatus();
-        //_selectScene.release();
-        //_gameplay.release();
         
         _gameplay.reset();
         _mainmenu.setActive(true);

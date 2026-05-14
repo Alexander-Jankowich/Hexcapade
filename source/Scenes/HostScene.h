@@ -12,7 +12,6 @@ class HostScene : public cugl::scene2::Scene2 {
 
 private:
     std::shared_ptr<cugl::AssetManager> _assets;
-    std::shared_ptr<cugl::graphics::Font> _font;
 
     std::shared_ptr<NetworkController> _networkCtrl;
 
@@ -31,7 +30,7 @@ public:
     HostScene() : cugl::scene2::Scene2() {}
     ~HostScene() { dispose(); }
 
-    bool init(const std::shared_ptr<cugl::AssetManager>& assets);
+    bool init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<NetworkController>& network);
     void dispose() override;
     virtual void setActive(bool value) override;
 
