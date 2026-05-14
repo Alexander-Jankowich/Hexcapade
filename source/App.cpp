@@ -271,22 +271,20 @@ void GeometryApp::fixedUpdate(Uint64 step) {
     if (_scene != State::GAME) return;
     _gameplay.fixedUpdate(step);
     // need to disconnect
-    if (_gameplay.getNetwork()->getStatus()==NetworkController::Status::NETERROR) {
+    if (_network->getStatus()==NetworkController::Status::NETERROR) {
         _gameplay.setActive(false);
-        _gameplay.getNetwork()->disconnect();
+        _network->disconnect();
+        _network->resetStatus();
         _gameplay.reset();
-        _gameplay.release();
         _mainmenu.setActive(true);
         _scene = State::MENU;
         return;
     }
     // endgame
     if (_gameplay.gameEnded()) {
-        _endScene.setNetwork(_gameplay.getNetwork());
         CULog("app: displaying end game scene");
         _endScene.show(_gameplay.hasWon());
         _gameplay.reset();
-        _gameplay.release();
         _endScene.setActive(true);
         _gameplay.setActive(false);
         _scene = State::END;
@@ -385,13 +383,13 @@ void GeometryApp::updateLoadingScene(float dt) {
     _clientScene.init(_assets, _network);
     _clientScene.setSpriteBatch(_batch);
     
-    _selectScene.init(_assets);
+    _selectScene.init(_assets, _network);
     _selectScene.setSpriteBatch(_batch);
     
-    _gameplay.init(_assets, _rooms);
+    _gameplay.init(_assets, _rooms, _network);
     _gameplay.setSpriteBatch(_batch);
 
-    _endScene.init(_assets);
+    _endScene.init(_assets, _network);
     _endScene.setSpriteBatch(_batch);
     
     _tutorialScene.init(_assets);
@@ -449,7 +447,6 @@ void GeometryApp::updateHostScene(float dt) {
         _scene = State::MENU;
         break;
     case NetworkController::Status::CONNECTED:
-        _gameplay.initNetwork(_hostScene.getNetwork()); 
         break;
     case NetworkController::Status::HANDSHAKE:
     case NetworkController::Status::READY:
@@ -458,7 +455,6 @@ void GeometryApp::updateHostScene(float dt) {
     case NetworkController::Status::INGAME:
         _hostScene.setActive(false);
         // Transfer connection ownership
-        _selectScene.obtainNetwork(_hostScene.getNetwork());
         _gameplay.initPhysics();
         //_hostScene.release();
         _selectScene.setActive(true);
@@ -490,10 +486,10 @@ void GeometryApp::updateSelectScene(float dt) {
             break;
     }
     // init gameplay w same network earlier, so j use it for checks lol
-    if (_gameplay.getNetwork()->getStatus()==NetworkController::Status::NETERROR) {
+    if (_network->getStatus()==NetworkController::Status::NETERROR) {
         _selectScene.setActive(false);
-        _gameplay.getNetwork()->disconnect();
-        _gameplay.getNetwork()->resetStatus();
+        _network->disconnect();
+        _network->resetStatus();
         
         _gameplay.reset();
         _mainmenu.setActive(true);
@@ -522,7 +518,6 @@ void GeometryApp::updateClientScene(float dt) {
         _scene = State::MENU;
         break;
     case NetworkController::Status::CONNECTED:
-        _gameplay.initNetwork(_clientScene.getNetwork());
         break;
     case NetworkController::Status::HANDSHAKE:
 //            CULog("client entered handshake");
@@ -533,9 +528,6 @@ void GeometryApp::updateClientScene(float dt) {
             break;
     case NetworkController::Status::INGAME:
             _clientScene.setActive(false);
-            // Transfer connection ownership
-            _selectScene.obtainNetwork(_clientScene.getNetwork());
-            //_clientScene.release();
             _selectScene.setActive(true);
             _scene = State::SELECT;
         break;

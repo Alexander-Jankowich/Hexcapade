@@ -33,9 +33,8 @@ public:
     EndScene() : cugl::scene2::Scene2(), _state(State::NONE), _replayPressed(false), _exitPressed(false) {}
     ~EndScene() { dispose(); }
 
-    bool init(const std::shared_ptr<cugl::AssetManager>& assets);
+    bool init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<NetworkController>& network);
     void dispose() override;
-    void setNetwork(std::shared_ptr<NetworkController> n) {_networkCtrl=n;}
     void show(bool won);
     
 

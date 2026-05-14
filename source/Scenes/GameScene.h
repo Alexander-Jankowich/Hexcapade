@@ -201,7 +201,7 @@ public:
      *
      * @return true if the controller is initialized properly, false otherwise.
      */
-    bool init(const shared_ptr<AssetManager>& assets, const shared_ptr<vector<string>>& rooms);
+    bool init(const shared_ptr<AssetManager>& assets, const shared_ptr<vector<string>>& rooms, const std::shared_ptr<NetworkController>& network);
     
     shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
     void release() {_networkCtrl = nullptr;}
@@ -210,8 +210,6 @@ public:
     int getQuota() const { return _quota; }
     bool hasWon() const { return _networkCtrl->gameState()==NetworkController::NCGameState::WON; }
 
-    /** initializes the network and physics world */
-    void initNetwork(shared_ptr<NetworkController> n);
     /** Initialize networked physics before map built */
     void initPhysics();
     /** initialize map once network is populated with random seed for this round */

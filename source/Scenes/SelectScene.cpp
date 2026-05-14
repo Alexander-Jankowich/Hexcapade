@@ -4,11 +4,12 @@ using namespace cugl::graphics;
 
 #define SCENE_HEIGHT 720
 
-bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
+bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<NetworkController>& network) {
     if (assets == nullptr) return false;
     if (!Scene2::initWithHint(Size(0, SCENE_HEIGHT))) return false;
 
     _assets = assets;
+    _networkCtrl = network;
     Size dimen = getSize();
 
     std::shared_ptr<scene2::SceneNode> scene = _assets->get<scene2::SceneNode>("char-select");

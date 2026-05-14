@@ -85,6 +85,7 @@ public:
         _gameState=NCGameState::UNSTARTED;
         _playerNames.clear();
         _playerCharacters.clear();
+        _round = 1;
     }
     void rerollRandSeed() { if(_randSeed==0) _randSeed = _rng->getUint32();}
     bool getPhysEnabled() {return _physEnabled;}
