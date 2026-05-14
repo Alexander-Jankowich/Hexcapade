@@ -177,7 +177,7 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         animator->endAnimation(node);
     }
 
-    if (obs->isAttacking() && !node->isAttacking()) {
+    if (obs->isAttacking() && !node->isAttacking() && isHost) {
         //CULog("do attack thing");
         obs->setLinearVelocity(Vec2::ZERO);
         animator->addNextListener(node, obs->getAttackTiming(), obs->getAttack());

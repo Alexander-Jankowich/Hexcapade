@@ -471,6 +471,7 @@ void GeometryApp::updateSelectScene(float dt) {
             break;
         case SelectScene::SSStatus::HANDSHAKE:
             if (_selectScene.canInitMap()) {
+                CULog("i am init the map");
                 _gameplay.initMap();
             }
             break;
