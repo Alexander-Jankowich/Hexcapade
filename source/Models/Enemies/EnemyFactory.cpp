@@ -130,8 +130,9 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         auto frozen = make_shared<SpellEntityNode>(_assets->get<graphics::Texture>("freeze_entity"), _spellConsts->get("freeze-entity"));
         node->addChildWithTag(frozen, FROZEN_ID);
         frozen->setPriority(3);
-        //frozen->setScale(node->bounds().size.width / frozen->bounds().size.width);
-        //CULog("%.2f", frozen->getScale());
+        frozen->setPosition(frozen->getPositionX() + node->bounds().size.width / 2 - frozen->bounds().size.width / 2,
+            frozen->getPositionY());
+        frozen->setScale(node->bounds().size.width / frozen->bounds().size.width);
 
         animator->addNode(frozen);
 
@@ -159,12 +160,6 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
 
     if (obs->isHurt() && !node->isHurt()) {
         obs->setLinearVelocity(Vec2::ZERO);
-        //CULog("do hurt animation");
-        //animator->addNextListener(node, [obs, node](string key, float time, float actual) {
-        //    obs->setHurt(false);
-        //    node->setHurt(false);
-        //    //CULog("not hurt now");
-        //});
         animator->endAnimation(node);
     }
 

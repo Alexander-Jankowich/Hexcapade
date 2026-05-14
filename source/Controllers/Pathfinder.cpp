@@ -274,7 +274,6 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
         if (en->getState() == EnemyObstacle::EnemyState::REGULAR) {
             // Check if enemy has reached its target
             if (en->getTarget().distance(en->getPosition()) < 0.1) {
-                //en->setState(EnemyObstacle::EnemyState::IDLE);
                 en->setLinearVelocity(Vec2::ZERO);
                 //CULog("reached target!");
                 continue;
@@ -284,7 +283,8 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             Vec2 currentVel = en->getLinearVelocity();
 
             //Vec2 desiredVel = en->getTarget() - en->getPosition();
-            Vec2 desiredVel = findVelocity(world, en->getTarget(), en->getPosition(), en->getRadius());
+            Vec2 desiredVel = en->TYPE == EnemyType::GHOST ? en->getTarget() - en->getPosition() :
+                findVelocity(world, en->getTarget(), en->getPosition(), en->getRadius());
             desiredVel.normalize();
             if (en->isMud()) {
                 desiredVel *= en->getSpeed() / 2;
