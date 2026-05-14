@@ -234,19 +234,25 @@ void NetworkController::processRestartEvent(const shared_ptr<RestartGameEvent> &
 }
 
 void NetworkController::processPlayerStateEvent(const shared_ptr<PlayerStateEvent> &e){
-    if(e -> pid == getPID()){
+    if(_isHost && e -> host){
+        auto p = _playerFactory -> getPlayerByPID(e -> pid);
+        p->setDirty(false);
+        return;
+    }
+    if(e -> pid == getPID() && !e ->host){
         return;
     }
     auto p = _playerFactory -> getPlayerByPID(e -> pid);
     
-    p -> setHealth(e -> hp);
-    p -> setFrozen(e -> freeze);
-    p -> setBuff(e -> buff);
-    p -> setMud(e -> mud);
-    p -> setShieldCount(e -> numShields);
+    p->setHealth(e -> hp);
+    p->setFrozen(e -> freeze);
+    p->setBuff(e -> buff);
+    p->setMud(e -> mud);
+    p->setShieldCount(e -> numShields);
     if(p -> getShieldCount() == 0){
         p -> setShield(false);
     }
+    p->setDirty(false);
 }
 
 void NetworkController::processEnemyStateEvent(const shared_ptr<EnemyStateEvent>& e) {
