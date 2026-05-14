@@ -751,9 +751,9 @@ std::vector<std::vector<Vec2>> WATER_GESTURE_2 = {
 /** The portion of the screen used for the top zone */
 #define TOP_ZONE        0.20f
 /** The portion of the screen used for the left zone */
-#define LEFT_ZONE       0.5f
+#define LEFT_ZONE       0.33f
 /** The portion of the screen used for the right zone */
-#define RIGHT_ZONE      0.5f
+#define RIGHT_ZONE      0.67f
 
 #pragma mark Input Control
 /**

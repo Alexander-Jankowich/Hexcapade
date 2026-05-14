@@ -224,7 +224,7 @@ void GameScene::removeItemNode(const std::shared_ptr<ItemObstacle>& item) {
     }
 
     for (auto it = _itemNodes.begin(); it != _itemNodes.end(); ++it) {
-        if (it->first != item.get()) {
+        if (it->first.get() != item.get()) {
             continue;
         }
 
@@ -1360,7 +1360,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     node->setPosition(obj->getPosition() * PHYSICS_SCALE);
     _worldnode->addChild(node);
     if (auto item = std::dynamic_pointer_cast<ItemObstacle>(obj)) {
-        _itemNodes.push_back({ item.get(), node });
+        _itemNodes.push_back({ item, node });
     }
 
     // Dynamic objects need constant updating

@@ -104,7 +104,7 @@ protected:
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
     Pathfinder _pathfinder;
 
-    vector<pair<ItemObstacle*, shared_ptr<scene2::SceneNode>>> _itemNodes;
+    vector<pair<shared_ptr<ItemObstacle>, shared_ptr<scene2::SceneNode>>> _itemNodes;
     /** GA: itemnet legacy scene-local inventory cache kept during the migration. */
     int _inventoryValue;
     /** The total value already deposited into the shared quota. */
