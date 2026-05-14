@@ -9,7 +9,7 @@
 
 #define PHYSICS_SCALE 50
 #define ATTACK_DELAY 90.0f
-#define HURT_TIME 40
+#define HURT_TIME 48
 
 EnemyObstacle::EnemyObstacle(const EnemyType type, uint32 id, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s)
     : TYPE(type), ID(id) {

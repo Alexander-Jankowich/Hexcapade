@@ -79,6 +79,8 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
         node->releasedSpell();
     }
 
+    obs->updateIframeTimer();
+
     // Update frozen status for node if changed
     if (obs->isFrozen() && !node->isFrozen()) {
         node->setFrozen(true);
@@ -156,11 +158,11 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
 
     if (obs->isHurt() && !node->isHurt()) {
         // Remove hurt state when animation finishes playing
+        obs->setLinearVelocity(Vec2::ZERO);
         node->setHurt(true);
         animations->addNextListener(node, [obs, node](string key, float time, float actual) {
             obs->setHurt(false);
             node->setHurt(false);
-            //CULog("not hurt now");
         });
     }
        

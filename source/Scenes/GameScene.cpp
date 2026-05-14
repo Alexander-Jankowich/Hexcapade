@@ -1412,25 +1412,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     }
 }
 
-
-/**
- * Just a helper to handle some of our damage processing
- */
-static void healthHelper(float damage, PlayerObstacle* player) {
-    if (player->hasShield()) {
-        player->setShieldCount(player->getShieldCount() - 1);
-        if (player->getShieldCount() == 0) {
-            player->setShield(false);
-        }
-        return;
-    }
-    if (player->getHealth() - damage <= 0 && player->hasProtectionArtifact()) {
-        player->consumeItem(ItemTypeClass::ItemType::PROTECTION);
-        player->setHealth(2);
-        return;
-    }
-    player->setHealth(player->getHealth() - damage);
-}
 void GameScene::initCombos() {
     _spellCombos.insert({
         {{SpellType::FIREBALL, SpellType::FIREBALL}, SpellType::COMBO_FIREBALL},

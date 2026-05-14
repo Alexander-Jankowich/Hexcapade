@@ -1064,14 +1064,6 @@ void TutorialScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& ob
     }
 }
 
-
-/**
- * Just a helper to handle some of our damage processing - removed code for things not in tutorial
- */
-static void healthHelper(float damage, PlayerObstacle* player) {
-    player->setHealth(player->getHealth() - damage);
-}
-
 void TutorialScene::initCombos() {
     _spellCombos.insert({
         {{SpellType::FIREBALL, SpellType::FIREBALL}, SpellType::COMBO_FIREBALL},

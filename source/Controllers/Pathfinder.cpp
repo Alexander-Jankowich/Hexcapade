@@ -189,8 +189,8 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
                 auto players = getValidTargets(en->getPosition(), en->getAttackRange(), playerFact);
                 for (const auto& p : players) {
                     p->damage(3);
-                    networkCtrl->getPhysController()->acquireObs(p, 0.01);
-                    p->setLinearVelocity((p->getPosition() - en->getPosition()).getNormalization()*3);
+                    //networkCtrl->getPhysController()->acquireObs(p, 0.01);
+                    //p->setLinearVelocity((p->getPosition() - en->getPosition()).getNormalization()*3);
                 }
             }
             continue;
