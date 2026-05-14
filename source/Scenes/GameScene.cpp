@@ -909,7 +909,7 @@ void GameScene::fixedUpdate(Uint64 step)
     _depositedValue += std::get<1>(values);
     if(_player and _player -> isDirty()){
         _networkCtrl->pushOutEvent(
-            PlayerStateEvent::allocPlayerStateEvent(_networkCtrl->getPID(), _player -> getHealth(), _player -> isFrozen(), _player -> getBuff(), _player -> getMud(), _player -> getShieldCount(), false));
+            PlayerStateEvent::allocPlayerStateEvent(_networkCtrl->getPID(), _player -> getHealth(), _player -> isFrozen(), _player -> getBuff(), _player -> getMud(), _player -> getShieldCount()));
         _player -> setDirty(false);
     }
     

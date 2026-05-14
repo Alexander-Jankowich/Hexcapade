@@ -14,15 +14,14 @@ std::shared_ptr<NetEvent> PlayerStateEvent::newEvent() {
     return std::make_shared<PlayerStateEvent>();
 }
 
-std::shared_ptr<NetEvent> PlayerStateEvent::allocPlayerStateEvent(std::string pid, float hp, bool freeze, bool buff, bool mud,  int numShields, bool host) {
+std::shared_ptr<NetEvent> PlayerStateEvent::allocPlayerStateEvent(std::string pid, float hp, bool freeze, bool buff, bool mud,  int numShields) {
     auto event = std::make_shared<PlayerStateEvent>();
-    event->pid = pid;
-    event->hp = hp;
-    event->freeze = freeze;
-    event->buff = buff;
-    event->mud = mud;
-    event->numShields = numShields;
-    event->host = host;
+    event-> pid = pid;
+    event -> hp = hp;
+    event -> freeze = freeze;
+    event -> buff = buff;
+    event -> mud = mud;
+    event -> numShields = numShields;
     
     return event;
 }
@@ -35,7 +34,6 @@ std::vector<std::byte> PlayerStateEvent::serialize() {
     _serializer.writeBool(buff);
     _serializer.writeBool(mud);
     _serializer.writeSint32(numShields);
-    _serializer.writeBool(host);
                                                   
     return _serializer.serialize();
 }
@@ -47,7 +45,6 @@ void PlayerStateEvent::deserialize(const std::vector<std::byte>& data) {
     hp = _deserializer.readFloat();
     freeze = _deserializer.readBool();
     buff = _deserializer.readBool();
-    mud = _deserializer.readBool();
+    mud = _deserializer.readFloat();
     numShields = _deserializer.readSint32();
-    host = _deserializer.readBool();
 }

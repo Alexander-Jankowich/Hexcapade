@@ -25,11 +25,10 @@ public:
     bool buff;
     bool mud;
     int numShields;
-    bool host;
     
     std::shared_ptr<NetEvent> newEvent() override;
 
-    static std::shared_ptr<NetEvent> allocPlayerStateEvent(std::string pid, float hp, bool freeze, bool buff, bool mud,  int numShields, bool host);
+    static std::shared_ptr<NetEvent> allocPlayerStateEvent(std::string pid, float hp, bool freeze, bool buff, bool mud,  int numShields);
 
     std::vector<std::byte> serialize() override;
 
