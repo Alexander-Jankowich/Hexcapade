@@ -9,6 +9,7 @@
 
 #define PHYSICS_SCALE 50
 #define ATTACK_DELAY 90.0f
+#define HURT_TIME 40
 
 EnemyObstacle::EnemyObstacle(const EnemyType type, uint32 id, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s)
     : TYPE(type), ID(id) {
@@ -32,6 +33,7 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, uint32 id, const Vec2& pos, c
     _mudTimer = 0;
     _frozenTimer = 0;
     _attackCounter = 0;
+    _hurtTimer = 0;
 
     _propertiesDirty = false;
 }
@@ -57,6 +59,7 @@ void EnemyObstacle::setHealth(float value) {
     if (value <= 0) {
         _health = 0;
         setState(EnemyState::DEATH);
+        CULog("died");
     }
     else {
         _health = value;
@@ -73,20 +76,15 @@ void EnemyObstacle::setHealth(float value) {
 void EnemyObstacle::updateAttackCounter() {
     if (_attackCounter > 0) {
         _attackCounter--;
-        //CULog("attack_counter %d", _attackCounter);
     }
     else {
         _attackCounter = 0;
-        //if (!isHurt() && !isDead()) {
-        //    _state = EnemyState::IDLE;
-        //}
     }
 }
 
 void EnemyObstacle::setVelocity(Vec2 v) {
     if (!getBody()) return; // body not ready yet
 
-    //CULog("Setting velocity to %.2f, %.2f", v.x, v.y);
     b2Vec2 currentVel = getBody()->GetLinearVelocity();
     b2Vec2 targetVel = b2Vec2(v.x, v.y);
     b2Vec2 velDiff = targetVel - currentVel;
@@ -108,5 +106,26 @@ void EnemyObstacle::setState(EnemyState s) {
         //CULog("state change: %d -> %d", _state, s);
         _state = s;
         _propertiesDirty = true;
+    }
+}
+
+void EnemyObstacle::setHurt(bool h) {
+    if (h) {
+        setState(EnemyState::HURT);
+        _hurtTimer = HURT_TIME;
+    }
+    else {
+        setState(EnemyState::REGULAR);
+        _hurtTimer = 0;
+    }
+}
+
+void EnemyObstacle::updateHurtTimer() {
+    if (_hurtTimer > 0) {
+        _hurtTimer--;
+        if (_hurtTimer == 0) {
+            setHurt(false);
+            CULog("not hurt anymore");
+        }
     }
 }

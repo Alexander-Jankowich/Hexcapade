@@ -122,7 +122,6 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
             values->getFloat("range"), type, c_uid, weak);
     }
     
-    CULog("weak is %d", weak);
     //auto spell = SpellObstacle::alloc(pos, type);
 
     spell->setAngleSnap(0); // Snap to the nearest degree
@@ -130,7 +129,6 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
     // Set the physics attributes
 
     spell->setShared(true);
-    CULog("going to emplace the spell");
     current.emplace(spell);
 
     // Create spell node

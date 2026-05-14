@@ -62,15 +62,15 @@ protected:
 
     // Whether the enemy is frozen
     bool _frozen;
-
-    //Whether the enemy has mud status
-    bool _mud;
-
     // The time left until enemy is unfrozen
     int _frozenTimer;
 
+    //Whether the enemy has mud status
+    bool _mud;
     //The time left until enemies mud wears off
     int _mudTimer;
+
+    int _hurtTimer;
 
     Vec2 _waterPushDir = Vec2::ZERO;
     int _waterPushTimer = 0;
@@ -168,8 +168,9 @@ public:
     
     float getAttackRange() const { return _attackRange; }
 
-    void setHurt(bool h) { setState(h ? EnemyState::HURT : EnemyState::REGULAR); }
+    void setHurt(bool h);
     bool isHurt() { return _state == EnemyState::HURT; }
+    void updateHurtTimer();
 
     void setPropertiesDirty(bool d) { _propertiesDirty = d; }
     bool isProperiesDirty() { return _propertiesDirty; }

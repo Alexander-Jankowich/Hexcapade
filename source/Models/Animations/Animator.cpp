@@ -87,10 +87,10 @@ void Animator::endAnimation(const shared_ptr<AnimatedSprite> node) {
 	auto it = _active.find(node);
 	if (it != _active.end()) {
 		// Node is in active
-		//if (!_timeline->isPaused(it->second)) {
+		if (!_timeline->isPaused(it->second)) {
 			_timeline->remove(it->second);
 			endedAnimation(it->first, it->second);
-		//}
+		}
 	}
 }
 

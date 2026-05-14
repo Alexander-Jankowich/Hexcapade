@@ -267,14 +267,11 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             en->setTarget(targ);
             if (!en->isAttacking()) {
                 en->setState(EnemyObstacle::EnemyState::REGULAR);
-                //CULog("chase");
             }
-            //CULog("set target!");
         }
 
         // if chasing, move towards target
-        switch (en->getState()) {
-        case EnemyObstacle::EnemyState::REGULAR: {
+        if (en->getState() == EnemyObstacle::EnemyState::REGULAR) {
             // Check if enemy has reached its target
             if (en->getTarget().distance(en->getPosition()) < 0.1) {
                 //en->setState(EnemyObstacle::EnemyState::IDLE);
@@ -304,14 +301,6 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             float recovery = 0.2f;
             Vec2 newVel = currentVel * (1 - recovery) + desiredVel * recovery;
             en->setVelocity(newVel);
-            break;
-        }
-        //case EnemyObstacle::EnemyState::REGULAR:
-        //    //case EnemyObstacle::EnemyState::
-        //    en->setVelocity(Vec2::ZERO);
-        //    break;
-        default:
-            break;
         }
     }
 }

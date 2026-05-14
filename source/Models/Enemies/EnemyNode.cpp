@@ -45,7 +45,6 @@ EnemyNode::EnemyNode(shared_ptr<graphics::Texture>& tex, shared_ptr<JsonValue>& 
     facingLeft = false;
     _frozen = false;
     _statue = false;
-    _hurt = false;
     _dead = false;
 
     _nextAnimation = AnimationType::IDLE;
@@ -91,17 +90,17 @@ pair<ActionFunction, float> EnemyNode::getNextAnimation() {
     switch (_nextAnimation) {
     case AnimationType::DEAD:
         if (_dead) {
+            CULog("stop animation");
             return END_ANIMATION;
         }
         _dead = true;
+        CULog("death animation");
         return getAnimationPair(DEATH, DEATH_FRAMES);
     case AnimationType::DAMAGED:
-        //CULog("play hurt animation");
         return getAnimationPair(DAMAGE, DAMAGE_FRAMES);
     case AnimationType::IDLE:
         return getAnimationPair(IDLE, IDLE_FRAMES);
     case AnimationType::ATTACK:
-        CULog("play attack animation");
         return getAnimationPair(ATTACK, ATTACK_FRAMES);
     case AnimationType::WALK:
     default:

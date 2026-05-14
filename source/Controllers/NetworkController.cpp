@@ -107,7 +107,7 @@ tuple<int,int> NetworkController::customEvents(){
             processPlayerStateEvent(pse);
         }
         else if (auto ese = dynamic_pointer_cast<EnemyStateEvent>(e)) {
-            CULog("Got enemy state event!");
+            //CULog("Got enemy state event!");
             processEnemyStateEvent(ese);
         }
         else if (auto sse = dynamic_pointer_cast<SetSpellEvent>(e)){
