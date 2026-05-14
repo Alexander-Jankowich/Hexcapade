@@ -1483,6 +1483,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     physics2::Obstacle* obs2 = reinterpret_cast<physics2::Obstacle*>(body2->GetUserData().pointer);
 
     if (obs1->isRemoved() || obs2->isRemoved()) {
+        contact->SetEnabled(false);
         return;
     }
 
