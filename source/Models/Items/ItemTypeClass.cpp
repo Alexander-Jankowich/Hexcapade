@@ -155,11 +155,11 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getCard(ItemType t) {
     case ItemType::BOOK_HEAL:
         return _assets->get<cugl::graphics::Texture>("heal_card");
     case ItemType::SPELL_RESTRICTION:
-        return _assets->get<cugl::graphics::Texture>("antiMagic_info");
+        return _assets->get<cugl::graphics::Texture>("chains_info");
     case ItemType::SPELL_BOOST:
-        return _assets->get<cugl::graphics::Texture>("mysticalBrooch_info");
+        return _assets->get<cugl::graphics::Texture>("brooch_info");
     case ItemType::SPELL_REDUCE:
-        return _assets->get<cugl::graphics::Texture>("cursedScroll_info");
+        return _assets->get<cugl::graphics::Texture>("skull_info");
     case ItemType::PROTECTION:
         return _assets->get<cugl::graphics::Texture>("zombieTotem_info");
     case ItemType::HEAVY:
@@ -168,13 +168,17 @@ std::shared_ptr<cugl::graphics::Texture> ItemTypeClass::getCard(ItemType t) {
     case ItemType::GOLD_FAKE:
         return _assets->get<cugl::graphics::Texture>("foolsGold_info");
     case ItemType::BOMB:
-        return _assets->get<cugl::graphics::Texture>("explodingPotion_info");
+        return _assets->get<cugl::graphics::Texture>("bomb_info");
     case ItemType::SCROLL:
+        return _assets->get<cugl::graphics::Texture>("scroll_info");
     case ItemType::RIBBON:
+        return _assets->get<cugl::graphics::Texture>("ribbon_info");
     case ItemType::GEM:
+        return _assets->get<cugl::graphics::Texture>("gem_info");
     case ItemType::OCTOLING:
+        return _assets->get<cugl::graphics::Texture>("octoling_info");
     default:
-        return nullptr; // no card assets yet
+        return nullptr;
     }
 }
 
