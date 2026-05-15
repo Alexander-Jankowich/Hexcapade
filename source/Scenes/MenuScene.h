@@ -9,7 +9,7 @@
 
 class MenuScene : public cugl::scene2::Scene2 {
 public:
-    enum class Choice { NONE, HOST, JOIN };
+    enum class Choice { NONE, HOST, JOIN, TUTORIAL };
 
 private:
     std::shared_ptr<cugl::AssetManager> _assets;
@@ -21,6 +21,9 @@ private:
     std::shared_ptr<cugl::scene2::Button> _hostbutton;
     /** The menu button for joining a game */
     std::shared_ptr<cugl::scene2::Button> _joinbutton;
+    
+    std::shared_ptr<cugl::scene2::Button> _tutorialbutton;
+
     
 
 

@@ -33,9 +33,8 @@ public:
     EndScene() : cugl::scene2::Scene2(), _state(State::NONE), _replayPressed(false), _exitPressed(false) {}
     ~EndScene() { dispose(); }
 
-    bool init(const std::shared_ptr<cugl::AssetManager>& assets);
+    bool init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<NetworkController>& network);
     void dispose() override;
-    void setNetwork(std::shared_ptr<NetworkController> n) {_networkCtrl=n;}
     void show(bool won);
     
 
@@ -44,7 +43,7 @@ public:
     std::shared_ptr<NetworkController> getNetwork() const {return _networkCtrl;}
     void setActive(bool active) override;
 
-    void release() {_networkCtrl = nullptr;}
+    //void release() {_networkCtrl = nullptr;}
     bool didPressReplay() const { return (_replayPressed && _networkCtrl->isHost()) || (_networkCtrl->gameState()==NetworkController::NCGameState::UNSTARTED); }
     // EXIT BUTTON
     bool didPressExit() const { return _exitPressed; }

@@ -5,9 +5,15 @@
 // Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
 #ifndef __GAME_SCENE_H__
 #define __GAME_SCENE_H__
+#include <cugl/core/math/polygon/CUPathFactory.h> // Bug that this is not in <cugl/cugl.h>
+#include <cmath>
+#include <iostream>
+#include <sstream>
+#include <box2d/b2_draw.h>
+#include <box2d/b2_world.h>
+#include <box2d/b2_contact.h>
+#include <box2d/b2_collision.h>
 #include <cugl/cugl.h>
-#include <vector>
-#include <cstddef>
 #include <iomanip>
 #include "../Controllers/InputController.h"
 #include "../Controllers/NetworkController.h"
@@ -24,7 +30,16 @@
 #include "../Models/Animations.h"
 
 #include "InputDisplay.h"
-#define ROUND_TIMER 300
+#define ROUND_TIMER 10800
+// Lock the screen size to fixed height regardless of aspect ratio
+#define SCENE_HEIGHT 720
+
+/** The ratio between the physics world and the screen. (40 px = 1 meter, 1 tile is 1m x 1m or 40px x 40px) */
+#define PHYSICS_SCALE 50
+
+#define COMBO_RADIUS 4
+
+#define ITEM_PICKUP_RADIUS 2f
 
 using namespace cugl;
 using namespace std;
@@ -89,7 +104,7 @@ protected:
     // PUT OTHER ATTRIBUTES HERE AS NECESSARY
     Pathfinder _pathfinder;
 
-    vector<pair<ItemObstacle*, shared_ptr<scene2::SceneNode>>> _itemNodes;
+    vector<pair<shared_ptr<ItemObstacle>, shared_ptr<scene2::SceneNode>>> _itemNodes;
     /** GA: itemnet legacy scene-local inventory cache kept during the migration. */
     int _inventoryValue;
     /** The total value already deposited into the shared quota. */
@@ -186,7 +201,7 @@ public:
      *
      * @return true if the controller is initialized properly, false otherwise.
      */
-    bool init(const shared_ptr<AssetManager>& assets, const shared_ptr<vector<string>>& rooms);
+    bool init(const shared_ptr<AssetManager>& assets, const shared_ptr<vector<string>>& rooms, const std::shared_ptr<NetworkController>& network);
     
     shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
     void release() {_networkCtrl = nullptr;}
@@ -195,8 +210,6 @@ public:
     int getQuota() const { return _quota; }
     bool hasWon() const { return _networkCtrl->gameState()==NetworkController::NCGameState::WON; }
 
-    /** initializes the network and physics world */
-    void initNetwork(shared_ptr<NetworkController> n);
     /** Initialize networked physics before map built */
     void initPhysics();
     /** initialize map once network is populated with random seed for this round */

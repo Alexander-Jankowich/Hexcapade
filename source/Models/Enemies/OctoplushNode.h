@@ -52,5 +52,5 @@ public:
     void draw(const std::shared_ptr< graphics::SpriteBatch >& batch, const Affine2& transform, Color4 tint) override;
 };
 
-#endif // !__GP_ENEMY_H__
+#endif // !__OCTOPLUSH_NODE_H__
 

@@ -3,29 +3,11 @@
 // This is the primary class file for running the game.  It contains all core gameplay loop logic as well as
 // calls to the network controller for processing networked events. 
 // Authors: Serena Duncan, Alexander Jankowich, Kaz Tam, Frank Xie, Galiba Anjum
-#include <cugl/cugl.h>
-#include <cugl/core/math/polygon/CUPathFactory.h> // Bug that this is not in <cugl/cugl.h>
-#include <cmath>
-#include <iostream>
-#include <sstream>
-#include <random>
-#include <box2d/b2_draw.h>
-#include <box2d/b2_world.h>
-#include <box2d/b2_contact.h>
-#include <box2d/b2_collision.h>
+
 
 #include "GameScene.h"
 
 
-// Lock the screen size to fixed height regardless of aspect ratio
-#define SCENE_HEIGHT 720
-
-/** The ratio between the physics world and the screen. (40 px = 1 meter, 1 tile is 1m x 1m or 40px x 40px) */
-#define PHYSICS_SCALE 50
-
-#define COMBO_RADIUS 20
-
-#define ITEM_PICKUP_RADIUS 2f
 
 // Uncomment for testing, allows players to use all spells regardless of what books they have in their inventory
 //#define ENABLE_ALL_SPELLS
@@ -65,7 +47,7 @@ void GameScene::beginContact(b2Contact* contact) {
  *
  * @return true if the controller is initialized properly, false otherwise.
  */
-bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<std::vector<std::string>>& rooms)
+bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<std::vector<std::string>>& rooms, const std::shared_ptr<NetworkController>& network)
 {
     // Initialize the scene to a locked width
     if (assets == nullptr || !cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
@@ -76,6 +58,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
     _addedLWalls = false;
     _assets = assets;
     _rooms = rooms;
+    _networkCtrl = network;
 
     auto orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera());
     if (orthographicCamera) {
@@ -159,10 +142,15 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
         beforeSolve(contact, oldManifold);
         };
     _world->update(1);
-
-    _networkCtrl = nullptr;
     
     _itemInfo = ItemTypeClass(_assets);
+    
+    // Create the scene graph
+    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(Vec2::ZERO);
+    addChild(_worldnode);
+    
     setActive(false);
     return true;
 }
@@ -236,7 +224,7 @@ void GameScene::removeItemNode(const std::shared_ptr<ItemObstacle>& item) {
     }
 
     for (auto it = _itemNodes.begin(); it != _itemNodes.end(); ++it) {
-        if (it->first != item.get()) {
+        if (it->first.get() != item.get()) {
             continue;
         }
 
@@ -302,6 +290,12 @@ void GameScene::rebuildMapForRun() {
     if (!_map) {
         _map = std::make_shared<Map>();
     }
+    // Create the scene graph
+    // TODO: maybe just init once...?
+    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(Vec2::ZERO);
+    addChild(_worldnode);
 
     auto n = _map->generate(_networkCtrl->getRound(), _mapSeed, _assets, _rooms, getSize(), _world, _networkCtrl->getNumPlayers());
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
@@ -1370,10 +1364,6 @@ void GameScene::drawDepositZone() {
     _batch->fill(zone);
 }
 
-void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
-    if (_networkCtrl != nullptr) return;
-    _networkCtrl = n;
-}
 
 void GameScene::initPhysics() {
     // initialize physics here, since this should be called post HANDSHAKE
@@ -1395,11 +1385,7 @@ void GameScene::initMap() {
     if (_networkCtrl->getRandSeed() == 0) return; // no randSeed
     if (_mapSeed == _networkCtrl->getRandSeed()) return; // already init
 
-    // Create the scene graph
-    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
-    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    _worldnode->setPosition(Vec2::ZERO);
-    addChild(_worldnode);
+    
 
     _mapSeed = _networkCtrl->getRandSeed();
     CULog("set map seed to : %d", _mapSeed);
@@ -1407,7 +1393,6 @@ void GameScene::initMap() {
     if (_mapSeed != 0) {
         rebuildMapForRun();
     }
-    spawnPlayers();
 }
 
 void GameScene::spawnPlayers() {
@@ -1467,7 +1452,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     node->setPosition(obj->getPosition() * PHYSICS_SCALE);
     _worldnode->addChild(node);
     if (auto item = std::dynamic_pointer_cast<ItemObstacle>(obj)) {
-        _itemNodes.push_back({ item.get(), node });
+        _itemNodes.push_back({ item, node });
     }
 
     // Dynamic objects need constant updating
@@ -1521,6 +1506,25 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     }
 }
 
+
+/**
+ * Just a helper to handle some of our damage processing
+ */
+static void healthHelper(float damage, PlayerObstacle* player) {
+    if (player->hasShield()) {
+        player->setShieldCount(player->getShieldCount() - 1);
+        if (player->getShieldCount() == 0) {
+            player->setShield(false);
+        }
+        return;
+    }
+    if (player->getHealth() - damage <= 0 && player->hasProtectionArtifact()) {
+        player->consumeItem(ItemTypeClass::ItemType::PROTECTION);
+        player->setHealth(2);
+        return;
+    }
+    player->setHealth(player->getHealth() - damage);
+}
 void GameScene::initCombos() {
     _spellCombos.insert({
         {{SpellType::FIREBALL, SpellType::FIREBALL}, SpellType::COMBO_FIREBALL},

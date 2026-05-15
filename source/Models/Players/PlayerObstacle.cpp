@@ -3,7 +3,7 @@
 
 
 PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s, const shared_ptr<JsonValue>& consts) {
-    init(pos, (s * 0.12) / PHYSICS_SCALE);
+    init(pos, (s * 0.2) / PHYSICS_SCALE);
     setBodyType(b2_dynamicBody);
     setDensity(1.0f);
     //setLinearDamping(15.0f);

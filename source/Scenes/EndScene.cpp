@@ -16,11 +16,12 @@ static std::string endPortraitKey(const std::string& character) {
     return "fox_pr";
 }
 
-bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
+bool EndScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<NetworkController>& network) {
     if (!assets) return false;
     if (!Scene2::initWithHint(Size(0, SCENE_HEIGHT))) return false;
 
     _assets = assets;
+    _networkCtrl = network;
     _state = State::NONE;
     _replayPressed = false;
     _exitPressed = false;

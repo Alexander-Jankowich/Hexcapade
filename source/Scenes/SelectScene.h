@@ -46,13 +46,11 @@ public:
     SelectScene() : cugl::scene2::Scene2() {}
     ~SelectScene() { dispose(); }
     
-    bool init(const std::shared_ptr<cugl::AssetManager>& assets);
+    bool init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<NetworkController>& network);
     void dispose() override;
     void update(float dt) override;
     void setActive(bool value) override;
     
-    void obtainNetwork(std::shared_ptr<NetworkController> n) { _networkCtrl = n; }
-    void release() { _networkCtrl = nullptr; }
     SSStatus getStatus() { return _status; }
     bool canInitMap() { return _networkCtrl->getRandSeed() != 0; }
     bool isHost() { return _networkCtrl && _networkCtrl->isHost(); }

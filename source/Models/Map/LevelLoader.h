@@ -8,7 +8,6 @@
 #define __TD_LEVEL_MODEL_H__
 #include <array> 
 #include <cugl/cugl.h>
-#include <array>
 
 using namespace std;
 using namespace cugl;
@@ -30,21 +29,6 @@ public:
         _direction = d;
         _tlCorner = Vec2(x, y);
         _dimens = Size(w, h);
-    }
-};
-
-class SpawnPoint {
-public:
-    enum SpawnType : int {
-        PLAYER=0,
-        ENEMY=1,
-        ITEM=2
-    };
-    SpawnType _type;
-    Vec2 _spawnPoint;
-    SpawnPoint(SpawnType t, float x, float y){
-        _type = t;
-        _spawnPoint = Vec2(x, y);
     }
 };
 

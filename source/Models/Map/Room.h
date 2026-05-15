@@ -4,8 +4,6 @@
 #define __HEXCAPADE_ROOM_H__
 
 #include <cugl/cugl.h>
-#include <string>
-#include <vector>
 
 class Room {
 public:

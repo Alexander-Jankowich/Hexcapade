@@ -13,8 +13,10 @@
 #include "Scenes/HostScene.h"
 #include "Scenes/SelectScene.h"
 #include "Scenes/ClientScene.h"
+#include "Scenes/TutorialScene.h"
 #include "Controllers/NetworkController.h"
 #include "Models/Map/LevelLoader.h"
+#include "Models/Map/StaticLevelLoader.h"
 
 /**
  * This class represents the application root for Hexcapade.
@@ -22,13 +24,15 @@
 class GeometryApp : public cugl::Application {
 public:
     /** Top-level application states */
-    enum class State { LOAD, MENU, HOST, CLIENT, SELECT, GAME, END };
+    enum class State { LOAD, MENU, TUTORIAL, HOST, CLIENT, SELECT, GAME, END };
 
 protected:
     /** The global sprite batch for drawing (only want one of these) */
     std::shared_ptr<cugl::graphics::SpriteBatch> _batch;
     /** The global asset manager */
     std::shared_ptr<cugl::AssetManager> _assets;
+    /** The network for this run of the app */
+    std::shared_ptr<NetworkController> _network;
     
     std::shared_ptr<std::vector<std::string>> _rooms;
 
@@ -47,6 +51,7 @@ protected:
     HostScene   _hostScene;
     ClientScene _clientScene;
     SelectScene _selectScene;
+    TutorialScene _tutorialScene;
     GameScene   _gameplay;
     EndScene    _endScene;
 
@@ -75,6 +80,7 @@ private:
     void updateClientScene(float dt);
     void updateGameScene(float dt);
     void updateEndScene(float dt);
+    void updateTutorialScene(float dt);
     void playSound(const std::string& key, float volumeMultiplier);
     void playMusic(const std::string& key, float volumeMultiplier);
     void stopMusic();

@@ -751,9 +751,9 @@ std::vector<std::vector<Vec2>> WATER_GESTURE_2 = {
 /** The portion of the screen used for the top zone */
 #define TOP_ZONE        0.20f
 /** The portion of the screen used for the left zone */
-#define LEFT_ZONE       0.5f
+#define LEFT_ZONE       0.33f
 /** The portion of the screen used for the right zone */
-#define RIGHT_ZONE      0.5f
+#define RIGHT_ZONE      0.67f
 
 #pragma mark Input Control
 /**
@@ -967,13 +967,15 @@ void InputController::syncGesturesToInventory(const std::vector<PlayerObstacle::
             case(1):
                 recognizer_1 -> removeGesture(*it);
                 recognizerLess_1 -> removeGesture(*it);
-
+                break;
             case(2):
                 recognizer_2 -> removeGesture(*it);
                 recognizerLess_2 -> removeGesture(*it);
+                break;
             case(3):
                 recognizer_3 -> removeGesture(*it);
                 recognizerLess_3 -> removeGesture(*it);
+                break;
             }
             _activeGestureNamesLess.erase(*it);
             it = _activeGestureNames.erase(it);
