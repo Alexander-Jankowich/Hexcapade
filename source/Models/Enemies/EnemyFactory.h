@@ -16,6 +16,7 @@
 
 #define ATTACK_DELAY 1.3f
 #define PHYSICS_SCALE 50
+
 using namespace cugl;
 using namespace cugl::physics2::distrib;
 using namespace std;
@@ -89,7 +90,7 @@ public:
     /**
     * The linking function for enemy obstacles -> enemy nodes
     */
-    void linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, bool isHost, const shared_ptr<Animator>& animator);
+    void linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, bool isHost, float maxHeight, const shared_ptr<Animator>& animator);
 
     /**
     * Returns a set of enemies that have been flagged for garbage collection and removes them from

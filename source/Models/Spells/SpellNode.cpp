@@ -28,7 +28,6 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, std::shared_ptr
     _nextAnimation = AnimationType::ACTIVE;
 
     setFrame(mainLoop);
-    setPriority(1);
 }
 
 pair<ActionFunction, float> SpellNode::getNextAnimation() {

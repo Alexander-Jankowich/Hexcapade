@@ -127,41 +127,39 @@ tuple<int,int> NetworkController::customEvents(){
                     // Clients send deposit request and the host sends back the
                     // final synced amount after checking zone and inventory
                     CULog("HOST deposit request");
-                    for (auto& p : _playerFactory->current) {
-                        if (p->getPID() == de->getPID()) {
-                            Vec2 playerScreenPos = p->getPosition() * PHYSICS_SCALE;
-                            bool canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
-                            int slotIndex = de->getSlotIndex();
-                            if (slotIndex >= 0) {
-                                if (canDeposit) {
-                                    int deposited = p->depositItem((size_t)slotIndex);
-                                    if (deposited > 0) {
-                                        if (p == _localPlayer) {
-                                            inventoryValue = _localPlayer->getInventoryVal();
-                                        }
-                                        pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true, slotIndex));
-                                    }
-                                } else if ((size_t)slotIndex < p->getInventory().size()) {
-                                    auto carried = p->getInventory()[(size_t)slotIndex];
-                                    p->depositItem((size_t)slotIndex);
-                                    if (p == _localPlayer) {
-                                        inventoryValue = _localPlayer->getInventoryVal();
-                                    }
-                                    auto params = _itemFactory->serializeParams(p->getPosition() + Vec2(0.0f, -0.35f), carried.value, carried.itemType);
-                                    auto pair = getPhysController()->addSharedObstacle(_itemFactId, params);
-                                    getPhysController()->acquireObs(pair.first, 0);
-                                    pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), 0, true, slotIndex));
+                    auto p = _playerFactory->getPlayerByPID(de->getPID());
+                    
+                    Vec2 playerScreenPos = p->getPosition() * PHYSICS_SCALE;
+                    bool canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
+                    int slotIndex = de->getSlotIndex();
+                    if (slotIndex >= 0) {
+                        if (canDeposit) {
+                            int deposited = p->depositItem((size_t)slotIndex);
+                            if (deposited > 0) {
+                                if (p == _localPlayer) {
+                                    inventoryValue = _localPlayer->getInventoryVal();
                                 }
-                            } else if (canDeposit) {
-                                int deposited = p->depositItems();
-                                if (deposited > 0) {
-                                    if (p == _localPlayer) {
-                                        inventoryValue = _localPlayer->getInventoryVal();
-                                    }
-                                    pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true));
-                                }
+                                pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true, slotIndex));
                             }
-                            break;
+                        } else if ((size_t)slotIndex < p->getInventory().size()) {
+                            auto carried = p->getInventory()[(size_t)slotIndex];
+                            p->depositItem((size_t)slotIndex);
+                            if (p == _localPlayer) {
+                                inventoryValue = _localPlayer->getInventoryVal();
+                            }
+                            auto params = _itemFactory->serializeParams(p->getPosition() + Vec2(0.0f, -0.35f),
+                                carried.value, _worldMaxHeight, carried.itemType);
+                            auto pair = getPhysController()->addSharedObstacle(_itemFactId, params);
+                            getPhysController()->acquireObs(pair.first, 0);
+                            pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), 0, true, slotIndex));
+                        }
+                    } else if (canDeposit) {
+                        int deposited = p->depositItems();
+                        if (deposited > 0) {
+                            if (p == _localPlayer) {
+                                inventoryValue = _localPlayer->getInventoryVal();
+                            }
+                            pushOutEvent(DepositEvent::allocDepositEvent(p->getPID(), deposited, true));
                         }
                     }
                 } else {
@@ -197,17 +195,13 @@ tuple<int,int> NetworkController::customEvents(){
                 CULog("pickup event got!");
                 auto item = _itemFactory->getItem(pre->getItemID());
                 if (item && !item->isRemoved()) {
-                    for (auto& p : _playerFactory->current) {
-                        if (p->getPID() == pre->getPID()) {
-                            if (p->addItem(item->getItemType(), item->getValue())) {
-                                if (p == _localPlayer) {
-                                    inventoryValue = _localPlayer->getInventoryVal();
-                                }
-                                _itemFactory->getItem(pre->getItemID())->markRemoved(true);
-                                getPhysController()->removeSharedObstacle(item);
-                            }
-                            break;
+                    auto p = _playerFactory->getPlayerByPID(pre->getPID());
+                    if (p->addItem(item->getItemType(), item->getValue())) {
+                        if (p == _localPlayer) {
+                            inventoryValue = _localPlayer->getInventoryVal();
                         }
+                        _itemFactory->getItem(pre->getItemID())->markRemoved(true);
+                        getPhysController()->removeSharedObstacle(item);
                     }
                 }   
             }   

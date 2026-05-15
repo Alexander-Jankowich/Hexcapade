@@ -198,7 +198,8 @@ std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {
     return remove;
 }
 
-void SpellFactory::linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, shared_ptr<Animator> animations) {
+void SpellFactory::linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, float maxHeight,
+        shared_ptr<Animator> animations) {
     // Mark spells to be removed when out of range
     if ((obs->VISIBLE && obs->getTraveled() >= obs->getRange()) || 
             (!obs->VISIBLE && obs->getRange() < obs->getCounter())) {
@@ -220,4 +221,5 @@ void SpellFactory::linkFunc(const shared_ptr<SpellObstacle> obs, const shared_pt
     float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
     node->setPosition(pos * PHYSICS_SCALE);
     node->setAngle(angle);
+    node->setPriority((maxHeight - obs->getPosition().y) / maxHeight * 2);
 }

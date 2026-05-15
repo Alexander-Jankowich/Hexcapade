@@ -50,7 +50,6 @@ EnemyNode::EnemyNode(shared_ptr<graphics::Texture>& tex, shared_ptr<JsonValue>& 
     _nextAnimation = AnimationType::IDLE;
     _curAnimation = AnimationType::IDLE;
     setFrame(0);
-    setPriority(1);
 
     _tint = Color4::WHITE;
 }

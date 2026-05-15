@@ -94,7 +94,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 }
 
 
-void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, bool isHost, const shared_ptr<Animator>& animator) {
+void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, bool isHost, float maxHeight, const shared_ptr<Animator>& animator) {
     if (isHost) {
         // Only update timers and velocity if host
 
@@ -125,6 +125,8 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         }
     }
 
+    float prio = (maxHeight - obs->getPosition().y) / maxHeight * 2;
+
     // Update frozen status for node if changed
     if (obs->isFroze() && !node->getFrozen()) {
         node->setFrozen(true);
@@ -132,7 +134,7 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
 
         auto frozen = make_shared<SpellEntityNode>(_assets->get<graphics::Texture>("freeze_entity"), _spellConsts->get("freeze-entity"));
         node->addChildWithTag(frozen, FROZEN_ID);
-        frozen->setPriority(3);
+        frozen->setPriority(prio+FLT_EPSILON);
 
         if (obs->TYPE == EnemyType::OCTO) {
             frozen->setPosition(frozen->getPositionX() + node->bounds().size.width / 2 - frozen->bounds().size.width / 2,
@@ -202,6 +204,7 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
     node->setPosition(pos * PHYSICS_SCALE);
     node->setAngle(angle);
     node->setVelocity(obs->getLinearVelocity() * PHYSICS_SCALE);
+    node->setPriority(prio);
 
     // Update state for animation
     node->setStatue(obs->isMud());

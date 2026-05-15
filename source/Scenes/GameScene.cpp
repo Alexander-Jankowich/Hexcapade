@@ -329,7 +329,7 @@ void GameScene::spawnItemsFromMap() {
         Vec2 physPos = spawn.first / PHYSICS_SCALE;
         ItemTypeClass::ItemType t = spawn.second;
 
-        auto params = _itemFact->serializeParams(physPos, _itemInfo.getConsts(t)->getInt("value"), t);
+        auto params = _itemFact->serializeParams(physPos, _itemInfo.getConsts(t)->getInt("value"), _world->getBounds().getMaxY(), t);
         _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
     }
     CULog("ItemFactory: spawned %zu items", itemSpawns.size());
@@ -404,7 +404,7 @@ void GameScene::preUpdate(float dt)
         //Have we set our player yet / received signal
         if (!_player) return;
         _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
-            _player, _input, _depositPosition, _depositRadius);
+            _player, _input, _depositPosition, _depositRadius, _world->getBounds().getMaxY());
     }
     _glowItemId = -1;
     Vec2 playerPos = _player->getPosition();
@@ -702,7 +702,7 @@ void GameScene::preUpdate(float dt)
                     _player->depositItem((size_t)depositIndex);
                     _inventoryValue = _player->getInventoryVal();
                     Vec2 dropPos = _player->getPosition() + Vec2(0.0f, -0.35f);
-                    auto params = _itemFact->serializeParams(dropPos, carried.value, carried.itemType);
+                    auto params = _itemFact->serializeParams(dropPos, carried.value, _world->getBounds().getMaxY(), carried.itemType);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
@@ -868,8 +868,8 @@ void GameScene::preUpdate(float dt)
     }
     if (_input.pressedPickup()) {
         // I just use this to test combo animations - Kaz
-        //_player->setShield(true);
-        //_player->setShieldCount(3);
+        _player->setShield(true);
+        _player->setShieldCount(3);
         _input.resolvedPickup();
     }
 
@@ -1337,7 +1337,7 @@ void GameScene::setActive(bool value)
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
 
             _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
-                _player, _input, _depositPosition, _depositRadius);
+                _player, _input, _depositPosition, _depositRadius, _world->getBounds().getMaxY());
 
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                 _networkCtrl->hasNetwork(), _networkCtrl->isHost());
@@ -1374,7 +1374,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
 
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _playerFact->linkFunc(p, p_node, _animations);
+                _playerFact->linkFunc(p, p_node, _world->getBounds().getMaxY(), _animations);
                 });
 
             // Add animation
@@ -1388,7 +1388,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
 
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _enemyFact->linkFunc(e, e_node, _networkCtrl->isHost(), _animations);
+                _enemyFact->linkFunc(e, e_node, _networkCtrl->isHost(), _world->getBounds().getMaxY(), _animations);
             });
 
             // Add animation
@@ -1397,7 +1397,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         else if (auto s = dynamic_pointer_cast<SpellObstacle>(obj)) {
             std::shared_ptr<SpellNode> s_node = std::dynamic_pointer_cast<SpellNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _spellFact->linkFunc(s, s_node, _animations);
+                _spellFact->linkFunc(s, s_node, _world->getBounds().getMaxY(), _animations);
                 });
 
             // Add animation

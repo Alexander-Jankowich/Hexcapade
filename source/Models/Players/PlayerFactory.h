@@ -83,7 +83,7 @@ public:
     /**
     * The linking function for player obstacles -> player nodes
     */
-    void linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node, shared_ptr<Animator> animations);
+    void linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node, float maxHeight, shared_ptr<Animator> animations);
 
     shared_ptr<PlayerObstacle> getPlayerByPID(string pid) {
         for (auto p : current) {

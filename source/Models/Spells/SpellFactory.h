@@ -128,7 +128,7 @@ public:
     /**
     * The linking function for spell obstacles -> spell nodes
     */
-    void linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, shared_ptr<Animator> animations);
+    void linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, float maxHeight, shared_ptr<Animator> animations);
 };
 
 #endif // !__SPELL_FACTORY_H__

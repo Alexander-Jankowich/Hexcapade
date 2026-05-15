@@ -47,6 +47,7 @@ private:
     Vec2 _depositPosition;
     float _depositRadius;
     
+    float _worldMaxHeight;
 
 #pragma mark Helpers
     static string dec2hex(const string& dec);
@@ -80,7 +81,7 @@ public:
     void init(const shared_ptr<AssetManager>& a);
     void initGameStuff(shared_ptr<ItemFactory> itemFact, shared_ptr<PlayerFactory> playerFact,
                         shared_ptr<EnemyFactory> enemyFact, Uint32 ifd, shared_ptr<PlayerObstacle> player,
-                        InputController& input, Vec2 dp, float dr){
+                        InputController& input, Vec2 dp, float dr, float maxHeight){
         _itemFactory = itemFact;
         _playerFactory = playerFact;
         _enemyFactory = enemyFact;
@@ -89,6 +90,7 @@ public:
         _inputCtrl = &input;
         _depositPosition = dp;
         _depositRadius = dr;
+        _worldMaxHeight = maxHeight;
     }
 
     unsigned int getRandSeed() {return _randSeed;}
