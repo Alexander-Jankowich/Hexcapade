@@ -1654,12 +1654,12 @@
                   0.5
                 ],
                 "size": [
-                  147,
-                  70
+                  248,
+                  104
                 ],
                 "position": [
-                  50,
-                  31
+                  124,
+                  52
                 ],
                 "angle": 0,
                 "visible": true,
@@ -1673,8 +1673,8 @@
                   0,
                   0
                 ],
-                "valign": "top",
-                "halign": "left"
+                "valign": "middle",
+                "halign": "center"
               },
               "children": {},
               "layout": {
@@ -2299,7 +2299,7 @@
             "x_anchor": "center",
             "y_anchor": "middle",
             "absolute": false,
-            "x_offset": 0.34,
+            "x_offset": 0.29,
             "y_offset": 0.1
           }
         },
@@ -2943,16 +2943,16 @@
                       "type": "Label",
                       "data": {
                         "anchor": [
-                          0,
-                          1
+                          0.5,
+                          0.5
                         ],
                         "size": [
-                          195,
-                          63
+                          235,
+                          76
                         ],
                         "position": [
-                          180,
-                          23
+                          160,
+                          19
                         ],
                         "angle": 0,
                         "visible": true,
@@ -2966,16 +2966,16 @@
                           0,
                           0
                         ],
-                        "valign": "top",
-                        "halign": "left"
+                        "valign": "middle",
+                        "halign": "center"
                       },
                       "children": {},
                       "layout": {
-                        "x_anchor": "left",
-                        "y_anchor": "top",
+                        "x_anchor": "center",
+                        "y_anchor": "middle",
                         "absolute": false,
-                        "x_offset": 0.45,
-                        "y_offset": -0.3
+                        "x_offset": 0.19,
+                        "y_offset": 0.02
                       }
                     }
                   },
@@ -4424,12 +4424,12 @@
                           1
                         ],
                         "size": [
-                          195,
-                          63
+                          235,
+                          76
                         ],
                         "position": [
-                          257,
-                          27
+                          237,
+                          19
                         ],
                         "angle": 0,
                         "visible": true,
@@ -4443,16 +4443,16 @@
                           0,
                           0
                         ],
-                        "valign": "top",
-                        "halign": "left"
+                        "valign": "middle",
+                        "halign": "center"
                       },
                       "children": {},
                       "layout": {
                         "x_anchor": "left",
                         "y_anchor": "top",
                         "absolute": false,
-                        "x_offset": 0.44,
-                        "y_offset": -0.3
+                        "x_offset": 0.41,
+                        "y_offset": -0.13
                       }
                     }
                   },
