@@ -46,7 +46,7 @@ void GameScene::beginContact(b2Contact* contact) {
  *
  * @return true if the controller is initialized properly, false otherwise.
  */
-bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<std::vector<std::string>>& rooms)
+bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<std::vector<std::string>>& rooms, const std::shared_ptr<NetworkController>& network)
 {
     // Initialize the scene to a locked width
     if (assets == nullptr || !cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
@@ -57,6 +57,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
     _addedLWalls = false;
     _assets = assets;
     _rooms = rooms;
+    _networkCtrl = network;
 
     auto orthographicCamera = std::dynamic_pointer_cast<OrthographicCamera>(getCamera());
     if (orthographicCamera) {
@@ -140,10 +141,15 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
         beforeSolve(contact, oldManifold);
         };
     _world->update(1);
-
-    _networkCtrl = nullptr;
     
     _itemInfo = ItemTypeClass(_assets);
+    
+    // Create the scene graph
+    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(Vec2::ZERO);
+    addChild(_worldnode);
+    
     setActive(false);
     return true;
 }
@@ -283,6 +289,12 @@ void GameScene::rebuildMapForRun() {
     if (!_map) {
         _map = std::make_shared<Map>();
     }
+    // Create the scene graph
+    // TODO: maybe just init once...?
+    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->setPosition(Vec2::ZERO);
+    addChild(_worldnode);
 
     auto n = _map->generate(_networkCtrl->getRound(), _mapSeed, _assets, _rooms, getSize(), _world, _networkCtrl->getNumPlayers());
     n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
@@ -1260,10 +1272,6 @@ void GameScene::drawDepositZone() {
     _batch->fill(zone);
 }
 
-void GameScene::initNetwork(std::shared_ptr<NetworkController> n) {
-    if (_networkCtrl != nullptr) return;
-    _networkCtrl = n;
-}
 
 void GameScene::initPhysics() {
     // initialize physics here, since this should be called post HANDSHAKE
@@ -1285,11 +1293,7 @@ void GameScene::initMap() {
     if (_networkCtrl->getRandSeed() == 0) return; // no randSeed
     if (_mapSeed == _networkCtrl->getRandSeed()) return; // already init
 
-    // Create the scene graph
-    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
-    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    _worldnode->setPosition(Vec2::ZERO);
-    addChild(_worldnode);
+    
 
     _mapSeed = _networkCtrl->getRandSeed();
     CULog("set map seed to : %d", _mapSeed);
@@ -1297,7 +1301,6 @@ void GameScene::initMap() {
     if (_mapSeed != 0) {
         rebuildMapForRun();
     }
-    spawnPlayers();
 }
 
 void GameScene::spawnPlayers() {

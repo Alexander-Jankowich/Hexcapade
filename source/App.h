@@ -30,6 +30,8 @@ protected:
     std::shared_ptr<cugl::graphics::SpriteBatch> _batch;
     /** The global asset manager */
     std::shared_ptr<cugl::AssetManager> _assets;
+    /** The network for this run of the app */
+    std::shared_ptr<NetworkController> _network;
     
     std::shared_ptr<std::vector<std::string>> _rooms;
 

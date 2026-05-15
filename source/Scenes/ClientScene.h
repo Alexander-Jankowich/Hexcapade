@@ -12,7 +12,6 @@
 class ClientScene : public cugl::scene2::Scene2 {
 private:
     std::shared_ptr<cugl::AssetManager> _assets;
-    std::shared_ptr<cugl::graphics::Font> _font;
     
     std::shared_ptr<NetworkController> _networkCtrl;
 
@@ -39,13 +38,13 @@ public:
     ClientScene() : cugl::scene2::Scene2() {}
     ~ClientScene() { dispose(); }
 
-    bool init(const std::shared_ptr<cugl::AssetManager>& assets);
+    bool init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<NetworkController>& network);
     void dispose() override;
     
 
     void update(float dt) override;
     void disconnect() { if (_networkCtrl) _networkCtrl->disconnect();}
-    void release() { _networkCtrl = nullptr; }
+    //void release() { _networkCtrl = nullptr; }
     void obtainNetwork(std::shared_ptr<NetworkController> n) { _networkCtrl = n; }
 
     NetworkController::Status getStatus() { return _networkCtrl->getStatus(); }

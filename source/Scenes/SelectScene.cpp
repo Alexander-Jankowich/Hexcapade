@@ -4,11 +4,12 @@ using namespace cugl::graphics;
 
 #define SCENE_HEIGHT 720
 
-bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
+bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<NetworkController>& network) {
     if (assets == nullptr) return false;
     if (!Scene2::initWithHint(Size(0, SCENE_HEIGHT))) return false;
 
     _assets = assets;
+    _networkCtrl = network;
     Size dimen = getSize();
 
     std::shared_ptr<scene2::SceneNode> scene = _assets->get<scene2::SceneNode>("char-select");
@@ -40,12 +41,6 @@ bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
 
     _startgame->addListener([this](const std::string& name, bool down) {
         if (!down) return;
-        if (_networkCtrl->isHost()) {
-            _networkCtrl->pushOutEvent(StartGameEvent::allocStartGameEvent());
-        }
-        else {
-            _status = SSStatus::HANDSHAKE;
-        }
         _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
         std::string charStr;
         switch (_selectedCharacter) {
@@ -64,6 +59,12 @@ bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
         }
         _networkCtrl->setPlayerCharacter(_networkCtrl->getPID(), charStr);
         _networkCtrl->pushOutEvent(PlayerNameEvent::allocPlayerNameEvent(_networkCtrl->getPID(), _playerName, charStr));
+        if (_networkCtrl->isHost()) {
+            _networkCtrl->pushOutEvent(StartGameEvent::allocStartGameEvent());
+        }
+        else {
+            _status = SSStatus::HANDSHAKE;
+        }
         _startPressed = true;
         _nameField->releaseFocus();
         });

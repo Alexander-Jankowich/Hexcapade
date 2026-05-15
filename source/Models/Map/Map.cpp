@@ -12,6 +12,7 @@ _origin(Vec2::ZERO),
 _playerSpawn(Vec2::ZERO),
 _config() {
     _config._mapSize = 70; // just in case
+    lw_node = scene2::SceneNode::alloc();
 }
 
 void Map::reset() {
@@ -48,7 +49,6 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
     
     _sceneSize = sceneSize;
     auto node = scene2::SceneNode::alloc();
-    lw_node = scene2::SceneNode::alloc();
     std::vector<MapDoor> doors;
     _rng.reset(seed);
 
@@ -208,8 +208,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
                     CULog("done walling off - S");
                     
                     std::vector<Vec2> north_points = {
-                        Vec2((xPos - 2) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 1) * TILE_SIZE / PHYSICS_SCALE),
-                        Vec2((xPos + 8) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 1) * TILE_SIZE / PHYSICS_SCALE)
+                        Vec2((xPos - 2) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos) * TILE_SIZE / PHYSICS_SCALE),
+                        Vec2((xPos + 8) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos) * TILE_SIZE / PHYSICS_SCALE)
                     };
                     _extruder.set(north_points,false);
                     _extruder.calculate(0.05f);
@@ -310,8 +310,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
                 to_skip = Door::Direction::WEST;
                 CULog("done adding halls - E");
                 std::vector<Vec2> north_points = {
-                    Vec2((xPos + 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos + std::get<1>(res) + 1) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos + 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos + std::get<1>(res) + 1) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(north_points,false);
                 _extruder.calculate(0.05f);
@@ -378,8 +378,8 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
                 to_skip = Door::Direction::EAST;
                 CULog("done adding halls - W");
                 std::vector<Vec2> north_points = {
-                    Vec2((xPos + 1) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos - std::get<1>(res) - 3) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1.2) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos + 1) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos - std::get<1>(res) - 3) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 1) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(north_points,false);
                 _extruder.calculate(0.05f);
