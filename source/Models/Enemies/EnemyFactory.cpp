@@ -133,8 +133,12 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         auto frozen = make_shared<SpellEntityNode>(_assets->get<graphics::Texture>("freeze_entity"), _spellConsts->get("freeze-entity"));
         node->addChildWithTag(frozen, FROZEN_ID);
         frozen->setPriority(3);
-        //frozen->setScale(node->bounds().size.width / frozen->bounds().size.width);
-        //CULog("%.2f", frozen->getScale());
+
+        if (obs->TYPE == EnemyType::OCTO) {
+            frozen->setPosition(frozen->getPositionX() + node->bounds().size.width / 2 - frozen->bounds().size.width / 2,
+                frozen->getPositionY() + node->bounds().size.height / 4);
+            frozen->setScale(node->bounds().size.width / frozen->bounds().size.width);
+        }
 
         animator->addNode(frozen);
 

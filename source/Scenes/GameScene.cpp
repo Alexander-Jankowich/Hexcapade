@@ -1638,7 +1638,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
         contact->SetEnabled(true);
 
-        if (player->getHealth() <= 0 || enemy->isDead() || player->getPID() != _player->getPID()) {
+        if (player->getHealth() <= 0 || enemy->isDead() || player->getPID() != _player->getPID() || enemy->isFroze()) {
             return;
         }
 
