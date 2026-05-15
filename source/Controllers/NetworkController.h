@@ -102,6 +102,7 @@ public:
         if (_randSeed==0)
             _randSeed = _rng->getUint32();
         if (_status==Status::CONNECTED) return true;
+        CULog("connecting host");
         return connectAsHost();
     }
 

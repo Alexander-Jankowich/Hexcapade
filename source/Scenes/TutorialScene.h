@@ -179,15 +179,13 @@ public:
      *
      * @return true if the controller is initialized properly, false otherwise.
      */
-    bool init(const shared_ptr<AssetManager>& assets);
+    bool init(const shared_ptr<AssetManager>& assets, const std::shared_ptr<NetworkController>& network);
     
     shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
     void release() {_networkCtrl = nullptr;}
     
     bool getEnded() { return _tutorialEnded; }
     
-    void setEnded(bool b) { _tutorialEnded = b; }
-
 
     /**
      * Returns true if the player is host.

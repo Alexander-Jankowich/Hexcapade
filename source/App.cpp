@@ -393,7 +393,7 @@ void GeometryApp::updateLoadingScene(float dt) {
     _endScene.init(_assets, _network);
     _endScene.setSpriteBatch(_batch);
     
-    _tutorialScene.init(_assets);
+    _tutorialScene.init(_assets, _network);
     _tutorialScene.setSpriteBatch(_batch);
 
     _loaded = true;
@@ -420,6 +420,8 @@ void GeometryApp::updateMenuScene(float dt) {
         break;
     case MenuScene::Choice::TUTORIAL:
         _mainmenu.setActive(false);
+        _network->connectHost();
+        
         _tutorialScene.setActive(true);
         _scene=State::TUTORIAL;
         break;
@@ -583,6 +585,8 @@ void GeometryApp::updateTutorialScene(float dt) {
     // check for if it was exited and switch state back to correct thing
     if(_tutorialScene.getEnded()){
         _tutorialScene.reset();
+        _network->disconnect();
+        _network->resetStatus();
         _tutorialScene.setActive(false);
         _mainmenu.setActive(true);
         _scene = State::MENU;

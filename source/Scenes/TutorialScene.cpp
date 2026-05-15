@@ -42,7 +42,7 @@ void TutorialScene::beginContact(b2Contact* contact) {}
  *
  * @return true if the controller is initialized properly, false otherwise.
  */
-bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
+bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<NetworkController>& network)
 {
     // Initialize the scene to a locked width
     if (assets == nullptr || !cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
@@ -127,8 +127,7 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
 
     // init map and network
     _map = std::make_shared<StaticMap>();
-    _networkCtrl = std::make_shared<NetworkController>();
-    _networkCtrl->init(_assets);
+    _networkCtrl = network;
     
     _itemInfo = ItemTypeClass(_assets);
 
@@ -174,9 +173,6 @@ void TutorialScene::reset() {
     _currOverlappedItem = -1;
     _tutorialTimer = 0;
     
-    // disconnect network so its clean for game
-    _networkCtrl->disconnect();
-    _networkCtrl->resetStatus();
     Scene::reset();
 }
 /**
@@ -1030,8 +1026,8 @@ void TutorialScene::setActive(bool value)
         Scene2::setActive(value);
         if (value)
         {
-            _networkCtrl->connectHost();
             _networkCtrl->startGame();
+            _networkCtrl->updateNet();
             
             _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
             _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
