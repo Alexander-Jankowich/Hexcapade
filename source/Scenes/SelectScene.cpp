@@ -81,34 +81,31 @@ bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const 
         _playerName = clamped;
     });
 
-    // todo audio: character-specific select sounds can go here later
-    // character_cat / character_duck / character_fox / character_bunny
     _catBtn->addListener([this](const std::string& name, bool down) {
         if (down) {
-            // character buttons use the shared click sound for now
-            auto sound = _assets->get<Sound>("general_click");
-            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
+            auto sound = _assets->get<Sound>("character_cat");
+            AudioEngine::get()->play("character_cat", sound, false, 1.0f, true);
             onCharacterSelected(CharacterType::CAT);
         }
         });
     _foxBtn->addListener([this](const std::string& name, bool down) {
         if (down) {
-            auto sound = _assets->get<Sound>("general_click");
-            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
+            auto sound = _assets->get<Sound>("character_fox");
+            AudioEngine::get()->play("character_fox", sound, false, 1.0f, true);
             onCharacterSelected(CharacterType::FOX);
         }
         });
     _duckBtn->addListener([this](const std::string& name, bool down) {
         if (down) {
-            auto sound = _assets->get<Sound>("general_click");
-            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
+            auto sound = _assets->get<Sound>("character_duck");
+            AudioEngine::get()->play("character_duck", sound, false, 1.0f, true);
             onCharacterSelected(CharacterType::DUCK);
         }
         });
     _bunnyBtn->addListener([this](const std::string& name, bool down) {
         if (down) {
-            auto sound = _assets->get<Sound>("general_click");
-            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
+            auto sound = _assets->get<Sound>("character_bunny");
+            AudioEngine::get()->play("character_bunny", sound, false, 1.0f, true);
             onCharacterSelected(CharacterType::BUNNY);
         }
         });

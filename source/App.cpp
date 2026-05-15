@@ -116,6 +116,8 @@ void GeometryApp::onStartup() {
     _rooms->push_back("room6");
     _rooms->push_back("room7");
 
+    // sound assets live in one asset directory so tuning stays together
+    _assets->loadDirectoryAsync("json/sound.json", nullptr);
 
     _loading.start();
 
@@ -173,7 +175,22 @@ void GeometryApp::onShutdown() {
  * the background.
  */
 void GeometryApp::onSuspend() {
-    AudioEngine::get()->pause();
+    _audioInterrupted = true;
+
+    auto engine = AudioEngine::get();
+    if (engine == nullptr) {
+        restoreAudioAfterFocusChange();
+        return;
+    }
+    // discard stale sfx so they do not burst after app focus changes
+    engine->clearEffects(0.05f);
+    auto musicQueue = engine->getMusicQueue();
+    if (_pauseMusicOnSuspend && musicQueue != nullptr) {
+        // only pause music for strict background behavior
+        musicQueue->pause(0.10f);
+    }
+    // do not keep sfx blocked here because notification shade may not call onResume
+    restoreAudioAfterFocusChange();
 }
 
 /**
@@ -187,13 +204,21 @@ void GeometryApp::onSuspend() {
  * paused before app suspension.
  */
 void GeometryApp::onResume() {
-    AudioEngine::get()->resume();
-    auto musicQueue = AudioEngine::get()->getMusicQueue();
-    musicQueue->resume();
-    if (musicQueue->getState() == AudioEngine::State::INACTIVE && !_currentMusicKey.empty()) {
-        // resume the current music after app focus returns
-        playMusic(_currentMusicKey, 1.0f);
+    auto engine = AudioEngine::get();
+    if (engine != nullptr) {
+        auto musicQueue = engine->getMusicQueue();
+        if (musicQueue != nullptr) {
+            // resume or restore music only through the music queue
+            if (_pauseMusicOnSuspend) {
+                musicQueue->resume();
+            }
+            if (!_currentMusicKey.empty() && musicQueue->getState() == AudioEngine::State::INACTIVE) {
+                playMusic(_currentMusicKey, _currentMusicVolume, 0.0f, true);
+            }
+        }
     }
+    // focus is back, so gameplay sfx should be allowed again
+    restoreAudioAfterFocusChange();
 }
 
 /**
@@ -209,6 +234,10 @@ void GeometryApp::onResume() {
  * @param dt    The amount of time (in seconds) since the last frame
  */
 void GeometryApp::update(float dt) {
+    if (_audioInterrupted) {
+        // if the app is updating again, gameplay sfx should be allowed
+        restoreAudioAfterFocusChange();
+    }
     // NOTE: In deterministic mode (after loading), this method is NOT called.
     // All scene updates are handled in preUpdate() instead.
     if (_scene == State::LOAD) updateLoadingScene(dt);
@@ -235,6 +264,10 @@ void GeometryApp::update(float dt) {
  * @param dt    The amount of time (in seconds) since the last frame
  */
 void GeometryApp::preUpdate(float dt) {
+    if (_audioInterrupted) {
+        // deterministic gameplay uses preUpdate, so clear any stuck sfx mute here too
+        restoreAudioAfterFocusChange();
+    }
     // Handle non-game scenes here (update() is not called in deterministic mode)
     switch (_scene) {
     case State::LOAD:   updateLoadingScene(dt); return;
@@ -254,7 +287,6 @@ void GeometryApp::preUpdate(float dt) {
 
     if (_gameplay.gameEnded()) {
         bool won = _gameplay.hasWon();
-        _endScene.setNetwork(_gameplay.getNetwork());
         CULog("app: displaying end game scene");
         _endScene.show(won);
         _gameplay.reset();
@@ -262,7 +294,7 @@ void GeometryApp::preUpdate(float dt) {
         _endScene.setActive(true);
         _gameplay.setActive(false);
         // keep game music playing into the end scene and layer the result sound on top
-        playSound(won ? "effect_win" : "effect_lose", 1.0f);
+        restartSound(won ? "effect_win" : "effect_lose", 1.0f);
         _scene = State::END;
 
     }
@@ -312,6 +344,7 @@ void GeometryApp::fixedUpdate(Uint64 step) {
     if (_gameplay.gameEnded()) {
         CULog("app: displaying end game scene");
         _endScene.show(_gameplay.hasWon());
+        restartSound(_gameplay.hasWon() ? "effect_win" : "effect_lose", 1.0f);
         _gameplay.reset();
         _endScene.setActive(true);
         _gameplay.setActive(false);
@@ -404,6 +437,7 @@ void GeometryApp::updateLoadingScene(float dt) {
     }
 
     // Loading finished — initialize all scenes once
+    restartSound("general_click", 1.0f);
     _loading.dispose();
     _network->init(_assets);
 
@@ -517,7 +551,7 @@ void GeometryApp::updateSelectScene(float dt) {
             //_selectScene.release();
             _gameplay.setActive(true); // alr has connection from host/client scene
             // entering gameplay replaces menu music with the looping game track
-            playMusic("music_ingame", 1.0f);
+            playMusic("music_ingame", 1.0f, 0.50f);
             _scene = State::GAME;
             break;
     }
@@ -618,27 +652,65 @@ void GeometryApp::updateEndScene(float dt) {
     return;
 }
 
-void GeometryApp::playSound(const std::string& key, float volumeMultiplier) {
-    // force true makes repeated clicks restart right away
-    auto sound = _assets->get<Sound>(key);
-    AudioEngine::get()->play(key, sound, false, volumeMultiplier, true);
+void GeometryApp::restoreAudioAfterFocusChange() {
+    _audioInterrupted = false;
+
+    auto engine = AudioEngine::get();
+    if (engine == nullptr || _assets == nullptr) return;
+    auto musicQueue = engine->getMusicQueue();
+    if (musicQueue != nullptr && !_currentMusicKey.empty() &&
+        musicQueue->getState() == AudioEngine::State::INACTIVE) {
+        // keyboard or notification focus can drop the queue, so restore the current track
+        playMusic(_currentMusicKey, _currentMusicVolume, 0.0f, true);
+    }
 }
 
-void GeometryApp::playMusic(const std::string& key, float volumeMultiplier) {
-    CULog("audio: play music %s", key.c_str());
-    _currentMusicKey = key;
+bool GeometryApp::playSoundWithKey(const std::string& playbackKey, const std::string& assetKey,
+                                   float volumeMultiplier, bool force) {
+    if (_audioInterrupted) {
+        return false;
+    }
+    auto engine = AudioEngine::get();
+    if (engine == nullptr || _assets == nullptr) {
+        return false;
+    }
+    if (!force && engine->isActive(playbackKey)) {
+        return false;
+    }
+    auto sound = _assets->get<Sound>(assetKey);
+    return sound && engine->play(playbackKey, sound, false, volumeMultiplier, force);
+}
+
+bool GeometryApp::restartSound(const std::string& key, float volumeMultiplier) {
+    // force restart is for click-like sounds where the newest tap should be heard
+    return playSoundWithKey(key, key, volumeMultiplier, true);
+}
+
+void GeometryApp::playMusic(const std::string& key, float volumeMultiplier, float fade,
+                            bool restartIfSame) {
+    // music stays on the queue so scene changes can fade or adjust volume cleanly
+    auto engine = AudioEngine::get();
+    if (engine == nullptr || _assets == nullptr) {
+        return;
+    }
+    auto musicQueue = engine->getMusicQueue();
+    if (musicQueue == nullptr) {
+        return;
+    }
+    if (!restartIfSame && _currentMusicKey == key &&
+        musicQueue->getState() == AudioEngine::State::PLAYING) {
+        // same track stays running, only the scene volume changes
+        musicQueue->setVolume(volumeMultiplier);
+        _currentMusicVolume = volumeMultiplier;
+        return;
+    }
     auto music = _assets->get<Sound>(key);
-    auto musicQueue = AudioEngine::get()->getMusicQueue();
+    if (music == nullptr) return;
     // the music queue owns the one looping track so scene changes cannot overlap music
-    musicQueue->clear(0);
-    musicQueue->play(music, true, volumeMultiplier, 0);
-}
-
-void GeometryApp::stopMusic() {
-    CULog("audio: stop music");
-    // clear the queue when a scene needs music silence
-    AudioEngine::get()->getMusicQueue()->clear(0);
-    _currentMusicKey.clear();
+    musicQueue->clear(fade);
+    musicQueue->play(music, true, volumeMultiplier, fade);
+    _currentMusicKey = key;
+    _currentMusicVolume = volumeMultiplier;
 }
 
 void GeometryApp::updateTutorialScene(float dt) {

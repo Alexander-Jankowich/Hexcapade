@@ -1,0 +1,291 @@
+{
+  "sounds": {
+    "general_pickup": {
+      "type": "sample",
+      "file": "sounds/general_pickup.wav",
+      "volume": 0.03
+    },
+    "general_alter_deposit": {
+      "type": "sample",
+      "file": "sounds/general_alter_deposit.wav",
+      "volume": 0.25
+    },
+    "general_drop": {
+      "type": "sample",
+      "file": "sounds/general_drop.wav",
+      "volume": 0.02
+    },
+    "general_click": {
+      "type": "sample",
+      "file": "sounds/effect-click.wav",
+      "volume": 0.07
+    },
+    "general_item_card": {
+      "type": "sample",
+      "file": "sounds/general_item_card.wav",
+      "volume": 0.15
+    },
+    "general_item_card_close": {
+      "type": "sample",
+      "file": "sounds/general_item_card.wav",
+      "volume": 0.10
+    },
+    "walking_cat": {
+      "type": "sample",
+      "file": "sounds/walking_cat.wav",
+      "volume": 0.11
+    },
+    "walking_fox": {
+      "type": "sample",
+      "file": "sounds/walking_fox.wav",
+      "volume": 0.11
+    },
+    "walking_bunny": {
+      "type": "sample",
+      "file": "sounds/walking_bunny.wav",
+      "volume": 0.11
+    },
+    "walking_duck": {
+      "type": "sample",
+      "file": "sounds/walking_duck.wav",
+      "volume": 0.11
+    },
+    "walking_bat": {
+      "type": "sample",
+      "file": "sounds/walking_bat.wav",
+      "volume": 0.02
+    },
+    "walking_ghost": {
+      "type": "sample",
+      "file": "sounds/walking_ghost.wav",
+      "volume": 0.07
+    },
+    "walking_octopus": {
+      "type": "sample",
+      "file": "sounds/walking_octopus.wav",
+      "volume": 0.05
+    },
+    "attack_bat": {
+      "type": "sample",
+      "file": "sounds/attack_bat.wav",
+      "volume": 0.06
+    },
+    "attack_ghost": {
+      "type": "sample",
+      "file": "sounds/attack_ghost.wav",
+      "volume": 0.06
+    },
+    "attack_octopus": {
+      "type": "sample",
+      "file": "sounds/attack_octopus.wav",
+      "volume": 0.07
+    },
+    "attack_statue": {
+      "type": "sample",
+      "file": "sounds/attack-statue.wav",
+      "volume": 0.06
+    },
+    "damage_cat": {
+      "type": "sample",
+      "file": "sounds/damage_cat.wav",
+      "volume": 0.30
+    },
+    "damage_fox": {
+      "type": "sample",
+      "file": "sounds/damage_fox.wav",
+      "volume": 0.30
+    },
+    "damage_bunny": {
+      "type": "sample",
+      "file": "sounds/damage_bunny.wav",
+      "volume": 0.30
+    },
+    "damage_duck": {
+      "type": "sample",
+      "file": "sounds/damage_duck.wav",
+      "volume": 0.30
+    },
+    "damage_bat": {
+      "type": "sample",
+      "file": "sounds/damage_bat.wav",
+      "volume": 0.15
+    },
+    "damage_ghost": {
+      "type": "sample",
+      "file": "sounds/damage_ghost.wav",
+      "volume": 0.07
+    },
+    "damage_octopus": {
+      "type": "sample",
+      "file": "sounds/damage_octopus.wav",
+      "volume": 0.07
+    },
+    "damage_statue": {
+      "type": "sample",
+      "file": "sounds/damage_statue.wav",
+      "volume": 0.30
+    },
+    "spell_dark": {
+      "type": "sample",
+      "file": "sounds/spell_dark.wav",
+      "volume": 0.06
+    },
+    "spell_earth": {
+      "type": "sample",
+      "file": "sounds/spell_earth.wav",
+      "volume": 0.04
+    },
+    "spell_fire": {
+      "type": "sample",
+      "file": "sounds/spell-fire.wav",
+      "volume": 0.05
+    },
+    "spell_ice": {
+      "type": "sample",
+      "file": "sounds/spell-ice.wav",
+      "volume": 0.03
+    },
+    "spell_heal": {
+      "type": "sample",
+      "file": "sounds/spell_heal.wav",
+      "volume": 0.10
+    },
+    "spell_water": {
+      "type": "sample",
+      "file": "sounds/spell-water.wav",
+      "volume": 0.04
+    },
+    "spell_shield": {
+      "type": "sample",
+      "file": "sounds/spell_shield.wav",
+      "volume": 0.07
+    },
+    "spell_buff": {
+      "type": "sample",
+      "file": "sounds/spell_buff.wav",
+      "volume": 0.07
+    },
+    "spell_stone": {
+      "type": "sample",
+      "file": "sounds/spell-stone.wav",
+      "volume": 0.07
+    },
+    "spell_big_fire": {
+      "type": "sample",
+      "file": "sounds/spell-big-fire.wav",
+      "volume": 0.08
+    },
+    "spell_big_ice": {
+      "type": "sample",
+      "file": "sounds/spell_big_ice.wav",
+      "volume": 0.08
+    },
+    "spell_steam": {
+      "type": "sample",
+      "file": "sounds/spell_steam.wav",
+      "volume": 0.08
+    },
+    "spell_mud_water": {
+      "type": "sample",
+      "file": "sounds/spell_mud_water.wav",
+      "volume": 0.08
+    },
+    "hit_freeze": {
+      "type": "sample",
+      "file": "sounds/spell-ice.wav",
+      "volume": 0.05
+    },
+    "hit_unfreeze": {
+      "type": "sample",
+      "file": "sounds/hit_unfreeze.wav",
+      "volume": 0.04
+    },
+    "hit_buff": {
+      "type": "sample",
+      "file": "sounds/hit_buff.wav",
+      "volume": 0.08
+    },
+    "hit_shield": {
+      "type": "sample",
+      "file": "sounds/hit_shield.wav",
+      "volume": 0.08
+    },
+    "hit_shatter_shield": {
+      "type": "sample",
+      "file": "sounds/hit_shatter_shield.wav",
+      "volume": 0.09
+    },
+    "character_cat": {
+      "type": "sample",
+      "file": "sounds/character_cat.wav",
+      "volume": 1
+    },
+    "character_duck": {
+      "type": "sample",
+      "file": "sounds/character_duck.wav",
+      "volume": 1
+    },
+    "character_fox": {
+      "type": "sample",
+      "file": "sounds/character_fox.wav",
+      "volume": 0.25
+    },
+    "character_bunny": {
+      "type": "sample",
+      "file": "sounds/character_bunny.wav",
+      "volume": 1
+    },
+    "artifact_exploding_potion": {
+      "type": "sample",
+      "file": "sounds/artifact_exploding_potion.wav",
+      "volume": 0.15
+    },
+    "death_cat": {
+      "type": "sample",
+      "file": "sounds/death_cat.wav",
+      "volume": 0.80
+    },
+    "death_fox": {
+      "type": "sample",
+      "file": "sounds/death_fox.wav",
+      "volume": 0.80
+    },
+    "death_bunny": {
+      "type": "sample",
+      "file": "sounds/death_bunny.wav",
+      "volume": 0.80
+    },
+    "death_duck": {
+      "type": "sample",
+      "file": "sounds/death_duck.wav",
+      "volume": 0.80
+    },
+    "effect_error": {
+      "type": "sample",
+      "file": "sounds/effect-error.wav",
+      "volume": 0.07
+    },
+    "effect_win": {
+      "type": "sample",
+      "file": "sounds/effect-win.wav",
+      "volume": 0.40
+    },
+    "effect_lose": {
+      "type": "sample",
+      "file": "sounds/effect-lose.wav",
+      "volume": 0.20
+    },
+    "music_menu": {
+      "type": "sample",
+      "file": "sounds/music-menu.wav",
+      "stream": true,
+      "volume": 0.1
+    },
+    "music_ingame": {
+      "type": "sample",
+      "file": "sounds/music-ingame.wav",
+      "stream": true,
+      "volume": 0.2
+    }
+  }
+}

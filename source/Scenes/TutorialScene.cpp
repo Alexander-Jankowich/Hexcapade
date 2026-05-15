@@ -10,9 +10,16 @@
 #include "TutorialScene.h"
 
 using namespace cugl;
+using namespace cugl::audio;
 using namespace std;
 using namespace cugl::graphics;
 
+namespace {
+    void restartTutorialSound(const std::shared_ptr<AssetManager>& assets, const std::string& key) {
+        auto sound = assets->get<Sound>(key);
+        AudioEngine::get()->play(key, sound, false, 1.0f, true);
+    }
+}
 
 #pragma mark -
 #pragma mark Level Layout
@@ -195,6 +202,7 @@ void TutorialScene::showInventoryCard(size_t slotIndex) {
         offset.y + this->getSize().height * 0.5f / zoom));
     _inventoryCardNode->setPriority(1.0f);
     addChild(_inventoryCardNode);
+    restartTutorialSound(_assets, "general_item_card");
 }
 
 void TutorialScene::hideInventoryCard() {
@@ -216,6 +224,7 @@ void TutorialScene::showTutorial(std::shared_ptr<graphics::Texture> tex) {
         offset.y + this->getSize().height * 0.5f / zoom));
     _tutorialNode->setPriority(1.0f);
     addChild(_tutorialNode);
+    restartTutorialSound(_assets, "general_item_card");
 }
 
 void TutorialScene::hideTutorial() {
@@ -414,11 +423,13 @@ void TutorialScene::preUpdate(float dt)
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
             //CULog("click detected, card closed");
+            restartTutorialSound(_assets, "general_item_card_close");
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
         }
     }else if(_tutorialNode && (_tutorialTimer <= 0)){
         if (_input.cardDismissTap()) {
+            restartTutorialSound(_assets, "general_item_card_close");
             hideTutorial();
         }
     }

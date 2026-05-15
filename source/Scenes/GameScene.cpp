@@ -212,6 +212,7 @@ void GameScene::reset()
     _currOverlappedItem = -1;
     _timer = 0;
     _glowItemId = -1;
+    _playerWalkSoundCooldown = 0.0f;
     Scene::reset();
 }
 
@@ -374,71 +375,162 @@ Vec2 GameScene::getHUDOffset() const {
     return _cameraBottomLeft;
 }
 
-// local audio helpers
-// these are not network synced each client plays sounds locally
-void GameScene::playSound(const std::string& key, float volumeMultiplier) {
-    // normal gameplay sounds can play once with their asset key
-    auto sound = _assets->get<Sound>(key);
-    AudioEngine::get()->play(key, sound, false, volumeMultiplier);
+// gameplay audio stays here because it depends on local player/enemy state
+// sound.json owns the base mix; code multipliers are for context changes
+bool GameScene::playSoundWithKey(const std::string& playbackKey, const std::string& assetKey,
+                                 float volumeMultiplier, bool force) {
+    auto engine = AudioEngine::get();
+    if (engine == nullptr || _assets == nullptr) {
+        return false;
+    }
+    if (!force && engine->isActive(playbackKey)) {
+        // stable-key sounds like walking should not stack over themselves
+        return false;
+    }
+    auto sound = _assets->get<Sound>(assetKey);
+    return sound && engine->play(playbackKey, sound, false, volumeMultiplier, force);
 }
 
-void GameScene::restartSound(const std::string& key, float volumeMultiplier) {
-    // click and error sounds should restart right away when tapped again
-    auto sound = _assets->get<Sound>(key);
-    AudioEngine::get()->play(key, sound, false, volumeMultiplier, true);
+bool GameScene::playUniqueSound(const std::string& key, float volumeMultiplier) {
+    // unique keys let overlapping casts, hits, and damage sounds all play
+    std::string playbackKey = key + "#game#" + std::to_string(_soundCounter++);
+    return playSoundWithKey(playbackKey, key, volumeMultiplier, false);
 }
 
-void GameScene::playSpellCast(SpellType type) {
-    // map spell types to first pass cast sounds
+bool GameScene::restartSound(const std::string& key, float volumeMultiplier) {
+    // restart sounds are button-like feedback that should replace the old copy
+    return playSoundWithKey(key, key, volumeMultiplier, true);
+}
+
+static std::string playerCharacterSoundKey(const std::string& character, const std::string& prefix) {
+    // builds character-specific keys like walking_cat, damage_duck, death_fox
+    if (character == "player_cat") return prefix + "cat";
+    if (character == "player_duck") return prefix + "duck";
+    if (character == "player_bunny") return prefix + "bunny";
+    return prefix + "fox";
+}
+
+static std::string enemyDamageSoundKey(EnemyType type) {
+    // enemy damage sounds are chosen from the enemy type that was hit
+    switch (type) {
+    case EnemyType::BAT:
+    case EnemyType::SLOWBAT:
+        return "damage_bat";
+    case EnemyType::GHOST:
+        return "damage_ghost";
+    case EnemyType::OCTO:
+        return "damage_octopus";
+    }
+    return "damage_statue";
+}
+
+static std::string enemyWalkSoundKey(EnemyType type) {
+    // enemy walking uses low repeated movement sounds, not attack sounds
+    switch (type) {
+    case EnemyType::BAT:
+    case EnemyType::SLOWBAT:
+        return "walking_bat";
+    case EnemyType::GHOST:
+        return "walking_ghost";
+    case EnemyType::OCTO:
+        return "walking_octopus";
+    }
+    return "walking_bat";
+}
+
+static std::string spellCastSoundKey(SpellType type) {
     switch (type) {
     case SpellType::FIREBALL:
-        playSound("spell_fire", 0.75f);
-        break;
+        return "spell_fire";
     case SpellType::FREEZE:
-        playSound("spell_ice", 0.75f);
-        break;
+        return "spell_ice";
+    case SpellType::HEAL:
+        return "spell_heal";
+    case SpellType::DEATH:
+        return "spell_dark";
     case SpellType::WATER:
-        playSound("spell_water", 0.75f);
-        break;
+        return "spell_water";
     case SpellType::EARTH:
-        playSound("spell_earth", 0.75f);
-        break;
+        return "spell_earth";
+    case SpellType::BUFF:
+        return "spell_buff";
+    case SpellType::SHIELD:
+        return "spell_shield";
+    case SpellType::COMBO_FREEZE:
+        return "spell_big_ice";
     case SpellType::COMBO_EFREEZE:
-        playSound("spell_stone", 0.80f);
-        break;
+        return "spell_stone";
     case SpellType::COMBO_FIREBALL:
-        playSound("spell_big_fire", 0.80f);
-        break;
+        return "spell_big_fire";
+    case SpellType::STEAM:
+        return "spell_steam";
+    case SpellType::MUD_WATER:
+        return "spell_mud_water";
     default:
-        break;
+        return "";
+    }
+}
+
+static std::string enemyAttackSoundKey(EnemyType type) {
+    // this maps enemy attacks to the sound key in sound.json
+    switch (type) {
+    case EnemyType::BAT:
+    case EnemyType::SLOWBAT:
+        return "attack_bat";
+    case EnemyType::GHOST:
+        return "attack_ghost";
+    case EnemyType::OCTO:
+        return "attack_octopus";
+    }
+    return "";
+}
+
+void GameScene::updateWalkingSounds(float dt) {
+    // walking is movement-gated for right now, working on frame/animation sync
+    if (_playerWalkSoundCooldown > 0.0f) {
+        _playerWalkSoundCooldown -= dt;
+    }
+
+    if (_player->getHealth() > 0 && !_player->isHurt() &&
+        !_player->isCasting() && _player->getVelocity().length() > 0.05f &&
+        _playerWalkSoundCooldown <= 0.0f) {
+        std::string key = playerCharacterSoundKey(_networkCtrl->getPlayerCharacter(_player->getPID()), "walking_");
+        playSoundWithKey(key, key, 1.0f, false);
+        // player footsteps wait before firing again so movement does not spam audio
+        _playerWalkSoundCooldown = 0.36f;
+    }
+
+    for (auto enemy : _enemyFact->current) {
+        if (!enemy->isDead() && !enemy->isFroze() && !enemy->isHurt() && !enemy->isAttacking() &&
+            enemy->getLinearVelocity().length() > 0.05f &&
+            _player->getPosition().distance(enemy->getPosition()) <= 12.0f) {
+            std::string key = enemyWalkSoundKey(enemy->TYPE);
+            // one stable key per enemy type keeps repeated enemy walking from stacking too loudly
+            playSoundWithKey(key, key, 1.0f, false);
+        }
+    }
+}
+
+void GameScene::playSpellCastSound(SpellType type) {
+    // spell casts use unique playback so back-to-back gestures overlap
+    std::string key = spellCastSoundKey(type);
+    if (!key.empty()) {
+        playUniqueSound(key, 1.0f);
     }
 }
 
 void GameScene::playEnemyAttackSound(EnemyType type) {
-    // placeholder mapping for enemy attack starts
-    // later replace each key with its final enemy attack sound
-    switch (type) {
-    case EnemyType::BAT:
-    case EnemyType::SLOWBAT:
-        // using attack-statue file for now while keeping the bat key replaceable
-        playSound("attack_bat", 0.5f);
-        break;
-    case EnemyType::GHOST:
-        // using attack-statue file for now while keeping the ghost key replaceable
-        playSound("attack_ghost", 0.5f);
-        break;
-    case EnemyType::OCTO:
-        // using attack-statue file for now while keeping the octopus key replaceable
-        playSound("attack_octopus", 0.5f);
-        break;
+    // enemy attacks use unique playback so nearby hits can overlap
+    std::string key = enemyAttackSoundKey(type);
+    if (!key.empty()) {
+        playUniqueSound(key, 1.0f);
     }
-    // once a statue enemy type exists?
 }
 
 void GameScene::playItemDepositSound() {
-    // general_deposit is only for successful deposit zone drop off
+    // restart deposit because players can spam this like a button
     CULog("sound play: deposit");
-    restartSound("general_deposit", 1.0f);
+    restartSound("general_alter_deposit", 1.0f);
 }
 
 #pragma mark -
@@ -557,6 +649,7 @@ void GameScene::preUpdate(float dt)
 
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
+            removeItemNode(item);
             if (!item->isRemoved()) {
                 _networkCtrl->getPhysController()->removeSharedObstacle(item);
             }
@@ -606,6 +699,10 @@ void GameScene::preUpdate(float dt)
         _player->_bombExpired = false;
         int bombIdx = _player->_bombExpiredIndex;
         _player->_bombExpiredIndex = -1;
+        playUniqueSound("artifact_exploding_potion", 1.0f);
+        // bomb damage already happened in the timer, so only play feedback here
+        playUniqueSound(playerCharacterSoundKey(_networkCtrl->getPlayerCharacter(_player->getPID()),
+            _player->getHealth() <= 0 ? "death_" : "damage_"), 1.0f);
         if (_networkCtrl->isHost()) {
             _player->depositItem((size_t)bombIdx);
         }
@@ -633,6 +730,7 @@ void GameScene::preUpdate(float dt)
         _player->setVelocity(velocity);
         //_player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     }
+    updateWalkingSounds(dt);
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
 #pragma mark Inventory Card, Tutorial Card, and Camera Logic
@@ -669,17 +767,17 @@ void GameScene::preUpdate(float dt)
 
             if (tutorialBounds.contains(tapPos) && _tutorialPage == 1 && tapPos.x >= pageMidX) {
                 // right side of tutorial page clicked go to tutorial page 2
-                restartSound("general_click", 0.75f);
+                restartSound("general_item_card", 1.0f);
                 showTutorialPage(2);
             }
             else if (tutorialBounds.contains(tapPos) && _tutorialPage == 2 && tapPos.x < pageMidX) {
                 // left side of tutorial page clicked go back to tutorial page 1
-                restartSound("general_click", 0.75f);
+                restartSound("general_item_card", 1.0f);
                 showTutorialPage(1);
             }
             else {
                 // tutorial tap was not a page turn so close it
-                restartSound("general_click", 0.50f);
+                restartSound("general_item_card_close", 1.0f);
                 hideTutorial();
             }
             _input.resolvedInventoryRelease();
@@ -688,7 +786,7 @@ void GameScene::preUpdate(float dt)
         }
         else if (getHelpButtonBounds().contains(tapPos)) {
             // help button clicked open tutorial page 1
-            restartSound("general_click", 0.75f);
+            restartSound("general_item_card", 1.0f);
             showTutorialPage(1);
             _input.resolvedInventoryRelease();
             _input.resolvedCardDismissTap();
@@ -699,7 +797,7 @@ void GameScene::preUpdate(float dt)
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
             //CULog("click detected, card closed");
-            restartSound("general_click", 0.50f);
+            restartSound("general_item_card_close", 1.0f);
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
         }
@@ -749,7 +847,7 @@ void GameScene::preUpdate(float dt)
         Timestamp now;
         if (Timestamp::ellapsedMillis(_lastInventoryTapTime, now) > 200) {
             // wait past the double tap window before treating this as a card open
-            restartSound("general_click", 0.75f);
+            restartSound("general_item_card", 1.0f);
             showInventoryCard((size_t)_pendingInventoryTapIndex);
             _pendingInventoryTapIndex = -1;
         }
@@ -784,8 +882,8 @@ void GameScene::preUpdate(float dt)
                     auto params = _itemFact->serializeParams(dropPos, carried.value, carried.itemType);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                    // dropping from inventory is not a deposit zone drop off
-                    // todo audio: general_drop can go here once drop behavior gets its own sound
+                    // drop feedback is separate from altar deposit
+                    restartSound("general_drop", 1.0f);
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
                 }
             }
@@ -884,7 +982,7 @@ void GameScene::preUpdate(float dt)
 
             //CULog("Casting spell type: %d", t);
             // local player cast only enemy projectiles do not use player spell sfx
-            playSpellCast(t);
+            playSpellCastSound(t);
             switch (t) {
             case SpellType::DEATH:
                 for (int i = 0; i < 16; i++) {
@@ -953,6 +1051,8 @@ void GameScene::preUpdate(float dt)
         CULog("trying to resolve pickup");
         auto item = _itemFact->getItem(_glowItemId);
         if (_player && _player->canAddItem() && item && !item->isRemoved()) {
+            // local pickup feedback; host still validates the pickup
+            restartSound("general_pickup", 1.0f);
             _networkCtrl->pushOutEvent(
                 PickupEvent::allocPickupEvent(_player->getPID(), _glowItemId)
             );
@@ -1476,8 +1576,11 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
                 if (e->isAttacking() && !e_node->isAttacking()) {
-                    // play when the attack animation starts not when contact happens
-                    playEnemyAttackSound(e->TYPE);
+                    // enemy attack audio uses the same animation callback timing as the hit/projectile
+                    _animations->addNextListener(e_node, e->getAttackTiming(),
+                        [=, this](string key, float time, float actual) {
+                            playEnemyAttackSound(e->TYPE);
+                        });
                 }
                 _enemyFact->linkFunc(e, e_node, _animations);
                 });
@@ -1632,6 +1735,29 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         wall = w;
     };
 
+    auto playPlayerDamageSound = [this](PlayerObstacle* p) {
+        playUniqueSound(playerCharacterSoundKey(_networkCtrl->getPlayerCharacter(p->getPID()),
+            p->getHealth() <= 0 ? "death_" : "damage_"), 1.0f);
+        };
+    auto damagePlayer = [this, &playPlayerDamageSound](PlayerObstacle* p, float damage) {
+        float oldHealth = p->getHealth();
+        bool hadShield = p->hasShield();
+        p->damage(damage);
+        if (hadShield) {
+            playUniqueSound(p->hasShield() && p->getShieldCount() > 0 ? "hit_shield" : "hit_shatter_shield", 1.0f);
+        }
+        else if (p->getHealth() < oldHealth) {
+            playPlayerDamageSound(p);
+        }
+        };
+    auto damageEnemy = [this](EnemyObstacle* e, float damage) {
+        int oldHealth = e->getHealth();
+        e->setHealth(e->getHealth() - damage);
+        if (e->getHealth() < oldHealth) {
+            playUniqueSound(enemyDamageSoundKey(e->TYPE), 1.0f);
+        }
+        };
+
     // Checking for collisions
     if (spell && spell2) {
         //CULog("spell and spell");
@@ -1653,11 +1779,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID() == player->getPID()) return;
         int nh = player->getHealth() + HEAL_AMT;
-        // todo audio: player spell status sounds go here when effects turn on
-        // hit_freeze when frozen starts
-        // hit_unfreeze later when frozen ends
-        // hit_buff / hit_shield when those effects activate
-        // damage_cat / damage_fox / damage_bunny / damage_duck go near player health loss
+        // spell hit feedback is played here when the effect changes player state
         switch (spell->TYPE) {
         case SpellType::HEAL:
             if (player->getHealth() < 0) {
@@ -1674,28 +1796,32 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player->setFrozeTimer(90);
             player->setFrozen(true);
             spell->setRemove();
-            player->damage(1);
+            playUniqueSound("hit_freeze", 1.0f);
+            damagePlayer(player, 1);
             break;
         case SpellType::COMBO_FREEZE:
             player->setFrozeTimer(180);
             player->setFrozen(true);
-            player->damage(1);
+            playUniqueSound("hit_freeze", 1.0f);
+            damagePlayer(player, 1);
             spell->setRemove();
             break;
         case SpellType::COMBO_EFREEZE:
             player->setFrozeTimer(360);
             player->setFrozen(true);
+            playUniqueSound("hit_freeze", 1.0f);
             spell->setRemove();
             break;
         case SpellType::EARTH:
             player->setMudTimer(240);
             player->setMud(true);
             spell->setRemove();
-            player->damage(1);
+            damagePlayer(player, 1);
             break;
         case SpellType::BUFF:
             player->setBuffTimer(3600);
             player->setBuff(true);
+            playUniqueSound("hit_buff", 1.0f);
             spell->setRemove();
             break;
         case SpellType::WATER:
@@ -1725,19 +1851,25 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         case SpellType::SHIELD:
             player->setShield(true);
             player->setShieldCount(3);
+            playUniqueSound("hit_shield", 1.0f);
             spell->setRemove();
             break;
         case SpellType::FIREBALL:
-            player->damage(2);
+            damagePlayer(player, 2);
             spell->setRemove();
             break;
         case SpellType::COMBO_FIREBALL:
-            player->damage(4);
+            damagePlayer(player, 4);
             spell->setRemove();
             break;
-            break;
         case SpellType::DEATH:
+            {
+            float oldHealth = player->getHealth();
             player->damage(500);
+            if (player->getHealth() < oldHealth) {
+                playPlayerDamageSound(player);
+            }
+            }
             break;
         default:
             CULog("A None Type Spell Should Not be Colliding With Anything");
@@ -1772,9 +1904,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             // ghosts attack by contact damage instead of an attack animation
             playEnemyAttackSound(enemy->TYPE);
         }
-        // todo audio: player damage sounds go here when enemy contact removes health
-        // damage_cat / damage_fox / damage_bunny / damage_duck depend on player character
-        player->damage(1);
+        damagePlayer(player, 1);
         return;
     }
     else if (enemy && spell) {
@@ -1787,10 +1917,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (spell->shouldRemove()) {
             return;
         }
-        // todo audio: enemy spell status sounds go here when effects turn on
-        // hit_freeze when frozen starts
-        // hit_unfreeze later when frozen ends
-        // damage_bat / damage_ghost / damage_octopus / damage_statue go near enemy health loss
+        // spell hit feedback is played here when the effect changes enemy state
         switch (spell->TYPE) {
         case SpellType::WATER:
         {
@@ -1802,24 +1929,27 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         case SpellType::FREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(spell -> getWeak() ? 120 : 240);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            playUniqueSound("hit_freeze", 1.0f);
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::COMBO_FREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(600);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            playUniqueSound("hit_freeze", 1.0f);
+            damageEnemy(enemy, spell->getDamage());
             break;
         case SpellType::COMBO_EFREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(-1);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            playUniqueSound("hit_freeze", 1.0f);
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::EARTH:
             enemy->setMud(true);
             enemy->setMudTimer(spell -> getWeak() ? 150 : 300);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::MUD_WATER:
@@ -1832,14 +1962,14 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             break;
         }
         case SpellType::FIREBALL:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::COMBO_FIREBALL:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             break;
         case SpellType::DEATH:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             break;
         default:
             spell->setRemove();
