@@ -248,12 +248,12 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
                 targ = en->getPosition();
                 en->setLinearVelocity(Vec2::ZERO);
                 en->startAttack();
-                en->setAttackFunc(0.1, [en, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
+                en->setAttackFunc(0.1, [en, player, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
                     if (en->isAttacking()) {
-                        CULog("Octo attack!!");
                         auto params = spellFact->serializeParams(en->getPosition(), Vec2::UNIT_X, SpellType::OCTO_ATTACK, ENEMY_ID);
                         auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
                         networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                        CULog("Octo attack!! dist: %.2f", player->getPosition().distance(pair.first->getPosition()));
                         en->setAttackTimer(156);
                     }
                 });

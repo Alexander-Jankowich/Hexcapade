@@ -42,7 +42,6 @@ pair<ActionFunction, float> SpellNode::getNextAnimation() {
     case AnimationType::END:
         if (!isVisible()) {
             // Immediate exit if not visible
-            CULog("remove invisible spell");
             return END_ANIMATION;
         }
         _deleteAtEnd = true;

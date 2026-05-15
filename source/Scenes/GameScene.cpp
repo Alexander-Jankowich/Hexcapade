@@ -532,6 +532,7 @@ void GameScene::preUpdate(float dt)
             DepositEvent::allocDepositEvent(_player->getPID(), 0, true, bombIdx));
     }
 
+#pragma mark Player Movement
     // Player movement
     cugl::Vec2 input = _input.getMove();
     if (_input.showAim()) {
@@ -542,15 +543,14 @@ void GameScene::preUpdate(float dt)
     }
     cugl::Vec2 velocity = input * _player->getSpeed();
 
-    if (_player->isFrozen() || _player->isHurt()) {
+    if (_player->isFrozen()) {
         //_player->setVelocity(Vec2::ZERO);
     }
     else if (_player -> getWater()){
         _player -> setVelocity(_player -> getPushDir() * _player -> getSpeed());
     }
-    else {
+    else if (!_player->isHurt()) {
         _player->setVelocity(velocity);
-        //_player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     }
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
@@ -1530,16 +1530,11 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact->SetEnabled(false);
 
         // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove()) {
+        if (spell->shouldRemove() || player -> getPID() != _player -> getPID() || spell->getCasterUID() == player->getPID()) {
             return;
         }
-        if (player -> getPID() != _player -> getPID()){
-            return;
-        }
-        
+        //CULog("calc damage...");
 
-        //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
-        if (spell->getCasterUID() == player->getPID()) return;
         int nh = player->getHealth() + HEAL_AMT;
         switch (spell->TYPE) {
         case SpellType::HEAL:
@@ -1594,7 +1589,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             break;
         case SpellType::MUD_WATER:
             {
-            if(player -> getWater()){
+            if (player -> getWater()){
                 break;
             }
             Vec2 pushDir = player->getPosition() - spell->getPosition();
@@ -1618,19 +1613,15 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player->damage(4);
             spell->setRemove();
             break;
-            break;
         case SpellType::DEATH:
             player->damage(500);
             break;
         case SpellType::OCTO_ATTACK:
-            CULog("hit by octo attack!!");
             if (!player->isHurt()) {
+                CULog("hit by octo attack!!");
                 player->setWater(true, (player->getPosition() - spell->getPosition()).getNormalization());
-                player->setWaterTimer(10);
+                player->setWaterTimer(20);
                 player->damage(spell->getDamage());
-            }
-            else {
-                CULog("player hurt~");
             }
             break;
         default:
@@ -1736,7 +1727,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     else if (wall && spell) {
         contact->SetEnabled(false);
-        spell->setRemove();
+        if (spell->VISIBLE) {
+            spell->setRemove();
+        }
         return;
     }
     else if (wall && enemy) {

@@ -203,7 +203,6 @@ void SpellFactory::linkFunc(const shared_ptr<SpellObstacle> obs, const shared_pt
     if ((obs->VISIBLE && obs->getTraveled() >= obs->getRange()) || 
             (!obs->VISIBLE && obs->getRange() < obs->getCounter())) {
         obs->setRemove();
-        //CULog("remove spell: %.2f", obs->getRange());
     }
     obs->incrementCounter();
 

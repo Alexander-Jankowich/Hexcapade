@@ -202,7 +202,7 @@
       "end_frames": 3
     },
     "octoplush-attack": {
-        "range": 5,
+        "range": 2.25,
         "speed": 0,
         "damage": 3,
         "visible": false,
