@@ -182,15 +182,6 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
     for (auto en : enemyFact->current) {
         if (en->isFroze() || en->getWaterPushTimer() > 0 || en->isDead() || en->isHurt() || en->isAttacking()) {
             //CULog("skip pathfinding");
-            //if (en->TYPE == EnemyType::OCTO && en->isAttacking()) {
-            //    // deal damage to all nearby players
-            //    auto players = getValidTargets(en->getPosition(), en->getAttackRange(), playerFact);
-            //    for (const auto& p : players) {
-            //        p->damage(3);
-            //        //networkCtrl->getPhysController()->acquireObs(p, 0.01);
-            //        //p->setLinearVelocity((p->getPosition() - en->getPosition()).getNormalization()*3);
-            //    }
-            //}
             continue;
         }
 
