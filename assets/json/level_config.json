@@ -26,11 +26,11 @@
     "map-size-incr": 10,
     "quota": 150,
     "quota-incr": 50,
-    "enemies": [ "slow-bat", "ghost", "octoplush" ],
+    "enemies": [ "slow-bat", "ghost", "octoplush","statue"],
     "enemies-probs": [
-      [ 0.0, 0.0, 1.0 ],
-      [ 0.0, 0.0, 1.0 ],
-      [ 0.0, 0.0, 1.0 ]
+        [ 0.0, 0.0, 0.0, 1.0 ],
+        [ 0.0, 0.0, 0.0, 1.0 ],
+        [ 0.0, 0.0, 0.0, 1.0 ]
     ],
     "zone-probs": [ 0.33, 0.4, 0.5 ],
     "item-spellbook-types": [
@@ -77,11 +77,11 @@
     "map-size-incr": 10,
     "quota": 375,
     "quota-incr": 50,
-    "enemies": [ "bat", "ghost", "octoplush" ],
+    "enemies": [ "bat", "ghost", "octoplush","statue" ],
     "enemies-probs": [
-      [ 0.9, 0.1, 0.0 ],
-      [ 0.5, 0.4, 0.1 ],
-      [ 0.1, 0.35, 0.55 ]
+        [ 0.0, 0.0, 0.0, 1.0 ],
+        [ 0.0, 0.0, 0.0, 1.0 ],
+        [ 0.0, 0.0, 0.0, 1.0 ]
     ],
     "zone-probs": [ 0.33, 0.5, 0.5 ],
     "item-spellbook-types": [
@@ -128,11 +128,11 @@
     "map-size-incr": 5,
     "quota": 450,
     "quota-incr": 50,
-    "enemies": [ "bat", "ghost", "octoplush" ],
+    "enemies": [ "bat", "ghost", "octoplush","statue" ],
     "enemies-probs": [
-      [ 0.6, 0.3, 0.1 ],
-      [ 0.4, 0.35, 0.25 ],
-      [ 0.1, 0.4, 0.5 ]
+        [ 0.0, 0.0, 0.0, 1.0 ],
+        [ 0.0, 0.0, 0.0, 1.0 ],
+        [ 0.0, 0.0, 0.0, 1.0 ]
     ],
     "zone-probs": [ 0.4, 0.5, 0.55 ],
     "item-spellbook-types": [

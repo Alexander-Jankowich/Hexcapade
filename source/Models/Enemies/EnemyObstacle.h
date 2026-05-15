@@ -17,7 +17,8 @@ enum class EnemyType {
     GHOST = 0,
     BAT = 1,
     OCTO = 2,
-    SLOWBAT = 3
+    SLOWBAT = 3,
+    STATUE = 4
 };
 
 /**

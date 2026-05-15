@@ -405,7 +405,28 @@
         "death-right_backward": 64,
         "death-left-backward": 72,
         "death_frames": 8
-    }
+    },
+      "statue": {
+          "health": 999,
+          "speed": 0.0,
+          "range": 3,
+          "attack_range": 3,
+          "texture": "statue",
+          "columns": 8,
+          "rows": 3,
+          
+          "idle-right_forward": 0,
+          "idle-left_forward": 0,
+          "idle-right_backward": 0,
+          "idle-left_backward":0,
+          "idle_frames": 8,
+
+          "attack-right_forward": 8,
+          "attack-left_forward": 8,
+          "attack-right_backward": 8,
+          "attack-left_backward": 8,
+          "attack_frames": 10
+      }
 
   },
   "artifacts": {

@@ -33,6 +33,9 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     case EnemyType::OCTO:
         vals = _enemyConsts->get("octoplush");
         break;
+    case EnemyType::STATUE:
+            vals = _enemyConsts->get("statue");
+            break;
     default:
         CULog("Error! Enemy type not found in JSON!!! EnemyFactory::createObstacle, type = %d", type);
         break;

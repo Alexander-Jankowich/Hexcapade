@@ -258,6 +258,24 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             }
         }
             break;
+
+        case EnemyType::STATUE:
+                {
+                    en->setLinearVelocity(Vec2::ZERO);
+                    auto player = getClosest(en->getPosition(),
+                        getVisiblePlayers(world, en->getPosition(), en->getRange(),
+                            getValidTargets(en->getPosition(), en->getRange(), playerFact)));
+                    if(!player) break;
+                    targ = player->getPosition();
+                    if (targ.distance(en->getPosition()) <= en->getAttackRange()) {
+                        en->startAttack();
+                        en->setAttackFunc(-1, [en, player, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
+                            if (player->getHealth() > 0 && en->isAttacking()) {
+                                en->setAttackTimer(120);
+                            }
+                        });}
+                }
+            break;
         default:
             CULog("Error! Enemy type not implemented!!! (Pathfinder::updateEnemies)");
             break;

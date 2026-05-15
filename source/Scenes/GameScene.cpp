@@ -1627,6 +1627,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         }
     }
     else if (player && enemy) {
+        if(enemy -> TYPE == EnemyType::STATUE){
+                contact->SetEnabled(false);
+                return;
+            }
         contact->SetEnabled(true);
 
         if (player->getHealth() <= 0 || enemy->isDead() || player->getPID() != _player->getPID()) {
@@ -1650,7 +1654,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         return;
     }
     else if (enemy && spell) {
+        
         contact->SetEnabled(false);
+        if (enemy -> TYPE == EnemyType::STATUE){
+                return;
+        }
+                    
 
         if (!_networkCtrl->isHost() || spell->shouldRemove() || spell->getCasterUID() == "bat") {
             return;
