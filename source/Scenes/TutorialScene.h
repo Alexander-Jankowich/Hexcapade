@@ -165,6 +165,8 @@ public:
      * Disposes of all (non-static) resources allocated to this mode.
      */
     void dispose() override;
+    
+    void reset() override;
 
     /**
      * Initializes the controller contents, and starts the game
