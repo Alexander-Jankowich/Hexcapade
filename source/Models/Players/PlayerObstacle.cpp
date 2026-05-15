@@ -73,6 +73,7 @@ void PlayerObstacle::setHealth(int h) {
 void PlayerObstacle::damage(float damage) {
     if (_iframeTimer > 0) {
         // Cannot be hit if already hit very recently
+        CULog("have iframes, %d", _iframeTimer);
         return;
     }
     _iframeTimer = HURT_TIME;

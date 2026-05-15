@@ -28,9 +28,9 @@
     "quota-incr": 50,
     "enemies": [ "slow-bat", "ghost", "octoplush","statue"],
     "enemies-probs": [
-        [ 0.0, 0.0, 0.0, 1.0 ],
-        [ 0.0, 0.0, 0.0, 1.0 ],
-        [ 0.0, 0.0, 0.0, 1.0 ]
+        [ 0.0, 0.0, 1.0, 0.0 ],
+        [ 0.0, 0.0, 1.0, 0.0 ],
+        [ 0.0, 0.0, 1.0, 0.0 ]
     ],
     "zone-probs": [ 0.33, 0.4, 0.5 ],
     "item-spellbook-types": [

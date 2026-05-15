@@ -200,6 +200,13 @@
       "created_frames": 4,
       "existing_frames": 1,
       "end_frames": 3
+    },
+    "octoplush-attack": {
+        "range": 5,
+        "speed": 0,
+        "damage": 3,
+        "visible": false,
+        "duration": 36
     }
   },
   "enemies": {

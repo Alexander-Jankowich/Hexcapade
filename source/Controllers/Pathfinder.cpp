@@ -8,8 +8,6 @@
 
 #include "Pathfinder.h"
 
-#define FROZEN_FRAMES 60
-
 unordered_set<shared_ptr<PlayerObstacle>> Pathfinder::getValidTargets(const Vec2 pos, float range,
         shared_ptr<PlayerFactory> playerFact) {
     unordered_set <shared_ptr<PlayerObstacle>> out;
@@ -184,15 +182,15 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
     for (auto en : enemyFact->current) {
         if (en->isFroze() || en->getWaterPushTimer() > 0 || en->isDead() || en->isHurt() || en->isAttacking()) {
             //CULog("skip pathfinding");
-            if (en->TYPE == EnemyType::OCTO && en->isAttacking()) {
-                // deal damage to all nearby players
-                auto players = getValidTargets(en->getPosition(), en->getAttackRange(), playerFact);
-                for (const auto& p : players) {
-                    p->damage(3);
-                    //networkCtrl->getPhysController()->acquireObs(p, 0.01);
-                    //p->setLinearVelocity((p->getPosition() - en->getPosition()).getNormalization()*3);
-                }
-            }
+            //if (en->TYPE == EnemyType::OCTO && en->isAttacking()) {
+            //    // deal damage to all nearby players
+            //    auto players = getValidTargets(en->getPosition(), en->getAttackRange(), playerFact);
+            //    for (const auto& p : players) {
+            //        p->damage(3);
+            //        //networkCtrl->getPhysController()->acquireObs(p, 0.01);
+            //        //p->setLinearVelocity((p->getPosition() - en->getPosition()).getNormalization()*3);
+            //    }
+            //}
             continue;
         }
 
@@ -225,7 +223,7 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
                     en->setAttackFunc(-1, [en, player, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
                         if (player->getHealth() > 0 && en->isAttacking()) {
                             Vec2 angle = player->getPosition() - en->getPosition();
-                            auto params = spellFact->serializeParams((en->getPosition()), angle, SpellType::FIREBALL, "bat");
+                            auto params = spellFact->serializeParams((en->getPosition()), angle, SpellType::FIREBALL, ENEMY_ID);
                             auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
                             networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                             en->setAttackTimer(120);
@@ -250,9 +248,13 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
                 targ = en->getPosition();
                 en->setLinearVelocity(Vec2::ZERO);
                 en->startAttack();
-                en->setAttackFunc(-1, [en, player, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
-                    if (player->getHealth() > 0 && en->isAttacking()) {
-                        en->setAttackTimer(120);
+                en->setAttackFunc(0.1, [en, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
+                    if (en->isAttacking()) {
+                        CULog("Octo attack!!");
+                        auto params = spellFact->serializeParams(en->getPosition(), Vec2::UNIT_X, SpellType::OCTO_ATTACK, ENEMY_ID);
+                        auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
+                        networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                        en->setAttackTimer(156);
                     }
                 });
             }
@@ -260,21 +262,21 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             break;
 
         case EnemyType::STATUE:
-                {
-                    en->setLinearVelocity(Vec2::ZERO);
-                    auto player = getClosest(en->getPosition(),
-                        getVisiblePlayers(world, en->getPosition(), en->getRange(),
-                            getValidTargets(en->getPosition(), en->getRange(), playerFact)));
-                    if(!player) break;
-                    targ = player->getPosition();
-                    if (targ.distance(en->getPosition()) <= en->getAttackRange()) {
-                        en->startAttack();
-                        en->setAttackFunc(-1, [en, player, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
-                            if (player->getHealth() > 0 && en->isAttacking()) {
-                                en->setAttackTimer(120);
-                            }
-                        });}
-                }
+        {
+            en->setLinearVelocity(Vec2::ZERO);
+            auto player = getClosest(en->getPosition(),
+                getVisiblePlayers(world, en->getPosition(), en->getRange(),
+                    getValidTargets(en->getPosition(), en->getRange(), playerFact)));
+            if(!player) break;
+            targ = player->getPosition();
+            if (targ.distance(en->getPosition()) <= en->getAttackRange()) {
+                en->startAttack();
+                en->setAttackFunc(-1, [en, player, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
+                    if (player->getHealth() > 0 && en->isAttacking()) {
+                        en->setAttackTimer(120);
+                    }
+                });}
+        }
             break;
         default:
             CULog("Error! Enemy type not implemented!!! (Pathfinder::updateEnemies)");

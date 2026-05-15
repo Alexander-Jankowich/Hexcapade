@@ -1622,15 +1622,26 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         case SpellType::DEATH:
             player->damage(500);
             break;
+        case SpellType::OCTO_ATTACK:
+            CULog("hit by octo attack!!");
+            if (!player->isHurt()) {
+                player->setWater(true, (player->getPosition() - spell->getPosition()).getNormalization());
+                player->setWaterTimer(10);
+                player->damage(spell->getDamage());
+            }
+            else {
+                CULog("player hurt~");
+            }
+            break;
         default:
             CULog("A None Type Spell Should Not be Colliding With Anything");
         }
     }
     else if (player && enemy) {
-        if(enemy -> TYPE == EnemyType::STATUE){
-                contact->SetEnabled(false);
-                return;
-            }
+        if (enemy -> TYPE == EnemyType::STATUE){
+            contact->SetEnabled(false);
+            return;
+        }
         contact->SetEnabled(true);
 
         if (player->getHealth() <= 0 || enemy->isDead() || player->getPID() != _player->getPID()) {
@@ -1646,7 +1657,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             dir.y /= len;
         }
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
-        if (!enemy->canAttack()) return;
+        //if (!enemy->canAttack()) {
+        //    return;
+        //}
 
         enemy->setAttackTimer(90);
 
@@ -1654,14 +1667,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         return;
     }
     else if (enemy && spell) {
-        
         contact->SetEnabled(false);
         if (enemy -> TYPE == EnemyType::STATUE){
-                return;
-        }
-                    
+            return;
+        } 
 
-        if (!_networkCtrl->isHost() || spell->shouldRemove() || spell->getCasterUID() == "bat") {
+        if (!_networkCtrl->isHost() || spell->shouldRemove() || spell->getCasterUID() == ENEMY_ID) {
             return;
         }
 

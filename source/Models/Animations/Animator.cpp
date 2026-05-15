@@ -28,6 +28,13 @@ void Animator::update(float dt) {
 		if (ani.second < 0) {
 			// No next animation, remove from active list
 			_active.erase(node);
+
+			// Run all the listeners for that node
+			auto range = _listeners.equal_range(node);
+			for (auto it = range.first; it != range.second; ++it) {
+				it->second.first(key, it->second.second, 0);
+			}
+			_listeners.erase(node);
 		}
 		else {
 			_timeline->add(key, ani.first, ani.second);
