@@ -87,7 +87,6 @@ public:
 
     shared_ptr<PlayerObstacle> getPlayerByPID(string pid) {
         for (auto p : current) {
-            CULog("i am trying to get a player");
             if (p->getPID() == pid) return p;
         }
         return nullptr; // should NOT get here
