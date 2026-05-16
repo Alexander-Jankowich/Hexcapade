@@ -112,6 +112,13 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
         _nameFont = nullptr;
     }
 
+    try {
+        _uiFont = assets->get<Font>("CoolveticaRegular48");
+    }
+    catch (...) {
+        _uiFont = nullptr;
+    }
+
     // this resets pickup prompt state
     _canDeposit = false;
     _depositRadius = 42.0f;
@@ -1050,8 +1057,6 @@ void GameScene::renderHUD()
     Vec2 hudOffset = getHUDOffset();
     float zoom = getActiveCameraZoom();
 
-    float barW = 320;
-    float barH = 50;
     float margin = 16;
 
     auto hudX = [hudOffset, zoom](float value) {
@@ -1080,136 +1085,196 @@ void GameScene::renderHUD()
 
     _batch->setTexture(nullptr);
 
-    Color4 boxColor(30, 30, 30, 255);
+    // Inventory bar
+    auto boxTex = _assets->get<graphics::Texture>("item_box");
+    if (boxTex) {
+        constexpr size_t kSlotCount = 5;
+        const auto& carriedItems = _player->getInventory();
 
-    float timerX = screenSize.width / 2 - barW * 0.5f;
-    float timerY = margin;
-    drawBox(hudX(timerX), hudY(timerY), hudSize(barW), hudSize(barH), boxColor);
+        for (size_t i = 0; i < kSlotCount; ++i) {
+            Rect slot = getInventorySlotBounds(i);
+            float boxX = slot.origin.x + hudOffset.x;
+            float boxY = slot.origin.y + hudOffset.y;
+            float boxSize = slot.size.width;
 
-    if (_font)
-    {
+            // Draw the frame
+            _batch->setColor(Color4::WHITE);
+            _batch->draw(boxTex, Rect(boxX, boxY, boxSize, boxSize));
+
+            if (i < carriedItems.size()) {
+                const auto& carried = carriedItems[i];
+                if (carried.itemType == ItemTypeClass::ItemType::BOMB && carried.bombTimer >= 0 && carried.bombTimer <= 300) {
+                    float t = 1.0f - ((float)carried.bombTimer / 300.0f);
+                    float padding = boxSize * 0.1f;
+                    _batch->setTexture(nullptr);
+                    drawBox(boxX + padding, boxY + padding, boxSize * 0.8f, boxSize * 0.8f, Color4(255, 0, 0, (Uint8)(90 * t)));
+                }
+            }
+
+            // Draw item texture centered inside the frame
+            if (i < carriedItems.size()) {
+                const auto& carried = carriedItems[i];
+                auto itemTex = _itemInfo.getTexture(carried.itemType);
+                if (itemTex) {
+                    float padding = 0.0f;
+                    float maxSize = boxSize - padding * 2;
+
+                    // Preserve 3:4 aspect ratio
+                    float iconW = maxSize * (3.0f / 4.0f);
+                    float iconH = maxSize;
+
+                    float iconX = boxX + (boxSize - iconW) * 0.5f;
+                    float iconY = boxY + padding;
+
+                    _batch->setColor(Color4::WHITE);
+                    _batch->draw(itemTex, Rect(iconX, iconY, iconW, iconH));
+                }
+            }
+        }
+    }
+
+    // Help button
+    auto helpTex = _assets->get<graphics::Texture>("help_button");
+    if (helpTex) {
+        Rect helpBounds = getHelpButtonBounds();
         _batch->setColor(Color4::WHITE);
-        std::stringstream ss;
-        ss << std::fixed << std::setprecision(2) << (_timer / 60);
-        std::string timer_text = ss.str();
-        std::shared_ptr<TextLayout> timerLabel = TextLayout::allocWithText(
-            "Time Remaining: " + timer_text, _font);
+        _batch->draw(helpTex, Rect(helpBounds.origin.x + hudOffset.x,
+            helpBounds.origin.y + hudOffset.y,
+            helpBounds.size.width,
+            helpBounds.size.height));
+    }
+
+    auto texContainer = _assets->get<graphics::Texture>("health_bar");
+    auto texFull = _assets->get<graphics::Texture>("health_full");
+    auto texHalf = _assets->get<graphics::Texture>("health_half");
+    auto texEmpty = _assets->get<graphics::Texture>("health_empty");
+    auto texHourglass = _assets->get<graphics::Texture>("hourglass");
+
+    float iconRowH = 79.0f * 0.8f;
+    float heartRowH = iconRowH;
+    float innerPad = 2.0f; // gap between the rows
+
+    float containerW = 269.0f * 0.8f;
+    float totalPanelH = heartRowH + innerPad + iconRowH + innerPad + iconRowH;
+
+    float containerX_local = margin + 25.0f;
+    float containerY_local = screenSize.height - totalPanelH - margin;
+
+    float containerX = hudX(containerX_local);
+    float containerY = hudY(containerY_local);
+    float containerWs = hudSize(containerW);
+    float totalPanelHs = hudSize(totalPanelH);
+
+    if (texContainer) {
+        _batch->setColor(Color4::WHITE);
+        _batch->draw(texContainer, Rect(containerX, containerY, containerWs, totalPanelHs));
+    }
+    else {
+        // Fallback
+        drawBox(containerX, containerY, containerWs, totalPanelHs, Color4(30, 30, 30, 220));
+    }
+
+    float quotaRowY_local = containerY_local;
+    float timerRowY_local = containerY_local + iconRowH + innerPad;
+    float heartsRowY_local = containerY_local + 2.0f * (iconRowH + innerPad);
+
+    // ---- Hearts row -----------------------------------------------
+    if (texFull && texHalf && texEmpty) {
+        float heartRowYs = hudY(heartsRowY_local);
+        float heartRowHs = hudSize(heartRowH);
+        float containerWs2 = hudSize(containerW);
+
+        float heartH = heartRowHs * 0.75f;
+        float heartW = heartH * (83.0f / 78.0f);
+
+        float totalHeartsW = containerWs2 / 3.0f;
+        int hp = _player->getHealth();
+
+        for (int i = 0; i < 3; ++i) {
+            int heartPoints = hp - i * 2;
+            std::shared_ptr<graphics::Texture> tex;
+            if (heartPoints >= 2)
+                tex = texFull;
+            else if (heartPoints == 1)
+                tex = texHalf;
+            else
+                tex = texEmpty;
+
+            float slotCenterX = containerX + totalHeartsW * i + totalHeartsW * 0.5f;
+            float hx = slotCenterX - heartW * 0.5f;
+            float hy = heartRowYs + (heartRowHs - heartH) * 0.5f;
+            _batch->setColor(Color4::WHITE);
+            _batch->draw(tex, Rect(hx, hy, heartW, heartH));
+        }
+    }
+
+    // ---- Timer row ---------------------------------------------
+    if (_font) {
+        float timerRowYs = hudY(timerRowY_local);
+        float iconRowHs = hudSize(iconRowH);
+        float iconSize = iconRowHs * 0.7f;
+        float textOffsetX = iconSize + hudSize(8.0f);
+
+        if (texHourglass) {
+            float iconY = timerRowYs + (iconRowHs - iconSize) * 0.5f;
+            _batch->setColor(Color4::WHITE);
+            _batch->draw(texHourglass, Rect(containerX + hudSize(8.0f), iconY, iconSize, iconSize));
+        }
+
+        int totalSecs = (int)(_timer / 60.0f);
+        int mins = totalSecs / 60;
+        int secs = totalSecs % 60;
+        std::stringstream tss;
+        tss << mins << ":" << std::setw(2) << std::setfill('0') << secs;
+
+        auto timerLabel = TextLayout::allocWithText(tss.str(), _uiFont);
         timerLabel->layout();
+        float timerTextH = timerLabel->getBounds().size.height;
+        float timerTextW = timerLabel->getBounds().size.width;
+        float timerTextX = containerX + hudSize(8.0f) + textOffsetX + (hudSize(containerW) - hudSize(8.0f) - textOffsetX - hudSize(timerTextW)) * 0.5f;
+        float textY = timerRowY_local + (iconRowH - timerTextH) * 0.5f + 15.0f;
         Affine2 timerTrans;
-        timerTrans.scale(1.0f / zoom).translate(hudX(timerX + 10), hudY(timerY + 12));
+        timerTrans.scale(1.0f / zoom).translate(timerTextX, hudY(textY));
+        _batch->setColor(Color4::BLACK);
         _batch->drawText(timerLabel, timerTrans);
+    }
 
-        auto boxTex = _assets->get<graphics::Texture>("item_box");
-        if (boxTex) {
-            constexpr size_t kSlotCount = 5;
-            const auto& carriedItems = _player->getInventory();
+    // ---- Quota row ---------------------------------------------
+    if (_font) {
+        float quotaRowYs = hudY(quotaRowY_local);
+        float iconRowHs = hudSize(iconRowH);
+        float iconSize = iconRowHs * 0.7f;
+        float textOffsetX = iconSize + hudSize(8.0f);
 
-            for (size_t i = 0; i < kSlotCount; ++i) {
-                Rect slot = getInventorySlotBounds(i);
-                float boxX = slot.origin.x + hudOffset.x;
-                float boxY = slot.origin.y + hudOffset.y;
-                float boxSize = slot.size.width;
+        float quotaPct = (_quota > 0) ? ((float)_depositedValue / (float)_quota) : 0.0f;
+        std::string quotaTexKey;
+        if (quotaPct >= 1.0f)
+            quotaTexKey = "quota_full";
+        else if (quotaPct >= 0.75f)
+            quotaTexKey = "quota_75";
+        else if (quotaPct >= 0.5f)
+            quotaTexKey = "quota_50";
+        else if (quotaPct >= 0.25f)
+            quotaTexKey = "quota_25";
+        else
+            quotaTexKey = "quota_empty";
 
-                // Draw the frame
-                _batch->setColor(Color4::WHITE);
-                _batch->draw(boxTex, Rect(boxX, boxY, boxSize, boxSize));
-
-                if (i < carriedItems.size()) {
-                    const auto& carried = carriedItems[i];
-                    if (carried.itemType == ItemTypeClass::ItemType::BOMB && carried.bombTimer >= 0 && carried.bombTimer <= 300) {
-                        float t = 1.0f - ((float)carried.bombTimer / 300.0f);
-                        float padding = boxSize * 0.1f;
-                        _batch->setTexture(nullptr);
-                        drawBox(boxX + padding, boxY + padding, boxSize * 0.8f, boxSize * 0.8f, Color4(255, 0, 0, (Uint8)(90 * t)));
-                    }
-                }
-
-                // Draw item texture centered inside the frame
-                if (i < carriedItems.size()) {
-                    const auto& carried = carriedItems[i];
-                    auto itemTex = _itemInfo.getTexture(carried.itemType);
-                    if (itemTex) {
-                        float padding = 0.0f;
-                        float maxSize = boxSize - padding * 2;
-
-                        // Preserve 3:4 aspect ratio
-                        float iconW = maxSize * (3.0f / 4.0f);
-                        float iconH = maxSize;
-
-                        float iconX = boxX + (boxSize - iconW) * 0.5f;
-                        float iconY = boxY + padding;
-
-                        _batch->setColor(Color4::WHITE);
-                        _batch->draw(itemTex, Rect(iconX, iconY, iconW, iconH));
-
-                    }
-                }
-            }
-        }
-
-        auto helpTex = _assets->get<graphics::Texture>("help_button");
-        if (helpTex) {
-            Rect helpBounds = getHelpButtonBounds();
+        auto texQuota = _assets->get<graphics::Texture>(quotaTexKey);
+        if (texQuota) {
+            float iconY = quotaRowYs + (iconRowHs - iconSize) * 0.5f;
             _batch->setColor(Color4::WHITE);
-            _batch->draw(helpTex, Rect(helpBounds.origin.x + hudOffset.x,
-                helpBounds.origin.y + hudOffset.y,
-                helpBounds.size.width,
-                helpBounds.size.height));
+            _batch->draw(texQuota, Rect(containerX + hudSize(8.0f), iconY, iconSize, iconSize));
         }
 
-        auto texContainer = _assets->get<graphics::Texture>("health_bar");
-        auto texFull = _assets->get<graphics::Texture>("health_full");
-        auto texHalf = _assets->get<graphics::Texture>("health_half");
-        auto texEmpty = _assets->get<graphics::Texture>("health_empty");
-
-        // Scale container with 269x79 aspect ratio (only need to change container cause actualy heart size is based on container)
-        float containerH = hudSize(79.0f * 0.8f);
-        float containerW = hudSize(269.0f * 0.8f);
-        float containerX = hudX(margin + 25.0f); //extra offset because health gets clipped on iphone corner
-        float containerY = hudY(screenSize.height - 79.0f * 0.8f - margin);
-        float quotaY = screenSize.height - 79.0f * 0.8f - margin - barH - margin;
-
-        if (texContainer && texFull && texHalf && texEmpty) {
-            // Draw the health bar
-            _batch->setColor(Color4::WHITE);
-            _batch->draw(texContainer, Rect(containerX, containerY, containerW, containerH));
-
-            // Scale hearts to fit inside container with 83x78 aspect ratio
-            float heartH = containerH * 0.75f;
-            float heartW = heartH * (83.0f / 78.0f);
-
-            // Space 3 hearts equally
-            float totalHeartsW = containerW / 3.0f;
-            int hp = _player->getHealth();
-
-            for (int i = 0; i < 3; ++i) {
-                int heartPoints = hp - i * 2;
-                std::shared_ptr<graphics::Texture> tex;
-                if (heartPoints >= 2)
-                    tex = texFull;
-                else if (heartPoints == 1)
-                    tex = texHalf;
-                else
-                    tex = texEmpty;
-
-                // Center each heart in its section
-                float slotCenterX = containerX + totalHeartsW * i + totalHeartsW * 0.5f;
-                float hx = slotCenterX - heartW * 0.5f;
-                float hy = containerY + (containerH - heartH) * 0.5f;
-                _batch->setColor(Color4::WHITE);
-                _batch->draw(tex, Rect(hx, hy, heartW, heartH));
-            }
-        }
-
-        // quota
-        float quotaX = margin;
-        //drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
-
-        std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
-            "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
+        std::string quotaStr = std::to_string(_depositedValue) + "/" + std::to_string(_quota);
+        auto quotaLabel = TextLayout::allocWithText(quotaStr, _uiFont);
         quotaLabel->layout();
+        float quotaTextH = quotaLabel->getBounds().size.height;
+        float quotaTextW = quotaLabel->getBounds().size.width;
+        float quotaTextX = containerX + hudSize(8.0f) + textOffsetX + (hudSize(containerW) - hudSize(8.0f) - textOffsetX - hudSize(quotaTextW)) * 0.5f;
+        float textY = quotaRowY_local + (iconRowH - quotaTextH) * 0.5f + 15.0f;
         Affine2 quotaTrans;
-        quotaTrans.scale(1.0f / zoom).translate(hudX(quotaX + 10), hudY(quotaY + 12));
+        quotaTrans.scale(1.0f / zoom).translate(quotaTextX, hudY(textY));
         _batch->setColor(Color4::BLACK);
         _batch->drawText(quotaLabel, quotaTrans);
     }

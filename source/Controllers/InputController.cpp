@@ -890,6 +890,7 @@ void InputController::dispose() {
     Touchscreen* touch = Input::get<Touchscreen>();
     touch->removeBeginListener(LISTENER_KEY);
     touch->removeEndListener(LISTENER_KEY);
+    touch->removeMotionListener(LISTENER_KEY);
 #endif
     _active = false;
 }
@@ -1265,6 +1266,7 @@ Vec2 InputController::mouse2Screen(const Vec2 pos) const {
  * @param  pos  the current joystick position
  */
 void InputController::processJoystick(const cugl::Vec2 pos) {
+    CULog("do joystick");
     _joystickpos = pos;
     Vec2 diff = pos - _joycenter;
     float dist = diff.length();
@@ -1410,6 +1412,7 @@ void InputController::processGestureEnd(const cugl::Vec2 pos) {
 }
 
 void InputController::processDrag(const cugl::Vec2 pos) {
+    CULog("do drag");
     if (_isAiming) {
         _spellAngle = pos - _touchStart;
     }
@@ -1426,12 +1429,13 @@ void InputController::processDrag(const cugl::Vec2 pos) {
  */
 void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     _touchDown = true;
-    //CULog("Touch began %lld", event.touch);
 
     _touchDown = true;
     Vec2 pos = event.position;
     Zone zone = getZone(pos);
     pos = touch2Screen(pos);
+    
+    CULog("Touch began %lld, zone: %d", event.touch, zone);
     
     switch (zone){
     case Zone::TOP:
@@ -1446,10 +1450,12 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
     case Zone::LEFT:
         // Only process if no touch in zone
         if (_ltouch.touchids.empty()) {
+            //CULog("left zone down");
             // Left is the floating joystick
             _ltouch.position = event.position;
             _ltouch.timestamp.mark();
             _ltouch.touchids.insert(event.touch);
+            //CULog("left zone: %d", _ltouch.touchids.size());
 
             _joycenter = pos;
             //_joycenter.y += JSTICK_OFFSET;
@@ -1488,6 +1494,7 @@ void InputController::touchBeganCB(const TouchEvent& event, bool focus) {
  */
 void InputController::touchEndCB(const TouchEvent& event, bool focus) {
     _touchDown = false;
+    //CULog("Registered touch end event");
     // Reset all keys that might have been set
     Vec2 pos = event.position;
     Zone zone = getZone(pos);
@@ -1523,7 +1530,10 @@ void InputController::touchEndCB(const TouchEvent& event, bool focus) {
  */
 void InputController::touchMotionCB(const TouchEvent& event, const Vec2& previous, bool focus) {
     Vec2 pos = touch2Screen(event.position);
-    // Left zone is all that matters rn. 
+   // CULog("drag");
+    //CULog("left zone: %d", _ltouch.touchids.size());
+    //CULog("right zone: %d", _rtouch.touchids.size());
+    
     if (_ltouch.touchids.find(event.touch) != _ltouch.touchids.end()) {
         processJoystick(pos);
     }

@@ -42,7 +42,7 @@ void TutorialScene::beginContact(b2Contact* contact) {}
  *
  * @return true if the controller is initialized properly, false otherwise.
  */
-bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const std::shared_ptr<NetworkController>& network)
+bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
 {
     // Initialize the scene to a locked width
     if (assets == nullptr || !cugl::scene2::Scene2::initWithHint(Size(0, SCENE_HEIGHT)))
@@ -75,7 +75,7 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets, cons
             return cugl::Vec2(world.x, world.y);
         }
     );
-    _inputDisplay = make_shared<InputDisplay>(&_input, _constants->get("input"));
+    _inputDisplay = InputDisplay(&_input, _constants->get("input"));
 
     // Initialize spell combo information
     initCombos();
@@ -127,7 +127,10 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets, cons
 
     // init map and network
     _map = std::make_shared<StaticMap>();
-    _networkCtrl = network;
+    _networkCtrl = std::make_shared<NetworkController>();
+    _networkCtrl->init(_assets);
+    _networkCtrl->connectHost();
+    CULog("tutorial scene connecting host");
     
     _itemInfo = ItemTypeClass(_assets);
 
@@ -137,6 +140,8 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets, cons
 }
 void TutorialScene::reset() {
     CULog("tutorial scene reset called");
+    _networkCtrl->disconnect();
+    _networkCtrl->resetStatus();
     hideTutorial();
     hideInventoryCard();
     _pendingTutorialTex = nullptr;
@@ -144,9 +149,10 @@ void TutorialScene::reset() {
     // is this correct...?
     _worldnode->removeAllChildren();
     removeAllChildren();
-
     _input.reset();
-    _inputDisplay->reset();
+    _input.dispose();
+    
+    _inputDisplay.reset();
 
     _player = nullptr;
     _enemyFact->reset();
@@ -172,7 +178,7 @@ void TutorialScene::reset() {
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
     _tutorialTimer = 0;
-    
+    _networkCtrl->connectHost(); // prepare to start again?
     Scene::reset();
 }
 /**
@@ -182,7 +188,7 @@ void TutorialScene::dispose()
 {
     // NOTHING TO DO THIS TIME
     hideInventoryCard();
-    _inputDisplay->dispose();
+    _inputDisplay.dispose();
     _map = nullptr;
     _assets->dispose();
     _assets = nullptr;
@@ -319,8 +325,8 @@ void TutorialScene::preUpdate(float dt)
         _tutorialEnded = true;
     }
 #pragma mark Tutorial Stuff I Am Putting Here for Simplicity
-    _tutorialTimer -= 1;
     
+    _tutorialTimer -= 1;
     if(_playerFact -> getPlayerByPID("bot0") -> getSpell() == SpellType::NONE){
         _playerFact -> getPlayerByPID("bot0") -> setSpell(SpellType::FREEZE);
     }
@@ -344,7 +350,7 @@ void TutorialScene::preUpdate(float dt)
         showTutorial(_pendingTutorialTex);
         _pendingTutorialTex = nullptr;
         _input.resolvedCardDismissTap();
-        _tutorialTimer = 360;
+        _tutorialTimer = 90;
     }
 
     CULog("current player position: %f, %f", _player -> getPosition().x, _player -> getPosition().y);
@@ -405,9 +411,9 @@ void TutorialScene::preUpdate(float dt)
     updateCameraFollow();
     Vec2 offset = getHUDOffset();
     _input.setCameraOffset(offset);
-    _inputDisplay->setUIOffset(offset);
-    _inputDisplay->setUIZoom(getActiveCameraZoom());
-    _inputDisplay->update(playerScreenPos);
+    _inputDisplay.setUIOffset(offset);
+    _inputDisplay.setUIZoom(getActiveCameraZoom());
+    _inputDisplay.update(playerScreenPos);
 
     if (_inventoryCardNode) {
         float zoom = getActiveCameraZoom();
@@ -438,7 +444,6 @@ void TutorialScene::preUpdate(float dt)
             return;
         }
     }
-
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
             //CULog("click detected, card closed");
@@ -763,7 +768,7 @@ void TutorialScene::render()
         renderHUD();
     }
 
-    _inputDisplay->draw(_batch);
+    _inputDisplay.draw(_batch);
     if (_inventoryCardNode) {
         _inventoryCardNode->render(_batch);
     }
@@ -1026,9 +1031,6 @@ void TutorialScene::setActive(bool value)
         Scene2::setActive(value);
         if (value)
         {
-            _networkCtrl->startGame();
-            _networkCtrl->updateNet();
-            
             _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
             _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
             _worldnode->setPosition(Vec2::ZERO);
@@ -1045,12 +1047,12 @@ void TutorialScene::setActive(bool value)
             initPhysics();
             spawnFromMap();
             _input.activate();
-            _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
-                _player, _input, _depositPosition, _depositRadius);
+            
             CULog("I am trying to get a player using this id %s", _networkCtrl->getPID().c_str());
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
 
-
+            _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
+                _player, _input, _depositPosition, _depositRadius);
 
             CULog("tut setActive: hasNetwork=%d isHost=%d",
                 _networkCtrl->hasNetwork(), _networkCtrl->isHost());

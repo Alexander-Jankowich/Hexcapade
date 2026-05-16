@@ -95,9 +95,7 @@ public:
     string getPID() {return _network->getUUID();}
     
     bool connectClient(string roomId);
-    
-    void updateNetwork();
-    
+        
     bool connectHost() {
         if (_randSeed==0)
             _randSeed = _rng->getUint32();

@@ -16,6 +16,7 @@
 
 class InputDisplay {
 public:
+    InputDisplay();
 	InputDisplay(InputController* input, std::shared_ptr<cugl::JsonValue> values);
 
 	void setInputController(InputController* input) { _input = input; }
