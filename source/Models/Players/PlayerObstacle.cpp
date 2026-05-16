@@ -1,5 +1,6 @@
 #include "PlayerObstacle.h"
 #define PHYSICS_SCALE 50.0f
+#define HURT_TIME 84
 
 
 PlayerObstacle::PlayerObstacle(Vec2 pos, string pid, cugl::Size s, const shared_ptr<JsonValue>& consts) {
@@ -56,12 +57,7 @@ void PlayerObstacle::setVelocity(Vec2 v) {
 void PlayerObstacle::setHealth(int h) {
     _dirty = true;
     if (h < _health) {
-        if (_hurt) {
-            // Cannot be hit if already hit very recently
-            return;
-        }
         _hurt = true;
-        
     }
 
     _health = min(h, MAX_HEALTH);
@@ -75,6 +71,13 @@ void PlayerObstacle::setHealth(int h) {
 }
 
 void PlayerObstacle::damage(float damage) {
+    if (_iframeTimer > 0) {
+        // Cannot be hit if already hit very recently
+        CULog("have iframes, %d", _iframeTimer);
+        return;
+    }
+    _iframeTimer = HURT_TIME;
+
     if (_shield) {
         setShieldCount(getShieldCount() - 1);
         if (getShieldCount() == 0) {
@@ -88,6 +91,12 @@ void PlayerObstacle::damage(float damage) {
         return;
     }
     setHealth(_health - damage);
+}
+
+void PlayerObstacle::updateIframeTimer() {
+    if (_iframeTimer > 0) {
+        _iframeTimer--;
+    }
 }
 
 // inventory stuff

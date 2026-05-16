@@ -69,7 +69,8 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> PlayerFactor
     return createObstacle(pos, id, textureKey);
 }
 
-void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node, shared_ptr<Animator> animations) {
+void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_ptr<PlayerNode> node, float maxHeight,
+        shared_ptr<Animator> animations) {
     if (obs->getHealth() <= 0 || obs->isFrozen()) {
         obs->setLinearVelocity(Vec2::ZERO);
     }
@@ -79,6 +80,10 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
         node->releasedSpell();
     }
 
+    obs->updateIframeTimer();
+
+    float prio = (maxHeight - obs->getPosition().y) / maxHeight * 2;
+
     // Update frozen status for node if changed
     if (obs->isFrozen() && !node->isFrozen()) {
         node->setFrozen(true);
@@ -86,7 +91,7 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
 
         auto frozen = make_shared<SpellEntityNode>(_assets->get<graphics::Texture>("freeze_entity"), _spellConsts->get("freeze-entity"));
         node->addChildWithTag(frozen, FROZEN_ID);
-        frozen->setPriority(3);
+        frozen->setPriority(prio+FLT_EPSILON);
 
         animations->addNode(frozen);
 
@@ -129,9 +134,10 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
         });
         animations->endAnimation(shield);
     }
-    else if (obs->hasShield()) {
+    if (node->hasShield()) {
         auto shield = dynamic_pointer_cast<SpellEntityNode>(node->getChildByTag(SHIELD_ID));
         shield->setOffset(3 - obs->getShieldCount());
+        shield->setPriority(prio + FLT_EPSILON);
     }
 
     // Check buff status, update child node if needed
@@ -153,14 +159,18 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
         });
         animations->endAnimation(buff);
     }
+    if (node->isBuffed()) {
+        auto buff = dynamic_pointer_cast<SpellEntityNode>(node->getChildByTag(BUFF_ID));
+        buff->setPriority(prio - FLT_EPSILON);
+    }
 
     if (obs->isHurt() && !node->isHurt()) {
         // Remove hurt state when animation finishes playing
+        obs->setLinearVelocity(Vec2::ZERO);
         node->setHurt(true);
         animations->addNextListener(node, [obs, node](string key, float time, float actual) {
             obs->setHurt(false);
             node->setHurt(false);
-            //CULog("not hurt now");
         });
     }
        
@@ -176,6 +186,7 @@ void PlayerFactory::linkFunc(const shared_ptr<PlayerObstacle> obs, const shared_
     node->setPosition(pos * PHYSICS_SCALE);
     node->setAngle(angle);
     node->setVelocity(obs->getLinearVelocity() * PHYSICS_SCALE);
+    node->setPriority(prio);
 
     if (node->skipToNext()) {
         animations->endAnimation(node);

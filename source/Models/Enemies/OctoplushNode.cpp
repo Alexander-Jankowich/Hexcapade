@@ -25,11 +25,14 @@ pair<ActionFunction, float> OctoplushNode::getNextAnimation() {
     switch (_nextAnimation) {
     case AnimationType::DEAD:
         if (_dead) {
+            CULog("stop animation");
             return END_ANIMATION;
         }
         _dead = true;
+        CULog("death animation");
         return getAnimationPair(DEATH, DEATH_FRAMES);
     case AnimationType::DAMAGED:
+        CULog("damage animation");
         return getAnimationPair(DAMAGE, DAMAGE_FRAMES);
     case AnimationType::ATTACK:
         return getAnimationPair(_attack, ATTACK[0], ATTACK_FRAMES);

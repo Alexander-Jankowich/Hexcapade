@@ -70,6 +70,7 @@ protected:
     int _buffTimer = 0;
 
     bool _hurt = false;
+    int _iframeTimer = 0;
     
     bool _shield = false;
     
@@ -109,6 +110,7 @@ public:
 
     bool isHurt() { return _hurt; }
     void setHurt(bool h) { _hurt = h; }
+    void updateIframeTimer();
 
     void setSpeed(float s) { _speed = s; }
     float getSpeed() {

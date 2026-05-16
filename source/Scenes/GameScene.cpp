@@ -336,7 +336,7 @@ void GameScene::spawnItemsFromMap() {
         Vec2 physPos = spawn.first / PHYSICS_SCALE;
         ItemTypeClass::ItemType t = spawn.second;
 
-        auto params = _itemFact->serializeParams(physPos, _itemInfo.getConsts(t)->getInt("value"), t);
+        auto params = _itemFact->serializeParams(physPos, _itemInfo.getConsts(t)->getInt("value"), _world->getBounds().getMaxY(), t);
         _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
     }
     CULog("ItemFactory: spawned %zu items", itemSpawns.size());
@@ -410,8 +410,8 @@ void GameScene::preUpdate(float dt)
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
         //Have we set our player yet / received signal
         if (!_player) return;
-        _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
-            _player, _input, _depositPosition, _depositRadius);
+        _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
+            _player, _input, _depositPosition, _depositRadius, _world->getBounds().getMaxY());
     }
     _glowItemId = -1;
     Vec2 playerPos = _player->getPosition();
@@ -476,12 +476,9 @@ void GameScene::preUpdate(float dt)
 
             auto res = _map->generateEnemySpawns(_playerFact->getPlayerPositions(), _enemyFact->getEnemyPositions());
             for (auto r : res) {
-                //CULog("enemy type: %d", type);
-                // 
                 auto params = _enemyFact->serializeParams(r.second, r.first / PHYSICS_SCALE);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
-                // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             }
         }
@@ -493,6 +490,14 @@ void GameScene::preUpdate(float dt)
 
         // Update enemy movement
         _pathfinder.updateEnemies(_enemyFact, _playerFact, _spellFact, _networkCtrl, _spellFactId, _world);
+
+        // Send network events if enemies have updated
+        for (const auto& en : _enemyFact->current) {
+            if (en->isProperiesDirty()) {
+                _networkCtrl->pushOutEvent(EnemyStateEvent::alloc(en));
+                en->setPropertiesDirty(false);
+            }
+        }
 
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
@@ -521,13 +526,6 @@ void GameScene::preUpdate(float dt)
         _networkCtrl->getPhysController()->removeSharedObstacle(spell);
         //CULog("Remove spell: %d", spell->isRemoved());
     }
-    //for (auto en : _enemyFact -> current){
-    //    // If attack is on cooldown, wait
-    //    if (en->getState() == EnemyObstacle::EnemyState::ATTACK_RESET) {
-    //        CULog("here state");
-    //        continue;
-    //    }
-    //}
 
 
     // Update animations
@@ -553,6 +551,7 @@ void GameScene::preUpdate(float dt)
             DepositEvent::allocDepositEvent(_player->getPID(), 0, true, bombIdx));
     }
 
+#pragma mark Player Movement
     // Player movement
     cugl::Vec2 input = _input.getMove();
     if (_input.showAim()) {
@@ -563,14 +562,14 @@ void GameScene::preUpdate(float dt)
     }
     cugl::Vec2 velocity = input * _player->getSpeed();
 
-    if (_player->isFrozen() || _player->isHurt()) {
+    if (_player->isFrozen()) {
         //_player->setVelocity(Vec2::ZERO);
-    }else if (_player -> getWater()){
+    }
+    else if (_player -> getWater()){
         _player -> setVelocity(_player -> getPushDir() * _player -> getSpeed());
     }
-    else {
+    else if (!_player->isHurt()) {
         _player->setVelocity(velocity);
-        //_player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     }
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
@@ -710,7 +709,7 @@ void GameScene::preUpdate(float dt)
                     _player->depositItem((size_t)depositIndex);
                     _inventoryValue = _player->getInventoryVal();
                     Vec2 dropPos = _player->getPosition() + Vec2(0.0f, -0.35f);
-                    auto params = _itemFact->serializeParams(dropPos, carried.value, carried.itemType);
+                    auto params = _itemFact->serializeParams(dropPos, carried.value, _world->getBounds().getMaxY(), carried.itemType);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
@@ -876,8 +875,8 @@ void GameScene::preUpdate(float dt)
     }
     if (_input.pressedPickup()) {
         // I just use this to test combo animations - Kaz
-        //_player->setShield(true);
-        //_player->setShieldCount(3);
+        _player->setShield(true);
+        _player->setShieldCount(3);
         _input.resolvedPickup();
     }
 
@@ -1402,8 +1401,8 @@ void GameScene::setActive(bool value)
             CULog("I am trying to get a player using this id %s", _networkCtrl->getPID().c_str());
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
 
-            _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
-                _player, _input, _depositPosition, _depositRadius);
+            _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
+                _player, _input, _depositPosition, _depositRadius, _world->getBounds().getMaxY());
 
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                 _networkCtrl->hasNetwork(), _networkCtrl->isHost());
@@ -1440,17 +1439,22 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
 
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _playerFact->linkFunc(p, p_node, _animations);
+                _playerFact->linkFunc(p, p_node, _world->getBounds().getMaxY(), _animations);
                 });
 
             // Add animation
             _animations->addNode(p_node);
         }
         else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
+            // Add enemy to set
+            if (!_enemyFact->current.contains(e)) {
+                _enemyFact->addEnemy(e);
+            }
+
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _enemyFact->linkFunc(e, e_node, _animations);
-                });
+                _enemyFact->linkFunc(e, e_node, _networkCtrl->isHost(), _world->getBounds().getMaxY(), _animations);
+            });
 
             // Add animation
             _animations->addNode(e_node);
@@ -1458,7 +1462,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         else if (auto s = dynamic_pointer_cast<SpellObstacle>(obj)) {
             std::shared_ptr<SpellNode> s_node = std::dynamic_pointer_cast<SpellNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _spellFact->linkFunc(s, s_node, _animations);
+                _spellFact->linkFunc(s, s_node, _world->getBounds().getMaxY(), _animations);
                 });
 
             // Add animation
@@ -1476,25 +1480,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     }
 }
 
-
-/**
- * Just a helper to handle some of our damage processing
- */
-static void healthHelper(float damage, PlayerObstacle* player) {
-    if (player->hasShield()) {
-        player->setShieldCount(player->getShieldCount() - 1);
-        if (player->getShieldCount() == 0) {
-            player->setShield(false);
-        }
-        return;
-    }
-    if (player->getHealth() - damage <= 0 && player->hasProtectionArtifact()) {
-        player->consumeItem(ItemTypeClass::ItemType::PROTECTION);
-        player->setHealth(2);
-        return;
-    }
-    player->setHealth(player->getHealth() - damage);
-}
 void GameScene::initCombos() {
     _spellCombos.insert({
         {{SpellType::FIREBALL, SpellType::FIREBALL}, SpellType::COMBO_FIREBALL},
@@ -1547,6 +1532,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     physics2::Obstacle* obs2 = reinterpret_cast<physics2::Obstacle*>(body2->GetUserData().pointer);
 
     if (obs1->isRemoved() || obs2->isRemoved()) {
+        contact->SetEnabled(false);
         return;
     }
 
@@ -1612,15 +1598,11 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact->SetEnabled(false);
 
         // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove()) {
+        if (spell->shouldRemove() || player -> getPID() != _player -> getPID() || spell->getCasterUID() == player->getPID()) {
             return;
         }
-        if (player->getPID() != _player->getPID() && spell->TYPE != SpellType::HEAL) {
-            return;
-        }
+        //CULog("calc damage...");
 
-        //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
-        if (spell->getCasterUID() == player->getPID()) return;
         int nh = player->getHealth() + HEAL_AMT;
         switch (spell->TYPE) {
         case SpellType::HEAL:
@@ -1677,7 +1659,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             break;
         case SpellType::MUD_WATER:
             {
-            if(player -> getWater()){
+            if (player -> getWater()){
                 break;
             }
             Vec2 pushDir = player->getPosition() - spell->getPosition();
@@ -1701,21 +1683,29 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player->damage(4);
             spell->setRemove();
             break;
-            break;
         case SpellType::DEATH:
             player->damage(500);
+            break;
+        case SpellType::OCTO_ATTACK:
+            if (!player->isHurt()) {
+                CULog("hit by octo attack!!");
+                player->setWater(true, (player->getPosition() - spell->getPosition()).getNormalization());
+                player->setWaterTimer(20);
+                player->damage(spell->getDamage());
+            }
             break;
         default:
             CULog("A None Type Spell Should Not be Colliding With Anything");
         }
     }
     else if (player && enemy) {
-        //We need a death message
-        //We need to set ATTACKRESET and decrement some sort of timer
+        if (enemy -> TYPE == EnemyType::STATUE){
+            contact->SetEnabled(false);
+            return;
+        }
         contact->SetEnabled(true);
 
-        if (player->getHealth() <= 0 || enemy->isDead()) {
-
+        if (player->getHealth() <= 0 || enemy->isDead() || player->getPID() != _player->getPID() || enemy->isFroze()) {
             return;
         }
 
@@ -1728,24 +1718,25 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             dir.y /= len;
         }
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
-        if (!enemy->canAttack()) return;
+        //if (!enemy->canAttack()) {
+        //    return;
+        //}
 
         enemy->setAttackTimer(90);
-        if (player->getPID() != _player->getPID()) return;
-        //CULog("enemy and player");
+
         player->damage(1);
         return;
     }
     else if (enemy && spell) {
-        //CULog("enemy and spell");
         contact->SetEnabled(false);
-        if (spell->getCasterUID() == "bat") {
+        if (enemy -> TYPE == EnemyType::STATUE){
+            return;
+        } 
+
+        if (!_networkCtrl->isHost() || spell->shouldRemove() || spell->getCasterUID() == ENEMY_ID) {
             return;
         }
-        // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove()) {
-            return;
-        }
+
         switch (spell->TYPE) {
         case SpellType::WATER:
         {
@@ -1806,7 +1797,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     else if (wall && spell) {
         contact->SetEnabled(false);
-        spell->setRemove();
+        if (spell->VISIBLE) {
+            spell->setRemove();
+        }
         return;
     }
     else if (wall && enemy) {

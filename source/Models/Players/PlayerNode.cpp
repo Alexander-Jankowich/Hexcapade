@@ -72,7 +72,6 @@ PlayerNode::PlayerNode(const std::shared_ptr<cugl::graphics::Texture>& tex) {
 
 
     setFrame(idle[0]);
-    setPriority(1);
 }
 
 void PlayerNode::setVelocity(cugl::Vec2 value) {

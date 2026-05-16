@@ -17,7 +17,8 @@ enum class EnemyType {
     GHOST = 0,
     BAT = 1,
     OCTO = 2,
-    SLOWBAT = 3
+    SLOWBAT = 3,
+    STATUE = 4
 };
 
 /**
@@ -26,13 +27,14 @@ enum class EnemyType {
 class EnemyObstacle : public physics2::CapsuleObstacle {
 public:
     enum class EnemyState : int {
-        IDLE = 0,
-        CHASING = 1,
+        REGULAR = 0,
         ATTACKING = 2,
         HURT = 3,
         DEATH = 4
     };
 
+    const uint32 ID;
+    
 protected:
     // Current of hp the enemy has
     float _health;
@@ -61,31 +63,31 @@ protected:
 
     // Whether the enemy is frozen
     bool _frozen;
-
-    //Whether the enemy has mud status
-    bool _mud;
-
     // The time left until enemy is unfrozen
     int _frozenTimer;
 
+    //Whether the enemy has mud status
+    bool _mud;
     //The time left until enemies mud wears off
     int _mudTimer;
+
+    int _hurtTimer;
 
     Vec2 _waterPushDir = Vec2::ZERO;
     int _waterPushTimer = 0;
     float _attackRange = 0;
     int _attackTimer = 0;
 
-
+    bool _propertiesDirty;
 
 public:
-    EnemyObstacle(const EnemyType type, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s);
+    EnemyObstacle(const EnemyType type, uint32 id, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s);
 
     // The type of enemy this enemy is, can be public bc it is a constant
     const EnemyType TYPE;
 
-    static shared_ptr<EnemyObstacle> alloc(EnemyType type, const Vec2& pos, const shared_ptr<JsonValue> consts, Size s) {
-        auto f = make_shared<EnemyObstacle>(type, pos, consts, s);
+    static shared_ptr<EnemyObstacle> alloc(EnemyType type, uint32 id, const Vec2& pos, const shared_ptr<JsonValue> consts, Size s) {
+        auto f = make_shared<EnemyObstacle>(type, id, pos, consts, s);
         f->createFixtures();
         return f;
     }
@@ -109,7 +111,7 @@ public:
     void setSpeed(float s) { _speed = s; }
 
     EnemyState getState() { return _state; }
-    void setState(EnemyState s) { if (!isDead()) _state = s; }
+    void setState(EnemyState s);
 
     void startAttack() { setState(EnemyState::ATTACKING); }
     bool isAttacking() { return _state == EnemyState::ATTACKING; }
@@ -132,7 +134,7 @@ public:
      *
      * @return the current enemy health.
      */
-    int getHealth() const { return _health; }
+    float getHealth() const { return _health; }
 
     /**
      * Sets the current enemy health.
@@ -141,7 +143,7 @@ public:
      *
      * @param value The current enemy health.
      */
-    void setHealth(int value);
+    void setHealth(float value);
 
     float getRange() { return _range; }
 
@@ -152,7 +154,7 @@ public:
     int getFrozenTimer() { return _frozenTimer; }
 
     bool isFroze() { return _frozen; }
-    void setFrozen(bool b) { _frozen = b; }
+    void setFrozen(bool b);
 
     void setMud(bool m) { _mud = m; }
     bool isMud() { return _mud; }
@@ -167,8 +169,12 @@ public:
     
     float getAttackRange() const { return _attackRange; }
 
-    void setHurt(bool h) { setState(h ? EnemyState::HURT : EnemyState::IDLE); }
+    void setHurt(bool h);
     bool isHurt() { return _state == EnemyState::HURT; }
+    void updateHurtTimer();
+
+    void setPropertiesDirty(bool d) { _propertiesDirty = d; }
+    bool isProperiesDirty() { return _propertiesDirty; }
 };
 
 #endif // !__ENEMY_OBSTACLE_H__

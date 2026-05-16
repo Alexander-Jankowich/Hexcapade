@@ -647,6 +647,7 @@ void Map::loadLevelConfig(int level, int numPlayers, std::shared_ptr<cugl::JsonV
         else if (e == "ghost") _config._enemyTypes.push_back(EnemyType::GHOST);
         else if (e == "bat") _config._enemyTypes.push_back(EnemyType::BAT);
         else if (e == "slow-bat") _config._enemyTypes.push_back(EnemyType::SLOWBAT);
+        else if (e == "statue") _config._enemyTypes.push_back(EnemyType::STATUE);
     }
     
     _config._zone1WeightsEn = data->get("enemies-probs")->get(0)->asFloatArray();

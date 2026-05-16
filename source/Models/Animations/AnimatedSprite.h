@@ -66,6 +66,7 @@ public:
 	*/
 	virtual pair<ActionFunction, float> getNextAnimation() = 0;
 
+	const Rect bounds() { return _bounds; }
 };
 
 #endif // !__ANIMATED_SPRITE_H__

@@ -28,6 +28,13 @@ void Animator::update(float dt) {
 		if (ani.second < 0) {
 			// No next animation, remove from active list
 			_active.erase(node);
+
+			// Run all the listeners for that node
+			auto range = _listeners.equal_range(node);
+			for (auto it = range.first; it != range.second; ++it) {
+				it->second.first(key, it->second.second, 0);
+			}
+			_listeners.erase(node);
 		}
 		else {
 			_timeline->add(key, ani.first, ani.second);
@@ -87,10 +94,10 @@ void Animator::endAnimation(const shared_ptr<AnimatedSprite> node) {
 	auto it = _active.find(node);
 	if (it != _active.end()) {
 		// Node is in active
-		//if (!_timeline->isPaused(it->second)) {
+		if (!_timeline->isPaused(it->second)) {
 			_timeline->remove(it->second);
 			endedAnimation(it->first, it->second);
-		//}
+		}
 	}
 }
 
