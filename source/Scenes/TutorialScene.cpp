@@ -82,7 +82,7 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
             return cugl::Vec2(world.x, world.y);
         }
     );
-    _inputDisplay = make_shared<InputDisplay>(&_input, _constants->get("input"));
+    _inputDisplay = InputDisplay(&_input, _constants->get("input"));
 
     // Initialize spell combo information
     initCombos();
@@ -131,21 +131,13 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
         };
     _world->update(1);
     
-    _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
-    _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    _worldnode->setPosition(Vec2::ZERO);
-    addChild(_worldnode);
-    
+
     // init map and network
     _map = std::make_shared<StaticMap>();
     _networkCtrl = std::make_shared<NetworkController>();
     _networkCtrl->init(_assets);
-    
-    auto n = _map->generateStaticMap(_assets, _world);
-    n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-    n->setPosition(Vec2::ZERO);
-    n->setPriority(0.0f);
-    _worldnode->addChild(n);
+    _networkCtrl->connectHost();
+    CULog("tutorial scene connecting host");
     
     _itemInfo = ItemTypeClass(_assets);
 
@@ -153,7 +145,49 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
     setActive(false);
     return true;
 }
+void TutorialScene::reset() {
+    CULog("tutorial scene reset called");
+    _networkCtrl->disconnect();
+    _networkCtrl->resetStatus();
+    hideTutorial();
+    hideInventoryCard();
+    _pendingTutorialTex = nullptr;
+    _world->clear(true); // reset box2d + phys world
+    // is this correct...?
+    _worldnode->removeAllChildren();
+    removeAllChildren();
+    _input.reset();
+    _input.dispose();
+    
+    _inputDisplay.reset();
 
+    _player = nullptr;
+    _enemyFact->reset();
+    _itemFact->reset();
+    _spellFact->reset();
+    _playerFact->reset();
+
+    _addedLWalls = false;
+    _tutorialEnded = false;
+    _depositedValue = 0;
+    // Match startup behavior on replay: reset clears active enemies and restarts
+    // the host spawn timer instead of forcing one immediate spawn.
+
+    for (auto& playerObs : _playerFact->current) {
+        if (playerObs) {
+            playerObs->clearInventory();
+        }
+    }
+    // clear any tracked item visuals so the next run can relink fresh world items
+    _itemNodes.clear();
+    _inventoryValue = 0;
+    _canDeposit = false;
+    _pendingInventoryTapIndex = -1;
+    _currOverlappedItem = -1;
+    _tutorialTimer = 0;
+    _networkCtrl->connectHost(); // prepare to start again?
+    Scene::reset();
+}
 /**
  * Disposes of all (non-static) resources allocated to this mode.
  */
@@ -161,7 +195,7 @@ void TutorialScene::dispose()
 {
     // NOTHING TO DO THIS TIME
     hideInventoryCard();
-    _inputDisplay->dispose();
+    _inputDisplay.dispose();
     _map = nullptr;
     _assets->dispose();
     _assets = nullptr;
@@ -300,8 +334,8 @@ void TutorialScene::preUpdate(float dt)
         _tutorialEnded = true;
     }
 #pragma mark Tutorial Stuff I Am Putting Here for Simplicity
-    _tutorialTimer -= 1;
     
+    _tutorialTimer -= 1;
     if(_playerFact -> getPlayerByPID("bot0") -> getSpell() == SpellType::NONE){
         _playerFact -> getPlayerByPID("bot0") -> setSpell(SpellType::FREEZE);
     }
@@ -325,7 +359,7 @@ void TutorialScene::preUpdate(float dt)
         showTutorial(_pendingTutorialTex);
         _pendingTutorialTex = nullptr;
         _input.resolvedCardDismissTap();
-        _tutorialTimer = 360;
+        _tutorialTimer = 90;
     }
 
     CULog("current player position: %f, %f", _player -> getPosition().x, _player -> getPosition().y);
@@ -386,9 +420,9 @@ void TutorialScene::preUpdate(float dt)
     updateCameraFollow();
     Vec2 offset = getHUDOffset();
     _input.setCameraOffset(offset);
-    _inputDisplay->setUIOffset(offset);
-    _inputDisplay->setUIZoom(getActiveCameraZoom());
-    _inputDisplay->update(playerScreenPos);
+    _inputDisplay.setUIOffset(offset);
+    _inputDisplay.setUIZoom(getActiveCameraZoom());
+    _inputDisplay.update(playerScreenPos);
 
     if (_inventoryCardNode) {
         float zoom = getActiveCameraZoom();
@@ -419,7 +453,6 @@ void TutorialScene::preUpdate(float dt)
             return;
         }
     }
-
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
             //CULog("click detected, card closed");
@@ -438,7 +471,7 @@ void TutorialScene::preUpdate(float dt)
 #pragma mark Deposit handling and Inventory card display
     bool depositRequested = false;
     int depositIndex = -1;
-    _canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
+    //_canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
 
     if (_input.pressedDeposit()) {
         depositRequested = true;
@@ -505,7 +538,7 @@ void TutorialScene::preUpdate(float dt)
                     _player->depositItem((size_t)depositIndex);
                     _inventoryValue = _player->getInventoryVal();
                     Vec2 dropPos = _player->getPosition() + Vec2(0.0f, -0.35f);
-                    auto params = _itemFact->serializeParams(dropPos, carried.value, carried.itemType);
+                    auto params = _itemFact->serializeParams(dropPos, carried.value, _world->getBounds().getMaxY(), carried.itemType);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
@@ -664,6 +697,7 @@ void TutorialScene::fixedUpdate(Uint64 step)
     _depositedValue += std::get<1>(values);
 
     _currOverlappedItem = -1;
+    _canDeposit = false;
     _world->update(step / 1000000.0f);
 }
 
@@ -745,7 +779,7 @@ void TutorialScene::render()
         renderHUD();
     }
 
-    _inputDisplay->draw(_batch);
+    _inputDisplay.draw(_batch);
     if (_inventoryCardNode) {
         _inventoryCardNode->render(_batch);
     }
@@ -963,7 +997,6 @@ void TutorialScene::initPhysics() {
         counter += 1;
         
     }
-
     _map->getLowerWallNode()->setPriority(1.0f);
     _worldnode->addChild(_map->getLowerWallNode());
     _addedLWalls = true;
@@ -979,12 +1012,29 @@ void TutorialScene::spawnFromMap() {
     }
     
     for (auto e : _map->getData()->getItemSpawnPoints()) {
-        auto params = _itemFact->serializeParams(e.location / PHYSICS_SCALE, _itemInfo.getConsts((ItemTypeClass::ItemType) e.item)->getInt("value"), (ItemTypeClass::ItemType) e.item);
+        auto params = _itemFact->serializeParams(e.location / PHYSICS_SCALE,
+            _itemInfo.getConsts((ItemTypeClass::ItemType) e.item)->getInt("value"), _world->getBounds().getMaxY(),
+            (ItemTypeClass::ItemType) e.item);
         auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
         _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
     }
     
     _depositPosition = _map->getData()->getDepositSpawn();
+    auto sprite = cugl::scene2::PolygonNode::allocWithTexture(_assets->get<graphics::Texture>("deposit"));
+    Vec2 pos = _map->getData()->getDepositSpawn(); // bottom left corner of deposit
+    //CULog("X: %f, Y %f", x,y);
+    sprite->setPriority(99.0f);
+    sprite->setPosition(Vec2(pos));
+    sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    _worldnode->addChild(sprite);
+    
+    auto obs = physics2::BoxObstacle::alloc(pos/PHYSICS_SCALE, _assets->get<graphics::Texture>("deposit")->getSize()/PHYSICS_SCALE);
+    //obs->setPosition(0,0);
+    obs->setDensity(1.0);
+    obs -> setEnabled(true);
+    obs->setBodyType(b2_staticBody);
+    _world->addObstacle(obs);
+    
 }
 
 void TutorialScene::setActive(bool value)
@@ -994,16 +1044,28 @@ void TutorialScene::setActive(bool value)
         Scene2::setActive(value);
         if (value)
         {
-            _networkCtrl->connectHost();
-            _networkCtrl->startGame();
+            _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+            _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+            _worldnode->setPosition(Vec2::ZERO);
+            addChild(_worldnode);
+            
+            auto n = _map->generateStaticMap(_assets, _world);
+            n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+            n->setPosition(Vec2::ZERO);
+            n->setPriority(0.0f);
+            _worldnode->addChild(n);
+            
+            _itemInfo = ItemTypeClass(_assets);
+
             initPhysics();
             spawnFromMap();
             _input.activate();
+            
             CULog("I am trying to get a player using this id %s", _networkCtrl->getPID().c_str());
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
 
-            _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
-                _player, _input, _depositPosition, _depositRadius);
+            _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
+                _player, _input, _depositPosition, _depositRadius, _world->getBounds().getMaxY());
 
             CULog("tut setActive: hasNetwork=%d isHost=%d",
                 _networkCtrl->hasNetwork(), _networkCtrl->isHost());
@@ -1039,7 +1101,7 @@ void TutorialScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& ob
 
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _playerFact->linkFunc(p, p_node, _animations);
+                _playerFact->linkFunc(p, p_node, _world->getBounds().getMaxY(), _animations);
                 });
 
             // Add animation
@@ -1048,7 +1110,7 @@ void TutorialScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& ob
         else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _enemyFact->linkFunc(e, e_node, _animations);
+                _enemyFact->linkFunc(e, e_node, true, _world->getBounds().getMaxY(), _animations);
                 });
 
             // Add animation
@@ -1057,7 +1119,7 @@ void TutorialScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& ob
         else if (auto s = dynamic_pointer_cast<SpellObstacle>(obj)) {
             std::shared_ptr<SpellNode> s_node = std::dynamic_pointer_cast<SpellNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _spellFact->linkFunc(s, s_node, _animations);
+                _spellFact->linkFunc(s, s_node, _world->getBounds().getMaxY(), _animations);
                 });
 
             // Add animation
@@ -1073,14 +1135,6 @@ void TutorialScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& ob
                 });
         }
     }
-}
-
-
-/**
- * Just a helper to handle some of our damage processing - removed code for things not in tutorial
- */
-static void healthHelper(float damage, PlayerObstacle* player) {
-    player->setHealth(player->getHealth() - damage);
 }
 
 void TutorialScene::initCombos() {
@@ -1146,6 +1200,8 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
     cugl::physics2::PolygonObstacle* wall = nullptr;
     ItemObstacle* item = nullptr;
     TutorialObstacle* tut = nullptr;
+    cugl::physics2::BoxObstacle* deposit = nullptr;
+
 
     // Get types of the 2 obstacles; only care about collisions between different types of obstacles
     if (auto s = dynamic_cast<SpellObstacle*>(obs1)) {
@@ -1164,6 +1220,9 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
     }
     else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs1)) {
         wall = w;
+    }
+    else if (auto d = dynamic_cast<cugl::physics2::BoxObstacle*>(obs1)) {
+        deposit = d;
     }
 
     if (auto s = dynamic_cast<SpellObstacle*>(obs2)) {
@@ -1193,7 +1252,10 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
     else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs2)) {
         //CULog("i am a wall");
         wall = w;
-    };
+    }
+    else if (auto d = dynamic_cast<cugl::physics2::BoxObstacle*>(obs2)) {
+        deposit = d;
+    }
 
     // Checking for collisions
     if (spell && spell2) {
@@ -1309,8 +1371,10 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
         }
             contact->SetEnabled(false);
     }
-    else if (wall && player) {
+    else if (deposit && player) {
         contact->SetEnabled(true);
+        CULog("at deposit");
+        _canDeposit = true;
         return;
     }
 

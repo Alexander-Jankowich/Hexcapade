@@ -167,12 +167,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
                 }
                 int height = std::get<1>(res)+2; // bc <=
                 std::vector<Vec2> west_points = {
-                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 4) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - height + 3) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + height) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 std::vector<Vec2> east_points = {
-                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + 4) * TILE_SIZE / PHYSICS_SCALE),
-                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - height + 3) * TILE_SIZE / PHYSICS_SCALE)
+                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos + height) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(west_points,false);
                 _extruder.calculate(0.05f);
@@ -238,11 +238,11 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
                 // hallway colliders
                 int height = std::get<1>(res)+1; // bc <=
                 std::vector<Vec2> west_points = {
-                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 1) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos) * TILE_SIZE / PHYSICS_SCALE),
                     Vec2((xPos - 0.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - height) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 std::vector<Vec2> east_points = {
-                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - 1) * TILE_SIZE / PHYSICS_SCALE),
+                    Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos) * TILE_SIZE / PHYSICS_SCALE),
                     Vec2((xPos + 4.5) * TILE_SIZE / PHYSICS_SCALE, (_config._mapSize - yPos - height) * TILE_SIZE / PHYSICS_SCALE)
                 };
                 _extruder.set(west_points,false);
@@ -647,6 +647,7 @@ void Map::loadLevelConfig(int level, int numPlayers, std::shared_ptr<cugl::JsonV
         else if (e == "ghost") _config._enemyTypes.push_back(EnemyType::GHOST);
         else if (e == "bat") _config._enemyTypes.push_back(EnemyType::BAT);
         else if (e == "slow-bat") _config._enemyTypes.push_back(EnemyType::SLOWBAT);
+        else if (e == "statue") _config._enemyTypes.push_back(EnemyType::STATUE);
     }
     
     _config._zone1WeightsEn = data->get("enemies-probs")->get(0)->asFloatArray();

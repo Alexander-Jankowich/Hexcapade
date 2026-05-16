@@ -6,6 +6,9 @@
     "level-config": "json/level_config.json"
   },
   "textures": {
+      "deposit": {
+          "file": "textures/deposit.png"
+      },
     "ghost": {
       "file": "textures/enemy_ghost_sheet.png"
     },
@@ -17,6 +20,9 @@
     },
     "octoplush_attack": {
       "file": "textures/enemy_octoplush_attack_sheet.png"
+    },
+    "statue": {
+        "file": "textures/sprite_sheet-statue.png"
     },
     "fireball": {
       "file": "textures/fireball_sheet.png"
@@ -257,6 +263,24 @@
     },
     "zombieTotem_info": {
       "file": "textures/inventory_cards/item_cards/zombieTotem_info.png"
+    },
+    "quota_empty": {
+      "file": "textures/deposit_empty.png"
+    },
+    "quota_25": {
+      "file": "textures/deposit_1.png"
+    },
+    "quota_50": {
+      "file": "textures/deposit_2.png"
+    },
+    "quota_75": {
+      "file": "textures/deposit_3.png"
+    },
+    "quota_full": {
+      "file": "textures/deposit_full.png"
+    },
+    "hourglass": {
+      "file": "textures/hourglass.png"
     },
     "hex-icon-bunny": {
       "file": "textures/hex-icon-bunny.png"
@@ -1654,12 +1678,12 @@
                   0.5
                 ],
                 "size": [
-                  147,
-                  70
+                  248,
+                  104
                 ],
                 "position": [
-                  50,
-                  31
+                  124,
+                  52
                 ],
                 "angle": 0,
                 "visible": true,
@@ -1673,8 +1697,8 @@
                   0,
                   0
                 ],
-                "valign": "top",
-                "halign": "left"
+                "valign": "middle",
+                "halign": "center"
               },
               "children": {},
               "layout": {
@@ -2299,7 +2323,7 @@
             "x_anchor": "center",
             "y_anchor": "middle",
             "absolute": false,
-            "x_offset": 0.34,
+            "x_offset": 0.29,
             "y_offset": 0.1
           }
         },
@@ -2943,16 +2967,16 @@
                       "type": "Label",
                       "data": {
                         "anchor": [
-                          0,
-                          1
+                          0.5,
+                          0.5
                         ],
                         "size": [
-                          195,
-                          63
+                          235,
+                          76
                         ],
                         "position": [
-                          180,
-                          23
+                          160,
+                          19
                         ],
                         "angle": 0,
                         "visible": true,
@@ -2966,16 +2990,16 @@
                           0,
                           0
                         ],
-                        "valign": "top",
-                        "halign": "left"
+                        "valign": "middle",
+                        "halign": "center"
                       },
                       "children": {},
                       "layout": {
-                        "x_anchor": "left",
-                        "y_anchor": "top",
+                        "x_anchor": "center",
+                        "y_anchor": "middle",
                         "absolute": false,
-                        "x_offset": 0.45,
-                        "y_offset": -0.3
+                        "x_offset": 0.19,
+                        "y_offset": 0.02
                       }
                     }
                   },
@@ -4424,12 +4448,12 @@
                           1
                         ],
                         "size": [
-                          195,
-                          63
+                          235,
+                          76
                         ],
                         "position": [
-                          257,
-                          27
+                          237,
+                          19
                         ],
                         "angle": 0,
                         "visible": true,
@@ -4443,16 +4467,16 @@
                           0,
                           0
                         ],
-                        "valign": "top",
-                        "halign": "left"
+                        "valign": "middle",
+                        "halign": "center"
                       },
                       "children": {},
                       "layout": {
                         "x_anchor": "left",
                         "y_anchor": "top",
                         "absolute": false,
-                        "x_offset": 0.44,
-                        "y_offset": -0.3
+                        "x_offset": 0.41,
+                        "y_offset": -0.13
                       }
                     }
                   },

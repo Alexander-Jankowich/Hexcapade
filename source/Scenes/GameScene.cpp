@@ -113,6 +113,13 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
         _nameFont = nullptr;
     }
 
+    try {
+        _uiFont = assets->get<Font>("CoolveticaRegular48");
+    }
+    catch (...) {
+        _uiFont = nullptr;
+    }
+
     // this resets pickup prompt state
     _canDeposit = false;
     _depositRadius = 42.0f;
@@ -333,7 +340,7 @@ void GameScene::spawnItemsFromMap() {
         Vec2 physPos = spawn.first / PHYSICS_SCALE;
         ItemTypeClass::ItemType t = spawn.second;
 
-        auto params = _itemFact->serializeParams(physPos, _itemInfo.getConsts(t)->getInt("value"), t);
+        auto params = _itemFact->serializeParams(physPos, _itemInfo.getConsts(t)->getInt("value"), _world->getBounds().getMaxY(), t);
         _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
     }
     CULog("ItemFactory: spawned %zu items", itemSpawns.size());
@@ -565,8 +572,8 @@ void GameScene::preUpdate(float dt)
         _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
         //Have we set our player yet / received signal
         if (!_player) return;
-        _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
-            _player, _input, _depositPosition, _depositRadius);
+        _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
+            _player, _input, _depositPosition, _depositRadius, _world->getBounds().getMaxY());
     }
     if (_lastPlayerHealthForSound < 0) {
         _lastPlayerHealthForSound = _player->getHealth();
@@ -634,12 +641,9 @@ void GameScene::preUpdate(float dt)
 
             auto res = _map->generateEnemySpawns(_playerFact->getPlayerPositions(), _enemyFact->getEnemyPositions());
             for (auto r : res) {
-                //CULog("enemy type: %d", type);
-                // 
                 auto params = _enemyFact->serializeParams(r.second, r.first / PHYSICS_SCALE);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_enemyFactId, params);
                 //If we create it we MUST acquire it
-                // Kaz: shouldn't need to, when obstacles are created they automatically get assigned to the host
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
             }
         }
@@ -651,6 +655,14 @@ void GameScene::preUpdate(float dt)
 
         // Update enemy movement
         _pathfinder.updateEnemies(_enemyFact, _playerFact, _spellFact, _networkCtrl, _spellFactId, _world);
+
+        // Send network events if enemies have updated
+        for (const auto& en : _enemyFact->current) {
+            if (en->isProperiesDirty()) {
+                _networkCtrl->pushOutEvent(EnemyStateEvent::alloc(en));
+                en->setPropertiesDirty(false);
+            }
+        }
 
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
@@ -680,13 +692,6 @@ void GameScene::preUpdate(float dt)
         _networkCtrl->getPhysController()->removeSharedObstacle(spell);
         //CULog("Remove spell: %d", spell->isRemoved());
     }
-    //for (auto en : _enemyFact -> current){
-    //    // If attack is on cooldown, wait
-    //    if (en->getState() == EnemyObstacle::EnemyState::ATTACK_RESET) {
-    //        CULog("here state");
-    //        continue;
-    //    }
-    //}
 
 
     // Update animations
@@ -719,6 +724,7 @@ void GameScene::preUpdate(float dt)
     }
     _lastPlayerHealthForSound = _player->getHealth();
 
+#pragma mark Player Movement
     // Player movement
     cugl::Vec2 input = _input.getMove();
     if (_input.showAim()) {
@@ -729,14 +735,14 @@ void GameScene::preUpdate(float dt)
     }
     cugl::Vec2 velocity = input * _player->getSpeed();
 
-    if (_player->isFrozen() || _player->isHurt()) {
+    if (_player->isFrozen()) {
         //_player->setVelocity(Vec2::ZERO);
-    }else if (_player -> getWater()){
+    }
+    else if (_player -> getWater()){
         _player -> setVelocity(_player -> getPushDir() * _player -> getSpeed());
     }
-    else {
+    else if (!_player->isHurt()) {
         _player->setVelocity(velocity);
-        //_player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
     }
     updateWalkingSounds(dt);
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
@@ -887,7 +893,7 @@ void GameScene::preUpdate(float dt)
                     _player->depositItem((size_t)depositIndex);
                     _inventoryValue = _player->getInventoryVal();
                     Vec2 dropPos = _player->getPosition() + Vec2(0.0f, -0.35f);
-                    auto params = _itemFact->serializeParams(dropPos, carried.value, carried.itemType);
+                    auto params = _itemFact->serializeParams(dropPos, carried.value, _world->getBounds().getMaxY(), carried.itemType);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                     // drop feedback is separate from altar deposit
@@ -1257,8 +1263,6 @@ void GameScene::renderHUD()
     Vec2 hudOffset = getHUDOffset();
     float zoom = getActiveCameraZoom();
 
-    float barW = 320;
-    float barH = 50;
     float margin = 16;
 
     auto hudX = [hudOffset, zoom](float value) {
@@ -1287,136 +1291,196 @@ void GameScene::renderHUD()
 
     _batch->setTexture(nullptr);
 
-    Color4 boxColor(30, 30, 30, 255);
+    // Inventory bar
+    auto boxTex = _assets->get<graphics::Texture>("item_box");
+    if (boxTex) {
+        constexpr size_t kSlotCount = 5;
+        const auto& carriedItems = _player->getInventory();
 
-    float timerX = screenSize.width / 2 - barW * 0.5f;
-    float timerY = margin;
-    drawBox(hudX(timerX), hudY(timerY), hudSize(barW), hudSize(barH), boxColor);
+        for (size_t i = 0; i < kSlotCount; ++i) {
+            Rect slot = getInventorySlotBounds(i);
+            float boxX = slot.origin.x + hudOffset.x;
+            float boxY = slot.origin.y + hudOffset.y;
+            float boxSize = slot.size.width;
 
-    if (_font)
-    {
+            // Draw the frame
+            _batch->setColor(Color4::WHITE);
+            _batch->draw(boxTex, Rect(boxX, boxY, boxSize, boxSize));
+
+            if (i < carriedItems.size()) {
+                const auto& carried = carriedItems[i];
+                if (carried.itemType == ItemTypeClass::ItemType::BOMB && carried.bombTimer >= 0 && carried.bombTimer <= 300) {
+                    float t = 1.0f - ((float)carried.bombTimer / 300.0f);
+                    float padding = boxSize * 0.1f;
+                    _batch->setTexture(nullptr);
+                    drawBox(boxX + padding, boxY + padding, boxSize * 0.8f, boxSize * 0.8f, Color4(255, 0, 0, (Uint8)(90 * t)));
+                }
+            }
+
+            // Draw item texture centered inside the frame
+            if (i < carriedItems.size()) {
+                const auto& carried = carriedItems[i];
+                auto itemTex = _itemInfo.getTexture(carried.itemType);
+                if (itemTex) {
+                    float padding = 0.0f;
+                    float maxSize = boxSize - padding * 2;
+
+                    // Preserve 3:4 aspect ratio
+                    float iconW = maxSize * (3.0f / 4.0f);
+                    float iconH = maxSize;
+
+                    float iconX = boxX + (boxSize - iconW) * 0.5f;
+                    float iconY = boxY + padding;
+
+                    _batch->setColor(Color4::WHITE);
+                    _batch->draw(itemTex, Rect(iconX, iconY, iconW, iconH));
+                }
+            }
+        }
+    }
+
+    // Help button
+    auto helpTex = _assets->get<graphics::Texture>("help_button");
+    if (helpTex) {
+        Rect helpBounds = getHelpButtonBounds();
         _batch->setColor(Color4::WHITE);
-        std::stringstream ss;
-        ss << std::fixed << std::setprecision(2) << (_timer / 60);
-        std::string timer_text = ss.str();
-        std::shared_ptr<TextLayout> timerLabel = TextLayout::allocWithText(
-            "Time Remaining: " + timer_text, _font);
+        _batch->draw(helpTex, Rect(helpBounds.origin.x + hudOffset.x,
+            helpBounds.origin.y + hudOffset.y,
+            helpBounds.size.width,
+            helpBounds.size.height));
+    }
+
+    auto texContainer = _assets->get<graphics::Texture>("health_bar");
+    auto texFull = _assets->get<graphics::Texture>("health_full");
+    auto texHalf = _assets->get<graphics::Texture>("health_half");
+    auto texEmpty = _assets->get<graphics::Texture>("health_empty");
+    auto texHourglass = _assets->get<graphics::Texture>("hourglass");
+
+    float iconRowH = 79.0f * 0.8f;
+    float heartRowH = iconRowH;
+    float innerPad = 2.0f; // gap between the rows
+
+    float containerW = 269.0f * 0.8f;
+    float totalPanelH = heartRowH + innerPad + iconRowH + innerPad + iconRowH;
+
+    float containerX_local = margin + 25.0f;
+    float containerY_local = screenSize.height - totalPanelH - margin;
+
+    float containerX = hudX(containerX_local);
+    float containerY = hudY(containerY_local);
+    float containerWs = hudSize(containerW);
+    float totalPanelHs = hudSize(totalPanelH);
+
+    if (texContainer) {
+        _batch->setColor(Color4::WHITE);
+        _batch->draw(texContainer, Rect(containerX, containerY, containerWs, totalPanelHs));
+    }
+    else {
+        // Fallback
+        drawBox(containerX, containerY, containerWs, totalPanelHs, Color4(30, 30, 30, 220));
+    }
+
+    float quotaRowY_local = containerY_local;
+    float timerRowY_local = containerY_local + iconRowH + innerPad;
+    float heartsRowY_local = containerY_local + 2.0f * (iconRowH + innerPad);
+
+    // ---- Hearts row -----------------------------------------------
+    if (texFull && texHalf && texEmpty) {
+        float heartRowYs = hudY(heartsRowY_local);
+        float heartRowHs = hudSize(heartRowH);
+        float containerWs2 = hudSize(containerW);
+
+        float heartH = heartRowHs * 0.6f;
+        float heartW = heartH * (83.0f / 78.0f);
+
+        float totalHeartsW = containerWs2 / 3.0f;
+        int hp = _player->getHealth();
+
+        for (int i = 0; i < 3; ++i) {
+            int heartPoints = hp - i * 2;
+            std::shared_ptr<graphics::Texture> tex;
+            if (heartPoints >= 2)
+                tex = texFull;
+            else if (heartPoints == 1)
+                tex = texHalf;
+            else
+                tex = texEmpty;
+
+            float slotCenterX = containerX + totalHeartsW * i + totalHeartsW * 0.5f;
+            float hx = slotCenterX - heartW * 0.5f;
+            float hy = heartRowYs + (heartRowHs - heartH) * 0.5f;
+            _batch->setColor(Color4::WHITE);
+            _batch->draw(tex, Rect(hx, hy, heartW, heartH));
+        }
+    }
+
+    // ---- Timer row ---------------------------------------------
+    if (_font) {
+        float timerRowYs = hudY(timerRowY_local);
+        float iconRowHs = hudSize(iconRowH);
+        float iconSize = iconRowHs * 0.7f;
+        float textOffsetX = iconSize + hudSize(8.0f);
+
+        if (texHourglass) {
+            float iconY = timerRowYs + (iconRowHs - iconSize) * 0.5f;
+            _batch->setColor(Color4::WHITE);
+            _batch->draw(texHourglass, Rect(containerX + hudSize(8.0f), iconY, iconSize, iconSize));
+        }
+
+        int totalSecs = (int)(_timer / 60.0f);
+        int mins = totalSecs / 60;
+        int secs = totalSecs % 60;
+        std::stringstream tss;
+        tss << mins << ":" << std::setw(2) << std::setfill('0') << secs;
+
+        auto timerLabel = TextLayout::allocWithText(tss.str(), _uiFont);
         timerLabel->layout();
+        float timerTextH = timerLabel->getBounds().size.height;
+        float timerTextW = timerLabel->getBounds().size.width;
+        float timerTextX = containerX + hudSize(8.0f) + textOffsetX + (hudSize(containerW) - hudSize(8.0f) - textOffsetX - hudSize(timerTextW)) * 0.5f;
+        float textY = timerRowY_local + (iconRowH - timerTextH) * 0.5f + 15.0f;
         Affine2 timerTrans;
-        timerTrans.scale(1.0f / zoom).translate(hudX(timerX + 10), hudY(timerY + 12));
+        timerTrans.scale(1.0f / zoom).translate(timerTextX, hudY(textY));
+        _batch->setColor(Color4::BLACK);
         _batch->drawText(timerLabel, timerTrans);
+    }
 
-        auto boxTex = _assets->get<graphics::Texture>("item_box");
-        if (boxTex) {
-            constexpr size_t kSlotCount = 5;
-            const auto& carriedItems = _player->getInventory();
+    // ---- Quota row ---------------------------------------------
+    if (_font) {
+        float quotaRowYs = hudY(quotaRowY_local);
+        float iconRowHs = hudSize(iconRowH);
+        float iconSize = iconRowHs * 0.7f;
+        float textOffsetX = iconSize + hudSize(8.0f);
 
-            for (size_t i = 0; i < kSlotCount; ++i) {
-                Rect slot = getInventorySlotBounds(i);
-                float boxX = slot.origin.x + hudOffset.x;
-                float boxY = slot.origin.y + hudOffset.y;
-                float boxSize = slot.size.width;
+        float quotaPct = (_quota > 0) ? ((float)_depositedValue / (float)_quota) : 0.0f;
+        std::string quotaTexKey;
+        if (quotaPct >= 1.0f)
+            quotaTexKey = "quota_full";
+        else if (quotaPct >= 0.75f)
+            quotaTexKey = "quota_75";
+        else if (quotaPct >= 0.5f)
+            quotaTexKey = "quota_50";
+        else if (quotaPct >= 0.25f)
+            quotaTexKey = "quota_25";
+        else
+            quotaTexKey = "quota_empty";
 
-                // Draw the frame
-                _batch->setColor(Color4::WHITE);
-                _batch->draw(boxTex, Rect(boxX, boxY, boxSize, boxSize));
-
-                if (i < carriedItems.size()) {
-                    const auto& carried = carriedItems[i];
-                    if (carried.itemType == ItemTypeClass::ItemType::BOMB && carried.bombTimer >= 0 && carried.bombTimer <= 300) {
-                        float t = 1.0f - ((float)carried.bombTimer / 300.0f);
-                        float padding = boxSize * 0.1f;
-                        _batch->setTexture(nullptr);
-                        drawBox(boxX + padding, boxY + padding, boxSize * 0.8f, boxSize * 0.8f, Color4(255, 0, 0, (Uint8)(90 * t)));
-                    }
-                }
-
-                // Draw item texture centered inside the frame
-                if (i < carriedItems.size()) {
-                    const auto& carried = carriedItems[i];
-                    auto itemTex = _itemInfo.getTexture(carried.itemType);
-                    if (itemTex) {
-                        float padding = 0.0f;
-                        float maxSize = boxSize - padding * 2;
-
-                        // Preserve 3:4 aspect ratio
-                        float iconW = maxSize * (3.0f / 4.0f);
-                        float iconH = maxSize;
-
-                        float iconX = boxX + (boxSize - iconW) * 0.5f;
-                        float iconY = boxY + padding;
-
-                        _batch->setColor(Color4::WHITE);
-                        _batch->draw(itemTex, Rect(iconX, iconY, iconW, iconH));
-
-                    }
-                }
-            }
-        }
-
-        auto helpTex = _assets->get<graphics::Texture>("help_button");
-        if (helpTex) {
-            Rect helpBounds = getHelpButtonBounds();
+        auto texQuota = _assets->get<graphics::Texture>(quotaTexKey);
+        if (texQuota) {
+            float iconY = quotaRowYs + (iconRowHs - iconSize) * 0.5f;
             _batch->setColor(Color4::WHITE);
-            _batch->draw(helpTex, Rect(helpBounds.origin.x + hudOffset.x,
-                helpBounds.origin.y + hudOffset.y,
-                helpBounds.size.width,
-                helpBounds.size.height));
+            _batch->draw(texQuota, Rect(containerX + hudSize(8.0f), iconY, iconSize, iconSize));
         }
 
-        auto texContainer = _assets->get<graphics::Texture>("health_bar");
-        auto texFull = _assets->get<graphics::Texture>("health_full");
-        auto texHalf = _assets->get<graphics::Texture>("health_half");
-        auto texEmpty = _assets->get<graphics::Texture>("health_empty");
-
-        // Scale container with 269x79 aspect ratio (only need to change container cause actualy heart size is based on container)
-        float containerH = hudSize(79.0f * 0.8f);
-        float containerW = hudSize(269.0f * 0.8f);
-        float containerX = hudX(margin + 25.0f); //extra offset because health gets clipped on iphone corner
-        float containerY = hudY(screenSize.height - 79.0f * 0.8f - margin);
-        float quotaY = screenSize.height - 79.0f * 0.8f - margin - barH - margin;
-
-        if (texContainer && texFull && texHalf && texEmpty) {
-            // Draw the health bar
-            _batch->setColor(Color4::WHITE);
-            _batch->draw(texContainer, Rect(containerX, containerY, containerW, containerH));
-
-            // Scale hearts to fit inside container with 83x78 aspect ratio
-            float heartH = containerH * 0.75f;
-            float heartW = heartH * (83.0f / 78.0f);
-
-            // Space 3 hearts equally
-            float totalHeartsW = containerW / 3.0f;
-            int hp = _player->getHealth();
-
-            for (int i = 0; i < 3; ++i) {
-                int heartPoints = hp - i * 2;
-                std::shared_ptr<graphics::Texture> tex;
-                if (heartPoints >= 2)
-                    tex = texFull;
-                else if (heartPoints == 1)
-                    tex = texHalf;
-                else
-                    tex = texEmpty;
-
-                // Center each heart in its section
-                float slotCenterX = containerX + totalHeartsW * i + totalHeartsW * 0.5f;
-                float hx = slotCenterX - heartW * 0.5f;
-                float hy = containerY + (containerH - heartH) * 0.5f;
-                _batch->setColor(Color4::WHITE);
-                _batch->draw(tex, Rect(hx, hy, heartW, heartH));
-            }
-        }
-
-        // quota
-        float quotaX = margin;
-        //drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
-
-        std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
-            "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
+        std::string quotaStr = std::to_string(_depositedValue) + "/" + std::to_string(_quota);
+        auto quotaLabel = TextLayout::allocWithText(quotaStr, _uiFont);
         quotaLabel->layout();
+        float quotaTextH = quotaLabel->getBounds().size.height;
+        float quotaTextW = quotaLabel->getBounds().size.width;
+        float quotaTextX = containerX + hudSize(8.0f) + textOffsetX + (hudSize(containerW) - hudSize(8.0f) - textOffsetX - hudSize(quotaTextW)) * 0.5f;
+        float textY = quotaRowY_local + (iconRowH - quotaTextH) * 0.5f + 15.0f;
         Affine2 quotaTrans;
-        quotaTrans.scale(1.0f / zoom).translate(hudX(quotaX + 10), hudY(quotaY + 12));
+        quotaTrans.scale(1.0f / zoom).translate(quotaTextX, hudY(textY));
         _batch->setColor(Color4::BLACK);
         _batch->drawText(quotaLabel, quotaTrans);
     }
@@ -1544,8 +1608,8 @@ void GameScene::setActive(bool value)
             CULog("I am trying to get a player using this id %s", _networkCtrl->getPID().c_str());
             _player = _playerFact->getPlayerByPID(_networkCtrl->getPID());
 
-            _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
-                _player, _input, _depositPosition, _depositRadius);
+            _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
+                _player, _input, _depositPosition, _depositRadius, _world->getBounds().getMaxY());
 
             CULog("GameScene setActive: hasNetwork=%d isHost=%d",
                 _networkCtrl->hasNetwork(), _networkCtrl->isHost());
@@ -1582,13 +1646,18 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
 
             std::shared_ptr<PlayerNode> p_node = std::dynamic_pointer_cast<PlayerNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _playerFact->linkFunc(p, p_node, _animations);
+                _playerFact->linkFunc(p, p_node, _world->getBounds().getMaxY(), _animations);
                 });
 
             // Add animation
             _animations->addNode(p_node);
         }
         else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
+            // Add enemy to set
+            if (!_enemyFact->current.contains(e)) {
+                _enemyFact->addEnemy(e);
+            }
+
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             _enemyHealthForSound[e.get()] = e->getHealth();
             obj->setListener([=, this](physics2::Obstacle* obs) {
@@ -1598,7 +1667,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
                     // play attack audio when an enemy enters attack state
                     playEnemyAttackSound(e->TYPE);
                 }
-                _enemyFact->linkFunc(e, e_node, _animations);
+                _enemyFact->linkFunc(e, e_node, _networkCtrl->isHost(), _world->getBounds().getMaxY(), _animations);
                 if (e->getHealth() < oldHealth) {
                     // play enemy damage when health actually drops
                     playUniqueSound(enemyDamageSoundKey(e->TYPE), 1.0f);
@@ -1619,7 +1688,7 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         else if (auto s = dynamic_pointer_cast<SpellObstacle>(obj)) {
             std::shared_ptr<SpellNode> s_node = std::dynamic_pointer_cast<SpellNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
-                _spellFact->linkFunc(s, s_node, _animations);
+                _spellFact->linkFunc(s, s_node, _world->getBounds().getMaxY(), _animations);
                 });
 
             // Add animation
@@ -1637,25 +1706,6 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
     }
 }
 
-
-/**
- * Just a helper to handle some of our damage processing
- */
-static void healthHelper(float damage, PlayerObstacle* player) {
-    if (player->hasShield()) {
-        player->setShieldCount(player->getShieldCount() - 1);
-        if (player->getShieldCount() == 0) {
-            player->setShield(false);
-        }
-        return;
-    }
-    if (player->getHealth() - damage <= 0 && player->hasProtectionArtifact()) {
-        player->consumeItem(ItemTypeClass::ItemType::PROTECTION);
-        player->setHealth(2);
-        return;
-    }
-    player->setHealth(player->getHealth() - damage);
-}
 void GameScene::initCombos() {
     _spellCombos.insert({
         {{SpellType::FIREBALL, SpellType::FIREBALL}, SpellType::COMBO_FIREBALL},
@@ -1708,6 +1758,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     physics2::Obstacle* obs2 = reinterpret_cast<physics2::Obstacle*>(body2->GetUserData().pointer);
 
     if (obs1->isRemoved() || obs2->isRemoved()) {
+        contact->SetEnabled(false);
         return;
     }
 
@@ -1784,25 +1835,24 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact->SetEnabled(false);
 
         // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove()) {
+        if (spell->shouldRemove() || player -> getPID() != _player -> getPID() || spell->getCasterUID() == player->getPID()) {
             return;
         }
-        if (player -> getPID() != _player -> getPID()){
+        if (player->getPID() != _player->getPID() && spell->TYPE != SpellType::HEAL) {
             return;
         }
-        
 
-        //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
-        if (spell->getCasterUID() == player->getPID()) return;
         int nh = player->getHealth() + HEAL_AMT;
         // spell hit feedback is played here when the effect changes player state
         switch (spell->TYPE) {
         case SpellType::HEAL:
-            if (player->getHealth() < 0) {
+            if (player->getHealth() <= 0) {
                 player->setHealth(1);
                 spell->setRemove();
                 auto caster = _playerFact->getPlayerByPID(spell->getCasterUID());
-                if (caster) caster->consumeItem(ItemTypeClass::ItemType::BOOK_HEAL);
+                if (caster) {
+                    caster->consumeItem(ItemTypeClass::ItemType::BOOK_HEAL);
+                }
                 break;
             }
             player->setHealth(nh);
@@ -1853,7 +1903,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             break;
         case SpellType::MUD_WATER:
             {
-            if(player -> getWater()){
+            if (player -> getWater()){
                 break;
             }
             Vec2 pushDir = player->getPosition() - spell->getPosition();
@@ -1881,17 +1931,26 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         case SpellType::DEATH:
             player->damage(500);
             break;
+        case SpellType::OCTO_ATTACK:
+            if (!player->isHurt()) {
+                CULog("hit by octo attack!!");
+                player->setWater(true, (player->getPosition() - spell->getPosition()).getNormalization());
+                player->setWaterTimer(10);
+                player->damage(spell->getDamage());
+            }
+            break;
         default:
             CULog("A None Type Spell Should Not be Colliding With Anything");
         }
     }
     else if (player && enemy) {
-        //We need a death message
-        //We need to set ATTACKRESET and decrement some sort of timer
+        if (enemy -> TYPE == EnemyType::STATUE){
+            contact->SetEnabled(false);
+            return;
+        }
         contact->SetEnabled(true);
 
-        if (player->getHealth() <= 0 || enemy->isDead()) {
-
+        if (player->getHealth() <= 0 || enemy->isDead() || player->getPID() != _player->getPID() || enemy->isFroze()) {
             return;
         }
 
@@ -1904,11 +1963,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             dir.y /= len;
         }
         enemy->getBody()->SetLinearVelocity(b2Vec2(-dir.x * knockbackSpeed, -dir.y * knockbackSpeed));
-        if (!enemy->canAttack()) return;
+        //if (!enemy->canAttack()) {
+        //    return;
+        //}
 
         enemy->setAttackTimer(90);
 
-        if (player->getPID() != _player->getPID()) return;
         //CULog("enemy and player");
         if (enemy->TYPE == EnemyType::GHOST) {
             // ghosts attack by contact damage instead of an attack animation
@@ -1918,13 +1978,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         return;
     }
     else if (enemy && spell) {
-        //CULog("enemy and spell");
         contact->SetEnabled(false);
-        if (spell->getCasterUID() == "bat") {
+        if (enemy -> TYPE == EnemyType::STATUE){
             return;
         }
-        // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove()) {
+
+        if (!_networkCtrl->isHost() || spell->shouldRemove() || spell->getCasterUID() == ENEMY_ID) {
             return;
         }
         // spell hit feedback is played here when the effect changes enemy state
@@ -1991,7 +2050,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     else if (wall && spell) {
         contact->SetEnabled(false);
-        spell->setRemove();
+        if (spell->VISIBLE) {
+            spell->setRemove();
+        }
         return;
     }
     else if (wall && enemy) {

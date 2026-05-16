@@ -12,10 +12,11 @@
 using namespace std;
 using namespace cugl;
 
-SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range ,SpellType type, std::string c, bool weak) : TYPE(type) {    
-    init(pos, radius / 3);
+SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, float dmg, float range,
+        SpellType type, std::string c, bool visible, bool weak) :
+        TYPE(type), VISIBLE(visible) {    
+    init(pos, radius);
 
-    
     setAwake(true);
     setEnabled(true);
     //setBullet(true);
@@ -26,7 +27,6 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius,
     setFixedRotation(true);
     
     _damage = dmg;
-    
 
     _start = pos;
     _range = range;
@@ -34,6 +34,7 @@ SpellObstacle::SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius,
     _caster = c;
     _atEnd = false;
     _weak = weak;
+    _counter = 0;
 
     setLinearVelocity(vel);
 }
@@ -100,41 +101,39 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
         values = _spellConsts->get("mud-water");
         image = _assets->get<graphics::Texture>("mud");
         break;
+    case SpellType::OCTO_ATTACK:
+        values = _spellConsts->get("octoplush-attack");
+        break;
     case SpellType::NONE:
         CULog("Creating non-existent spell!");
+        break;
     default:
         CULog("Spell not implemented!!!! SpellFactory::createObstacle, type = %d", (int) type);
+        break;
     }
 
-    float radius = image->getHeight() / PHYSICS_SCALE;
+    bool visible = values->getBool("visible", true);
 
+    float radius = visible ? image->getHeight() / PHYSICS_SCALE / 2 : values->getFloat("range");
+    CULog("radius: %.2f", radius);
+    float damage = (values->getInt("damage") + damageBonus) * (buff?2:1) / (weak?2:1);
     Vec2 vel = norm * values->getFloat("speed");
-    //I am doing it this way because frankly I really do not want to deal with the bugs that will arise if I do two terniary expressions
-    //There is also the potential of making weak = 2 or 1 depending on if the spell should be weak but then were really breaking conventions
-    std::shared_ptr<SpellObstacle> spell;
-    if(!weak){
-        spell = SpellObstacle::alloc(pos, vel, radius,
-            std::max(1, buff ? 2 * (values->getInt("damage") + damageBonus): values->getInt("damage") + damageBonus),
-            values->getFloat("range"), type, c_uid, weak);
-    }else{
-        spell = SpellObstacle::alloc(pos, vel, radius,
-            std::max(1, buff ? (2 * (values->getInt("damage") + damageBonus)) / 2: (values->getInt("damage") + damageBonus) / 2),
-            values->getFloat("range"), type, c_uid, weak);
-    }
-    
-    CULog("weak is %d", weak);
-    //auto spell = SpellObstacle::alloc(pos, type);
+    float range = values->getFloat(visible ? "range" : "duration");
 
-    spell->setAngleSnap(0); // Snap to the nearest degree
+    std::shared_ptr<SpellObstacle> spell = SpellObstacle::alloc(pos + (vel * 0.1), vel, radius,
+        damage, range, type, c_uid, visible, weak);
 
     // Set the physics attributes
-
+    spell->setAngleSnap(0); // Snap to the nearest degree
     spell->setShared(true);
-    CULog("going to emplace the spell");
     current.emplace(spell);
 
     // Create spell node
     auto sprite = std::make_shared<SpellNode>(pos, vel, image);
+    if (!visible) {
+        CULog("create invis spell!");
+        sprite->setVisible(false);
+    }
 
     return std::make_pair(spell, sprite);
 }
@@ -199,11 +198,14 @@ std::unordered_set<std::shared_ptr<SpellObstacle>> SpellFactory::update() {
     return remove;
 }
 
-void SpellFactory::linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, shared_ptr<Animator> animations) {
+void SpellFactory::linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, float maxHeight,
+        shared_ptr<Animator> animations) {
     // Mark spells to be removed when out of range
-    if (obs->getTraveled() >= obs->getRange()) {
+    if ((obs->VISIBLE && obs->getTraveled() >= obs->getRange()) || 
+            (!obs->VISIBLE && obs->getRange() < obs->getCounter())) {
         obs->setRemove();
     }
+    obs->incrementCounter();
 
     if (obs->shouldRemove() && !node->shouldRemove()) {
         node->setRemove();
@@ -219,4 +221,5 @@ void SpellFactory::linkFunc(const shared_ptr<SpellObstacle> obs, const shared_pt
     float angle = obs->getAngle() + leftover * obs->getAngularVelocity();
     node->setPosition(pos * PHYSICS_SCALE);
     node->setAngle(angle);
+    node->setPriority((maxHeight - obs->getPosition().y) / maxHeight * 2);
 }

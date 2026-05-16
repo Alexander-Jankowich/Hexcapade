@@ -22,7 +22,7 @@ float ARROW[] = {
 Color4 colorFromVec(std::vector<int> vec) {
 	return Color4(vec[0], vec[1], vec[2], vec[3]);
 }
-
+InputDisplay::InputDisplay() {};
 InputDisplay::InputDisplay(InputController* input, std::shared_ptr<JsonValue> values) {
 	_input = input;
 	_uiOffset = Vec2::ZERO;

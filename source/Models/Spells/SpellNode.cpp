@@ -28,7 +28,6 @@ SpellNode::SpellNode(const cugl::Vec2 pos, const cugl::Vec2 vel, std::shared_ptr
     _nextAnimation = AnimationType::ACTIVE;
 
     setFrame(mainLoop);
-    setPriority(1);
 }
 
 pair<ActionFunction, float> SpellNode::getNextAnimation() {
@@ -40,6 +39,10 @@ pair<ActionFunction, float> SpellNode::getNextAnimation() {
     case AnimationType::ACTIVE:
         return getAnimationPair(mainLoop, mainLoopFrames);
     case AnimationType::END:
+        if (!isVisible()) {
+            // Immediate exit if not visible
+            return END_ANIMATION;
+        }
         _deleteAtEnd = true;
         return getAnimationPair(end, endFrames);
     default:

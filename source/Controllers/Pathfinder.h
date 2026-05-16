@@ -22,6 +22,8 @@
 using namespace std;
 using namespace cugl;
 
+#define ENEMY_ID "enemy"
+
 class Pathfinder {
 private:
     // All helper functions will be private
@@ -31,6 +33,7 @@ private:
 
     shared_ptr<PlayerObstacle> getClosest(Vec2 enemPos, unordered_set<shared_ptr<PlayerObstacle>> targs);
     PlayerObstacle* getClosest(Vec2 enemPos, unordered_set<PlayerObstacle*> targs);
+    shared_ptr<PlayerObstacle> getAggroTarget(Vec2 enemPos, shared_ptr<PlayerFactory> playerFact);
 
     /**
     * Returns a set of all players who are not dead and are within range of the enemy

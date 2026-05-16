@@ -5,6 +5,11 @@
         "type": "spellbook-heal",
         "count": 1,
         "preferred-zone": 1
+      },
+      {
+        "type": "octoling",
+        "count": 1,
+        "preferred-zone": 1
       }
     ],
     "max": [
@@ -26,13 +31,13 @@
     "map-size-incr": 10,
     "quota": 150,
     "quota-incr": 50,
-    "enemies": [ "slow-bat", "ghost", "octoplush" ],
+    "enemies": [ "slow-bat", "ghost", "octoplush","statue"],
     "enemies-probs": [
-      [ 1.0, 0.0, 0.0 ],
-      [ 0.65, 0.3, 0.05 ],
-      [ 0.05, 0.45, 0.5 ]
+        [ 1.0, 0.0, 0.0, 0.0 ],
+        [ 0.65, 0.3, 0.5, 0.0 ],
+        [ 0.05, 0.45, 0.5, 0.0 ]
     ],
-    "zone-probs": [ 0.45, 0.5, 0.6 ],
+    "zone-probs": [ 0.55, 0.65, 0.65 ],
     "item-spellbook-types": [
       "spellbook-earth",
       "spellbook-heal",
@@ -77,13 +82,13 @@
     "map-size-incr": 10,
     "quota": 375,
     "quota-incr": 50,
-    "enemies": [ "bat", "ghost", "octoplush" ],
+    "enemies": [ "bat", "ghost", "octoplush","statue" ],
     "enemies-probs": [
-      [ 0.9, 0.1, 0.0 ],
-      [ 0.5, 0.4, 0.1 ],
-      [ 0.1, 0.35, 0.55 ]
+        [ 0.9, 0.1, 0.0, 0.0 ],
+        [ 0.5, 0.4, 0.1, 0.0 ],
+        [ 0.1, 0.35, 0.55, 0.0 ]
     ],
-    "zone-probs": [ 0.5, 0.6, 0.6 ],
+    "zone-probs": [ 0.55, 0.65, 0.65 ],
     "item-spellbook-types": [
       "spellbook-earth",
       "spellbook-heal",
@@ -128,13 +133,13 @@
     "map-size-incr": 5,
     "quota": 450,
     "quota-incr": 50,
-    "enemies": [ "bat", "ghost", "octoplush" ],
+    "enemies": [ "bat", "ghost", "octoplush","statue" ],
     "enemies-probs": [
-      [ 0.6, 0.3, 0.1 ],
-      [ 0.4, 0.35, 0.25 ],
-      [ 0.1, 0.4, 0.5 ]
+        [ 0.6, 0.3, 0.1, 0.0 ],
+        [ 0.4, 0.35, 0.25, 0.0 ],
+        [ 0.1, 0.4, 0.5, 0.0 ]
     ],
-    "zone-probs": [ 0.5, 0.6, 0.75 ],
+    "zone-probs": [ 0.55, 0.65, 0.80 ],
     "item-spellbook-types": [
       "spellbook-earth",
       "spellbook-heal",
