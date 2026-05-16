@@ -83,29 +83,29 @@ bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const 
 
     _catBtn->addListener([this](const std::string& name, bool down) {
         if (down) {
-            auto sound = _assets->get<Sound>("character_cat");
-            AudioEngine::get()->play("character_cat", sound, false, 1.0f, true);
+            auto sound = _assets->get<Sound>("character_select");
+            AudioEngine::get()->play("character_select", sound, false, 1.0f, true);
             onCharacterSelected(CharacterType::CAT);
         }
         });
     _foxBtn->addListener([this](const std::string& name, bool down) {
         if (down) {
-            auto sound = _assets->get<Sound>("character_fox");
-            AudioEngine::get()->play("character_fox", sound, false, 1.0f, true);
+            auto sound = _assets->get<Sound>("character_select");
+            AudioEngine::get()->play("character_select", sound, false, 1.0f, true);
             onCharacterSelected(CharacterType::FOX);
         }
         });
     _duckBtn->addListener([this](const std::string& name, bool down) {
         if (down) {
-            auto sound = _assets->get<Sound>("character_duck");
-            AudioEngine::get()->play("character_duck", sound, false, 1.0f, true);
+            auto sound = _assets->get<Sound>("character_select");
+            AudioEngine::get()->play("character_select", sound, false, 1.0f, true);
             onCharacterSelected(CharacterType::DUCK);
         }
         });
     _bunnyBtn->addListener([this](const std::string& name, bool down) {
         if (down) {
-            auto sound = _assets->get<Sound>("character_bunny");
-            AudioEngine::get()->play("character_bunny", sound, false, 1.0f, true);
+            auto sound = _assets->get<Sound>("character_select");
+            AudioEngine::get()->play("character_select", sound, false, 1.0f, true);
             onCharacterSelected(CharacterType::BUNNY);
         }
         });

@@ -8,7 +8,7 @@
     "general_alter_deposit": {
       "type": "sample",
       "file": "sounds/general_alter_deposit.wav",
-      "volume": 0.25
+      "volume": 0.2
     },
     "general_drop": {
       "type": "sample",
@@ -28,7 +28,7 @@
     "general_item_card_close": {
       "type": "sample",
       "file": "sounds/general_item_card.wav",
-      "volume": 0.10
+      "volume": 0.08
     },
     "walking_cat": {
       "type": "sample",
@@ -53,7 +53,7 @@
     "walking_bat": {
       "type": "sample",
       "file": "sounds/walking_bat.wav",
-      "volume": 0.02
+      "volume": 0.015
     },
     "walking_ghost": {
       "type": "sample",
@@ -63,7 +63,7 @@
     "walking_octopus": {
       "type": "sample",
       "file": "sounds/walking_octopus.wav",
-      "volume": 0.05
+      "volume": 0.065
     },
     "attack_bat": {
       "type": "sample",
@@ -78,7 +78,7 @@
     "attack_octopus": {
       "type": "sample",
       "file": "sounds/attack_octopus.wav",
-      "volume": 0.07
+      "volume": 0.6
     },
     "attack_statue": {
       "type": "sample",
@@ -88,27 +88,27 @@
     "damage_cat": {
       "type": "sample",
       "file": "sounds/damage_cat.wav",
-      "volume": 0.30
+      "volume": 0.4
     },
     "damage_fox": {
       "type": "sample",
       "file": "sounds/damage_fox.wav",
-      "volume": 0.30
+      "volume": 0.4
     },
     "damage_bunny": {
       "type": "sample",
       "file": "sounds/damage_bunny.wav",
-      "volume": 0.30
+      "volume": 0.4
     },
     "damage_duck": {
       "type": "sample",
       "file": "sounds/damage_duck.wav",
-      "volume": 0.30
+      "volume": 0.4
     },
     "damage_bat": {
       "type": "sample",
       "file": "sounds/damage_bat.wav",
-      "volume": 0.15
+      "volume": 0.05
     },
     "damage_ghost": {
       "type": "sample",
@@ -118,12 +118,12 @@
     "damage_octopus": {
       "type": "sample",
       "file": "sounds/damage_octopus.wav",
-      "volume": 0.07
+      "volume": 0.8
     },
     "damage_statue": {
       "type": "sample",
       "file": "sounds/damage_statue.wav",
-      "volume": 0.30
+      "volume": 0.07
     },
     "spell_dark": {
       "type": "sample",
@@ -133,12 +133,12 @@
     "spell_earth": {
       "type": "sample",
       "file": "sounds/spell_earth.wav",
-      "volume": 0.04
+      "volume": 0.05
     },
     "spell_fire": {
       "type": "sample",
       "file": "sounds/spell-fire.wav",
-      "volume": 0.05
+      "volume": 0.04
     },
     "spell_ice": {
       "type": "sample",
@@ -148,12 +148,12 @@
     "spell_heal": {
       "type": "sample",
       "file": "sounds/spell_heal.wav",
-      "volume": 0.10
+      "volume": 0.1
     },
     "spell_water": {
       "type": "sample",
       "file": "sounds/spell-water.wav",
-      "volume": 0.04
+      "volume": 0.03
     },
     "spell_shield": {
       "type": "sample",
@@ -198,7 +198,7 @@
     "hit_unfreeze": {
       "type": "sample",
       "file": "sounds/hit_unfreeze.wav",
-      "volume": 0.04
+      "volume": 0.06
     },
     "hit_buff": {
       "type": "sample",
@@ -215,15 +215,20 @@
       "file": "sounds/hit_shatter_shield.wav",
       "volume": 0.09
     },
+    "character_select": {
+      "type": "sample",
+      "file": "sounds/character_select.wav",
+      "volume": 0.10
+    },
     "character_cat": {
       "type": "sample",
       "file": "sounds/character_cat.wav",
-      "volume": 1
+      "volume": 0.15
     },
     "character_duck": {
       "type": "sample",
       "file": "sounds/character_duck.wav",
-      "volume": 1
+      "volume": 0.20
     },
     "character_fox": {
       "type": "sample",
@@ -243,37 +248,37 @@
     "death_cat": {
       "type": "sample",
       "file": "sounds/death_cat.wav",
-      "volume": 0.80
+      "volume": 0.8
     },
     "death_fox": {
       "type": "sample",
       "file": "sounds/death_fox.wav",
-      "volume": 0.80
+      "volume": 0.8
     },
     "death_bunny": {
       "type": "sample",
       "file": "sounds/death_bunny.wav",
-      "volume": 0.80
+      "volume": 0.8
     },
     "death_duck": {
       "type": "sample",
       "file": "sounds/death_duck.wav",
-      "volume": 0.80
+      "volume": 0.8
     },
     "effect_error": {
       "type": "sample",
       "file": "sounds/effect-error.wav",
-      "volume": 0.07
+      "volume": 0.05
     },
     "effect_win": {
       "type": "sample",
       "file": "sounds/effect-win.wav",
-      "volume": 0.40
+      "volume": 0.4
     },
     "effect_lose": {
       "type": "sample",
       "file": "sounds/effect-lose.wav",
-      "volume": 0.20
+      "volume": 0.2
     },
     "music_menu": {
       "type": "sample",
@@ -285,7 +290,7 @@
       "type": "sample",
       "file": "sounds/music-ingame.wav",
       "stream": true,
-      "volume": 0.2
+      "volume": 0.15
     }
   }
 }

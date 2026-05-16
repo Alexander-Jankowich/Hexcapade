@@ -213,6 +213,8 @@ void GameScene::reset()
     _timer = 0;
     _glowItemId = -1;
     _playerWalkSoundCooldown = 0.0f;
+    _lastPlayerHealthForSound = -1;
+    _enemyHealthForSound.clear();
     Scene::reset();
 }
 
@@ -566,6 +568,9 @@ void GameScene::preUpdate(float dt)
         _networkCtrl->initGameStuff(_itemFact, _playerFact, _itemFactId,
             _player, _input, _depositPosition, _depositRadius);
     }
+    if (_lastPlayerHealthForSound < 0) {
+        _lastPlayerHealthForSound = _player->getHealth();
+    }
     _glowItemId = -1;
     Vec2 playerPos = _player->getPosition();
     for (auto& pair : _itemNodes) {
@@ -700,9 +705,6 @@ void GameScene::preUpdate(float dt)
         int bombIdx = _player->_bombExpiredIndex;
         _player->_bombExpiredIndex = -1;
         playUniqueSound("artifact_exploding_potion", 1.0f);
-        // bomb damage already happened in the timer, so only play feedback here
-        playUniqueSound(playerCharacterSoundKey(_networkCtrl->getPlayerCharacter(_player->getPID()),
-            _player->getHealth() <= 0 ? "death_" : "damage_"), 1.0f);
         if (_networkCtrl->isHost()) {
             _player->depositItem((size_t)bombIdx);
         }
@@ -710,6 +712,12 @@ void GameScene::preUpdate(float dt)
         _networkCtrl->pushOutEvent(
             DepositEvent::allocDepositEvent(_player->getPID(), 0, true, bombIdx));
     }
+    if (_player->getHealth() < _lastPlayerHealthForSound) {
+        // play local damage when health actually drops
+        playUniqueSound(playerCharacterSoundKey(_networkCtrl->getPlayerCharacter(_player->getPID()),
+            _player->getHealth() <= 0 ? "death_" : "damage_"), 1.0f);
+    }
+    _lastPlayerHealthForSound = _player->getHealth();
 
     // Player movement
     cugl::Vec2 input = _input.getMove();
@@ -1120,6 +1128,14 @@ void GameScene::fixedUpdate(Uint64 step)
 
     _currOverlappedItem = -1;
     _world->update(step / 1000000.0f);
+    if (_player && _lastPlayerHealthForSound >= 0 && _player->getHealth() < _lastPlayerHealthForSound) {
+        // play local damage when physics makes health drop
+        playUniqueSound(playerCharacterSoundKey(_networkCtrl->getPlayerCharacter(_player->getPID()),
+            _player->getHealth() <= 0 ? "death_" : "damage_"), 1.0f);
+    }
+    if (_player) {
+        _lastPlayerHealthForSound = _player->getHealth();
+    }
 }
 
 /**
@@ -1574,15 +1590,27 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
         }
         else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
+            _enemyHealthForSound[e.get()] = e->getHealth();
             obj->setListener([=, this](physics2::Obstacle* obs) {
+                bool wasFrozen = e->isFroze();
+                int oldHealth = _enemyHealthForSound[e.get()];
                 if (e->isAttacking() && !e_node->isAttacking()) {
-                    // enemy attack audio uses the same animation callback timing as the hit/projectile
-                    _animations->addNextListener(e_node, e->getAttackTiming(),
-                        [=, this](string key, float time, float actual) {
-                            playEnemyAttackSound(e->TYPE);
-                        });
+                    // play attack audio when an enemy enters attack state
+                    playEnemyAttackSound(e->TYPE);
                 }
                 _enemyFact->linkFunc(e, e_node, _animations);
+                if (e->getHealth() < oldHealth) {
+                    // play enemy damage when health actually drops
+                    playUniqueSound(enemyDamageSoundKey(e->TYPE), 1.0f);
+                }
+                _enemyHealthForSound[e.get()] = e->getHealth();
+                bool unFrozen = wasFrozen && !e->isFroze();
+                if (unFrozen && !e->isDead()) {
+                    if (_player->getPosition().distance(e->getPosition()) <= 12.0f) {
+                        // play unfreeze when the enemy leaves frozen state
+                        playUniqueSound("hit_unfreeze", 1.0f);
+                    }
+                }
                 });
 
             // Add animation
@@ -1735,27 +1763,15 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         wall = w;
     };
 
-    auto playPlayerDamageSound = [this](PlayerObstacle* p) {
-        playUniqueSound(playerCharacterSoundKey(_networkCtrl->getPlayerCharacter(p->getPID()),
-            p->getHealth() <= 0 ? "death_" : "damage_"), 1.0f);
-        };
-    auto damagePlayer = [this, &playPlayerDamageSound](PlayerObstacle* p, float damage) {
-        float oldHealth = p->getHealth();
+    auto damagePlayer = [this](PlayerObstacle* p, float damage) {
         bool hadShield = p->hasShield();
         p->damage(damage);
         if (hadShield) {
             playUniqueSound(p->hasShield() && p->getShieldCount() > 0 ? "hit_shield" : "hit_shatter_shield", 1.0f);
         }
-        else if (p->getHealth() < oldHealth) {
-            playPlayerDamageSound(p);
-        }
         };
-    auto damageEnemy = [this](EnemyObstacle* e, float damage) {
-        int oldHealth = e->getHealth();
+    auto damageEnemy = [](EnemyObstacle* e, float damage) {
         e->setHealth(e->getHealth() - damage);
-        if (e->getHealth() < oldHealth) {
-            playUniqueSound(enemyDamageSoundKey(e->TYPE), 1.0f);
-        }
         };
 
     // Checking for collisions
@@ -1863,13 +1879,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             spell->setRemove();
             break;
         case SpellType::DEATH:
-            {
-            float oldHealth = player->getHealth();
             player->damage(500);
-            if (player->getHealth() < oldHealth) {
-                playPlayerDamageSound(player);
-            }
-            }
             break;
         default:
             CULog("A None Type Spell Should Not be Colliding With Anything");

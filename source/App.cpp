@@ -288,14 +288,17 @@ void GeometryApp::preUpdate(float dt) {
     if (_gameplay.gameEnded()) {
         bool won = _gameplay.hasWon();
         CULog("app: displaying end game scene");
+        auto engine = AudioEngine::get();
+        // clear gameplay sfx so casts and attacks do not bleed into end scene
+        engine->clearEffects(0.05f);
         _endScene.show(won);
         _gameplay.reset();
         _gameplay.release();
         _endScene.setActive(true);
         _gameplay.setActive(false);
-        // keep game music playing into the end scene and layer the result sound on top
-        restartSound(won ? "effect_win" : "effect_lose", 1.0f);
         _scene = State::END;
+        // play result sound after the end scene is visible
+        restartSound(won ? "effect_win" : "effect_lose", 1.0f);
 
     }
 }
@@ -342,13 +345,18 @@ void GeometryApp::fixedUpdate(Uint64 step) {
     }
     // endgame
     if (_gameplay.gameEnded()) {
+        bool won = _gameplay.hasWon();
         CULog("app: displaying end game scene");
-        _endScene.show(_gameplay.hasWon());
-        restartSound(_gameplay.hasWon() ? "effect_win" : "effect_lose", 1.0f);
+        auto engine = AudioEngine::get();
+        // clear gameplay sfx so casts and attacks do not bleed into end scene
+        engine->clearEffects(0.05f);
+        _endScene.show(won);
         _gameplay.reset();
         _endScene.setActive(true);
         _gameplay.setActive(false);
         _scene = State::END;
+        // play result sound after the end scene is visible
+        restartSound(won ? "effect_win" : "effect_lose", 1.0f);
 
     }
 }
@@ -612,8 +620,10 @@ void GeometryApp::updateGameScene(float dt) {
 
 void GeometryApp::updateEndScene(float dt) {
     _endScene.update(dt);
+    auto engine = AudioEngine::get();
     // EXIT BUTTON
     if (_endScene.didPressExit()) {
+        engine->clearEffects(0.05f);
         _endScene.setActive(false);
         _endScene.getNetwork()->disconnect();
         _endScene.getNetwork()->resetStatus();
@@ -626,6 +636,7 @@ void GeometryApp::updateEndScene(float dt) {
     }
     if (_endScene.didPressReplay()) {
         CULog("replay was pressed");
+        engine->clearEffects(0.05f);
         _endScene.setActive(false);
         //_selectScene.obtainNetwork(_endScene.getNetwork()); // hand off network,
         //_gameplay.initNetwork(_endScene.getNetwork());
@@ -639,6 +650,7 @@ void GeometryApp::updateEndScene(float dt) {
     }
 
     if (_endScene.getNetwork()->getStatus()==NetworkController::Status::NETERROR) {
+        engine->clearEffects(0.05f);
         _endScene.setActive(false);
         _endScene.getNetwork()->disconnect();
         _endScene.getNetwork()->resetStatus();

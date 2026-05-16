@@ -148,6 +148,10 @@ protected:
     unsigned int _soundCounter = 0;
     /** seconds before local walking feedback can play again */
     float _playerWalkSoundCooldown = 0.0f;
+    /** previous local health so damage audio follows actual health loss */
+    int _lastPlayerHealthForSound = -1;
+    /** previous enemy health so damage audio follows actual health loss */
+    map<EnemyObstacle*, int> _enemyHealthForSound;
     /** Which tutorial page is currently open, or 0 if closed */
     int _tutorialPage = 0;
 
