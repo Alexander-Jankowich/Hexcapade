@@ -20,16 +20,6 @@
       "file": "sounds/effect-click.wav",
       "volume": 0.07
     },
-    "general_item_card": {
-      "type": "sample",
-      "file": "sounds/general_item_card.wav",
-      "volume": 0.15
-    },
-    "general_item_card_close": {
-      "type": "sample",
-      "file": "sounds/general_item_card.wav",
-      "volume": 0.08
-    },
     "walking_cat": {
       "type": "sample",
       "file": "sounds/walking_cat.wav",
@@ -284,13 +274,13 @@
       "type": "sample",
       "file": "sounds/music-menu.wav",
       "stream": true,
-      "volume": 0.1
+      "volume": 0.18
     },
     "music_ingame": {
       "type": "sample",
       "file": "sounds/music-ingame.wav",
       "stream": true,
-      "volume": 0.15
+      "volume": 0.2
     }
   }
 }

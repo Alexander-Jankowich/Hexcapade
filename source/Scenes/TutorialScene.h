@@ -84,6 +84,7 @@ protected:
     shared_ptr<PlayerObstacle> _player;
     
     bool _weakSpell = false;
+    float _playerWalkSoundCooldown = 0.0f;
 
     int _tutorialTimer = 0;
 

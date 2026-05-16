@@ -777,17 +777,17 @@ void GameScene::preUpdate(float dt)
 
             if (tutorialBounds.contains(tapPos) && _tutorialPage == 1 && tapPos.x >= pageMidX) {
                 // right side of tutorial page clicked go to tutorial page 2
-                restartSound("general_item_card", 1.0f);
+                restartSound("general_click", 1.0f);
                 showTutorialPage(2);
             }
             else if (tutorialBounds.contains(tapPos) && _tutorialPage == 2 && tapPos.x < pageMidX) {
                 // left side of tutorial page clicked go back to tutorial page 1
-                restartSound("general_item_card", 1.0f);
+                restartSound("general_click", 1.0f);
                 showTutorialPage(1);
             }
             else {
                 // tutorial tap was not a page turn so close it
-                restartSound("general_item_card_close", 1.0f);
+                restartSound("general_click", 0.6f);
                 hideTutorial();
             }
             _input.resolvedInventoryRelease();
@@ -796,7 +796,7 @@ void GameScene::preUpdate(float dt)
         }
         else if (getHelpButtonBounds().contains(tapPos)) {
             // help button clicked open tutorial page 1
-            restartSound("general_item_card", 1.0f);
+            restartSound("general_click", 1.0f);
             showTutorialPage(1);
             _input.resolvedInventoryRelease();
             _input.resolvedCardDismissTap();
@@ -807,7 +807,7 @@ void GameScene::preUpdate(float dt)
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
             //CULog("click detected, card closed");
-            restartSound("general_item_card_close", 1.0f);
+            restartSound("general_click", 0.6f);
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
         }
@@ -857,7 +857,7 @@ void GameScene::preUpdate(float dt)
         Timestamp now;
         if (Timestamp::ellapsedMillis(_lastInventoryTapTime, now) > 200) {
             // wait past the double tap window before treating this as a card open
-            restartSound("general_item_card", 1.0f);
+            restartSound("general_click", 1.0f);
             showInventoryCard((size_t)_pendingInventoryTapIndex);
             _pendingInventoryTapIndex = -1;
         }

@@ -51,6 +51,8 @@ bool MenuScene::init(const std::shared_ptr<cugl::AssetManager>& assets) {
     });
     _tutorialbutton->addListener([this](const std::string& name, bool down) {
         if (down) {
+            auto sound = _assets->get<Sound>("general_click");
+            AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
             CULog("tutorial pressed");
             _choice = Choice::TUTORIAL;
         }

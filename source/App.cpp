@@ -508,6 +508,7 @@ void GeometryApp::updateMenuScene(float dt) {
         _tutorialScene.setActive(true);
         if (_tutorialScene.isActive()) {
             waitingOnLoad = false;
+            playMusic("music_ingame", 1.0f, 0.50f);
             _scene = State::TUTORIAL;
         }
         break;
@@ -747,6 +748,7 @@ void GeometryApp::updateTutorialScene(float dt) {
         _tutorialScene.reset();
         _tutorialScene.setActive(false);
         _mainmenu.setActive(true);
+        playMusic("music_menu", 1.0f, 0.35f);
         _scene = State::MENU;
     }
 }

@@ -15,9 +15,51 @@ using namespace std;
 using namespace cugl::graphics;
 
 namespace {
-    void restartTutorialSound(const std::shared_ptr<AssetManager>& assets, const std::string& key) {
+    void restartTutorialSound(const std::shared_ptr<AssetManager>& assets, const std::string& key,
+                              float volumeMultiplier = 1.0f) {
         auto sound = assets->get<Sound>(key);
-        AudioEngine::get()->play(key, sound, false, 1.0f, true);
+        AudioEngine::get()->play(key, sound, false, volumeMultiplier, true);
+    }
+
+    std::string tutorialSpellCastSoundKey(SpellType type) {
+        switch (type) {
+        case SpellType::FREEZE:
+            return "spell_ice";
+        case SpellType::FIREBALL:
+            return "spell_fire";
+        case SpellType::COMBO_FREEZE:
+            return "spell_big_ice";
+        case SpellType::EARTH:
+            return "spell_earth";
+        case SpellType::COMBO_EFREEZE:
+            return "spell_stone";
+        case SpellType::WATER:
+            return "spell_water";
+        default:
+            return "";
+        }
+    }
+
+    std::string tutorialEnemyDamageSoundKey(EnemyType type) {
+        switch (type) {
+        case EnemyType::BAT:
+        case EnemyType::SLOWBAT:
+            return "damage_bat";
+        case EnemyType::GHOST:
+            return "damage_ghost";
+        case EnemyType::OCTO:
+            return "damage_octopus";
+        case EnemyType::STATUE:
+        default:
+            return "damage_statue";
+        }
+    }
+
+    std::string tutorialPlayerWalkSoundKey(const std::string& character) {
+        if (character == "player_cat") return "walking_cat";
+        if (character == "player_duck") return "walking_duck";
+        if (character == "player_bunny") return "walking_bunny";
+        return "walking_fox";
     }
 }
 
@@ -185,6 +227,7 @@ void TutorialScene::reset() {
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
     _tutorialTimer = 0;
+    _playerWalkSoundCooldown = 0.0f;
     _networkCtrl->connectHost(); // prepare to start again?
     Scene::reset();
 }
@@ -236,7 +279,7 @@ void TutorialScene::showInventoryCard(size_t slotIndex) {
         offset.y + this->getSize().height * 0.5f / zoom));
     _inventoryCardNode->setPriority(1.0f);
     addChild(_inventoryCardNode);
-    restartTutorialSound(_assets, "general_item_card");
+    restartTutorialSound(_assets, "general_click");
 }
 
 void TutorialScene::hideInventoryCard() {
@@ -258,7 +301,6 @@ void TutorialScene::showTutorial(std::shared_ptr<graphics::Texture> tex) {
         offset.y + this->getSize().height * 0.5f / zoom));
     _tutorialNode->setPriority(1.0f);
     addChild(_tutorialNode);
-    restartTutorialSound(_assets, "general_item_card");
 }
 
 void TutorialScene::hideTutorial() {
@@ -431,14 +473,14 @@ void TutorialScene::preUpdate(float dt)
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
             //CULog("click detected, card closed");
-            restartTutorialSound(_assets, "general_item_card_close");
+            restartTutorialSound(_assets, "general_click", 0.6f);
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
         }
     }
     else if (_tutorialNode && _tutorialTimer <= 0) {
         if (_input.cardDismissTap()) {
-            restartTutorialSound(_assets, "general_item_card_close");
+            restartTutorialSound(_assets, "general_click", 0.6f);
             hideTutorial();
         }
     }
@@ -470,6 +512,17 @@ void TutorialScene::preUpdate(float dt)
     }
     else {
         _player->setVelocity(velocity);
+    }
+    if (_playerWalkSoundCooldown > 0.0f) {
+        _playerWalkSoundCooldown -= dt;
+    }
+    if (_player->getHealth() > 0 && !_player->isHurt() &&
+        !_player->isCasting() && _player->getVelocity().length() > 0.05f &&
+        _playerWalkSoundCooldown <= 0.0f) {
+        std::string key = tutorialPlayerWalkSoundKey(_networkCtrl->getPlayerCharacter(_player->getPID()));
+        auto sound = _assets->get<Sound>(key);
+        AudioEngine::get()->play(key, sound, false, 1.0f, false);
+        _playerWalkSoundCooldown = 0.36f;
     }
 
 #pragma mark Deposit handling and Inventory card display
@@ -529,6 +582,7 @@ void TutorialScene::preUpdate(float dt)
             if (_canDeposit) {
                 int deposited = _player->depositItem((size_t)depositIndex);
                 if (deposited > 0) {
+                    restartTutorialSound(_assets, "general_alter_deposit");
                     _inventoryValue = _player->getInventoryVal();
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
                 }
@@ -544,6 +598,7 @@ void TutorialScene::preUpdate(float dt)
                 auto params = _itemFact->serializeParams(dropPos, carried.value, _world->getBounds().getMaxY(), carried.itemType);
                 auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
                 _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                restartTutorialSound(_assets, "general_drop");
                 _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
             }
         }
@@ -555,6 +610,7 @@ void TutorialScene::preUpdate(float dt)
             if (_networkCtrl->isHost()) {
                 int deposited = _player->depositItems();
                 if (deposited > 0) {
+                    restartTutorialSound(_assets, "general_alter_deposit");
                     _inventoryValue = _player->getInventoryVal();
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true));
                 }
@@ -592,6 +648,10 @@ void TutorialScene::preUpdate(float dt)
         _networkCtrl->pushOutEvent(
             SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
     }
+    else if (_input.failedGesture()) {
+        restartTutorialSound(_assets, "effect_error");
+        _input.resolvedFailedGesture();
+    }
 
     Vec2 angle = _input.getSpellAngle();
     if (angle.isZero()) {
@@ -603,6 +663,7 @@ void TutorialScene::preUpdate(float dt)
 
         //CULog("Spell type: %d", _player->getSpell());
         if (_player->getSpell() == SpellType::NONE) {
+            restartTutorialSound(_assets, "effect_error");
             _input.resolveSpell();
             _player->resolveSpell();
         }
@@ -631,6 +692,10 @@ void TutorialScene::preUpdate(float dt)
             auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _player->getPID(), damageBonus, _player->getBuff());
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
             _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+            std::string spellSound = tutorialSpellCastSoundKey(t);
+            if (!spellSound.empty()) {
+                restartTutorialSound(_assets, spellSound);
+            }
 
             _input.resolveSpell();
             _player->resolveSpell();
@@ -645,6 +710,7 @@ void TutorialScene::preUpdate(float dt)
         auto item = _itemFact->getItem(_currOverlappedItem);
         // Checks if player can pick up anything so inventory doesn't overflow
         if (_player && _player->canAddItem() && item && !item->isRemoved()) {
+            restartTutorialSound(_assets, "general_pickup");
             _networkCtrl->pushOutEvent(
                 PickupEvent::allocPickupEvent(_player->getPID(), _currOverlappedItem)
             );
@@ -1118,7 +1184,11 @@ void TutorialScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& ob
         else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
+                bool wasFrozen = e->isFroze();
                 _enemyFact->linkFunc(e, e_node, true, _world->getBounds().getMaxY(), _animations);
+                if (wasFrozen && !e->isFroze()) {
+                    restartTutorialSound(_assets, "hit_unfreeze");
+                }
                 });
 
             // Add animation
@@ -1265,6 +1335,14 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
         return;
     }
 
+    auto damageEnemy = [this](EnemyObstacle* target, float damage) {
+        auto oldHealth = target->getHealth();
+        target->setHealth(target->getHealth() - damage);
+        if (target->getHealth() < oldHealth) {
+            restartTutorialSound(_assets, tutorialEnemyDamageSoundKey(target->TYPE));
+        }
+    };
+
     // Checking for collisions
     if (spell && spell2) {
         //CULog("spell and spell");
@@ -1299,24 +1377,27 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
         case SpellType::FREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(spell -> getWeak() ? 120 : 240);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            restartTutorialSound(_assets, "hit_freeze");
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::COMBO_FREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(600);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            restartTutorialSound(_assets, "hit_freeze");
+            damageEnemy(enemy, spell->getDamage());
             break;
         case SpellType::COMBO_EFREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(-1);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            restartTutorialSound(_assets, "hit_freeze");
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::EARTH:
             enemy->setMud(true);
             enemy->setMudTimer(spell -> getWeak() ? 150 : 300);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::MUD_WATER:
@@ -1329,14 +1410,14 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
             break;
         }
         case SpellType::FIREBALL:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::COMBO_FIREBALL:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             break;
         case SpellType::DEATH:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             break;
         default:
             spell->setRemove();
