@@ -34,6 +34,8 @@ EnemyObstacle::EnemyObstacle(const EnemyType type, uint32 id, const Vec2& pos, c
     _frozenTimer = 0;
     _attackCounter = 0;
     _hurtTimer = 0;
+    _rng.init();
+    spellT = _rng.getClosedSint64(0,2);
 
     _propertiesDirty = false;
 }

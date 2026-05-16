@@ -239,7 +239,19 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
                     en->setAttackFunc(-1, [en, player, spellFact, networkCtrl, spellFactId](string key, float time, float actual) {
                         if (player->getHealth() > 0 && en->isAttacking()) {
                             Vec2 angle = player->getPosition() - en->getPosition();
-                            auto params = spellFact->serializeParams((en->getPosition()), angle, SpellType::FIREBALL, ENEMY_ID);
+                            SpellType s;
+                            CULog("THIS IS THE SPELL %lld", en -> getSpellT());
+                            switch(en->getSpellT()){
+                                case(0):
+                                    s = SpellType::FIREBALL;
+                                    break;
+                                case(1):
+                                    s = SpellType::EARTH;
+                                    break;
+                                default:
+                                    s = SpellType::WATER;
+                            }
+                            auto params = spellFact->serializeParams((en->getPosition()), angle, s, ENEMY_ID);
                             auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
                             networkCtrl->getPhysController()->acquireObs(pair.first, 0);
                             en->setAttackTimer(120);

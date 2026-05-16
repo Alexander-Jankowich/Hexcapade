@@ -837,7 +837,7 @@ bool InputController::init(std::shared_ptr<JsonValue> values, const Rect bounds,
     recognizer_2 -> set_accuracy(0.83f);
     recognizer_3 -> set_accuracy(0.83f);
     recognizerLess_1 -> set_accuracy(0.77f);
-    recognizerLess_2 -> set_accuracy(0.77f);
+    recognizerLess_2 -> set_accuracy(0.785f);
     recognizerLess_3 -> set_accuracy(0.77f);
 
     _joyradius = values->get("joystick")->getInt("radius");

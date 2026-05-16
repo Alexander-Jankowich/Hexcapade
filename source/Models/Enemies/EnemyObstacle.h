@@ -79,6 +79,10 @@ protected:
     int _attackTimer = 0;
 
     bool _propertiesDirty;
+    
+    cugl::Random _rng;
+    
+    Sint64 spellT;
 
 public:
     EnemyObstacle(const EnemyType type, uint32 id, const Vec2& pos, const shared_ptr<JsonValue>& consts, Size s);
@@ -94,6 +98,8 @@ public:
 
 #pragma mark Properties
 
+    
+    Sint64 getSpellT() { return spellT; }
     /**
     * Sets the acceleration of the enemy to reach the intended velocity
     * This method makes it so that the enemy will still collide with walls and players
