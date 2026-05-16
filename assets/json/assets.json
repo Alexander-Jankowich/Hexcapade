@@ -370,6 +370,10 @@
       "file": "fonts/CoolveticaRg.ttf",
       "size": 38
     },
+    "CoolveticaRegular44": {
+      "file": "fonts/CoolveticaRg.ttf",
+      "size": 44
+    },
     "CoolveticaRegular48": {
       "file": "fonts/CoolveticaRg.ttf",
       "size": 48
@@ -1684,7 +1688,7 @@
                 ],
                 "angle": 0,
                 "visible": true,
-                "font": "CoolveticaRegular48",
+                "font": "CoolveticaRegular44",
                 "text": "Start",
                 "foreground": "#000000ff",
                 "background": "#00000000",
