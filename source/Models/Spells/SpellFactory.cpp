@@ -114,13 +114,13 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> SpellFactory
 
     bool visible = values->getBool("visible", true);
 
-    float radius = visible ? image->getHeight() / PHYSICS_SCALE / 3 : values->getFloat("range");
+    float radius = visible ? image->getHeight() / PHYSICS_SCALE / 2 : values->getFloat("range");
     CULog("radius: %.2f", radius);
     float damage = (values->getInt("damage") + damageBonus) * (buff?2:1) / (weak?2:1);
     Vec2 vel = norm * values->getFloat("speed");
     float range = values->getFloat(visible ? "range" : "duration");
 
-    std::shared_ptr<SpellObstacle> spell = SpellObstacle::alloc(pos, vel, radius,
+    std::shared_ptr<SpellObstacle> spell = SpellObstacle::alloc(pos + (vel * 0.1), vel, radius,
         damage, range, type, c_uid, visible, weak);
 
     // Set the physics attributes
