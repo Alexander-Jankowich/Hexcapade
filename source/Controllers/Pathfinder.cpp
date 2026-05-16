@@ -65,6 +65,20 @@ Vec2 Pathfinder::getClosestPlayer(Vec2 enemPos, unordered_set<PlayerObstacle*> t
     return Vec2::ZERO;
 }
 
+shared_ptr<PlayerObstacle> Pathfinder::getAggroTarget(Vec2 enemPos, shared_ptr<PlayerFactory> playerFact) {
+    unordered_set<shared_ptr<PlayerObstacle>> carriers;
+    for (auto p : playerFact->current) {
+        if (p->getHealth() <= 0) continue;
+        for (const auto& item : p->getInventory()) {
+            if (item.itemType == ItemTypeClass::ItemType::OCTOLING) {
+                carriers.emplace(p);
+                break;
+            }
+        }
+    }
+    return carriers.empty() ? nullptr : getClosest(enemPos, carriers);
+}
+
 unordered_set<PlayerObstacle*> Pathfinder::getVisiblePlayers(shared_ptr<physics2::distrib::NetWorld> world,
         Vec2 enemPos, float range, unordered_set<shared_ptr<PlayerObstacle>> targs) {
     visiblePos.clear();
@@ -196,20 +210,31 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
             continue;
         }
 
+        shared_ptr<PlayerObstacle> aggroCarrier = getAggroTarget(en->getPosition(), playerFact);
+
         // Get and set new target depending on enemy type
         Vec2 targ;
         switch (en->TYPE) {
         case EnemyType::GHOST:
-            targ = getClosestPlayer(en->getPosition(),
-                getValidTargets(en->getPosition(), en->getRange(), playerFact));
+        {
+            auto validTargets = getValidTargets(en->getPosition(), en->getRange(), playerFact);
+            if (aggroCarrier && validTargets.count(aggroCarrier)) {
+                targ = aggroCarrier->getPosition();
+            }
+            else {
+                targ = getClosestPlayer(en->getPosition(), validTargets);
+            }
             break;
+        }
         case EnemyType::SLOWBAT:
         case EnemyType::BAT:
         {
             // if closest player in attack_range shoot spell
-            auto player = getClosest(en->getPosition(),
-                getVisiblePlayers(world, en->getPosition(), en->getRange(),
-                    getValidTargets(en->getPosition(), en->getRange(), playerFact)));
+            auto validTargets = getValidTargets(en->getPosition(), en->getRange(), playerFact);
+            auto visiblePlayers = getVisiblePlayers(world, en->getPosition(), en->getRange(), validTargets);
+            auto player = (aggroCarrier && visiblePlayers.count(aggroCarrier.get()))
+                ? aggroCarrier.get()
+                : getClosest(en->getPosition(), visiblePlayers);
             if (!player)
                 break;
 
@@ -238,9 +263,11 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
         case EnemyType::OCTO:
         {
             // if closest player in attack_range shoot spell
-            auto player = getClosest(en->getPosition(),
-                getVisiblePlayers(world, en->getPosition(), en->getRange(),
-                    getValidTargets(en->getPosition(), en->getRange(), playerFact)));
+            auto validTargets = getValidTargets(en->getPosition(), en->getRange(), playerFact);
+            auto visiblePlayers = getVisiblePlayers(world, en->getPosition(), en->getRange(), validTargets);
+            auto player = (aggroCarrier && visiblePlayers.count(aggroCarrier.get()))
+                ? aggroCarrier.get()
+                : getClosest(en->getPosition(), visiblePlayers);
             if (!player)
                 break;
 
