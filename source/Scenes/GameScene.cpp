@@ -1150,7 +1150,7 @@ void GameScene::renderHUD()
     auto texEmpty = _assets->get<graphics::Texture>("health_empty");
     auto texHourglass = _assets->get<graphics::Texture>("hourglass");
 
-    float iconRowH = 79.0f * 0.8f; 
+    float iconRowH = 79.0f * 0.8f;
     float heartRowH = iconRowH;
     float innerPad = 2.0f; // gap between the rows
 
@@ -1184,7 +1184,7 @@ void GameScene::renderHUD()
         float heartRowHs = hudSize(heartRowH);
         float containerWs2 = hudSize(containerW);
 
-        float heartH = heartRowHs * 0.75f;
+        float heartH = heartRowHs * 0.6f;
         float heartW = heartH * (83.0f / 78.0f);
 
         float totalHeartsW = containerWs2 / 3.0f;
