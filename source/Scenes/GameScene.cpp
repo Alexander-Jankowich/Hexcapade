@@ -1315,8 +1315,8 @@ cugl::Rect GameScene::getHelpButtonBounds() const {
     float buttonSize = 79.0f * 0.8f;
     Size screenSize = this->getSize();
 
-    return Rect((screenSize.width - margin - buttonSize) / zoom,
-        (screenSize.height - margin - buttonSize) / zoom,
+    return Rect((screenSize.width - margin - buttonSize - 20.0f) / zoom,
+        (screenSize.height - margin - buttonSize - 20.0f) / zoom,
         buttonSize / zoom,
         buttonSize / zoom);
 }
@@ -1601,13 +1601,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact->SetEnabled(false);
 
         // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove() || player -> getPID() != _player -> getPID() || spell->getCasterUID() == player->getPID()) {
+        if (spell->shouldRemove()) {
             return;
         }
         if (player->getPID() != _player->getPID() && spell->TYPE != SpellType::HEAL) {
             return;
         }
-
+        if (spell->getCasterUID() == player->getPID()) return;
         int nh = player->getHealth() + HEAL_AMT;
         switch (spell->TYPE) {
         case SpellType::HEAL:

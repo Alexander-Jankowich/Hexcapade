@@ -403,8 +403,13 @@ void GeometryApp::updateLoadingScene(float dt) {
 }
 
 void GeometryApp::updateMenuScene(float dt) {
-    _mainmenu.update(dt);
-    if(!_tutorialScene.getNetwork()->isHost()) _tutorialScene.getNetwork()->connectHost();
+    static bool waitingOnLoad = false;
+
+    if (!waitingOnLoad) {
+        _mainmenu.update(dt);
+    }
+    _tutorialScene.getNetwork()->markReady();
+    _tutorialScene.getNetwork()->updateNet();
     switch (_mainmenu.getChoice()) {
     case MenuScene::Choice::HOST:
         //_mainmenu.resetChoice();
@@ -421,13 +426,17 @@ void GeometryApp::updateMenuScene(float dt) {
         _scene = State::CLIENT;
         break;
     case MenuScene::Choice::TUTORIAL:
+        waitingOnLoad = true;
         _mainmenu.setActive(false);
         _tutorialScene.getNetwork()->startGame();
         _tutorialScene.getNetwork()->updateNet();
         _tutorialScene.getNetwork()->markReady();
         _tutorialScene.getNetwork()->updateNet();
         _tutorialScene.setActive(true);
-        _scene=State::TUTORIAL;
+        if (_tutorialScene.isActive()) {
+            waitingOnLoad = false;
+            _scene = State::TUTORIAL;
+        }
         break;
     case MenuScene::Choice::NONE:
         break;
