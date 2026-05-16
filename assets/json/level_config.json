@@ -33,7 +33,7 @@
         [ 0.65, 0.3, 0.5, 0.0 ],
         [ 0.05, 0.45, 0.5, 0.0 ]
     ],
-    "zone-probs": [ 0.55, 0.65, 0.65 ],
+    "zone-probs": [ 0.45, 0.5, 0.55 ],
     "item-spellbook-types": [
       "spellbook-earth",
       "spellbook-heal",
@@ -84,7 +84,7 @@
         [ 0.5, 0.4, 0.1, 0.0 ],
         [ 0.1, 0.35, 0.55, 0.0 ]
     ],
-    "zone-probs": [ 0.55, 0.65, 0.65 ],
+    "zone-probs": [ 0.5, 0.6, 0.65 ],
     "item-spellbook-types": [
       "spellbook-earth",
       "spellbook-heal",
@@ -135,7 +135,7 @@
         [ 0.4, 0.35, 0.25, 0.0 ],
         [ 0.1, 0.4, 0.5, 0.0 ]
     ],
-    "zone-probs": [ 0.55, 0.65, 0.80 ],
+    "zone-probs": [ 0.5, 0.6, 0.65 ],
     "item-spellbook-types": [
       "spellbook-earth",
       "spellbook-heal",
