@@ -1149,7 +1149,7 @@ void GameScene::renderHUD()
     auto texEmpty = _assets->get<graphics::Texture>("health_empty");
     auto texHourglass = _assets->get<graphics::Texture>("hourglass");
 
-    float iconRowH = 79.0f * 0.8f;
+    float iconRowH = 79.0f * 0.8f; 
     float heartRowH = iconRowH;
     float innerPad = 2.0f; // gap between the rows
 
@@ -1598,8 +1598,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact->SetEnabled(false);
 
         // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove() || player->getPID() != _player->getPID() ||
-                (spell->getCasterUID() == player->getPID() && !(spell->getCasterUID() == player->getPID() && spell->TYPE == SpellType::HEAL))) {
+        if (spell->shouldRemove() || player -> getPID() != _player -> getPID() || spell->getCasterUID() == player->getPID()) {
+            return;
+        }
+        if (player->getPID() != _player->getPID() && spell->TYPE != SpellType::HEAL) {
             return;
         }
 
