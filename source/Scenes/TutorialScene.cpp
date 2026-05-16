@@ -178,7 +178,7 @@ void TutorialScene::reset() {
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
     _tutorialTimer = 0;
-    _networkCtrl->connectHost(); // prepare to start again?
+    //_networkCtrl->connectHost(); // prepare to start again?
     Scene::reset();
 }
 /**

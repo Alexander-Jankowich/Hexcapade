@@ -404,8 +404,7 @@ void GeometryApp::updateLoadingScene(float dt) {
 
 void GeometryApp::updateMenuScene(float dt) {
     _mainmenu.update(dt);
-    _tutorialScene.getNetwork()->markReady();
-    _tutorialScene.getNetwork()->updateNet();
+    if(!_tutorialScene.getNetwork()->isHost()) _tutorialScene.getNetwork()->connectHost();
     switch (_mainmenu.getChoice()) {
     case MenuScene::Choice::HOST:
         //_mainmenu.resetChoice();
@@ -424,6 +423,9 @@ void GeometryApp::updateMenuScene(float dt) {
     case MenuScene::Choice::TUTORIAL:
         _mainmenu.setActive(false);
         _tutorialScene.getNetwork()->startGame();
+        _tutorialScene.getNetwork()->updateNet();
+        _tutorialScene.getNetwork()->markReady();
+        _tutorialScene.getNetwork()->updateNet();
         _tutorialScene.setActive(true);
         _scene=State::TUTORIAL;
         break;

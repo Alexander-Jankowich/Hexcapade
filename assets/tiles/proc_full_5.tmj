@@ -14,7 +14,7 @@
                     67, 67, 67, 67, 67, 67, 67, 67,
                     67, 67, 67, 67, 67, 67, 67, 67,
                     67, 67, 67, 67, 67, 67, 67, 67,
-                    69, 69, 69, 69, 69, 69, 69, 69],
+                    163, 163, 163, 163, 163, 163, 163, 163],
                  "height":9,
                  "id":2,
                  "name":"floor",
@@ -67,12 +67,12 @@
                 }, 
                 {
                  "data":[0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 5, 0, 18, 19, 0, 5, 0,
+                    0, 0, 0, 31, 32, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 79, 80, 84, 84, 85, 86, 0,
+                    0, 92, 93, 97, 97, 98, 99, 0,
+                    0, 105, 106, 110, 110, 111, 112, 0,
                     0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 0],
                  "height":9,
@@ -137,6 +137,29 @@
          "layers":[
                 {
                  "draworder":"topdown",
+                 "id":15,
+                 "name":"deposit",
+                 "objects":[
+                        {
+                         "height":0,
+                         "id":19,
+                         "name":"deposit",
+                         "point":true,
+                         "rotation":0,
+                         "type":"",
+                         "visible":true,
+                         "width":0,
+                         "x":100,
+                         "y":240
+                        }],
+                 "opacity":1,
+                 "type":"objectgroup",
+                 "visible":true,
+                 "x":0,
+                 "y":0
+                }, 
+                {
+                 "draworder":"topdown",
                  "id":6,
                  "name":"item_spawn",
                  "objects":[
@@ -149,8 +172,20 @@
                          "type":"",
                          "visible":true,
                          "width":0,
-                         "x":240,
-                         "y":238
+                         "x":62.5,
+                         "y":230.5
+                        }, 
+                        {
+                         "height":0,
+                         "id":17,
+                         "name":"item_spawn",
+                         "point":true,
+                         "rotation":0,
+                         "type":"",
+                         "visible":true,
+                         "width":0,
+                         "x":242,
+                         "y":233.5
                         }],
                  "opacity":1,
                  "type":"objectgroup",
@@ -280,7 +315,7 @@
                          "visible":true,
                          "width":0,
                          "x":-0.00390625,
-                         "y":100
+                         "y":80
                         }, 
                         {
                          "height":0,
@@ -323,8 +358,8 @@
          "x":0,
          "y":0
         }],
- "nextlayerid":15,
- "nextobjectid":17,
+ "nextlayerid":16,
+ "nextobjectid":20,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.11.2",
