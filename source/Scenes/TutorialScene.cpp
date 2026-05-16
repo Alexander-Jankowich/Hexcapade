@@ -228,7 +228,7 @@ void TutorialScene::reset() {
     _currOverlappedItem = -1;
     _tutorialTimer = 0;
     _playerWalkSoundCooldown = 0.0f;
-    _networkCtrl->connectHost(); // prepare to start again?
+    //_networkCtrl->connectHost(); // prepare to start again?
     Scene::reset();
 }
 /**
@@ -1087,6 +1087,8 @@ void TutorialScene::spawnFromMap() {
     sprite->setPriority(99.0f);
     sprite->setPosition(Vec2(pos));
     sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    float maxHeight = _world->getBounds().getMaxY();
+    sprite->setPriority((maxHeight - _depositPosition.y / PHYSICS_SCALE) / maxHeight * 2);
     _worldnode->addChild(sprite);
     
     auto obs = physics2::BoxObstacle::alloc(pos/PHYSICS_SCALE, _assets->get<graphics::Texture>("deposit")->getSize()/PHYSICS_SCALE);
@@ -1136,7 +1138,7 @@ void TutorialScene::setActive(bool value)
 
             _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
                 _player, _input, _depositPosition, _depositRadius, _world->getBounds().getMaxY());
-
+            _player->consumeItem(ItemTypeClass::ItemType::BOOK_EARTH);
             CULog("tut setActive: hasNetwork=%d isHost=%d",
                 _networkCtrl->hasNetwork(), _networkCtrl->isHost());
 

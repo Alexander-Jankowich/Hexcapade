@@ -105,7 +105,7 @@ bool StaticLevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
         auto t = spawn->getString("name");
         auto sp = Vec2(spawn->getFloat("x"), _mapHeight * _tileWidth - spawn->getFloat("y"));
         
-        if(t == "player")
+        if(t == "player_spawn")
             _playerSpawn = sp;
         
         if(t=="deposit")

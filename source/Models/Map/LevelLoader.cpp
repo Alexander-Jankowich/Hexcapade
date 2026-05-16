@@ -94,18 +94,22 @@ bool LevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
     
     // generate the spawn points
     // TODO: figure out if should be shared_ptr or not...
-    for (auto item_spawn : json->get("layers")->get(1)->get("layers")->get(0)->get("objects")->children()){
+    auto d_spawn = json->get("layers")->get(1)->get("layers")->get(0)->get("objects")->get(0);
+    _depositSpawn = Vec2(d_spawn->getFloat("x") / _tileWidth, d_spawn->getFloat("y") / _tileHeight);
+    for (auto item_spawn : json->get("layers")->get(1)->get("layers")->get(1)->get("objects")->children()){
         auto sp = Vec2(item_spawn->getFloat("x") / _tileWidth, item_spawn->getFloat("y") / _tileHeight);
         _itemSpawnPoints.push_back(sp);
     }
-    
-    auto pl_spawn = json->get("layers")->get(1)->get("layers")->get(1)->get("objects")->get(0);
-    _playerSpawn = Vec2(pl_spawn->getFloat("x") / _tileWidth, pl_spawn->getFloat("y") / _tileHeight);
     
     for (auto enem_spawn : json->get("layers")->get(1)->get("layers")->get(2)->get("objects")->children()){
         auto sp = Vec2(enem_spawn->getFloat("x") / _tileWidth, enem_spawn->getFloat("y") / _tileHeight);
         _enemSpawnPoints.push_back(sp);
     }
+    
+    auto pl_spawn = json->get("layers")->get(1)->get("layers")->get(3)->get("objects")->get(0);
+    _playerSpawn = Vec2(pl_spawn->getFloat("x") / _tileWidth, pl_spawn->getFloat("y") / _tileHeight);
+    
+
 
     for (int i = 0; i < 4; i++) {
         _doors[i] = nullptr;
@@ -113,14 +117,14 @@ bool LevelLoader::preload (const std::shared_ptr< JsonValue > &json) {
     //std::fill(_doors, nullptr);
 
     // DOORS ARE IN TILE BASED COORDS, divide by 40
-    for (auto door_sp : json->get("layers")->get(1)->get("layers")->get(3)->get("objects")->children()){
+    for (auto door_sp : json->get("layers")->get(1)->get("layers")->get(4)->get("objects")->children()){
         auto d = std::make_shared<Door>(Door(static_cast<Door::Direction>(door_sp->get("properties")->get(0)->getInt("value")), door_sp->getInt("x") / _tileWidth, door_sp->getInt("y") / _tileHeight, door_sp->getInt("width") / _tileWidth, door_sp->getInt("height") / _tileHeight));
         _doors[door_sp->get("properties")->get(0)->getInt("value")] = d;
         _numDoors++;
     }
     
     // collect colliders
-    for (auto col_data : json->get("layers")->get(1)->get("layers")->get(4)->get("objects")->children()) {
+    for (auto col_data : json->get("layers")->get(1)->get("layers")->get(5)->get("objects")->children()) {
         Vec2 origin = Vec2(col_data->getFloat("x"), col_data->getFloat("y"));
         vector<Vec2> points;
         for (auto p : col_data->get("polygon")->children()) {

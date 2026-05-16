@@ -484,8 +484,7 @@ void GeometryApp::updateMenuScene(float dt) {
     if (!waitingOnLoad) {
         _mainmenu.update(dt);
     }
-    _tutorialScene.getNetwork()->markReady();
-    _tutorialScene.getNetwork()->updateNet();
+    _tutorialScene.getNetwork()->connectHost();
     switch (_mainmenu.getChoice()) {
     case MenuScene::Choice::HOST:
         //_mainmenu.resetChoice();
@@ -505,9 +504,12 @@ void GeometryApp::updateMenuScene(float dt) {
         waitingOnLoad = true;
         _mainmenu.setActive(false);
         _tutorialScene.getNetwork()->startGame();
-        _tutorialScene.setActive(true);
-        if (_tutorialScene.isActive()) {
+        _tutorialScene.getNetwork()->updateNet();
+        _tutorialScene.getNetwork()->markReady();
+        _tutorialScene.getNetwork()->updateNet();
+        if (_tutorialScene.getNetwork()->getShortUID()>0) {
             waitingOnLoad = false;
+            _tutorialScene.setActive(true);
             playMusic("music_ingame", 1.0f, 0.50f);
             _scene = State::TUTORIAL;
         }

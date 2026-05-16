@@ -121,7 +121,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
 
     // this resets pickup prompt state
     _canDeposit = false;
-    _depositRadius = 42.0f;
+    _depositRadius = 120.0f;
     _depositPosition = Vec2::ZERO;
 
     // Create all the factories
@@ -189,7 +189,10 @@ void GameScene::reset()
     _worldnode = nullptr;
 
     _input.reset();
+    _input.dispose();
     _inputDisplay->reset();
+    
+    
 
     _player = nullptr;
     _enemyFact->reset();
@@ -313,7 +316,22 @@ void GameScene::rebuildMapForRun() {
     _worldnode->addChild(n);
 
     _quota = _map->getQuota();
-    _depositPosition = _map->getPlayerSpawn();
+    _depositPosition = _map->getDepositSpawn();
+    auto sprite = cugl::scene2::PolygonNode::allocWithTexture(_assets->get<graphics::Texture>("deposit"));
+    //CULog("X: %f, Y %f", x,y);
+    sprite->setPriority(99.0f);
+    sprite->setPosition(Vec2(_depositPosition));
+    sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    float maxHeight = _world->getBounds().getMaxY();
+    sprite->setPriority((maxHeight - _depositPosition.y / PHYSICS_SCALE) / maxHeight * 2);
+    _worldnode->addChild(sprite);
+    
+    auto obs = physics2::BoxObstacle::alloc(_depositPosition/PHYSICS_SCALE, _assets->get<graphics::Texture>("deposit")->getSize()/PHYSICS_SCALE);
+    obs->setDensity(1.0);
+    obs -> setEnabled(true);
+    obs->setBodyType(b2_staticBody);
+    _world->addObstacle(obs);
+    //obs->setPosition(0,0);
     _timer = _map->getTime() * 60;
 
     if (_networkCtrl->isHost()) {
@@ -818,6 +836,7 @@ void GameScene::preUpdate(float dt)
     bool depositRequested = false;
     int depositIndex = -1;
     _canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
+    //CULog("dist: %.2f", playerScreenPos.distance(_depositPosition));
 
     if (_input.pressedDeposit()) {
         depositRequested = true;
@@ -1129,6 +1148,7 @@ void GameScene::fixedUpdate(Uint64 step)
     
 
     _currOverlappedItem = -1;
+    _canDeposit = false;
     _world->update(step / 1000000.0f);
     if (_player && _lastPlayerHealthForSound >= 0 && _player->getHealth() < _lastPlayerHealthForSound) {
         // play local damage when physics makes health drop
@@ -1202,8 +1222,6 @@ void GameScene::render()
     }
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
-
-    drawDepositZone();
 
     if (_nameFont && _playerFact) {
         auto nameBgTex = _assets->get<graphics::Texture>("name_bg");
@@ -1525,22 +1543,6 @@ int GameScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {
     return -1;
 }
 
-void GameScene::drawDepositZone() {
-    if (!_map) {
-        return;
-    }
-
-    _batch->setTexture(nullptr);
-
-    Color4 color = _canDeposit ? Color4(70, 180, 95, 220) : Color4(60, 120, 70, 200);
-    Rect zone(_depositPosition.x - _depositRadius, _depositPosition.y - _depositRadius,
-        _depositRadius * 2.0f, _depositRadius * 2.0f);
-
-    _batch->setColor(color);
-    _batch->fill(zone);
-}
-
-
 void GameScene::initPhysics() {
     // initialize physics here, since this should be called post HANDSHAKE
     if (_networkCtrl->getPhysEnabled()) return;
@@ -1765,6 +1767,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     EnemyObstacle* enemy = nullptr;
     cugl::physics2::PolygonObstacle* wall = nullptr;
     ItemObstacle* item = nullptr;
+    cugl::physics2::BoxObstacle* deposit = nullptr;
 
     // Get types of the 2 obstacles; only care about collisions between different types of obstacles
     if (auto s = dynamic_cast<SpellObstacle*>(obs1)) {
@@ -1781,6 +1784,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs1)) {
         wall = w;
+    }
+    else if (auto d = dynamic_cast<cugl::physics2::BoxObstacle*>(obs1)) {
+        deposit = d;
     }
 
     if (auto s = dynamic_cast<SpellObstacle*>(obs2)) {
@@ -1808,7 +1814,10 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs2)) {
         //CULog("i am a wall");
         wall = w;
-    };
+    }
+    else if (auto d = dynamic_cast<cugl::physics2::BoxObstacle*>(obs2)) {
+        deposit = d;
+    }
 
     auto damagePlayer = [this](PlayerObstacle* p, float damage) {
         bool hadShield = p->hasShield();
@@ -1831,13 +1840,13 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact->SetEnabled(false);
 
         // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove() || player -> getPID() != _player -> getPID() || spell->getCasterUID() == player->getPID()) {
+        if (spell->shouldRemove()) {
             return;
         }
         if (player->getPID() != _player->getPID() && spell->TYPE != SpellType::HEAL) {
             return;
         }
-
+        if (spell->getCasterUID() == player->getPID()) return;
         int nh = player->getHealth() + HEAL_AMT;
         // spell hit feedback is played here when the effect changes player state
         switch (spell->TYPE) {
@@ -2072,6 +2081,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     else if (spell && item) {
         contact->SetEnabled(false);
+    }
+    else if (deposit && player) {
+        contact->SetEnabled(true);
+        CULog("at deposit");
+        _canDeposit = true;
+        return;
     }
     else {
         contact->SetEnabled(false);

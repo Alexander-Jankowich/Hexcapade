@@ -51,6 +51,7 @@ protected:
     vector<Vec2> _itemSpawnPoints;
     vector<Vec2> _enemSpawnPoints;
     Vec2 _playerSpawn;
+    Vec2 _depositSpawn;
     vector<Path2> _colliders;
 
 
@@ -127,6 +128,7 @@ public:
     const vector<Vec2>& getEnemSpawnPoints() const {return _enemSpawnPoints;}
     const vector<cugl::Path2>& getColliders() const {return _colliders;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
+    Vec2 getDepositSpawn() {return _depositSpawn;}
 
 
     int getHeight() {return _mapHeight;}

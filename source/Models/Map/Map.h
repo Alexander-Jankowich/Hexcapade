@@ -20,6 +20,7 @@
 
 // GID defs for hallway gen
 #define FLOOR_GID 67
+#define BOTTOM_FLOOR_GID 163
 #define WEST_GID 100
 #define EAST_GID 101
 #define NORTH_TOP_GID 10
@@ -100,6 +101,8 @@ private:
     std::vector<cugl::Vec2> _z3enemySpawnPoints;
 
     cugl::Vec2 _playerSpawn;
+    cugl::Vec2 _depositSpawn;
+
     LevelConfig _config;
 
     cugl::Random _rng;
@@ -128,6 +131,8 @@ public:
     
     std::shared_ptr<cugl::scene2::SceneNode> getLowerWallNode() {return lw_node;}
     Vec2 getPlayerSpawn() {return _playerSpawn;}
+    Vec2 getDepositSpawn() {return _depositSpawn;}
+
     const std::vector<std::pair<Vec2, ItemTypeClass::ItemType>>& getItemSpawns() const {return _itemSpawns;}
     const std::vector<std::shared_ptr<Room>> getRooms() const {return _rooms;}
     int getNumRooms() { return (int)_rooms.size(); }
