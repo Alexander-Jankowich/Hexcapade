@@ -1303,8 +1303,8 @@ cugl::Rect GameScene::getHelpButtonBounds() const {
     float buttonSize = 79.0f * 0.8f;
     Size screenSize = this->getSize();
 
-    return Rect((screenSize.width - margin - buttonSize) / zoom,
-        (screenSize.height - margin - buttonSize) / zoom,
+    return Rect((screenSize.width - margin - buttonSize - 20.0f) / zoom,
+        (screenSize.height - margin - buttonSize - 20.0f) / zoom,
         buttonSize / zoom,
         buttonSize / zoom);
 }
