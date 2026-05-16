@@ -13,6 +13,7 @@
 //#define ENABLE_ALL_SPELLS
 
 using namespace cugl;
+using namespace cugl::audio;
 using namespace std;
 using namespace cugl::graphics;
 
@@ -90,7 +91,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
     initCombos();
 
     _map = std::make_shared<Map>();
-    _roomController.setRooms(_map->getRooms());
     _mapSeed = 0;
 
     // Initialize inventory system
@@ -121,7 +121,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
 
     // this resets pickup prompt state
     _canDeposit = false;
-    _depositRadius = 42.0f;
+    _depositRadius = 120.0f;
     _depositPosition = Vec2::ZERO;
 
     // Create all the factories
@@ -189,7 +189,10 @@ void GameScene::reset()
     _worldnode = nullptr;
 
     _input.reset();
+    _input.dispose();
     _inputDisplay->reset();
+    
+    
 
     _player = nullptr;
     _enemyFact->reset();
@@ -218,6 +221,9 @@ void GameScene::reset()
     _currOverlappedItem = -1;
     _timer = 0;
     _glowItemId = -1;
+    _playerWalkSoundCooldown = 0.0f;
+    _lastPlayerHealthForSound = -1;
+    _enemyHealthForSound.clear();
     Scene::reset();
 }
 
@@ -309,11 +315,23 @@ void GameScene::rebuildMapForRun() {
     n->setPriority(0.0f);
     _worldnode->addChild(n);
 
-
-    _roomController.setRooms(_map->getRooms());
-
     _quota = _map->getQuota();
-    _depositPosition = _map->getPlayerSpawn();
+    _depositPosition = _map->getDepositSpawn();
+    auto sprite = cugl::scene2::PolygonNode::allocWithTexture(_assets->get<graphics::Texture>("deposit"));
+    //CULog("X: %f, Y %f", x,y);
+    sprite->setPriority(99.0f);
+    sprite->setPosition(Vec2(_depositPosition));
+    sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    float maxHeight = _world->getBounds().getMaxY();
+    sprite->setPriority((maxHeight - _depositPosition.y / PHYSICS_SCALE) / maxHeight * 2);
+    _worldnode->addChild(sprite);
+    
+    auto obs = physics2::BoxObstacle::alloc(_depositPosition/PHYSICS_SCALE, _assets->get<graphics::Texture>("deposit")->getSize()/PHYSICS_SCALE);
+    obs->setDensity(1.0);
+    obs -> setEnabled(true);
+    obs->setBodyType(b2_staticBody);
+    _world->addObstacle(obs);
+    //obs->setPosition(0,0);
     _timer = _map->getTime() * 60;
 
     if (_networkCtrl->isHost()) {
@@ -380,6 +398,164 @@ Vec2 GameScene::getHUDOffset() const {
     return _cameraBottomLeft;
 }
 
+// gameplay audio stays here because it depends on local player/enemy state
+// sound.json owns the base mix; code multipliers are for context changes
+bool GameScene::playSoundWithKey(const std::string& playbackKey, const std::string& assetKey,
+                                 float volumeMultiplier, bool force) {
+    auto engine = AudioEngine::get();
+    if (engine == nullptr || _assets == nullptr) {
+        return false;
+    }
+    if (!force && engine->isActive(playbackKey)) {
+        // stable-key sounds like walking should not stack over themselves
+        return false;
+    }
+    auto sound = _assets->get<Sound>(assetKey);
+    return sound && engine->play(playbackKey, sound, false, volumeMultiplier, force);
+}
+
+bool GameScene::playUniqueSound(const std::string& key, float volumeMultiplier) {
+    // unique keys let overlapping casts, hits, and damage sounds all play
+    std::string playbackKey = key + "#game#" + std::to_string(_soundCounter++);
+    return playSoundWithKey(playbackKey, key, volumeMultiplier, false);
+}
+
+bool GameScene::restartSound(const std::string& key, float volumeMultiplier) {
+    // restart sounds are button-like feedback that should replace the old copy
+    return playSoundWithKey(key, key, volumeMultiplier, true);
+}
+
+static std::string playerCharacterSoundKey(const std::string& character, const std::string& prefix) {
+    // builds character-specific keys like walking_cat, damage_duck, death_fox
+    if (character == "player_cat") return prefix + "cat";
+    if (character == "player_duck") return prefix + "duck";
+    if (character == "player_bunny") return prefix + "bunny";
+    return prefix + "fox";
+}
+
+static std::string enemyDamageSoundKey(EnemyType type) {
+    // enemy damage sounds are chosen from the enemy type that was hit
+    switch (type) {
+    case EnemyType::BAT:
+    case EnemyType::SLOWBAT:
+        return "damage_bat";
+    case EnemyType::GHOST:
+        return "damage_ghost";
+    case EnemyType::OCTO:
+        return "damage_octopus";
+    }
+    return "damage_statue";
+}
+
+static std::string enemyWalkSoundKey(EnemyType type) {
+    // enemy walking uses low repeated movement sounds, not attack sounds
+    switch (type) {
+    case EnemyType::BAT:
+    case EnemyType::SLOWBAT:
+        return "walking_bat";
+    case EnemyType::GHOST:
+        return "walking_ghost";
+    case EnemyType::OCTO:
+        return "walking_octopus";
+    }
+    return "walking_bat";
+}
+
+static std::string spellCastSoundKey(SpellType type) {
+    switch (type) {
+    case SpellType::FIREBALL:
+        return "spell_fire";
+    case SpellType::FREEZE:
+        return "spell_ice";
+    case SpellType::HEAL:
+        return "spell_heal";
+    case SpellType::DEATH:
+        return "spell_dark";
+    case SpellType::WATER:
+        return "spell_water";
+    case SpellType::EARTH:
+        return "spell_earth";
+    case SpellType::BUFF:
+        return "spell_buff";
+    case SpellType::SHIELD:
+        return "spell_shield";
+    case SpellType::COMBO_FREEZE:
+        return "spell_big_ice";
+    case SpellType::COMBO_EFREEZE:
+        return "spell_stone";
+    case SpellType::COMBO_FIREBALL:
+        return "spell_big_fire";
+    case SpellType::STEAM:
+        return "spell_steam";
+    case SpellType::MUD_WATER:
+        return "spell_mud_water";
+    default:
+        return "";
+    }
+}
+
+static std::string enemyAttackSoundKey(EnemyType type) {
+    // this maps enemy attacks to the sound key in sound.json
+    switch (type) {
+    case EnemyType::BAT:
+    case EnemyType::SLOWBAT:
+        return "attack_bat";
+    case EnemyType::GHOST:
+        return "attack_ghost";
+    case EnemyType::OCTO:
+        return "attack_octopus";
+    }
+    return "";
+}
+
+void GameScene::updateWalkingSounds(float dt) {
+    // walking is movement-gated for right now, working on frame/animation sync
+    if (_playerWalkSoundCooldown > 0.0f) {
+        _playerWalkSoundCooldown -= dt;
+    }
+
+    if (_player->getHealth() > 0 && !_player->isHurt() &&
+        !_player->isCasting() && _player->getVelocity().length() > 0.05f &&
+        _playerWalkSoundCooldown <= 0.0f) {
+        std::string key = playerCharacterSoundKey(_networkCtrl->getPlayerCharacter(_player->getPID()), "walking_");
+        playSoundWithKey(key, key, 1.0f, false);
+        // player footsteps wait before firing again so movement does not spam audio
+        _playerWalkSoundCooldown = 0.36f;
+    }
+
+    for (auto enemy : _enemyFact->current) {
+        if (!enemy->isDead() && !enemy->isFroze() && !enemy->isHurt() && !enemy->isAttacking() &&
+            enemy->getLinearVelocity().length() > 0.05f &&
+            _player->getPosition().distance(enemy->getPosition()) <= 12.0f) {
+            std::string key = enemyWalkSoundKey(enemy->TYPE);
+            // one stable key per enemy type keeps repeated enemy walking from stacking too loudly
+            playSoundWithKey(key, key, 1.0f, false);
+        }
+    }
+}
+
+void GameScene::playSpellCastSound(SpellType type) {
+    // spell casts use unique playback so back-to-back gestures overlap
+    std::string key = spellCastSoundKey(type);
+    if (!key.empty()) {
+        playUniqueSound(key, 1.0f);
+    }
+}
+
+void GameScene::playEnemyAttackSound(EnemyType type) {
+    // enemy attacks use unique playback so nearby hits can overlap
+    std::string key = enemyAttackSoundKey(type);
+    if (!key.empty()) {
+        playUniqueSound(key, 1.0f);
+    }
+}
+
+void GameScene::playItemDepositSound() {
+    // restart deposit because players can spam this like a button
+    CULog("sound play: deposit");
+    restartSound("general_alter_deposit", 1.0f);
+}
+
 #pragma mark -
 #pragma mark Gameplay Handling
 /**
@@ -412,6 +588,9 @@ void GameScene::preUpdate(float dt)
         if (!_player) return;
         _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
             _player, _input, _depositPosition, _depositRadius, _world->getBounds().getMaxY());
+    }
+    if (_lastPlayerHealthForSound < 0) {
+        _lastPlayerHealthForSound = _player->getHealth();
     }
     _glowItemId = -1;
     Vec2 playerPos = _player->getPosition();
@@ -501,6 +680,7 @@ void GameScene::preUpdate(float dt)
 
         auto itRemove = _itemFact->update();
         for (auto item : itRemove) {
+            removeItemNode(item);
             if (!item->isRemoved()) {
                 _networkCtrl->getPhysController()->removeSharedObstacle(item);
             }
@@ -543,6 +723,7 @@ void GameScene::preUpdate(float dt)
         _player->_bombExpired = false;
         int bombIdx = _player->_bombExpiredIndex;
         _player->_bombExpiredIndex = -1;
+        playUniqueSound("artifact_exploding_potion", 1.0f);
         if (_networkCtrl->isHost()) {
             _player->depositItem((size_t)bombIdx);
         }
@@ -550,6 +731,12 @@ void GameScene::preUpdate(float dt)
         _networkCtrl->pushOutEvent(
             DepositEvent::allocDepositEvent(_player->getPID(), 0, true, bombIdx));
     }
+    if (_player->getHealth() < _lastPlayerHealthForSound) {
+        // play local damage when health actually drops
+        playUniqueSound(playerCharacterSoundKey(_networkCtrl->getPlayerCharacter(_player->getPID()),
+            _player->getHealth() <= 0 ? "death_" : "damage_"), 1.0f);
+    }
+    _lastPlayerHealthForSound = _player->getHealth();
 
 #pragma mark Player Movement
     // Player movement
@@ -571,6 +758,7 @@ void GameScene::preUpdate(float dt)
     else if (!_player->isHurt()) {
         _player->setVelocity(velocity);
     }
+    updateWalkingSounds(dt);
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
 #pragma mark Inventory Card, Tutorial Card, and Camera Logic
@@ -607,14 +795,17 @@ void GameScene::preUpdate(float dt)
 
             if (tutorialBounds.contains(tapPos) && _tutorialPage == 1 && tapPos.x >= pageMidX) {
                 // right side of tutorial page clicked go to tutorial page 2
+                restartSound("general_click", 1.0f);
                 showTutorialPage(2);
             }
             else if (tutorialBounds.contains(tapPos) && _tutorialPage == 2 && tapPos.x < pageMidX) {
                 // left side of tutorial page clicked go back to tutorial page 1
+                restartSound("general_click", 1.0f);
                 showTutorialPage(1);
             }
             else {
                 // tutorial tap was not a page turn so close it
+                restartSound("general_click", 0.6f);
                 hideTutorial();
             }
             _input.resolvedInventoryRelease();
@@ -623,6 +814,7 @@ void GameScene::preUpdate(float dt)
         }
         else if (getHelpButtonBounds().contains(tapPos)) {
             // help button clicked open tutorial page 1
+            restartSound("general_click", 1.0f);
             showTutorialPage(1);
             _input.resolvedInventoryRelease();
             _input.resolvedCardDismissTap();
@@ -633,6 +825,7 @@ void GameScene::preUpdate(float dt)
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
             //CULog("click detected, card closed");
+            restartSound("general_click", 0.6f);
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
         }
@@ -643,6 +836,7 @@ void GameScene::preUpdate(float dt)
     bool depositRequested = false;
     int depositIndex = -1;
     _canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
+    //CULog("dist: %.2f", playerScreenPos.distance(_depositPosition));
 
     if (_input.pressedDeposit()) {
         depositRequested = true;
@@ -660,6 +854,7 @@ void GameScene::preUpdate(float dt)
 
             if (doubleTap) {
                 CULog("slot double tapped");
+                // double tap means deposit so do not play the normal card click
                 depositIndex = tappedIndex;
                 _pendingInventoryTapIndex = -1;
                 hideInventoryCard();
@@ -680,6 +875,8 @@ void GameScene::preUpdate(float dt)
     if (_pendingInventoryTapIndex >= 0) {
         Timestamp now;
         if (Timestamp::ellapsedMillis(_lastInventoryTapTime, now) > 200) {
+            // wait past the double tap window before treating this as a card open
+            restartSound("general_click", 1.0f);
             showInventoryCard((size_t)_pendingInventoryTapIndex);
             _pendingInventoryTapIndex = -1;
         }
@@ -697,7 +894,9 @@ void GameScene::preUpdate(float dt)
                 if (_canDeposit) {
                     int deposited = _player->depositItem((size_t)depositIndex);
                     if (deposited > 0) {
+                        // deposit sound only plays after a successful drop off
                         _inventoryValue = _player->getInventoryVal();
+                        playItemDepositSound();
                         _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
                     }
                 }
@@ -712,6 +911,8 @@ void GameScene::preUpdate(float dt)
                     auto params = _itemFact->serializeParams(dropPos, carried.value, _world->getBounds().getMaxY(), carried.itemType);
                     auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
                     _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                    // drop feedback is separate from altar deposit
+                    restartSound("general_drop", 1.0f);
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
                 }
             }
@@ -728,7 +929,9 @@ void GameScene::preUpdate(float dt)
             if (_networkCtrl->isHost()) {
                 int deposited = _player->depositItems();
                 if (deposited > 0) {
+                    // deposit sound only plays after a successful drop off
                     _inventoryValue = _player->getInventoryVal();
+                    playItemDepositSound();
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true));
                 }
             }
@@ -766,6 +969,11 @@ void GameScene::preUpdate(float dt)
         _networkCtrl->pushOutEvent(
             SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
     }
+    else if (_input.failedGesture()) {
+        // failed cast feedback
+        restartSound("effect_error", 1.0f);
+        _input.resolvedFailedGesture();
+    }
 
     Vec2 angle = _input.getSpellAngle();
     if (angle.isZero()) {
@@ -777,6 +985,8 @@ void GameScene::preUpdate(float dt)
 
         //CULog("Spell type: %d", _player->getSpell());
         if (_player->getSpell() == SpellType::NONE) {
+            // failed cast feedback
+            restartSound("effect_error", 1.0f);
             _input.resolveSpell();
             _player->resolveSpell();
         }
@@ -800,6 +1010,8 @@ void GameScene::preUpdate(float dt)
             }
 
             //CULog("Casting spell type: %d", t);
+            // local player cast only enemy projectiles do not use player spell sfx
+            playSpellCastSound(t);
             switch (t) {
             case SpellType::DEATH:
                 for (int i = 0; i < 16; i++) {
@@ -868,6 +1080,8 @@ void GameScene::preUpdate(float dt)
         CULog("trying to resolve pickup");
         auto item = _itemFact->getItem(_glowItemId);
         if (_player && _player->canAddItem() && item && !item->isRemoved()) {
+            // local pickup feedback; host still validates the pickup
+            restartSound("general_pickup", 1.0f);
             _networkCtrl->pushOutEvent(
                 PickupEvent::allocPickupEvent(_player->getPID(), _glowItemId)
             );
@@ -934,7 +1148,17 @@ void GameScene::fixedUpdate(Uint64 step)
     
 
     _currOverlappedItem = -1;
+    auto depositRect = Rect(_depositPosition, _assets->get<graphics::Texture>("deposit")->getImage()->getSize() * 1.1);
+    _canDeposit = depositRect.contains(_player->getPosition());
     _world->update(step / 1000000.0f);
+    if (_player && _lastPlayerHealthForSound >= 0 && _player->getHealth() < _lastPlayerHealthForSound) {
+        // play local damage when physics makes health drop
+        playUniqueSound(playerCharacterSoundKey(_networkCtrl->getPlayerCharacter(_player->getPID()),
+            _player->getHealth() <= 0 ? "death_" : "damage_"), 1.0f);
+    }
+    if (_player) {
+        _lastPlayerHealthForSound = _player->getHealth();
+    }
 }
 
 /**
@@ -999,8 +1223,6 @@ void GameScene::render()
     }
     _batch->setPerspective(getCamera()->getCombined());
     _batch->begin();
-
-    drawDepositZone();
 
     if (_nameFont && _playerFact) {
         auto nameBgTex = _assets->get<graphics::Texture>("name_bg");
@@ -1149,7 +1371,7 @@ void GameScene::renderHUD()
     auto texEmpty = _assets->get<graphics::Texture>("health_empty");
     auto texHourglass = _assets->get<graphics::Texture>("hourglass");
 
-    float iconRowH = 79.0f * 0.8f; 
+    float iconRowH = 79.0f * 0.8f;
     float heartRowH = iconRowH;
     float innerPad = 2.0f; // gap between the rows
 
@@ -1303,8 +1525,8 @@ cugl::Rect GameScene::getHelpButtonBounds() const {
     float buttonSize = 79.0f * 0.8f;
     Size screenSize = this->getSize();
 
-    return Rect((screenSize.width - margin - buttonSize) / zoom,
-        (screenSize.height - margin - buttonSize) / zoom,
+    return Rect((screenSize.width - margin - buttonSize - 20.0f) / zoom,
+        (screenSize.height - margin - buttonSize - 20.0f) / zoom,
         buttonSize / zoom,
         buttonSize / zoom);
 }
@@ -1321,22 +1543,6 @@ int GameScene::getInventorySlotIndexAt(const cugl::Vec2& tapPos) const {
     }
     return -1;
 }
-
-void GameScene::drawDepositZone() {
-    if (!_map) {
-        return;
-    }
-
-    _batch->setTexture(nullptr);
-
-    Color4 color = _canDeposit ? Color4(70, 180, 95, 220) : Color4(60, 120, 70, 200);
-    Rect zone(_depositPosition.x - _depositRadius, _depositPosition.y - _depositRadius,
-        _depositRadius * 2.0f, _depositRadius * 2.0f);
-
-    _batch->setColor(color);
-    _batch->fill(zone);
-}
-
 
 void GameScene::initPhysics() {
     // initialize physics here, since this should be called post HANDSHAKE
@@ -1452,9 +1658,28 @@ void GameScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& obj,
             }
 
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
+            _enemyHealthForSound[e.get()] = e->getHealth();
             obj->setListener([=, this](physics2::Obstacle* obs) {
+                bool wasFrozen = e->isFroze();
+                int oldHealth = _enemyHealthForSound[e.get()];
+                if (e->isAttacking() && !e_node->isAttacking()) {
+                    // play attack audio when an enemy enters attack state
+                    playEnemyAttackSound(e->TYPE);
+                }
                 _enemyFact->linkFunc(e, e_node, _networkCtrl->isHost(), _world->getBounds().getMaxY(), _animations);
-            });
+                if (e->getHealth() < oldHealth) {
+                    // play enemy damage when health actually drops
+                    playUniqueSound(enemyDamageSoundKey(e->TYPE), 1.0f);
+                }
+                _enemyHealthForSound[e.get()] = e->getHealth();
+                bool unFrozen = wasFrozen && !e->isFroze();
+                if (unFrozen && !e->isDead()) {
+                    if (_player->getPosition().distance(e->getPosition()) <= 12.0f) {
+                        // play unfreeze when the enemy leaves frozen state
+                        playUniqueSound("hit_unfreeze", 1.0f);
+                    }
+                }
+                });
 
             // Add animation
             _animations->addNode(e_node);
@@ -1543,6 +1768,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     EnemyObstacle* enemy = nullptr;
     cugl::physics2::PolygonObstacle* wall = nullptr;
     ItemObstacle* item = nullptr;
+    cugl::physics2::BoxObstacle* deposit = nullptr;
 
     // Get types of the 2 obstacles; only care about collisions between different types of obstacles
     if (auto s = dynamic_cast<SpellObstacle*>(obs1)) {
@@ -1559,6 +1785,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs1)) {
         wall = w;
+    }
+    else if (auto d = dynamic_cast<cugl::physics2::BoxObstacle*>(obs1)) {
+        deposit = d;
     }
 
     if (auto s = dynamic_cast<SpellObstacle*>(obs2)) {
@@ -1586,7 +1815,21 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     else if (auto w = dynamic_cast<cugl::physics2::PolygonObstacle*>(obs2)) {
         //CULog("i am a wall");
         wall = w;
-    };
+    }
+    else if (auto d = dynamic_cast<cugl::physics2::BoxObstacle*>(obs2)) {
+        deposit = d;
+    }
+
+    auto damagePlayer = [this](PlayerObstacle* p, float damage) {
+        bool hadShield = p->hasShield();
+        p->damage(damage);
+        if (hadShield) {
+            playUniqueSound(p->hasShield() && p->getShieldCount() > 0 ? "hit_shield" : "hit_shatter_shield", 1.0f);
+        }
+        };
+    auto damageEnemy = [](EnemyObstacle* e, float damage) {
+        e->setHealth(e->getHealth() - damage);
+        };
 
     // Checking for collisions
     if (spell && spell2) {
@@ -1598,14 +1841,15 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact->SetEnabled(false);
 
         // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove() || player -> getPID() != _player -> getPID() || spell->getCasterUID() == player->getPID()) {
+        if (spell->shouldRemove()) {
             return;
         }
         if (player->getPID() != _player->getPID() && spell->TYPE != SpellType::HEAL) {
             return;
         }
-
+        if (spell->getCasterUID() == player->getPID()) return;
         int nh = player->getHealth() + HEAL_AMT;
+        // spell hit feedback is played here when the effect changes player state
         switch (spell->TYPE) {
         case SpellType::HEAL:
             if (player->getHealth() <= 0) {
@@ -1624,28 +1868,32 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             player->setFrozeTimer(90);
             player->setFrozen(true);
             spell->setRemove();
-            player->damage(1);
+            playUniqueSound("hit_freeze", 1.0f);
+            damagePlayer(player, 1);
             break;
         case SpellType::COMBO_FREEZE:
             player->setFrozeTimer(180);
             player->setFrozen(true);
-            player->damage(1);
+            playUniqueSound("hit_freeze", 1.0f);
+            damagePlayer(player, 1);
             spell->setRemove();
             break;
         case SpellType::COMBO_EFREEZE:
             player->setFrozeTimer(360);
             player->setFrozen(true);
+            playUniqueSound("hit_freeze", 1.0f);
             spell->setRemove();
             break;
         case SpellType::EARTH:
             player->setMudTimer(240);
             player->setMud(true);
             spell->setRemove();
-            player->damage(1);
+            damagePlayer(player, 1);
             break;
         case SpellType::BUFF:
             player->setBuffTimer(3600);
             player->setBuff(true);
+            playUniqueSound("hit_buff", 1.0f);
             spell->setRemove();
             break;
         case SpellType::WATER:
@@ -1675,14 +1923,15 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         case SpellType::SHIELD:
             player->setShield(true);
             player->setShieldCount(3);
+            playUniqueSound("hit_shield", 1.0f);
             spell->setRemove();
             break;
         case SpellType::FIREBALL:
-            player->damage(2);
+            damagePlayer(player, 2);
             spell->setRemove();
             break;
         case SpellType::COMBO_FIREBALL:
-            player->damage(4);
+            damagePlayer(player, 4);
             spell->setRemove();
             break;
         case SpellType::DEATH:
@@ -1726,19 +1975,24 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
 
         enemy->setAttackTimer(90);
 
-        player->damage(1);
+        //CULog("enemy and player");
+        if (enemy->TYPE == EnemyType::GHOST) {
+            // ghosts attack by contact damage instead of an attack animation
+            playEnemyAttackSound(enemy->TYPE);
+        }
+        damagePlayer(player, 1);
         return;
     }
     else if (enemy && spell) {
         contact->SetEnabled(false);
         if (enemy -> TYPE == EnemyType::STATUE){
             return;
-        } 
+        }
 
         if (!_networkCtrl->isHost() || spell->shouldRemove() || spell->getCasterUID() == ENEMY_ID) {
             return;
         }
-
+        // spell hit feedback is played here when the effect changes enemy state
         switch (spell->TYPE) {
         case SpellType::WATER:
         {
@@ -1750,24 +2004,27 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         case SpellType::FREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(spell -> getWeak() ? 120 : 240);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            playUniqueSound("hit_freeze", 1.0f);
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::COMBO_FREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(600);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            playUniqueSound("hit_freeze", 1.0f);
+            damageEnemy(enemy, spell->getDamage());
             break;
         case SpellType::COMBO_EFREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(-1);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            playUniqueSound("hit_freeze", 1.0f);
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::EARTH:
             enemy->setMud(true);
             enemy->setMudTimer(spell -> getWeak() ? 150 : 300);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::MUD_WATER:
@@ -1780,14 +2037,14 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             break;
         }
         case SpellType::FIREBALL:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::COMBO_FIREBALL:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             break;
         case SpellType::DEATH:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             break;
         default:
             spell->setRemove();
@@ -1825,6 +2082,12 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
     }
     else if (spell && item) {
         contact->SetEnabled(false);
+    }
+    else if (deposit && player) {
+        contact->SetEnabled(true);
+        CULog("at deposit");
+        _canDeposit = true;
+        return;
     }
     else {
         contact->SetEnabled(false);

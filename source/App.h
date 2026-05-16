@@ -5,6 +5,7 @@
 #ifndef __APP_H__
 #define __APP_H__
 
+#include <string>
 #include <cugl/cugl.h>
 #include "Scenes/GameScene.h"
 #include "Scenes/EndScene.h"
@@ -37,6 +38,16 @@ protected:
 
     /** Whether or not we have finished loading all assets */
     bool _loaded;
+    /** Whether menu music has started on the loading play screen */
+    bool _menuMusicStarted;
+    /** The current looping music asset key */
+    std::string _currentMusicKey;
+    /** the volume used by the current looping music */
+    float _currentMusicVolume = 1.0f;
+    /** whether music should pause when the app is suspended */
+    bool _pauseMusicOnSuspend = false;
+    /** whether short sound effects should be skipped during app interruption */
+    bool _audioInterrupted = false;
     /** The current application state */
     State _scene;
 
@@ -76,6 +87,16 @@ private:
     void updateGameScene(float dt);
     void updateEndScene(float dt);
     void updateTutorialScene(float dt);
+    /** clears a stuck focus-change audio flag and restores music if the queue was dropped */
+    void restoreAudioAfterFocusChange();
+    /** plays a short app-level sfx with either a stable or custom playback key */
+    bool playSoundWithKey(const std::string& playbackKey, const std::string& assetKey,
+                          float volumeMultiplier, bool force);
+    /** restarts click/result sounds so repeated taps do not get ignored */
+    bool restartSound(const std::string& key, float volumeMultiplier);
+    /** keeps music on the cugl music queue and changes volume without restarting the same track */
+    void playMusic(const std::string& key, float volumeMultiplier = 1.0f,
+                   float fade = 0.35f, bool restartIfSame = false);
 
 };
 

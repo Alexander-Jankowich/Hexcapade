@@ -89,10 +89,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
     // Corrected player spawn calculation
     auto pl_mg = cugl::Vec2(_config._mapSize/2 - tiledData->getWidth() / 2 + tiledData->getPlayerSpawn().x,
                             _config._mapSize / 2 - tiledData->getHeight() / 2 + tiledData->getPlayerSpawn().y);
-    
+    auto d_mg = cugl::Vec2(_config._mapSize/2 - tiledData->getWidth() / 2 + tiledData->getDepositSpawn().x,
+                            _config._mapSize / 2 - tiledData->getHeight() / 2 + tiledData->getDepositSpawn().y);
     // Just map grid units to world pixels.
     // We use (MAP_HEIGHT - pl_mg.y) to flip from Tiled/Grid (top-left) to CUGL (bottom-left).
     _playerSpawn = Vec2(pl_mg.x * TILE_SIZE, (_config._mapSize - pl_mg.y) * TILE_SIZE);
+    _depositSpawn = Vec2(d_mg.x * TILE_SIZE, (_config._mapSize - d_mg.y) * TILE_SIZE);
     // add all doors in room to doors queue
     for (auto d : tiledData->getDoors()) {
         // pos is the TOP LEFT corner of door
@@ -295,10 +297,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
                     _mapGrid[yPos-1][x] = 1;
                     
                     // add 5 floor tiles
-                    for (int y=yPos; y < yPos +6; y++){
+                    for (int y=yPos; y < yPos + 5; y++){
                         addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, _config._mapSize - y), node);
                         _mapGrid[y][x] = 1;
                     }
+                    addSingleNode(tiledData->getTileForGid(BOTTOM_FLOOR_GID), Vec2(x, _config._mapSize - (yPos + 5)), node);
+                    _mapGrid[yPos + 5][x] = 1;
                     // add bottom walls
                     addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(x, _config._mapSize - yPos - 3), lw_node);
                     addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, _config._mapSize - yPos - 4), lw_node);
@@ -363,10 +367,12 @@ std::shared_ptr<cugl::scene2::SceneNode> Map::generate(int level, unsigned int s
                     _mapGrid[yPos-2][x] = 1;
                     _mapGrid[yPos-1][x] = 1;
                     // add 7 floor tiles (vis fix stuff)
-                    for (int y=yPos; y < yPos + 6; y++){
+                    for (int y=yPos; y < yPos + 5; y++){
                         addSingleNode(tiledData->getTileForGid(FLOOR_GID), Vec2(x, _config._mapSize - y), node);
                         _mapGrid[y][x] = 1;
                     }
+                    addSingleNode(tiledData->getTileForGid(BOTTOM_FLOOR_GID), Vec2(x, _config._mapSize - (yPos + 5)), node);
+                    _mapGrid[yPos + 5][x] = 1;
                     // add bottom walls
                     addSingleNode(tiledData->getTileForGid(SOUTH_TOP_GID), Vec2(x, _config._mapSize - yPos - 3), lw_node);
                     addSingleNode(tiledData->getTileForGid(SOUTH_MID_GID), Vec2(x, _config._mapSize - yPos - 4), lw_node);

@@ -17,7 +17,6 @@
 #include <iomanip>
 #include "../Controllers/InputController.h"
 #include "../Controllers/NetworkController.h"
-#include "../Controllers/RoomController.h"
 #include "../Controllers/Pathfinder.h"
 
 #include "../Models/Map/Map.h"
@@ -94,7 +93,6 @@ protected:
     shared_ptr<Animator> _animations;
     
     shared_ptr<Map> _map;
-    RoomController _roomController;
     Vec2 _cameraBottomLeft;
     float _cameraZoom;
     unsigned int _mapSeed;
@@ -145,6 +143,14 @@ protected:
     int _currOverlappedItem = -1;
     int _pendingInventoryTapIndex = -1;
     Timestamp _lastInventoryTapTime;
+    /** counter for gameplay sounds that should overlap */
+    unsigned int _soundCounter = 0;
+    /** seconds before local walking feedback can play again */
+    float _playerWalkSoundCooldown = 0.0f;
+    /** previous local health so damage audio follows actual health loss */
+    int _lastPlayerHealthForSound = -1;
+    /** previous enemy health so damage audio follows actual health loss */
+    map<EnemyObstacle*, int> _enemyHealthForSound;
     /** Which tutorial page is currently open, or 0 if closed */
     int _tutorialPage = 0;
 
@@ -350,6 +356,21 @@ private:
 
     // this returns the camera offset used to keep hud elements screen-anchored
     Vec2 getHUDOffset() const;
+    // this sends gameplay sfx to cugl with stable/restart/unique key behavior
+    bool playSoundWithKey(const string& playbackKey, const string& assetKey,
+                          float volumeMultiplier, bool force);
+    // this lets overlapping sounds like spells and damage all be heard
+    bool playUniqueSound(const string& key, float volumeMultiplier);
+    // this restarts button-like sounds instead of waiting for the old one
+    bool restartSound(const string& key, float volumeMultiplier);
+    // this is movement-gated walking audio, not animation-frame synced
+    void updateWalkingSounds(float dt);
+    // this plays the sound key chosen by spellCastSoundKey
+    void playSpellCastSound(SpellType type);
+    // this plays the sound key chosen by enemyAttackSoundKey
+    void playEnemyAttackSound(EnemyType type);
+    // this plays the altar deposit feedback with restart behavior
+    void playItemDepositSound();
 
     // this draws the prototype deposit zone so desktop/mobile tests can target it
     void drawDepositZone();

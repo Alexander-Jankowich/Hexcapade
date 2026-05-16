@@ -10,9 +10,58 @@
 #include "TutorialScene.h"
 
 using namespace cugl;
+using namespace cugl::audio;
 using namespace std;
 using namespace cugl::graphics;
 
+namespace {
+    void restartTutorialSound(const std::shared_ptr<AssetManager>& assets, const std::string& key,
+                              float volumeMultiplier = 1.0f) {
+        auto sound = assets->get<Sound>(key);
+        AudioEngine::get()->play(key, sound, false, volumeMultiplier, true);
+    }
+
+    std::string tutorialSpellCastSoundKey(SpellType type) {
+        switch (type) {
+        case SpellType::FREEZE:
+            return "spell_ice";
+        case SpellType::FIREBALL:
+            return "spell_fire";
+        case SpellType::COMBO_FREEZE:
+            return "spell_big_ice";
+        case SpellType::EARTH:
+            return "spell_earth";
+        case SpellType::COMBO_EFREEZE:
+            return "spell_stone";
+        case SpellType::WATER:
+            return "spell_water";
+        default:
+            return "";
+        }
+    }
+
+    std::string tutorialEnemyDamageSoundKey(EnemyType type) {
+        switch (type) {
+        case EnemyType::BAT:
+        case EnemyType::SLOWBAT:
+            return "damage_bat";
+        case EnemyType::GHOST:
+            return "damage_ghost";
+        case EnemyType::OCTO:
+            return "damage_octopus";
+        case EnemyType::STATUE:
+        default:
+            return "damage_statue";
+        }
+    }
+
+    std::string tutorialPlayerWalkSoundKey(const std::string& character) {
+        if (character == "player_cat") return "walking_cat";
+        if (character == "player_duck") return "walking_duck";
+        if (character == "player_bunny") return "walking_bunny";
+        return "walking_fox";
+    }
+}
 
 #pragma mark -
 #pragma mark Level Layout
@@ -129,7 +178,7 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
     _map = std::make_shared<StaticMap>();
     _networkCtrl = std::make_shared<NetworkController>();
     _networkCtrl->init(_assets);
-    _networkCtrl->connectHost();
+     while (!_networkCtrl->connectHost());
     CULog("tutorial scene connecting host");
     
     _itemInfo = ItemTypeClass(_assets);
@@ -178,7 +227,8 @@ void TutorialScene::reset() {
     _pendingInventoryTapIndex = -1;
     _currOverlappedItem = -1;
     _tutorialTimer = 0;
-    _networkCtrl->connectHost(); // prepare to start again?
+    _playerWalkSoundCooldown = 0.0f;
+    //_networkCtrl->connectHost(); // prepare to start again?
     Scene::reset();
 }
 /**
@@ -229,6 +279,7 @@ void TutorialScene::showInventoryCard(size_t slotIndex) {
         offset.y + this->getSize().height * 0.5f / zoom));
     _inventoryCardNode->setPriority(1.0f);
     addChild(_inventoryCardNode);
+    restartTutorialSound(_assets, "general_click");
 }
 
 void TutorialScene::hideInventoryCard() {
@@ -353,26 +404,22 @@ void TutorialScene::preUpdate(float dt)
         _tutorialTimer = 90;
     }
 
-    CULog("current player position: %f, %f", _player -> getPosition().x, _player -> getPosition().y);
+    //CULog("current player position: %f, %f", _player -> getPosition().x, _player -> getPosition().y);
     if (_input.pressedReset()) {
         reset();
         _input.resolvedReset();
         return;
     }
 #pragma mark Enemy Spawning Logic, Pathfinding, and Removal
-    if (_networkCtrl->isHost()) {
-        // spawn an enemy if host and need to spawn
+    auto toRemove = _enemyFact->getRemoved();
+    for (auto en : toRemove) {
+        _networkCtrl->getPhysController()->removeSharedObstacle(en);
+    }
 
-        auto toRemove = _enemyFact->getRemoved();
-        for (auto en : toRemove) {
-            _networkCtrl->getPhysController()->removeSharedObstacle(en);
-        }
-
-        auto itRemove = _itemFact->update();
-        for (auto item : itRemove) {
-            if (!item->isRemoved()) {
-                _networkCtrl->getPhysController()->removeSharedObstacle(item);
-            }
+    auto itRemove = _itemFact->update();
+    for (auto item : itRemove) {
+        if (!item->isRemoved()) {
+            _networkCtrl->getPhysController()->removeSharedObstacle(item);
         }
     }
 
@@ -384,27 +431,6 @@ void TutorialScene::preUpdate(float dt)
         //CULog("Remove spell: %d", spell->isRemoved());
     }
 
-
-    // Update animations
-    _animations->update(dt);
-
-    // Player movement
-    cugl::Vec2 input = _input.getMove();
-    if (_input.showAim()) {
-        _player->setAimSlowTimer(_player->getAimSlowTimer() - dt);
-    }
-    else {
-        _player->setAimSlowTimer(2.0f);
-    }
-    cugl::Vec2 velocity = input * _player->getSpeed();
-
-    if (_player->isFrozen() || _player->isHurt()) {
-        //_player->setVelocity(Vec2::ZERO);
-    }
-    else {
-        _player->setVelocity(velocity);
-        //_player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
-    }
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
 #pragma mark Inventory Card, Tutorial Card, and Camera Logic
@@ -447,15 +473,57 @@ void TutorialScene::preUpdate(float dt)
     if (_inventoryCardNode) {
         if (_input.cardDismissTap()) {
             //CULog("click detected, card closed");
+            restartTutorialSound(_assets, "general_click", 0.6f);
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
         }
-    }else if(_tutorialNode && (_tutorialTimer <= 0)){
+    }
+    else if (_tutorialNode && _tutorialTimer <= 0) {
         if (_input.cardDismissTap()) {
+            restartTutorialSound(_assets, "general_click", 0.6f);
             hideTutorial();
         }
     }
     _input.resolvedCardDismissTap();
+
+    // Update animations
+    _animations->update(dt);
+
+    if (_tutorialNode) {
+        // Skip updates if tutorial is showing
+        _player->setLinearVelocity(Vec2::ZERO);
+        return;
+    }
+
+#pragma mark Update Player
+    //CULog("do player updates");
+    // Player movement
+    cugl::Vec2 input = _input.getMove();
+    if (_input.showAim()) {
+        _player->setAimSlowTimer(_player->getAimSlowTimer() - dt);
+    }
+    else {
+        _player->setAimSlowTimer(2.0f);
+    }
+    cugl::Vec2 velocity = input * _player->getSpeed();
+
+    if (_player->isFrozen() || _player->isHurt()) {
+        //_player->setVelocity(Vec2::ZERO);
+    }
+    else {
+        _player->setVelocity(velocity);
+    }
+    if (_playerWalkSoundCooldown > 0.0f) {
+        _playerWalkSoundCooldown -= dt;
+    }
+    if (_player->getHealth() > 0 && !_player->isHurt() &&
+        !_player->isCasting() && _player->getVelocity().length() > 0.05f &&
+        _playerWalkSoundCooldown <= 0.0f) {
+        std::string key = tutorialPlayerWalkSoundKey(_networkCtrl->getPlayerCharacter(_player->getPID()));
+        auto sound = _assets->get<Sound>(key);
+        AudioEngine::get()->play(key, sound, false, 1.0f, false);
+        _playerWalkSoundCooldown = 0.36f;
+    }
 
 #pragma mark Deposit handling and Inventory card display
     bool depositRequested = false;
@@ -511,31 +579,27 @@ void TutorialScene::preUpdate(float dt)
     // MOBILE DEPOSIT: DRAG ONE SLOT WHILE THE PLAYER IS IN DEPOSIT RANGE
     if (depositIndex >= 0) {
         if (_player->hasInventory()) {
-            if (_networkCtrl->isHost()) {
-                if (_canDeposit) {
-                    int deposited = _player->depositItem((size_t)depositIndex);
-                    if (deposited > 0) {
-                        _inventoryValue = _player->getInventoryVal();
-                        _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
-                    }
-                }
-
-                // Drop anywhere else in the world.
-                // Artifact bomb cannot be dropped!
-                else if ((size_t)depositIndex < _player->getInventory().size() && !_player->isNonDroppable((size_t)depositIndex)) {
-                    auto carried = _player->getInventory()[(size_t)depositIndex];
-                    _player->depositItem((size_t)depositIndex);
+            if (_canDeposit) {
+                int deposited = _player->depositItem((size_t)depositIndex);
+                if (deposited > 0) {
+                    restartTutorialSound(_assets, "general_alter_deposit");
                     _inventoryValue = _player->getInventoryVal();
-                    Vec2 dropPos = _player->getPosition() + Vec2(0.0f, -0.35f);
-                    auto params = _itemFact->serializeParams(dropPos, carried.value, _world->getBounds().getMaxY(), carried.itemType);
-                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
-                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
+                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
                 }
             }
-            else {
-                _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, false, depositIndex));
-                CULog("CLIENT deposit request");
+
+            // Drop anywhere else in the world.
+            // Artifact bomb cannot be dropped!
+            else if ((size_t)depositIndex < _player->getInventory().size() && !_player->isNonDroppable((size_t)depositIndex)) {
+                auto carried = _player->getInventory()[(size_t)depositIndex];
+                _player->depositItem((size_t)depositIndex);
+                _inventoryValue = _player->getInventoryVal();
+                Vec2 dropPos = _player->getPosition() + Vec2(0.0f, -0.35f);
+                auto params = _itemFact->serializeParams(dropPos, carried.value, _world->getBounds().getMaxY(), carried.itemType);
+                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
+                _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                restartTutorialSound(_assets, "general_drop");
+                _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
             }
         }
     }
@@ -546,6 +610,7 @@ void TutorialScene::preUpdate(float dt)
             if (_networkCtrl->isHost()) {
                 int deposited = _player->depositItems();
                 if (deposited > 0) {
+                    restartTutorialSound(_assets, "general_alter_deposit");
                     _inventoryValue = _player->getInventoryVal();
                     _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true));
                 }
@@ -583,6 +648,10 @@ void TutorialScene::preUpdate(float dt)
         _networkCtrl->pushOutEvent(
             SetSpellEvent::allocSetSpellEvent(_networkCtrl->getPID(), newSpell));
     }
+    else if (_input.failedGesture()) {
+        restartTutorialSound(_assets, "effect_error");
+        _input.resolvedFailedGesture();
+    }
 
     Vec2 angle = _input.getSpellAngle();
     if (angle.isZero()) {
@@ -594,6 +663,7 @@ void TutorialScene::preUpdate(float dt)
 
         //CULog("Spell type: %d", _player->getSpell());
         if (_player->getSpell() == SpellType::NONE) {
+            restartTutorialSound(_assets, "effect_error");
             _input.resolveSpell();
             _player->resolveSpell();
         }
@@ -622,6 +692,10 @@ void TutorialScene::preUpdate(float dt)
             auto params = _spellFact->serializeParams(playerScreenPos / PHYSICS_SCALE, angle, t, _player->getPID(), damageBonus, _player->getBuff());
             auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_spellFactId, params);
             _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+            std::string spellSound = tutorialSpellCastSoundKey(t);
+            if (!spellSound.empty()) {
+                restartTutorialSound(_assets, spellSound);
+            }
 
             _input.resolveSpell();
             _player->resolveSpell();
@@ -636,15 +710,13 @@ void TutorialScene::preUpdate(float dt)
         auto item = _itemFact->getItem(_currOverlappedItem);
         // Checks if player can pick up anything so inventory doesn't overflow
         if (_player && _player->canAddItem() && item && !item->isRemoved()) {
+            restartTutorialSound(_assets, "general_pickup");
             _networkCtrl->pushOutEvent(
                 PickupEvent::allocPickupEvent(_player->getPID(), _currOverlappedItem)
             );
         }
     }
     if (_input.pressedPickup()) {
-        // I just use this to test combo animations - Kaz
-        //_player->setFrozen(!_player->isFrozen());
-        //_player->setFrozeTimer(90);
         _input.resolvedPickup();
     }
 
@@ -686,7 +758,8 @@ void TutorialScene::fixedUpdate(Uint64 step)
     _depositedValue += std::get<1>(values);
 
     _currOverlappedItem = -1;
-    _canDeposit = false;
+    auto depositRect = Rect(_depositPosition, _assets->get<graphics::Texture>("deposit")->getImage()->getSize() * 1.1);
+    _canDeposit = depositRect.contains(_player->getPosition());
     _world->update(step / 1000000.0f);
 }
 
@@ -819,22 +892,22 @@ void TutorialScene::renderHUD()
     if (_font)
     {
         _batch->setColor(Color4::WHITE);
-
+        
         auto boxTex = _assets->get<graphics::Texture>("item_box");
         if (boxTex) {
             constexpr size_t kSlotCount = 5;
             const auto& carriedItems = _player->getInventory();
-
+            
             for (size_t i = 0; i < kSlotCount; ++i) {
                 Rect slot = getInventorySlotBounds(i);
                 float boxX = slot.origin.x + hudOffset.x;
                 float boxY = slot.origin.y + hudOffset.y;
                 float boxSize = slot.size.width;
-
+                
                 // Draw the frame
                 _batch->setColor(Color4::WHITE);
                 _batch->draw(boxTex, Rect(boxX, boxY, boxSize, boxSize));
-
+                
                 // Draw item texture centered inside the frame
                 if (i < carriedItems.size()) {
                     const auto& carried = carriedItems[i];
@@ -842,47 +915,67 @@ void TutorialScene::renderHUD()
                     if (itemTex) {
                         float padding = 0.0f;
                         float maxSize = boxSize - padding * 2;
-
+                        
                         // Preserve 3:4 aspect ratio
                         float iconW = maxSize * (3.0f / 4.0f);
                         float iconH = maxSize;
-
+                        
                         float iconX = boxX + (boxSize - iconW) * 0.5f;
                         float iconY = boxY + padding;
-
+                        
                         _batch->setColor(Color4::WHITE);
                         _batch->draw(itemTex, Rect(iconX, iconY, iconW, iconH));
-
+                        
                     }
                 }
             }
         }
-
+        
         auto texContainer = _assets->get<graphics::Texture>("health_bar");
         auto texFull = _assets->get<graphics::Texture>("health_full");
         auto texHalf = _assets->get<graphics::Texture>("health_half");
         auto texEmpty = _assets->get<graphics::Texture>("health_empty");
-
-        // Scale container with 269x79 aspect ratio (only need to change container cause actualy heart size is based on container)
-        float containerH = hudSize(79.0f * 0.8f);
-        float containerW = hudSize(269.0f * 0.8f);
-        float containerX = hudX(margin + 25.0f); //extra offset because health gets clipped on iphone corner
-        float containerY = hudY(screenSize.height - 79.0f * 0.8f - margin);
-        float quotaY = screenSize.height - 79.0f * 0.8f - margin - barH - margin;
-
-        if (texContainer && texFull && texHalf && texEmpty) {
-            // Draw the health bar
+        
+        float iconRowH = 79.0f * 0.8f;
+        float heartRowH = iconRowH;
+        float innerPad = 2.0f; // gap between the rows
+        
+        float containerW = 269.0f * 0.8f;
+        float totalPanelH = heartRowH + innerPad + iconRowH + innerPad + iconRowH;
+        
+        float containerX_local = margin + 25.0f;
+        float containerY_local = screenSize.height - totalPanelH - margin;
+        
+        float containerX = hudX(containerX_local);
+        float containerY = hudY(containerY_local);
+        float containerWs = hudSize(containerW);
+        float totalPanelHs = hudSize(totalPanelH);
+        
+        if (texContainer) {
             _batch->setColor(Color4::WHITE);
-            _batch->draw(texContainer, Rect(containerX, containerY, containerW, containerH));
-
-            // Scale hearts to fit inside container with 83x78 aspect ratio
-            float heartH = containerH * 0.75f;
+            _batch->draw(texContainer, Rect(containerX, containerY, containerWs, totalPanelHs));
+        }
+        else {
+            // Fallback
+            drawBox(containerX, containerY, containerWs, totalPanelHs, Color4(30, 30, 30, 220));
+        }
+        
+        float quotaRowY_local = containerY_local;
+        float timerRowY_local = containerY_local + iconRowH + innerPad;
+        float heartsRowY_local = containerY_local + 2.0f * (iconRowH + innerPad);
+        
+        // ---- Hearts row -----------------------------------------------
+        if (texFull && texHalf && texEmpty) {
+            float heartRowYs = hudY(heartsRowY_local);
+            float heartRowHs = hudSize(heartRowH);
+            float containerWs2 = hudSize(containerW);
+            
+            float heartH = heartRowHs * 0.6f;
             float heartW = heartH * (83.0f / 78.0f);
-
-            // Space 3 hearts equally
-            float totalHeartsW = containerW / 3.0f;
+            
+            float totalHeartsW = containerWs2 / 3.0f;
             int hp = _player->getHealth();
-
+            
             for (int i = 0; i < 3; ++i) {
                 int heartPoints = hp - i * 2;
                 std::shared_ptr<graphics::Texture> tex;
@@ -892,27 +985,54 @@ void TutorialScene::renderHUD()
                     tex = texHalf;
                 else
                     tex = texEmpty;
-
-                // Center each heart in its section
+                
                 float slotCenterX = containerX + totalHeartsW * i + totalHeartsW * 0.5f;
                 float hx = slotCenterX - heartW * 0.5f;
-                float hy = containerY + (containerH - heartH) * 0.5f;
+                float hy = heartRowYs + (heartRowHs - heartH) * 0.5f;
                 _batch->setColor(Color4::WHITE);
                 _batch->draw(tex, Rect(hx, hy, heartW, heartH));
             }
         }
-
-        // quota
-        float quotaX = margin;
-        //drawBox(quotaX + hudOffset.x, quotaY + hudOffset.y, barW, barH, boxColor);
-
-        std::shared_ptr<TextLayout> quotaLabel = TextLayout::allocWithText(
-            "Current Deposit: " + std::to_string(_depositedValue) + " / " + std::to_string(_quota), _font);
-        quotaLabel->layout();
-        Affine2 quotaTrans;
-        quotaTrans.scale(1.0f / zoom).translate(hudX(quotaX + 10), hudY(quotaY + 12));
-        _batch->setColor(Color4::BLACK);
-        _batch->drawText(quotaLabel, quotaTrans);
+        
+        // ---- Quota row ---------------------------------------------
+        if (_font) {
+            float quotaRowYs = hudY(quotaRowY_local);
+            float iconRowHs = hudSize(iconRowH);
+            float iconSize = iconRowHs * 0.7f;
+            float textOffsetX = iconSize + hudSize(8.0f);
+            
+            float quotaPct = (_quota > 0) ? ((float)_depositedValue / (float)_quota) : 0.0f;
+            std::string quotaTexKey;
+            if (quotaPct >= 1.0f)
+                quotaTexKey = "quota_full";
+            else if (quotaPct >= 0.75f)
+                quotaTexKey = "quota_75";
+            else if (quotaPct >= 0.5f)
+                quotaTexKey = "quota_50";
+            else if (quotaPct >= 0.25f)
+                quotaTexKey = "quota_25";
+            else
+                quotaTexKey = "quota_empty";
+            
+            auto texQuota = _assets->get<graphics::Texture>(quotaTexKey);
+            if (texQuota) {
+                float iconY = quotaRowYs + (iconRowHs - iconSize) * 0.5f;
+                _batch->setColor(Color4::WHITE);
+                _batch->draw(texQuota, Rect(containerX + hudSize(8.0f), iconY, iconSize, iconSize));
+            }
+            
+            std::string quotaStr = std::to_string(_depositedValue) + "/" + std::to_string(_quota);
+            auto quotaLabel = TextLayout::allocWithText(quotaStr, _assets->get<Font>("CoolveticaRegular48"));
+            quotaLabel->layout();
+            float quotaTextH = quotaLabel->getBounds().size.height;
+            float quotaTextW = quotaLabel->getBounds().size.width;
+            float quotaTextX = containerX + hudSize(8.0f) + textOffsetX + (hudSize(containerW) - hudSize(8.0f) - textOffsetX - hudSize(quotaTextW)) * 0.5f;
+            float textY = quotaRowY_local + (iconRowH - quotaTextH) * 0.5f + 15.0f;
+            Affine2 quotaTrans;
+            quotaTrans.scale(1.0f / zoom).translate(quotaTextX, hudY(textY));
+            _batch->setColor(Color4::BLACK);
+            _batch->drawText(quotaLabel, quotaTrans);
+        }
     }
 }
 
@@ -1015,6 +1135,8 @@ void TutorialScene::spawnFromMap() {
     sprite->setPriority(99.0f);
     sprite->setPosition(Vec2(pos));
     sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    float maxHeight = _world->getBounds().getMaxY();
+    sprite->setPriority((maxHeight - _depositPosition.y / PHYSICS_SCALE) / maxHeight * 2);
     _worldnode->addChild(sprite);
     
     auto obs = physics2::BoxObstacle::alloc(pos/PHYSICS_SCALE, _assets->get<graphics::Texture>("deposit")->getSize()/PHYSICS_SCALE);
@@ -1028,23 +1150,32 @@ void TutorialScene::spawnFromMap() {
 
 void TutorialScene::setActive(bool value)
 {
+    static bool inProgress = false;
+
     if (isActive() != value)
     {
-        Scene2::setActive(value);
         if (value)
         {
-            _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
-            _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-            _worldnode->setPosition(Vec2::ZERO);
-            addChild(_worldnode);
-            
-            auto n = _map->generateStaticMap(_assets, _world);
-            n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-            n->setPosition(Vec2::ZERO);
-            n->setPriority(0.0f);
-            _worldnode->addChild(n);
-            
-            _itemInfo = ItemTypeClass(_assets);
+            if (!inProgress) {
+                inProgress = true;
+                _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+                _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+                _worldnode->setPosition(Vec2::ZERO);
+                addChild(_worldnode);
+
+                auto n = _map->generateStaticMap(_assets, _world);
+                n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+                n->setPosition(Vec2::ZERO);
+                n->setPriority(0.0f);
+                _worldnode->addChild(n);
+
+                _itemInfo = ItemTypeClass(_assets);
+            }
+
+            if (!_networkCtrl->getShortUID()) {
+                CULog("waiting for shortUID");
+                return;
+            }
 
             initPhysics();
             spawnFromMap();
@@ -1055,14 +1186,18 @@ void TutorialScene::setActive(bool value)
 
             _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
                 _player, _input, _depositPosition, _depositRadius, _world->getBounds().getMaxY());
-
+            _player->consumeItem(ItemTypeClass::ItemType::BOOK_EARTH);
             CULog("tut setActive: hasNetwork=%d isHost=%d",
                 _networkCtrl->hasNetwork(), _networkCtrl->isHost());
+
+            inProgress = false;
+            Scene2::setActive(true);
         }
         else
         {
             hideInventoryCard();
             _input.deactivate();
+            Scene2::setActive(false);
         }
     }
 }
@@ -1099,7 +1234,11 @@ void TutorialScene::linkSceneToObs(const std::shared_ptr<physics2::Obstacle>& ob
         else if (auto e = dynamic_pointer_cast<EnemyObstacle>(obj)) {
             std::shared_ptr<EnemyNode> e_node = std::dynamic_pointer_cast<EnemyNode>(node);
             obj->setListener([=, this](physics2::Obstacle* obs) {
+                bool wasFrozen = e->isFroze();
                 _enemyFact->linkFunc(e, e_node, true, _world->getBounds().getMaxY(), _animations);
+                if (wasFrozen && !e->isFroze()) {
+                    restartTutorialSound(_assets, "hit_unfreeze");
+                }
                 });
 
             // Add animation
@@ -1138,7 +1277,7 @@ void TutorialScene::initCombos() {
         });
 }
 
-pair<SpellType, string> TutorialScene::getCombo() {
+std::pair<SpellType, string> TutorialScene::getCombo() {
     SpellType spell = _player->getSpell();
     string cid = _player->getPID();
 
@@ -1176,10 +1315,6 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
 
     physics2::Obstacle* obs1 = reinterpret_cast<physics2::Obstacle*>(body1->GetUserData().pointer);
     physics2::Obstacle* obs2 = reinterpret_cast<physics2::Obstacle*>(body2->GetUserData().pointer);
-
-    if (obs1->isRemoved() || obs2->isRemoved()) {
-        return;
-    }
 
     SpellObstacle* spell = nullptr;
     SpellObstacle* spell2 = nullptr;
@@ -1246,6 +1381,18 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
         deposit = d;
     }
 
+    if (!tut && (obs1->isRemoved() || obs2->isRemoved())) {
+        return;
+    }
+
+    auto damageEnemy = [this](EnemyObstacle* target, float damage) {
+        auto oldHealth = target->getHealth();
+        target->setHealth(target->getHealth() - damage);
+        if (target->getHealth() < oldHealth) {
+            restartTutorialSound(_assets, tutorialEnemyDamageSoundKey(target->TYPE));
+        }
+    };
+
     // Checking for collisions
     if (spell && spell2) {
         //CULog("spell and spell");
@@ -1280,24 +1427,27 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
         case SpellType::FREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(spell -> getWeak() ? 120 : 240);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            restartTutorialSound(_assets, "hit_freeze");
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::COMBO_FREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(600);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            restartTutorialSound(_assets, "hit_freeze");
+            damageEnemy(enemy, spell->getDamage());
             break;
         case SpellType::COMBO_EFREEZE:
             enemy->setFrozen(true);
             enemy->setFrozenTimer(-1);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            restartTutorialSound(_assets, "hit_freeze");
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::EARTH:
             enemy->setMud(true);
             enemy->setMudTimer(spell -> getWeak() ? 150 : 300);
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::MUD_WATER:
@@ -1310,14 +1460,14 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
             break;
         }
         case SpellType::FIREBALL:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             spell->setRemove();
             break;
         case SpellType::COMBO_FIREBALL:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             break;
         case SpellType::DEATH:
-            enemy->setHealth(enemy->getHealth() - spell->getDamage());
+            damageEnemy(enemy, spell->getDamage());
             break;
         default:
             spell->setRemove();
@@ -1325,6 +1475,7 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
     }
     else if (wall && player) {
         contact->SetEnabled(true);
+        CULog("wall");
         return;
     }
     else if (wall && spell) {
@@ -1349,7 +1500,8 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
         contact->SetEnabled(false);
     }
     else if (player && tut) {
-        if(!tut -> getSeen()){
+        CULog("tutorial box");
+        if (!tut -> getSeen()){
             auto tex = _assets->get<graphics::Texture>(tut->getPng());
             if (tex) {
                 _pendingTutorialTex = tex;
@@ -1358,7 +1510,7 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
             }
             tut -> setSeen(true);
         }
-            contact->SetEnabled(false);
+        contact->SetEnabled(false);
     }
     else if (deposit && player) {
         contact->SetEnabled(true);
