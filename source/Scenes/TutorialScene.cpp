@@ -1072,7 +1072,7 @@ void TutorialScene::setActive(bool value)
 
             _networkCtrl->initGameStuff(_itemFact, _playerFact, _enemyFact, _itemFactId,
                 _player, _input, _depositPosition, _depositRadius, _world->getBounds().getMaxY());
-
+            _player->consumeItem(ItemTypeClass::ItemType::BOOK_EARTH);
             CULog("tut setActive: hasNetwork=%d isHost=%d",
                 _networkCtrl->hasNetwork(), _networkCtrl->isHost());
 

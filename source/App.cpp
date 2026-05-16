@@ -484,8 +484,7 @@ void GeometryApp::updateMenuScene(float dt) {
     if (!waitingOnLoad) {
         _mainmenu.update(dt);
     }
-    _tutorialScene.getNetwork()->markReady();
-    _tutorialScene.getNetwork()->updateNet();
+    _tutorialScene.getNetwork()->connectHost();
     switch (_mainmenu.getChoice()) {
     case MenuScene::Choice::HOST:
         //_mainmenu.resetChoice();
@@ -508,9 +507,9 @@ void GeometryApp::updateMenuScene(float dt) {
         _tutorialScene.getNetwork()->updateNet();
         _tutorialScene.getNetwork()->markReady();
         _tutorialScene.getNetwork()->updateNet();
-        _tutorialScene.setActive(true);
-        if (_tutorialScene.isActive()) {
+        if (_tutorialScene.getNetwork()->getShortUID()>0) {
             waitingOnLoad = false;
+            _tutorialScene.setActive(true);
             _scene = State::TUTORIAL;
         }
         break;

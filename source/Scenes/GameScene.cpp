@@ -189,7 +189,10 @@ void GameScene::reset()
     _worldnode = nullptr;
 
     _input.reset();
+    _input.dispose();
     _inputDisplay->reset();
+    
+    
 
     _player = nullptr;
     _enemyFact->reset();

@@ -138,13 +138,13 @@
                         {
                          "height":0,
                          "id":19,
-                         "name":"fire",
+                         "name":"water",
                          "point":true,
                          "properties":[
                                 {
                                  "name":"spell",
                                  "type":"int",
-                                 "value":0
+                                 "value":1
                                 }],
                          "rotation":0,
                          "type":"",
@@ -162,7 +162,7 @@
                                 {
                                  "name":"artifact",
                                  "type":"int",
-                                 "value":0
+                                 "value":10
                                 }],
                          "rotation":0,
                          "type":"",
@@ -180,7 +180,7 @@
                                 {
                                  "name":"artifact",
                                  "type":"int",
-                                 "value":1
+                                 "value":9
                                 }],
                          "rotation":0,
                          "type":"",

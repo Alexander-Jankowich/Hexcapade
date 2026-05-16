@@ -1269,7 +1269,6 @@ Vec2 InputController::mouse2Screen(const Vec2 pos) const {
  * @param  pos  the current joystick position
  */
 void InputController::processJoystick(const cugl::Vec2 pos) {
-    CULog("do joystick");
     _joystickpos = pos;
     Vec2 diff = pos - _joycenter;
     float dist = diff.length();
