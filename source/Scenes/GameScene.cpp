@@ -875,8 +875,8 @@ void GameScene::preUpdate(float dt)
     }
     if (_input.pressedPickup()) {
         // I just use this to test combo animations - Kaz
-        _player->setShield(true);
-        _player->setShieldCount(3);
+        //_player->setShield(true);
+        //_player->setShieldCount(3);
         _input.resolvedPickup();
     }
 
@@ -1598,7 +1598,8 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact->SetEnabled(false);
 
         // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove() || player->getPID() != _player->getPID() || !(spell->getCasterUID() == player->getPID() && spell->TYPE == SpellType::HEAL)) {
+        if (spell->shouldRemove() || player->getPID() != _player->getPID() ||
+                (spell->getCasterUID() == player->getPID() && !(spell->getCasterUID() == player->getPID() && spell->TYPE == SpellType::HEAL))) {
             return;
         }
 
@@ -1689,7 +1690,7 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
             if (!player->isHurt()) {
                 CULog("hit by octo attack!!");
                 player->setWater(true, (player->getPosition() - spell->getPosition()).getNormalization());
-                player->setWaterTimer(20);
+                player->setWaterTimer(10);
                 player->damage(spell->getDamage());
             }
             break;
