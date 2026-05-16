@@ -136,6 +136,7 @@ void GeometryApp::onStartup() {
  */
 void GeometryApp::onShutdown() {
     _network->disconnect();
+    _network->resetStatus();
     _mainmenu.dispose();
     _hostScene.dispose();
     _clientScene.dispose();
@@ -403,22 +404,26 @@ void GeometryApp::updateLoadingScene(float dt) {
 
 void GeometryApp::updateMenuScene(float dt) {
     _mainmenu.update(dt);
-
+    _tutorialScene.getNetwork()->markReady();
+    _tutorialScene.getNetwork()->updateNet();
     switch (_mainmenu.getChoice()) {
     case MenuScene::Choice::HOST:
         //_mainmenu.resetChoice();
+        _tutorialScene.getNetwork()->disconnect();
         _mainmenu.setActive(false);
         _hostScene.setActive(true);
         _scene = State::HOST;
         break;
     case MenuScene::Choice::JOIN:
         //_mainmenu.resetChoice();
+        _tutorialScene.getNetwork()->disconnect();
         _mainmenu.setActive(false);
         _clientScene.setActive(true);
         _scene = State::CLIENT;
         break;
     case MenuScene::Choice::TUTORIAL:
         _mainmenu.setActive(false);
+        _tutorialScene.getNetwork()->startGame();
         _tutorialScene.setActive(true);
         _scene=State::TUTORIAL;
         break;
@@ -545,8 +550,8 @@ void GeometryApp::updateEndScene(float dt) {
     // EXIT BUTTON
     if (_endScene.didPressExit()) {
         _endScene.setActive(false);
-        _endScene.getNetwork()->disconnect();
-        _endScene.getNetwork()->resetStatus();
+        _network->disconnect();
+        _network->resetStatus();
        // _endScene.release();
         _mainmenu.setActive(true);
         _scene = State::MENU;
@@ -566,8 +571,8 @@ void GeometryApp::updateEndScene(float dt) {
     
     if (_endScene.getNetwork()->getStatus()==NetworkController::Status::NETERROR) {
         _endScene.setActive(false);
-        _endScene.getNetwork()->disconnect();
-        _endScene.getNetwork()->resetStatus();
+        _network->disconnect();
+        _network->resetStatus();
         //_endScene.reset();
         //_endScene.release();
         _mainmenu.setActive(true);
@@ -581,9 +586,9 @@ void GeometryApp::updateTutorialScene(float dt) {
     
     // check for if it was exited and switch state back to correct thing
     if(_tutorialScene.getEnded()){
+        _tutorialScene.reset();
         _tutorialScene.setActive(false);
         _mainmenu.setActive(true);
         _scene = State::MENU;
-        _tutorialScene.setEnded(false);
     }
 }

@@ -55,7 +55,7 @@ protected:
     //unordered_map<string, ClientInput> _clientInputs;
     /** The controller to manage the ship */
     InputController _input;
-    shared_ptr<InputDisplay> _inputDisplay;
+    InputDisplay _inputDisplay;
     ItemTypeClass _itemInfo;
     shared_ptr<Random> _random;
     bool _addedLWalls;
@@ -84,7 +84,7 @@ protected:
     shared_ptr<PlayerObstacle> _player;
     
     bool _weakSpell = false;
-    bool _tutorialTimer = 1000;
+    int _tutorialTimer = 0;
 
     /** Action Timeline for animations */
     shared_ptr<Animator> _animations;
@@ -150,7 +150,9 @@ public:
         _depositedValue(0),
         _canDeposit(false),
         _depositPosition(Vec2::ZERO),
-        _depositRadius(42.0f) {}
+        _depositRadius(42.0f){
+            _inputDisplay = InputDisplay();
+        }
 
 
     /**
@@ -165,6 +167,8 @@ public:
      * Disposes of all (non-static) resources allocated to this mode.
      */
     void dispose() override;
+    
+    void reset() override;
 
     /**
      * Initializes the controller contents, and starts the game
@@ -180,12 +184,9 @@ public:
     bool init(const shared_ptr<AssetManager>& assets);
     
     shared_ptr<NetworkController> getNetwork() {return _networkCtrl;}
-    void release() {_networkCtrl = nullptr;}
     
     bool getEnded() { return _tutorialEnded; }
     
-    void setEnded(bool b) { _tutorialEnded = b; }
-
 
     /**
      * Returns true if the player is host.

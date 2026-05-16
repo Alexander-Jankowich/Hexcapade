@@ -6,6 +6,9 @@
     "level-config": "json/level_config.json"
   },
   "textures": {
+      "deposit": {
+          "file": "textures/deposit.png"
+      },
     "ghost": {
       "file": "textures/enemy_ghost_sheet.png"
     },
