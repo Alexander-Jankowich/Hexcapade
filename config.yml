@@ -36,6 +36,7 @@ sources:                            # The list of the source code files
 
 
 modules:
+    - audio
     - physics2
     - physics2::distrib
     - scene2

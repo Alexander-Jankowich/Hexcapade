@@ -1,5 +1,6 @@
 #include "SelectScene.h"
 using namespace cugl;
+using namespace cugl::audio;
 using namespace cugl::graphics;
 
 #define SCENE_HEIGHT 720
@@ -41,6 +42,9 @@ bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const 
 
     _startgame->addListener([this](const std::string& name, bool down) {
         if (!down) return;
+        // start button click is local before host or client state changes
+        auto sound = _assets->get<Sound>("general_click");
+        AudioEngine::get()->play("general_click", sound, false, 1.0f, true);
         _networkCtrl->setPlayerName(_networkCtrl->getPID(), _playerName);
         std::string charStr;
         switch (_selectedCharacter) {
@@ -78,16 +82,32 @@ bool SelectScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const 
     });
 
     _catBtn->addListener([this](const std::string& name, bool down) {
-        if (down) onCharacterSelected(CharacterType::CAT);
+        if (down) {
+            auto sound = _assets->get<Sound>("character_select");
+            AudioEngine::get()->play("character_select", sound, false, 1.0f, true);
+            onCharacterSelected(CharacterType::CAT);
+        }
         });
     _foxBtn->addListener([this](const std::string& name, bool down) {
-        if (down) onCharacterSelected(CharacterType::FOX);
+        if (down) {
+            auto sound = _assets->get<Sound>("character_select");
+            AudioEngine::get()->play("character_select", sound, false, 1.0f, true);
+            onCharacterSelected(CharacterType::FOX);
+        }
         });
     _duckBtn->addListener([this](const std::string& name, bool down) {
-        if (down) onCharacterSelected(CharacterType::DUCK);
+        if (down) {
+            auto sound = _assets->get<Sound>("character_select");
+            AudioEngine::get()->play("character_select", sound, false, 1.0f, true);
+            onCharacterSelected(CharacterType::DUCK);
+        }
         });
     _bunnyBtn->addListener([this](const std::string& name, bool down) {
-        if (down) onCharacterSelected(CharacterType::BUNNY);
+        if (down) {
+            auto sound = _assets->get<Sound>("character_select");
+            AudioEngine::get()->play("character_select", sound, false, 1.0f, true);
+            onCharacterSelected(CharacterType::BUNNY);
+        }
         });
 
     addChild(scene);
