@@ -84,6 +84,7 @@ protected:
     shared_ptr<PlayerObstacle> _player;
     
     bool _weakSpell = false;
+
     int _tutorialTimer = 0;
 
     /** Action Timeline for animations */

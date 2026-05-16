@@ -17,7 +17,7 @@ using namespace cugl;
 /**
  * Generate a pair of Obstacle and SceneNode using the given parameters
  */
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory::createObstacle(EnemyType type, Vec2 pos) {
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory::createObstacle(EnemyType type, uint32 id, Vec2 pos) {
 
     shared_ptr<JsonValue> vals;
     switch (type) {
@@ -33,6 +33,9 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     case EnemyType::OCTO:
         vals = _enemyConsts->get("octoplush");
         break;
+    case EnemyType::STATUE:
+            vals = _enemyConsts->get("statue");
+            break;
     default:
         CULog("Error! Enemy type not found in JSON!!! EnemyFactory::createObstacle, type = %d", type);
         break;
@@ -44,7 +47,7 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     size.height /= vals->getInt("rows");
     
     // Create the EnemyObstacle
-    auto en = EnemyObstacle::alloc(type, pos, vals, size);
+    auto en = EnemyObstacle::alloc(type, id, pos, vals, size);
 
 //    pl->setAngleSnap(0); // Snap to the nearest degree
 //
@@ -69,6 +72,8 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
 shared_ptr<vector<byte>> EnemyFactory::serializeParams(EnemyType type, Vec2 pos) {
     _serializer.reset();
     _serializer.writeUint16((uint16) type);
+    _serializer.writeUint32(_nextId);
+    _nextId++;
     _serializer.writeFloat(pos.x);
     _serializer.writeFloat(pos.y);
     return make_shared<vector<byte>>(_serializer.serialize());
@@ -81,36 +86,46 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> EnemyFactory
     _deserializer.reset();
     _deserializer.receive(params);
     EnemyType type = (EnemyType) _deserializer.readUint16();
+    uint32 id = _deserializer.readUint32();
     float x = _deserializer.readFloat();
     float y = _deserializer.readFloat();
     Vec2 pos = Vec2(x, y);
-    return createObstacle(type, pos);
+    return createObstacle(type, id, pos);
 }
 
 
-void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, const shared_ptr<Animator>& animator) {
-    if (obs->isDead()) {
-        obs->setLinearVelocity(Vec2::ZERO);
-    }
-    else {
-        // If not dead, update attributes
-        obs->updateAttackCounter();
+void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_ptr<EnemyNode> node, bool isHost, float maxHeight, const shared_ptr<Animator>& animator) {
+    if (isHost) {
+        // Only update timers and velocity if host
 
-        // Update push and frozen
-        if (obs->getWaterPushTimer() > 0) {
-            obs->tickWaterPush();
-            Vec2 pushVel = obs->getWaterPushDir() * obs->getSpeed() * 2.5f;
-            obs->setVelocity(pushVel);
-        }
-        else if (obs->isFroze()) {
+        if (obs->isDead()) {
             obs->setLinearVelocity(Vec2::ZERO);
-            int i = obs->getFrozenTimer() - 1;
-            obs->setFrozenTimer(i);
-            if (obs->getFrozenTimer() == 0) {
-                obs->setFrozen(false);
+            obs->setFrozenTimer(0);
+            obs->setFrozen(false);
+        }
+        else {
+            // If not dead, update attributes
+            obs->updateAttackCounter();
+            obs->updateHurtTimer();
+
+            // Update push and frozen
+            if (obs->getWaterPushTimer() > 0) {
+                obs->tickWaterPush();
+                Vec2 pushVel = obs->getWaterPushDir() * obs->getSpeed() * 2.5f;
+                obs->setVelocity(pushVel);
+            }
+            else if (obs->isFroze()) {
+                obs->setLinearVelocity(Vec2::ZERO);
+                int i = obs->getFrozenTimer() - 1;
+                obs->setFrozenTimer(i);
+                if (obs->getFrozenTimer() == 0) {
+                    obs->setFrozen(false);
+                }
             }
         }
     }
+
+    float prio = (maxHeight - obs->getPosition().y) / maxHeight * 2;
 
     // Update frozen status for node if changed
     if (obs->isFroze() && !node->getFrozen()) {
@@ -119,7 +134,13 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
 
         auto frozen = make_shared<SpellEntityNode>(_assets->get<graphics::Texture>("freeze_entity"), _spellConsts->get("freeze-entity"));
         node->addChildWithTag(frozen, FROZEN_ID);
-        frozen->setPriority(3);
+        frozen->setPriority(prio+FLT_EPSILON);
+
+        if (obs->TYPE == EnemyType::OCTO) {
+            frozen->setPosition(frozen->getPositionX() + node->bounds().size.width / 2 - frozen->bounds().size.width / 2,
+                frozen->getPositionY() + node->bounds().size.height / 4);
+            frozen->setScale(node->bounds().size.width / frozen->bounds().size.width);
+        }
 
         animator->addNode(frozen);
 
@@ -143,19 +164,16 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         animator->endAnimation(frozen);
         
         obs->setHurt(false);
-        node->setHurt(false);
     }
 
     if (obs->isHurt() && !node->isHurt()) {
-        // Remove hurt state when animation finishes playing
         obs->setLinearVelocity(Vec2::ZERO);
         //CULog("do hurt animation");
-        node->setHurt(true);
-        animator->addNextListener(node, [obs, node](string key, float time, float actual) {
-            obs->setHurt(false);
-            node->setHurt(false);
-            //CULog("not hurt now");
-        });
+        //animator->addNextListener(node, [obs, node](string key, float time, float actual) {
+        //    obs->setHurt(false);
+        //    node->setHurt(false);
+        //    //CULog("not hurt now");
+        //});
         animator->endAnimation(node);
     }
 
@@ -164,15 +182,16 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
         animator->addNextListener(node, [obs](string key, float time, float actual) {
             obs->markRemoved(true);
         });
+        animator->resumeAnimation(node);
         animator->endAnimation(node);
     }
 
-    if (obs->isAttacking() && !node->isAttacking()) {
+    if (obs->isAttacking() && !node->isAttacking() && isHost) {
         //CULog("do attack thing");
         obs->setLinearVelocity(Vec2::ZERO);
         animator->addNextListener(node, obs->getAttackTiming(), obs->getAttack());
         animator->addNextListener(node, [obs, node](string key, float time, float actual) {
-            obs->setState(EnemyObstacle::EnemyState::IDLE);
+            obs->setState(EnemyObstacle::EnemyState::REGULAR);
             node->updateAnimationState(obs->getState());
         });
         animator->endAnimation(node);
@@ -185,6 +204,7 @@ void EnemyFactory::linkFunc(const shared_ptr<EnemyObstacle> obs, const shared_pt
     node->setPosition(pos * PHYSICS_SCALE);
     node->setAngle(angle);
     node->setVelocity(obs->getLinearVelocity() * PHYSICS_SCALE);
+    node->setPriority(prio);
 
     // Update state for animation
     node->setStatue(obs->isMud());

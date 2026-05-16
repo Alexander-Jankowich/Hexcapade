@@ -45,7 +45,6 @@ protected:
 
     bool _frozen;
     bool _statue;
-    bool _hurt;
     bool _dead;
 
     AnimationType _nextAnimation;
@@ -102,11 +101,9 @@ public:
     void setStatue(bool s) { _statue = s; }
     bool getStatue() { return _statue; }
 
-    void setHurt(bool h) { _hurt = h; }
-    bool isHurt() { return _hurt; }
-
     bool isDead() { return _dead; }
 
+    bool isHurt() { return _curAnimation == AnimationType::DAMAGED; }
     bool isAttacking() { return _nextAnimation == AnimationType::ATTACK; }
     
 #pragma mark Graphics

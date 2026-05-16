@@ -25,7 +25,8 @@ ItemObstacle::ItemObstacle(const cugl::Vec2& pos, int value, ItemType t, int i) 
     _itemID = i;
 }
 
-pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> ItemFactory::createObstacle(Vec2 pos, int value, ItemType t, int i) {
+pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> ItemFactory::createObstacle(Vec2 pos, int value,
+    float maxHeight, ItemType t, int i) {
     
     auto item = ItemObstacle::alloc(pos, value, t, i);
     item->setShared(true);
@@ -46,15 +47,18 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> ItemFactory:
         sprite->setColor(Color4(255, 170, 60, 255));
         CULog("ItemFactory: missing texture for itemType '%d'", t);
     }
+
+    sprite->setPriority((maxHeight - pos.y) / maxHeight * 2);
     
     return std::make_pair(item, sprite);
 }
 
-shared_ptr<vector<byte>> ItemFactory::serializeParams(Vec2 pos, int value, ItemType itemType) {
+shared_ptr<vector<byte>> ItemFactory::serializeParams(Vec2 pos, int value, float maxHeight, ItemType itemType) {
     _serializer.reset();
     _serializer.writeFloat(pos.x);
     _serializer.writeFloat(pos.y);
     _serializer.writeSint32(value);
+    _serializer.writeFloat(maxHeight);
     _serializer.writeSint32((int) itemType);
     _serializer.writeUint32(_count);
     _count++;
@@ -67,9 +71,10 @@ pair<shared_ptr<physics2::Obstacle>, shared_ptr<scene2::SceneNode>> ItemFactory:
     float x = _deserializer.readFloat();
     float y = _deserializer.readFloat();
     int   value = _deserializer.readSint32();
+    float maxHeight = _deserializer.readFloat();
     ItemType itemType = (ItemType) _deserializer.readSint32();
     int i = _deserializer.readUint32();
-    return createObstacle(Vec2(x, y), value, itemType, i);
+    return createObstacle(Vec2(x, y), value, maxHeight, itemType, i);
 }
 
 unordered_set<shared_ptr<ItemObstacle>> ItemFactory::update() {

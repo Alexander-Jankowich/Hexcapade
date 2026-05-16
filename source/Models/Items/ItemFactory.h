@@ -60,7 +60,8 @@ protected:
     /**
      * Generate a pair of Obstacle and SceneNode using the given parameters
      */
-    std::pair<std::shared_ptr<physics2::Obstacle>,std::shared_ptr<scene2::SceneNode>> createObstacle(cugl::Vec2 pos, int value, ItemTypeClass::ItemType t, int i);
+    std::pair<std::shared_ptr<physics2::Obstacle>,std::shared_ptr<scene2::SceneNode>> createObstacle(cugl::Vec2 pos,
+        int value, float maxHeight, ItemTypeClass::ItemType t, int i);
 
 public:
     ItemFactory() {};
@@ -86,7 +87,7 @@ public:
     
     std::shared_ptr<ItemObstacle> getItem(int i) {return current.contains(i) ? current.at(i) : nullptr;}
 
-    std::shared_ptr<std::vector<std::byte>> serializeParams(cugl::Vec2 pos, int value, ItemTypeClass::ItemType itemType);
+    std::shared_ptr<std::vector<std::byte>> serializeParams(cugl::Vec2 pos, int value, float maxHeight, ItemTypeClass::ItemType itemType);
     
     std::pair<std::shared_ptr<physics2::Obstacle>, std::shared_ptr<scene2::SceneNode>>createObstacle(const std::vector<std::byte>& params) override;
 

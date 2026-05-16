@@ -22,6 +22,8 @@
 using namespace std;
 using namespace cugl;
 
+#define ENEMY_ID "enemy"
+
 class Pathfinder {
 private:
     // All helper functions will be private

@@ -22,7 +22,8 @@ enum class SpellType {
     BUFF = 10,
     SHIELD = 11,
     MUD_WATER = 12,
-    STEAM = 13
+    STEAM = 13,
+    OCTO_ATTACK = 14
 };
 
 inline SpellType strToSpell(std::string s) {

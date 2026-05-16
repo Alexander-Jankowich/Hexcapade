@@ -31,13 +31,17 @@ protected:
     bool _atEnd;
     bool _weak;
 
+    int _counter;
+
 public:
     const SpellType TYPE;
-    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, int dmg, float range, SpellType type, std::string c, bool weak);
+    const bool VISIBLE;
+    SpellObstacle(const cugl::Vec2 pos, cugl::Vec2 vel, float radius, float dmg, float range,
+        SpellType type, std::string c, bool visible, bool weak);
 
     static std::shared_ptr<SpellObstacle> alloc(const cugl::Vec2 pos, cugl::Vec2 vel, float radius,
-        int dmg, float range, SpellType type, std::string c, bool weak) {
-        auto f = std::make_shared<SpellObstacle>(pos, vel, radius, dmg, range, type, c, weak);
+            float dmg, float range, SpellType type, std::string c, bool visible, bool weak) {
+        auto f = std::make_shared<SpellObstacle>(pos, vel, radius, dmg, range, type, c, visible, weak);
         f->createFixtures();
         return f;
     }
@@ -50,6 +54,9 @@ public:
 
     void setRemove() { _atEnd = true; }
     bool shouldRemove() { return _atEnd; }
+
+    void incrementCounter() { _counter++; }
+    int getCounter() { return _counter; }
 };
 
 /**
@@ -121,7 +128,7 @@ public:
     /**
     * The linking function for spell obstacles -> spell nodes
     */
-    void linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, shared_ptr<Animator> animations);
+    void linkFunc(const shared_ptr<SpellObstacle> obs, const shared_ptr<SpellNode> node, float maxHeight, shared_ptr<Animator> animations);
 };
 
 #endif // !__SPELL_FACTORY_H__
