@@ -1598,10 +1598,9 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         contact->SetEnabled(false);
 
         // If spell is in end animation, do not do any calculations
-        if (spell->shouldRemove() || player -> getPID() != _player -> getPID() || spell->getCasterUID() == player->getPID()) {
+        if (spell->shouldRemove() || player->getPID() != _player->getPID() || !(spell->getCasterUID() == player->getPID() && spell->TYPE == SpellType::HEAL)) {
             return;
         }
-        //CULog("calc damage...");
 
         int nh = player->getHealth() + HEAL_AMT;
         switch (spell->TYPE) {
