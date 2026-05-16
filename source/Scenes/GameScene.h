@@ -124,6 +124,7 @@ protected:
     /** Font for rendering HUD text */
     shared_ptr<graphics::Font> _font;
     shared_ptr<graphics::Font> _nameFont;
+    shared_ptr<graphics::Font> _uiFont;
 
 
     /** The constants json */

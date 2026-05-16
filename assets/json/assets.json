@@ -258,6 +258,24 @@
     "zombieTotem_info": {
       "file": "textures/inventory_cards/item_cards/zombieTotem_info.png"
     },
+    "quota_empty": {
+      "file": "textures/deposit_empty.png"
+    },
+    "quota_25": {
+      "file": "textures/deposit_1.png"
+    },
+    "quota_50": {
+      "file": "textures/deposit_2.png"
+    },
+    "quota_75": {
+      "file": "textures/deposit_3.png"
+    },
+    "quota_full": {
+      "file": "textures/deposit_full.png"
+    },
+    "hourglass": {
+      "file": "textures/hourglass.png"
+    },
     "hex-icon-bunny": {
       "file": "textures/hex-icon-bunny.png"
     },
