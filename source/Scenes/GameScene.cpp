@@ -121,7 +121,7 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
 
     // this resets pickup prompt state
     _canDeposit = false;
-    _depositRadius = 42.0f;
+    _depositRadius = 120.0f;
     _depositPosition = Vec2::ZERO;
 
     // Create all the factories
@@ -319,6 +319,8 @@ void GameScene::rebuildMapForRun() {
     sprite->setPriority(99.0f);
     sprite->setPosition(Vec2(_depositPosition));
     sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    float maxHeight = _world->getBounds().getMaxY();
+    sprite->setPriority((maxHeight - _depositPosition.y / PHYSICS_SCALE) / maxHeight * 2);
     _worldnode->addChild(sprite);
     
     auto obs = physics2::BoxObstacle::alloc(_depositPosition/PHYSICS_SCALE, _assets->get<graphics::Texture>("deposit")->getSize()/PHYSICS_SCALE);
@@ -831,6 +833,7 @@ void GameScene::preUpdate(float dt)
     bool depositRequested = false;
     int depositIndex = -1;
     _canDeposit = playerScreenPos.distance(_depositPosition) <= _depositRadius;
+    //CULog("dist: %.2f", playerScreenPos.distance(_depositPosition));
 
     if (_input.pressedDeposit()) {
         depositRequested = true;

@@ -1021,6 +1021,8 @@ void TutorialScene::spawnFromMap() {
     sprite->setPriority(99.0f);
     sprite->setPosition(Vec2(pos));
     sprite->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+    float maxHeight = _world->getBounds().getMaxY();
+    sprite->setPriority((maxHeight - _depositPosition.y / PHYSICS_SCALE) / maxHeight * 2);
     _worldnode->addChild(sprite);
     
     auto obs = physics2::BoxObstacle::alloc(pos/PHYSICS_SCALE, _assets->get<graphics::Texture>("deposit")->getSize()/PHYSICS_SCALE);
