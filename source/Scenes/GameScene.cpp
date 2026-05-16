@@ -1148,7 +1148,8 @@ void GameScene::fixedUpdate(Uint64 step)
     
 
     _currOverlappedItem = -1;
-    _canDeposit = false;
+    auto depositRect = Rect(_depositPosition, _assets->get<graphics::Texture>("deposit")->getImage()->getSize() * 1.1);
+    _canDeposit = depositRect.contains(_player->getPosition());
     _world->update(step / 1000000.0f);
     if (_player && _lastPlayerHealthForSound >= 0 && _player->getHealth() < _lastPlayerHealthForSound) {
         // play local damage when physics makes health drop
