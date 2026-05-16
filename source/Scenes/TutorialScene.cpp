@@ -129,7 +129,7 @@ bool TutorialScene::init(const std::shared_ptr<cugl::AssetManager>& assets)
     _map = std::make_shared<StaticMap>();
     _networkCtrl = std::make_shared<NetworkController>();
     _networkCtrl->init(_assets);
-    _networkCtrl->connectHost();
+     while (!_networkCtrl->connectHost());
     CULog("tutorial scene connecting host");
     
     _itemInfo = ItemTypeClass(_assets);
@@ -353,26 +353,22 @@ void TutorialScene::preUpdate(float dt)
         _tutorialTimer = 90;
     }
 
-    CULog("current player position: %f, %f", _player -> getPosition().x, _player -> getPosition().y);
+    //CULog("current player position: %f, %f", _player -> getPosition().x, _player -> getPosition().y);
     if (_input.pressedReset()) {
         reset();
         _input.resolvedReset();
         return;
     }
 #pragma mark Enemy Spawning Logic, Pathfinding, and Removal
-    if (_networkCtrl->isHost()) {
-        // spawn an enemy if host and need to spawn
+    auto toRemove = _enemyFact->getRemoved();
+    for (auto en : toRemove) {
+        _networkCtrl->getPhysController()->removeSharedObstacle(en);
+    }
 
-        auto toRemove = _enemyFact->getRemoved();
-        for (auto en : toRemove) {
-            _networkCtrl->getPhysController()->removeSharedObstacle(en);
-        }
-
-        auto itRemove = _itemFact->update();
-        for (auto item : itRemove) {
-            if (!item->isRemoved()) {
-                _networkCtrl->getPhysController()->removeSharedObstacle(item);
-            }
+    auto itRemove = _itemFact->update();
+    for (auto item : itRemove) {
+        if (!item->isRemoved()) {
+            _networkCtrl->getPhysController()->removeSharedObstacle(item);
         }
     }
 
@@ -384,27 +380,6 @@ void TutorialScene::preUpdate(float dt)
         //CULog("Remove spell: %d", spell->isRemoved());
     }
 
-
-    // Update animations
-    _animations->update(dt);
-
-    // Player movement
-    cugl::Vec2 input = _input.getMove();
-    if (_input.showAim()) {
-        _player->setAimSlowTimer(_player->getAimSlowTimer() - dt);
-    }
-    else {
-        _player->setAimSlowTimer(2.0f);
-    }
-    cugl::Vec2 velocity = input * _player->getSpeed();
-
-    if (_player->isFrozen() || _player->isHurt()) {
-        //_player->setVelocity(Vec2::ZERO);
-    }
-    else {
-        _player->setVelocity(velocity);
-        //_player->setAniState(_input.showAim() ? PlayerObstacle::AnimationState::CASTING : PlayerObstacle::AnimationState::IDLE);
-    }
     cugl::Vec2 playerScreenPos = _player->getPosition() * PHYSICS_SCALE;
 
 #pragma mark Inventory Card, Tutorial Card, and Camera Logic
@@ -450,12 +425,41 @@ void TutorialScene::preUpdate(float dt)
             hideInventoryCard();
             _pendingInventoryTapIndex = -1;
         }
-    }else if(_tutorialNode && (_tutorialTimer <= 0)){
+    }
+    else if (_tutorialNode && _tutorialTimer <= 0) {
         if (_input.cardDismissTap()) {
             hideTutorial();
         }
     }
     _input.resolvedCardDismissTap();
+
+    // Update animations
+    _animations->update(dt);
+
+    if (_tutorialNode) {
+        // Skip updates if tutorial is showing
+        _player->setLinearVelocity(Vec2::ZERO);
+        return;
+    }
+
+#pragma mark Update Player
+    //CULog("do player updates");
+    // Player movement
+    cugl::Vec2 input = _input.getMove();
+    if (_input.showAim()) {
+        _player->setAimSlowTimer(_player->getAimSlowTimer() - dt);
+    }
+    else {
+        _player->setAimSlowTimer(2.0f);
+    }
+    cugl::Vec2 velocity = input * _player->getSpeed();
+
+    if (_player->isFrozen() || _player->isHurt()) {
+        //_player->setVelocity(Vec2::ZERO);
+    }
+    else {
+        _player->setVelocity(velocity);
+    }
 
 #pragma mark Deposit handling and Inventory card display
     bool depositRequested = false;
@@ -511,31 +515,25 @@ void TutorialScene::preUpdate(float dt)
     // MOBILE DEPOSIT: DRAG ONE SLOT WHILE THE PLAYER IS IN DEPOSIT RANGE
     if (depositIndex >= 0) {
         if (_player->hasInventory()) {
-            if (_networkCtrl->isHost()) {
-                if (_canDeposit) {
-                    int deposited = _player->depositItem((size_t)depositIndex);
-                    if (deposited > 0) {
-                        _inventoryValue = _player->getInventoryVal();
-                        _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
-                    }
-                }
-
-                // Drop anywhere else in the world.
-                // Artifact bomb cannot be dropped!
-                else if ((size_t)depositIndex < _player->getInventory().size() && !_player->isNonDroppable((size_t)depositIndex)) {
-                    auto carried = _player->getInventory()[(size_t)depositIndex];
-                    _player->depositItem((size_t)depositIndex);
+            if (_canDeposit) {
+                int deposited = _player->depositItem((size_t)depositIndex);
+                if (deposited > 0) {
                     _inventoryValue = _player->getInventoryVal();
-                    Vec2 dropPos = _player->getPosition() + Vec2(0.0f, -0.35f);
-                    auto params = _itemFact->serializeParams(dropPos, carried.value, _world->getBounds().getMaxY(), carried.itemType);
-                    auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
-                    _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
-                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
+                    _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), deposited, true, depositIndex));
                 }
             }
-            else {
-                _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, false, depositIndex));
-                CULog("CLIENT deposit request");
+
+            // Drop anywhere else in the world.
+            // Artifact bomb cannot be dropped!
+            else if ((size_t)depositIndex < _player->getInventory().size() && !_player->isNonDroppable((size_t)depositIndex)) {
+                auto carried = _player->getInventory()[(size_t)depositIndex];
+                _player->depositItem((size_t)depositIndex);
+                _inventoryValue = _player->getInventoryVal();
+                Vec2 dropPos = _player->getPosition() + Vec2(0.0f, -0.35f);
+                auto params = _itemFact->serializeParams(dropPos, carried.value, _world->getBounds().getMaxY(), carried.itemType);
+                auto pair = _networkCtrl->getPhysController()->addSharedObstacle(_itemFactId, params);
+                _networkCtrl->getPhysController()->acquireObs(pair.first, 0);
+                _networkCtrl->pushOutEvent(DepositEvent::allocDepositEvent(_player->getPID(), 0, true, depositIndex));
             }
         }
     }
@@ -642,9 +640,6 @@ void TutorialScene::preUpdate(float dt)
         }
     }
     if (_input.pressedPickup()) {
-        // I just use this to test combo animations - Kaz
-        //_player->setFrozen(!_player->isFrozen());
-        //_player->setFrozeTimer(90);
         _input.resolvedPickup();
     }
 
@@ -1028,23 +1023,32 @@ void TutorialScene::spawnFromMap() {
 
 void TutorialScene::setActive(bool value)
 {
+    static bool inProgress = false;
+
     if (isActive() != value)
     {
-        Scene2::setActive(value);
         if (value)
         {
-            _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
-            _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-            _worldnode->setPosition(Vec2::ZERO);
-            addChild(_worldnode);
-            
-            auto n = _map->generateStaticMap(_assets, _world);
-            n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
-            n->setPosition(Vec2::ZERO);
-            n->setPriority(0.0f);
-            _worldnode->addChild(n);
-            
-            _itemInfo = ItemTypeClass(_assets);
+            if (!inProgress) {
+                inProgress = true;
+                _worldnode = cugl::scene2::OrderedNode::allocWithOrder(cugl::scene2::OrderedNode::Order::ASCEND);
+                _worldnode->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+                _worldnode->setPosition(Vec2::ZERO);
+                addChild(_worldnode);
+
+                auto n = _map->generateStaticMap(_assets, _world);
+                n->setAnchor(Vec2::ANCHOR_BOTTOM_LEFT);
+                n->setPosition(Vec2::ZERO);
+                n->setPriority(0.0f);
+                _worldnode->addChild(n);
+
+                _itemInfo = ItemTypeClass(_assets);
+            }
+
+            if (!_networkCtrl->getShortUID()) {
+                CULog("waiting for shortUID");
+                return;
+            }
 
             initPhysics();
             spawnFromMap();
@@ -1058,11 +1062,15 @@ void TutorialScene::setActive(bool value)
 
             CULog("tut setActive: hasNetwork=%d isHost=%d",
                 _networkCtrl->hasNetwork(), _networkCtrl->isHost());
+
+            inProgress = false;
+            Scene2::setActive(true);
         }
         else
         {
             hideInventoryCard();
             _input.deactivate();
+            Scene2::setActive(false);
         }
     }
 }
@@ -1138,7 +1146,7 @@ void TutorialScene::initCombos() {
         });
 }
 
-pair<SpellType, string> TutorialScene::getCombo() {
+std::pair<SpellType, string> TutorialScene::getCombo() {
     SpellType spell = _player->getSpell();
     string cid = _player->getPID();
 
@@ -1176,10 +1184,6 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
 
     physics2::Obstacle* obs1 = reinterpret_cast<physics2::Obstacle*>(body1->GetUserData().pointer);
     physics2::Obstacle* obs2 = reinterpret_cast<physics2::Obstacle*>(body2->GetUserData().pointer);
-
-    if (obs1->isRemoved() || obs2->isRemoved()) {
-        return;
-    }
 
     SpellObstacle* spell = nullptr;
     SpellObstacle* spell2 = nullptr;
@@ -1244,6 +1248,10 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
     }
     else if (auto d = dynamic_cast<cugl::physics2::BoxObstacle*>(obs2)) {
         deposit = d;
+    }
+
+    if (!tut && (obs1->isRemoved() || obs2->isRemoved())) {
+        return;
     }
 
     // Checking for collisions
@@ -1325,6 +1333,7 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
     }
     else if (wall && player) {
         contact->SetEnabled(true);
+        CULog("wall");
         return;
     }
     else if (wall && spell) {
@@ -1349,7 +1358,8 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
         contact->SetEnabled(false);
     }
     else if (player && tut) {
-        if(!tut -> getSeen()){
+        CULog("tutorial box");
+        if (!tut -> getSeen()){
             auto tex = _assets->get<graphics::Texture>(tut->getPng());
             if (tex) {
                 _pendingTutorialTex = tex;
@@ -1358,7 +1368,7 @@ void TutorialScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifol
             }
             tut -> setSeen(true);
         }
-            contact->SetEnabled(false);
+        contact->SetEnabled(false);
     }
     else if (deposit && player) {
         contact->SetEnabled(true);

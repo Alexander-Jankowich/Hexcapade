@@ -7,4 +7,6 @@ TutorialObstacle::TutorialObstacle(const cugl::Rect b, std::string tex) {
     setDimension(b.size);
     _png = tex;
     _seen = false;
+
+    markRemoved(false);
 }
