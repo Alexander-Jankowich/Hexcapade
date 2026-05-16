@@ -1150,7 +1150,7 @@ void GameScene::renderHUD()
     auto texEmpty = _assets->get<graphics::Texture>("health_empty");
     auto texHourglass = _assets->get<graphics::Texture>("hourglass");
 
-    float iconRowH = 79.0f * 0.8f;
+    float iconRowH = 79.0f * 0.8f; 
     float heartRowH = iconRowH;
     float innerPad = 2.0f; // gap between the rows
 
@@ -1615,21 +1615,22 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (spell->shouldRemove()) {
             return;
         }
-        if (player -> getPID() != _player -> getPID()){
+        if (player->getPID() != _player->getPID() && spell->TYPE != SpellType::HEAL) {
             return;
         }
-        
 
         //CULog("casterUID: %s, playerPID: %s", spell->getCasterUID().c_str(), player->getPID().c_str());
         if (spell->getCasterUID() == player->getPID()) return;
         int nh = player->getHealth() + HEAL_AMT;
         switch (spell->TYPE) {
         case SpellType::HEAL:
-            if (player->getHealth() < 0) {
+            if (player->getHealth() <= 0) {
                 player->setHealth(1);
                 spell->setRemove();
                 auto caster = _playerFact->getPlayerByPID(spell->getCasterUID());
-                if (caster) caster->consumeItem(ItemTypeClass::ItemType::BOOK_HEAL);
+                if (caster) {
+                    caster->consumeItem(ItemTypeClass::ItemType::BOOK_HEAL);
+                }
                 break;
             }
             player->setHealth(nh);
@@ -1730,7 +1731,6 @@ void GameScene::beforeSolve(b2Contact* contact, const b2Manifold* oldManifold) {
         if (!enemy->canAttack()) return;
 
         enemy->setAttackTimer(90);
-
         if (player->getPID() != _player->getPID()) return;
         //CULog("enemy and player");
         player->damage(1);
