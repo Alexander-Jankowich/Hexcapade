@@ -17,7 +17,6 @@
 #include <iomanip>
 #include "../Controllers/InputController.h"
 #include "../Controllers/NetworkController.h"
-#include "../Controllers/RoomController.h"
 #include "../Controllers/Pathfinder.h"
 
 #include "../Models/Map/Map.h"
@@ -94,7 +93,6 @@ protected:
     shared_ptr<Animator> _animations;
     
     shared_ptr<Map> _map;
-    RoomController _roomController;
     Vec2 _cameraBottomLeft;
     float _cameraZoom;
     unsigned int _mapSeed;

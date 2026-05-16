@@ -91,7 +91,6 @@ bool GameScene::init(const std::shared_ptr<cugl::AssetManager>& assets, const st
     initCombos();
 
     _map = std::make_shared<Map>();
-    _roomController.setRooms(_map->getRooms());
     _mapSeed = 0;
 
     // Initialize inventory system
@@ -312,9 +311,6 @@ void GameScene::rebuildMapForRun() {
     n->setPosition(Vec2::ZERO);
     n->setPriority(0.0f);
     _worldnode->addChild(n);
-
-
-    _roomController.setRooms(_map->getRooms());
 
     _quota = _map->getQuota();
     _depositPosition = _map->getPlayerSpawn();
