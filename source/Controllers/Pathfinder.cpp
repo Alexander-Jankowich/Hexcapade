@@ -245,11 +245,9 @@ void Pathfinder::updateEnemies(shared_ptr<EnemyFactory> enemyFact, shared_ptr<Pl
                                 case(0):
                                     s = SpellType::FIREBALL;
                                     break;
-                                case(1):
+                                default:
                                     s = SpellType::EARTH;
                                     break;
-                                default:
-                                    s = SpellType::WATER;
                             }
                             auto params = spellFact->serializeParams((en->getPosition()), angle, s, ENEMY_ID);
                             auto pair = networkCtrl->getPhysController()->addSharedObstacle(spellFactId, params);
